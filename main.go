@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"chronoscoper.com/premises/cloudflare"
 	"chronoscoper.com/premises/config"
 	"chronoscoper.com/premises/conoha"
 )
@@ -92,7 +91,7 @@ func DestroyVM(cfg *config.Config) error {
 
 func main() {
 	prefix := ""
-	if len(os.Args) > 1 {
+	if len(os.Getenv("PREMISES_DEBUG")) > 0 {
 		prefix = os.Args[1]
 	}
 
@@ -102,14 +101,14 @@ func main() {
 	}
 	cfg.Prefix = prefix
 
-	zoneID, err := cloudflare.GetZoneID(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// zoneID, err := cloudflare.GetZoneID(cfg)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	if err := cloudflare.UpdateDNS(cfg, zoneID, "2001:db8::2", 6); err != nil {
-		log.Fatal(err)
-	}
+	// if err := cloudflare.UpdateDNS(cfg, zoneID, "2001:db8::2", 6); err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	// if err := monitor.GenerateTLSKey(cfg); err != nil {
 	// 	log.Fatal(err)
