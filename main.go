@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
+	"chronoscoper.com/premises/cloudflare"
 	"chronoscoper.com/premises/config"
 	"chronoscoper.com/premises/conoha"
-	"chronoscoper.com/premises/monitor"
 )
 
 func BuildVM(gameConfig []byte, cfg *config.Config) error {
@@ -102,15 +102,24 @@ func main() {
 	}
 	cfg.Prefix = prefix
 
-	if err := monitor.GenerateTLSKey(cfg); err != nil {
-		log.Fatal(err)
-	}
-
-	ss, err := conoha.GenerateStartupScript([]byte("hoge"), cfg)
+	zoneID, err := cloudflare.GetZoneID(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(ss)
+
+	if err := cloudflare.UpdateDNS(cfg, zoneID, "2001:db8::2", 6); err != nil {
+		log.Fatal(err)
+	}
+
+	// if err := monitor.GenerateTLSKey(cfg); err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// ss, err := conoha.GenerateStartupScript([]byte("hoge"), cfg)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// log.Println(ss)
 
 	// if err := BuildVM(cfg); err != nil {
 	// 	log.Fatal(err)

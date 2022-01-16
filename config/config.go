@@ -17,6 +17,11 @@ type Config struct {
 			Compute  string `json:"compute"`
 		} `json:"services"`
 	} `json:"conoha"`
+	Cloudflare struct {
+		Token          string `json:"token"`
+		DomainName     string `json:"domain_name"`
+		GameDomainName string `json:"game_domain_name"`
+	} `json:"cloudflare"`
 	Prefix string
 }
 
