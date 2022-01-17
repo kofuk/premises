@@ -22,6 +22,18 @@ type Config struct {
 		DomainName     string `json:"domain_name"`
 		GameDomainName string `json:"game_domain_name"`
 	} `json:"cloudflare"`
+	ControlPanel struct {
+		Secret        string `json:"secret"`
+		AllowedOrigin string `json:"allowed_origin"`
+		Redis         struct {
+			Address  string `json:"address"`
+			Password string `json:"password"`
+		} `json:"redis"`
+		Users []struct {
+			Name     string `json:"name"`
+			Password string `json:"password"`
+		} `json:"users"`
+	} `json:"control_panel"`
 	Prefix string
 }
 

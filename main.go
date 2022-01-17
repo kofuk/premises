@@ -1,13 +1,31 @@
 package main
 
 import (
+	"embed"
+	"html/template"
 	"log"
+	"net/http"
 	"os"
+	"path/filepath"
+	"sync"
 	"time"
+
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
+	"github.com/gin-contrib/sessions/redis"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 
 	"chronoscoper.com/premises/config"
 	"chronoscoper.com/premises/conoha"
 )
+
+var serverState struct {
+	mutex         sync.Mutex
+	launched      bool
+	status        string
+	selectedWorld string
+}
 
 func BuildVM(gameConfig []byte, cfg *config.Config) error {
 	token, err := conoha.GetToken(cfg)
@@ -53,7 +71,6 @@ func DestroyVM(cfg *config.Config) error {
 		return err
 	}
 
-
 	if err := conoha.StopVM(cfg, token, detail.ID); err != nil {
 		return err
 	}
@@ -79,7 +96,7 @@ func DestroyVM(cfg *config.Config) error {
 		if _, err := conoha.GetImageID(cfg, token, "mc-premises"); err == nil {
 			break
 		}
-		time.Sleep(30 * time.Second)		
+		time.Sleep(30 * time.Second)
 	}
 
 	if err := conoha.DeleteVM(cfg, token, detail.ID); err != nil {
@@ -89,10 +106,32 @@ func DestroyVM(cfg *config.Config) error {
 	return nil
 }
 
+type GameConfig struct {
+}
+
+func LaunchServer(gameConfig *GameConfig, cfg *config.Config) {
+}
+
+func StopServer(cfg *config.Config) {
+}
+
+//go:embed templates/*.html
+var templates embed.FS
+
 func main() {
+	debugMode := false
 	prefix := ""
 	if len(os.Getenv("PREMISES_DEBUG")) > 0 {
-		prefix = os.Args[1]
+		debugMode = true
+		prefix = "/tmp/premises"
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
+	bindAddr := ":8000"
+	if len(os.Args) > 1 {
+		bindAddr = os.Args[1]
 	}
 
 	cfg, err := config.LoadConfig(prefix)
@@ -100,6 +139,134 @@ func main() {
 		log.Fatal(err)
 	}
 	cfg.Prefix = prefix
+
+	r := gin.Default()
+	r.SetTrustedProxies([]string{"127.0.0.1"})
+
+	template := template.New("")
+	templateEntries, err := templates.ReadDir("templates")
+	for _, ent := range templateEntries {
+		data, err := templates.ReadFile(filepath.Join("templates", ent.Name()))
+		if err != nil {
+			log.Fatal(err)
+		}
+		template.New(ent.Name()).Parse(string(data))
+	}
+	r.SetHTMLTemplate(template)
+
+	var sessionStore sessions.Store
+	if debugMode {
+		sessionStore = cookie.NewStore([]byte(cfg.ControlPanel.Secret))
+	} else {
+		sessionStore, err = redis.NewStore(4, "tcp", cfg.ControlPanel.Redis.Address, cfg.ControlPanel.Redis.Password, []byte(cfg.ControlPanel.Secret))
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	r.Use(sessions.Sessions("session", sessionStore))
+
+	r.GET("/", func(c *gin.Context) {
+		session := sessions.Default(c)
+		if session.Get("username") != nil {
+			c.Redirect(http.StatusFound, "/control")
+		} else {
+			c.HTML(200, "login.html", nil)
+		}
+	})
+	r.POST("/", func(c *gin.Context) {
+		if c.GetHeader("Origin") != cfg.ControlPanel.AllowedOrigin {
+			c.Redirect(http.StatusFound, "/")
+			return
+		}
+
+		username := c.PostForm("username")
+		password := c.PostForm("password")
+
+		hashPassword := ""
+		for _, usr := range cfg.ControlPanel.Users {
+			if usr.Name == username {
+				hashPassword = usr.Password
+				break
+			}
+		}
+		if hashPassword == "" {
+			c.Redirect(http.StatusFound, "/")
+			return
+		}
+
+		session := sessions.Default(c)
+		if bcrypt.CompareHashAndPassword([]byte(hashPassword), []byte(password)) == nil {
+			session.Set("username", username)
+			session.Save()
+			c.Redirect(http.StatusFound, "/control")
+			return
+		}
+	})
+	r.GET("/logout", func(c *gin.Context) {
+		session := sessions.Default(c)
+		session.Delete("username")
+		session.Save()
+		c.Redirect(http.StatusFound, "/")
+	})
+
+	controlPanel := r.Group("control")
+	controlPanel.Use(func(c *gin.Context) {
+		session := sessions.Default(c)
+		if session.Get("username") == nil {
+			c.Redirect(http.StatusFound, "/")
+			c.Abort()
+		}
+	})
+	{
+		controlPanel.GET("/", func(c *gin.Context) {
+			c.HTML(200, "control.html", nil)
+		})
+
+		api := controlPanel.Group("api")
+		api.Use(func(c *gin.Context) {
+			if c.GetHeader("Origin") != cfg.ControlPanel.AllowedOrigin {
+				c.JSON(400, gin.H{"success": false, "message": "Invalid request (origin not allowed)"})
+				c.Abort()
+			}
+		})
+		{
+			api.POST("/status", func(c *gin.Context) {
+				serverState.mutex.Lock()
+				defer serverState.mutex.Unlock()
+				c.JSON(200, gin.H{
+					"success": true,
+					"launched": serverState.launched,
+					"status": serverState.status,
+					"world": serverState.selectedWorld,
+				})
+			})
+
+			api.POST("/launch", func(c *gin.Context) {
+				serverState.mutex.Lock()
+				defer serverState.mutex.Unlock()
+				serverState.launched = true
+
+				var gameConfig GameConfig
+				go LaunchServer(&gameConfig, cfg)
+
+				c.JSON(200, gin.H{"success": true})
+			})
+
+			api.POST("/stop", func(c *gin.Context) {
+				serverState.mutex.Lock()
+				defer serverState.mutex.Unlock()
+
+				serverState.launched = false;
+
+				go StopServer(cfg)
+
+				c.JSON(200, gin.H{"success" : true})
+			})
+		}
+	}
+
+	log.Fatal(r.Run(bindAddr))
 
 	// zoneID, err := cloudflare.GetZoneID(cfg)
 	// if err != nil {
