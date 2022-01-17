@@ -34,7 +34,8 @@ type Config struct {
 			Password string `json:"password"`
 		} `json:"users"`
 	} `json:"control_panel"`
-	Prefix string
+	Prefix     string
+	MonitorKey string
 }
 
 func LoadConfig(prefix string) (*Config, error) {
