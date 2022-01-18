@@ -19,12 +19,12 @@ type Config struct {
 	} `json:"conoha"`
 	Cloudflare struct {
 		Token          string `json:"token"`
-		DomainName     string `json:"domain_name"`
-		GameDomainName string `json:"game_domain_name"`
+		DomainName     string `json:"domainName"`
+		GameDomainName string `json:"gameDomainName"`
 	} `json:"cloudflare"`
 	ControlPanel struct {
 		Secret        string `json:"secret"`
-		AllowedOrigin string `json:"allowed_origin"`
+		AllowedOrigin string `json:"allowedOrigin"`
 		Redis         struct {
 			Address  string `json:"address"`
 			Password string `json:"password"`
@@ -33,7 +33,7 @@ type Config struct {
 			Name     string `json:"name"`
 			Password string `json:"password"`
 		} `json:"users"`
-	} `json:"control_panel"`
+	} `json:"controlPanel"`
 	Prefix     string
 	MonitorKey string
 }
