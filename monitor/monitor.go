@@ -64,7 +64,6 @@ func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData) error
 			evCh <- &status
 
 			if status.Shutdown {
-				close(evCh)
 				goto end
 			}
 		}

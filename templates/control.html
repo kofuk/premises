@@ -95,6 +95,9 @@
          const proto = location.protocol == 'https:' ? 'wss://' : 'ws://';
          const url = proto + location.host + '/control/api/status';
          const ws = new WebSocket(url);
+         ws.addEventListener('close', () => {
+             showError('Connection has lost; please reload the page.');
+         });
          ws.addEventListener('message', e => {
              const event = JSON.parse(e.data);
              if (event.hasError) {
