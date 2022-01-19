@@ -37,16 +37,354 @@
                                                           defaultChecked: e[0] == '8g'}),
                             React.createElement('label', {className: 'btn btn-outline-primary',
                                                           'for': `machine-type-${e[0]}`,
-                                                          title: `${e[1]} RAM & ${e[2]} CPU, ${e[3]}`}, e[1])]).flat();
+                                                          title: `${e[1]} RAM & ${e[2]} CPU, ${e[3]}`}, e[1])])
+                 .flat();
 
              return React.createElement(
                  'div',
-                 {},
+                 {className: 'mb-3'},
                  'Machine Type',
                  React.createElement(
                      'div',
                      {className: 'btn-group ms-3', role: 'group'},
                      machines
+                 )
+             );
+         }
+     }
+
+     class NewWorldMenu extends React.Component {
+         render() {
+             const newWorldMenu = [];
+             if (this.props.generateNewWorld) {
+                 newWorldMenu.push(React.createElement(
+                     'div',
+                     {className: 'mb-3'},
+                     React.createElement(
+                         'label',
+                         {className: 'form-label', 'for': 'new-world-name'},
+                         'World Name'
+                     ),
+                     React.createElement(
+                         'input',
+                         {
+                             className: 'form-control', type: 'text',
+                             id: 'new-world-name', name: 'new-world-name',
+                             placeholder: 'myworld'
+                         }
+                     )
+                 ));
+                 newWorldMenu.push(React.createElement(
+                     'div',
+                     {className: 'mb-3'},
+                     React.createElement(
+                         'label',
+                         {'for': 'level-type'},
+                         'Level Type'
+                     ),
+                     React.createElement(
+                         'select',
+                         {className: 'form-select', name: 'level-type', id: 'level-type'},
+                         [['default', 'Default'], ['flat', 'Superflat'], ['largeBiomes', 'Large Biomes'], ['amplified', 'Amplified']]
+                             .map(e => React.createElement(
+                                 'option',
+                                 {value: e[0]},
+                                 e[1]
+                             ))
+                     )
+                 ));
+             }
+
+             return React.createElement(
+                 'div',
+                 {},
+                 React.createElement(
+                     'div',
+                     {className: 'form-check form-switch mb-3'},
+                     React.createElement(
+                         'input',
+                         {
+                             className: 'form-check-input',
+                             type: 'checkbox',
+                             name: 'new-world', id: 'new-world',
+                             checked: this.props.generateNewWorld,
+                             onChange: (e) => this.props.changeGenerateNewWorld(e.target.checked)
+                         },
+                     ),
+                     React.createElement(
+                         'label',
+                         {className: 'form-check-label', 'for': 'new-world'},
+                         'Generate a new world'
+                     )
+                 ),
+                 newWorldMenu
+             );
+         }
+     }
+
+     class WorldMigrationMenu extends React.Component {
+         render() {
+             const menu = [];
+             if (this.props.migrateWorld) {
+                 const options = this.props.worldBackups
+                                     .map(e => React.createElement(
+                                         'option',
+                                         {value: JSON.stringify(e)},
+                                         `${e.worldName} on ${e.serverName} (${e.generation} gen ago)`
+                                     ));
+                 menu.push(React.createElement(
+                     'div',
+                     {className: 'mb-3'},
+                     React.createElement(
+                         'label',
+                         {'for': 'migrate-from'},
+                         'Migrate from'
+                     ),
+                     React.createElement(
+                         'select',
+                         {className: 'form-select', id: 'migrate-from', name: 'migrate-from'},
+                         options
+                     )
+                 ));
+             }
+
+             return React.createElement(
+                 'div',
+                 {},
+                 React.createElement(
+                     'div',
+                     {className: 'form-check form-switch mb-3'},
+                     React.createElement(
+                         'input',
+                         {
+                             className: 'form-check-input',
+                             type: 'checkbox',
+                             name: 'migrate-world', id: 'migrate-world',
+                             checked: this.props.migrateWorld,
+                             onChange: (e) => this.props.changeMigrateWorld(e.target.checked)
+                         },
+                     ),
+                     React.createElement(
+                         'label',
+                         {className: 'form-check-label', 'for': 'migrate-world'},
+                         'Migrate from an existing world'
+                     )
+                 ),
+                 menu
+             );
+         }
+     }
+
+     class WorldSelection extends React.Component {
+         render() {
+             const worlds = new Set;
+             this.props.worldsForConfig.forEach(e => {
+                 worlds.add(e.worldName);
+             });
+             const worldOptions = [...worlds].map(e => React.createElement(
+                 'option',
+                 {value: e},
+                 e
+             ));
+
+             return React.createElement(
+                 'div',
+                 {className: 'mb-3'},
+                 React.createElement(
+                     'label',
+                     {'for': 'world'},
+                     'World'
+                 ),
+                 React.createElement(
+                     'select',
+                     {
+                         className: 'form-select',
+                         onChange: (e) => this.props.changeWorld(e.target.value)
+                     },
+                     worldOptions
+                 )
+             );
+         }
+     }
+
+     class WorldGenerationSelection extends React.Component {
+         render() {
+             const worlds = this.props.worldsForConfig
+                                .map(e => [React.createElement('input', {type: 'radio', className: 'btn-check',
+                                                                         name: 'world-gen', id: `world-gen-${e.generation}`,
+                                                                         autocomplete: 'off', value: `${e.generation}`,
+                                                                         defaultChecked: e.generation == 0}),
+                                           React.createElement('label', {className: 'btn btn-outline-primary',
+                                                                         'for': `world-gen-${e.generation}`,},
+                                                               e.generation == 0 ? 'latest' : `${e.generation} gen ago`)])
+                                .flat();
+
+             return React.createElement(
+                 'div',
+                 {className: 'mb-3'},
+                 'World Generation',
+                 React.createElement(
+                     'div',
+                     {className: 'btn-group ms-3', role: 'group'},
+                     worlds
+                 )
+             );
+         }
+     }
+
+     class GameConfigSelection extends React.Component {
+         render() {
+             const configs = this.props.gameConfigs
+                                 .map(e => React.createElement('option', {value: e.name}, `${e.name} ${e.isVanilla?'':'*'}`))
+
+             return React.createElement(
+                 'div',
+                 {className: 'mb-3'},
+                 React.createElement(
+                     'label',
+                     {'for': 'game-config'},
+                     'Game Configuration'
+                 ),
+                 React.createElement(
+                     'select',
+                     {
+                         className: 'form-select', id: 'game-config', name: 'game-config',
+                         onChange: (e) => this.props.onConfigChange(e.target.value), value: this.props.selectedGameConfig
+                     },
+                     configs
+                 ),
+             )
+         }
+     }
+
+     class WorldConfigMenu extends React.Component {
+         constructor(props) {
+             super(props);
+             this.state = {
+                 gameConfigs: [], worldBackups: [],
+                 selectedGameConfig: '',
+                 selectedWorld: '',
+                 generateNewWorld: false,
+                 migrateWorld: false
+             };
+             this.fetchGameConfigs();
+             this.fetchWorldBackups();
+         }
+
+         fetchGameConfigs() {
+             fetch('/control/api/getgameconfigs', {method: 'POST'})
+                 .then(resp => resp.json())
+                 .then(resp => {
+                     if (resp != null) {
+                         this.setState({gameConfigs: resp})
+                         if (resp.length > 0) {
+                             this.setState({selectedGameConfig: resp[0].name});
+                         }
+                     }
+                 })
+         }
+
+         fetchWorldBackups() {
+             fetch('/control/api/getbackups', {method: 'POST'})
+                 .then(resp => resp.json())
+                 .then(resp => {
+                     if (resp != null) {
+                         resp.sort((a, b) => {
+                             if (a.generation == b.generation) {
+                                 return 0;
+                             } else if (a.generation < b.generation) {
+                                 return -1;
+                             }
+                             return 1;
+                         });
+                         this.setState({worldBackups: resp});
+                         if (resp.length > 0) {
+                             this.setState({selectedWorld: resp[0].worldName});
+                         }
+                     }
+                 })
+         }
+
+         render() {
+             const worldsForConfig = this.state.worldBackups
+                                         .filter(e => e.serverName === this.state.selectedGameConfig);
+
+             React.createElement(
+                 'div',
+                 {className: 'mb-3'},
+                 React.createElement(
+                     'div',
+                     {className: 'alert alert-warning', role: 'alert'},
+                     'No world backups found. New world will be generated.',
+                 )
+             );
+
+             const worldSelectionMenu = [];
+             if (worldsForConfig.length === 0) {
+                 worldSelectionMenu.push(React.createElement(
+                     'div',
+                     {className: 'alert alert-warning mb-3'},
+                     'No world backups found. Please generate a new world or migrate from other server configuration.'
+                 ));
+             } else if (!this.state.generateNewWorld && !this.state.migrateWorld) {
+                 worldSelectionMenu.push(React.createElement(
+                     WorldSelection,
+                     {
+                         worldsForConfig: worldsForConfig,
+                         changeWorld: (v) => this.setState({selectedWorld: v})
+                     }
+                 ));
+
+                 worldSelectionMenu.push(React.createElement(
+                     WorldGenerationSelection,
+                     {
+                         worldsForConfig: worldsForConfig.filter(e => e.worldName === this.state.selectedWorld),
+                         selectedGameConfig: this.state.selectedGameConfig,
+                     }
+                 ));
+             }
+
+             worldSelectionMenu.push(React.createElement(
+                 NewWorldMenu,
+                 {
+                     generateNewWorld: this.state.generateNewWorld || (!this.state.migrateWorld && worldsForConfig.length === 0),
+                     changeGenerateNewWorld: (val) => {
+                         this.setState({generateNewWorld: val});
+                         if (worldsForConfig.length === 0) {
+                             this.setState({migrateWorld: !val});
+                         } else if (val && this.state.migrateWorld) {
+                             this.setState({migrateWorld: false});
+                         }
+                     }
+                 }
+             ));
+
+             return React.createElement(
+                 'div',
+                 {},
+                 React.createElement(
+                     GameConfigSelection,
+                     {
+                         gameConfigs: this.state.gameConfigs,
+                         selectedGameConfig: this.state.selectedGameConfig,
+                         onConfigChange: (config) => this.setState({'selectedGameConfig': config})
+                     }
+                 ),
+                 worldSelectionMenu,
+                 React.createElement(
+                     WorldMigrationMenu,
+                     {
+                         migrateWorld: this.state.migrateWorld,
+                         changeMigrateWorld: (val) => {
+                             this.setState({migrateWorld: val});
+                             if (worldsForConfig.length === 0) {
+                                 this.setState({generateNewWorld: !val});
+                             } else if (val && this.state.generateNewWorld) {
+                                 this.setState({generateNewWorld: false});
+                             }
+                         },
+                         worldBackups: this.state.worldBackups
+                     }
                  )
              );
          }
@@ -64,6 +402,7 @@
                          'form',
                          {id: 'build-server-form'},
                          React.createElement(MachineTypeSelection),
+                         React.createElement(WorldConfigMenu),
                          React.createElement(
                              'div',
                              {className: 'd-md-block mt-3 text-end'},
@@ -128,7 +467,6 @@
      class Status extends React.Component {
          constructor(props) {
              super(props);
-             this.state = {isError: props.isError, message: props.message};
          }
 
          render() {
