@@ -226,7 +226,9 @@ func GetVMDetail(cfg *config.Config, token, name string) (*VMDetail, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.URL.Query().Add("name", name)
+	query := req.URL.Query()
+	query.Add("name", name)
+	req.URL.RawQuery = query.Encode()
 	req.Header.Add(HeaderKeyAuthToken, token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -283,7 +285,9 @@ func GetImageID(cfg *config.Config, token, tag string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	req.URL.Query().Add("tag", tag)
+	query := req.URL.Query()
+	query.Add("tag", tag)
+	req.URL.RawQuery = query.Encode()
 	req.Header.Add(HeaderKeyAuthToken, token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
