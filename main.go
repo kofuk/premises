@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
 	"time"
@@ -153,6 +154,27 @@ type GameConfig struct {
 }
 
 func LaunchServer(gameConfig *GameConfig, cfg *config.Config) {
+	//TODO: temporary
+	cmd := exec.Command("go", "run", ".")
+	cmd.Dir = filepath.Join(os.Getenv("HOME"), "source/premises-mcmanager")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	server.monitorChan <- &monitor.StatusData{
+		Status:   "Waiting for the server to start up...",
+		HasError: false,
+		Shutdown: false,
+	}
+
+	go func() {
+		if err := monitor.MonitorServer(cfg, cfg.ServerAddr, server.monitorChan); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	if err := cmd.Run(); err != nil {
+		log.Println(err)
+	}
 }
 
 func StopServer(cfg *config.Config) {
@@ -193,19 +215,13 @@ func main() {
 	// temporary implementation for testing
 	cfg.MonitorKey = "hoge"
 	cfg.ServerAddr = "localhost"
-	monitorChan := make(chan *monitor.StatusData)
+	//===================
+
 	server.status.Status = "Server is shutdown"
 	server.status.Shutdown = true
+
+	monitorChan := make(chan *monitor.StatusData)
 	server.monitorChan = monitorChan
-	go func() {
-		if err := monitor.MonitorServer(cfg, cfg.ServerAddr, monitorChan); err != nil {
-			log.Println(err)
-		}
-	}()
-	go func() {
-		server.dispatchMonitorEvent()
-	}()
-	//===================
 
 	r := gin.Default()
 	r.SetTrustedProxies([]string{"127.0.0.1"})
@@ -348,6 +364,10 @@ func main() {
 			})
 		}
 	}
+
+	go func() {
+		server.dispatchMonitorEvent()
+	}()
 
 	log.Fatal(r.Run(bindAddr))
 

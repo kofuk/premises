@@ -44,11 +44,17 @@ func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData) error
 	dialer := &websocket.Dialer{
 		TLSClientConfig: tlsConfig,
 	}
+	startTime := time.Now()
 	for {
 	newConn:
 		conn, _, err := dialer.Dial("wss://"+addr+":8521/monitor", http.Header{"X-Auth-Key": []string{cfg.MonitorKey}})
 		if err != nil {
 			log.Println(err)
+
+			if time.Now().Sub(startTime) > 10*time.Minute {
+				goto err
+			}
+
 			time.Sleep(10 * time.Second)
 			goto newConn
 		}
@@ -58,6 +64,14 @@ func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData) error
 			var status StatusData
 			if err := conn.ReadJSON(&status); err != nil {
 				log.Println(err)
+
+				evCh <- &StatusData{
+					Status:   "Connection lost. Will reconnect...",
+					HasError: true,
+					Shutdown: false,
+				}
+
+				startTime = time.Now()
 				goto newConn
 			}
 
@@ -69,6 +83,16 @@ func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData) error
 		}
 	}
 end:
+
+	return nil
+
+err:
+	evCh <- &StatusData{
+		Status:   "Server did not respond in 10 minutes. I'm tired of waiting :P",
+		HasError: true,
+		Shutdown: false,
+	}
+
 	return nil
 }
 
