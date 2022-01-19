@@ -384,6 +384,10 @@ func main() {
 
 				c.JSON(200, server.worldBackups)
 			})
+
+			api.POST("/getgameconfigs", func(c *gin.Context) {
+				c.JSON(200, cfg.GameConfigs)
+			})
 		}
 	}
 

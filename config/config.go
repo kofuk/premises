@@ -26,6 +26,10 @@ type Config struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	} `json:"mega"`
+	GameConfigs []struct {
+		Name      string `json:"name"`
+		IsVanilla bool   `json:"isVanilla"`
+	} `json:"gameConfigs"`
 	ControlPanel struct {
 		Secret        string `json:"secret"`
 		AllowedOrigin string `json:"allowedOrigin"`
