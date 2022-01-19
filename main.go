@@ -18,6 +18,7 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/bcrypt"
 
+	"chronoscoper.com/premises/backup"
 	"chronoscoper.com/premises/config"
 	"chronoscoper.com/premises/conoha"
 	"chronoscoper.com/premises/monitor"
@@ -30,6 +31,8 @@ type serverState struct {
 	monitorChan      chan *monitor.StatusData
 	monitorClients   []chan *monitor.StatusData
 	monitorClientsMu sync.Mutex
+	worldBackupMu    sync.Mutex
+	worldBackups     []backup.WorldBackup
 }
 
 var server serverState
@@ -211,6 +214,18 @@ func main() {
 	}
 	cfg.Prefix = prefix
 
+	go func() {
+		backups, err := backup.GetBackupList(cfg)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		server.worldBackupMu.Lock()
+		defer server.worldBackupMu.Unlock()
+		server.worldBackups = backups
+	}()
+
 	//===================
 	// temporary implementation for testing
 	cfg.MonitorKey = "hoge"
@@ -361,6 +376,13 @@ func main() {
 				go StopServer(cfg)
 
 				c.JSON(200, gin.H{"success": true})
+			})
+
+			api.POST("/getbackups", func(c *gin.Context) {
+				server.worldBackupMu.Lock()
+				defer server.worldBackupMu.Unlock()
+
+				c.JSON(200, server.worldBackups)
 			})
 		}
 	}

@@ -22,6 +22,10 @@ type Config struct {
 		DomainName     string `json:"domainName"`
 		GameDomainName string `json:"gameDomainName"`
 	} `json:"cloudflare"`
+	Mega struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	} `json:"mega"`
 	ControlPanel struct {
 		Secret        string `json:"secret"`
 		AllowedOrigin string `json:"allowedOrigin"`

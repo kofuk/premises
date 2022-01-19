@@ -5,6 +5,8 @@ go 1.17
 require (
 	github.com/gin-contrib/sessions v0.0.4
 	github.com/gin-gonic/gin v1.7.7
+	github.com/gorilla/websocket v1.4.2
+	github.com/t3rm1n4l/go-mega v0.0.0-20200416171014-ffad7fcb44b8
 	golang.org/x/crypto v0.0.0-20220112180741-5e0467b6c7ce
 )
 
@@ -19,7 +21,6 @@ require (
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/sessions v1.2.0 // indirect
-	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/json-iterator/go v1.1.9 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
