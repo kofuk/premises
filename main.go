@@ -24,7 +24,7 @@ import (
 
 type serverState struct {
 	statusMu         sync.Mutex
-	status           *monitor.StatusData
+	status           monitor.StatusData
 	selectedWorld    string
 	monitorChan      chan *monitor.StatusData
 	monitorClients   []chan *monitor.StatusData
@@ -59,7 +59,7 @@ func (s *serverState) dispatchMonitorEvent() {
 		status := <-s.monitorChan
 
 		s.statusMu.Lock()
-		s.status = status
+		s.status = *status
 		s.statusMu.Unlock()
 
 		s.monitorClientsMu.Lock()
@@ -194,6 +194,8 @@ func main() {
 	cfg.MonitorKey = "hoge"
 	cfg.ServerAddr = "localhost"
 	monitorChan := make(chan *monitor.StatusData)
+	server.status.Status = "Server is shutdown"
+	server.status.Shutdown = true
 	server.monitorChan = monitorChan
 	go func() {
 		if err := monitor.MonitorServer(cfg, cfg.ServerAddr, monitorChan); err != nil {
@@ -310,11 +312,9 @@ func main() {
 				defer server.removeMonitorClient(ch)
 
 				server.statusMu.Lock()
-				if server.status != nil {
-					if err := conn.WriteJSON(*server.status); err != nil {
-						log.Println(err)
-						return
-					}
+				if err := conn.WriteJSON(server.status); err != nil {
+					log.Println(err)
+					return
 				}
 				server.statusMu.Unlock()
 

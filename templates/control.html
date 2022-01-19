@@ -16,152 +16,174 @@
       </div>
     </nav>
 
-    <div class="container">
-      <div class="alert d-none" role="alert" id="status">
-        Running
-      </div>
-
-      <div class="my-5 card mx-auto" id="menu-build-server">
-        <div class="card-body">
-          <form id="start-form">
-            Machine Type
-            <div class="btn-group ms-3" role="group">
-              <input type="radio" class="btn-check" name="machine-type" id="machine-1g" autocomplete="off">
-              <label class="btn btn-outline-primary" for="machine-1g">1G/2cores</label>
-
-              <input type="radio" class="btn-check" name="machine-type" id="machine-2g" autocomplete="off">
-              <label class="btn btn-outline-primary" for="machine-2g">2GB/3cores</label>
-
-              <input type="radio" class="btn-check" name="machine-type" id="machine-4g" autocomplete="off">
-              <label class="btn btn-outline-primary" for="machine-4g">4GB/4cores</label>
-
-              <input type="radio" class="btn-check" name="machine-type" id="machine-8g" autocomplete="off" checked>
-              <label class="btn btn-outline-primary" for="machine-8g">8GB/6cores</label>
-
-              <input type="radio" class="btn-check" name="machine-type" id="machine-16g" autocomplete="off">
-              <label class="btn btn-outline-primary" for="machine-16g">16GB/8cores</label>
-
-              <input type="radio" class="btn-check" name="machine-type" id="machine-32g" autocomplete="off">
-              <label class="btn btn-outline-primary" for="machine-32g">32GB/12cores</label>
-
-              <input type="radio" class="btn-check" name="machine-type" id="machine-64g" autocomplete="off">
-              <label class="btn btn-outline-primary" for="machine-64g">64GB/24cores</label>
-            </div>
-            <div class="d-md-block mt-3 text-end">
-              <button class="btn btn-primary bg-gradient" id="start">Start</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <div class="my-5 card mx-auto d-none" id="menu-server-control">
-        <div class="card-body">
-          <form id="control-form">
-            <div class="d-md-block mt-3 text-end">
-              <button class="btn btn-danger bg-gradient" id="stop">Stop</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-    </div>
+    <div id="app"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+    <script crossorigin src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
 
     <script>
      'use strict';
 
-     const showStatus = (msg) => {
-         const el = document.getElementById('status')
-         el.classList.remove('d-none', 'alert-danger');
-         el.classList.add('alert-success');
-         el.innerText = msg;
-     };
+     class MachineTypeSelection extends React.Component {
+         render() {
+             const machines = [['1g', '1GB/2cores'], ['2g', '2GB/3cores'],
+                               ['4g', '4GB/4cores'], ['8g', '8GB/6cores'],
+                               ['16g', '16GB/8cores'], ['32g', '32GB/12cores'],
+                               ['64g', '64GB/24cores']]
+                 .map(e => [React.createElement('input', {type: 'radio', className: 'btn-check', name: 'machine-type', id: `machine-type-${e[0]}`, autocomplete: 'off', value: e[0], defaultChecked: e[0] == '8g'}),
+                            React.createElement('label', {className: 'btn btn-outline-primary', 'for': `machine-type-${e[0]}`}, e[1])]).flat();
 
-     const showError = (msg) => {
-         const el = document.getElementById('status')
-         el.classList.remove('d-none', 'alert-success');
-         el.classList.add('alert-danger');
-         el.innerText = msg;
-     };
+             return React.createElement(
+                 'div',
+                 {},
+                 'Machine Type',
+                 React.createElement(
+                     'div',
+                     {className: 'btn-group ms-3', role: 'group'},
+                     machines
+                 )
+             );
+         }
+     }
 
-     const hideAlert = () => {
-         const el = document.getElementById('status')
-         el.classList.remove('alert-success', 'alert-danger');
-         el.classList.add('d-none');
-     };
+     class BuildServerPanel extends React.Component {
+         render() {
+             return React.createElement(
+                 'div',
+                 {className: 'my-5 card mx-auto'},
+                 React.createElement(
+                     'div',
+                     {className: 'card-body'},
+                     React.createElement(
+                         'form',
+                         {id: 'build-server-form'},
+                         React.createElement(MachineTypeSelection),
+                         React.createElement(
+                             'div',
+                             {className: 'd-md-block mt-3 text-end'},
+                             React.createElement(
+                                 'button',
+                                 {
+                                     className: 'btn btn-primary bg-gradient',
+                                     type: 'button',
+                                     onClick: () => {
+                                         const data = new URLSearchParams;
+                                         for (const field of new FormData(document.getElementById('build-server-form')))
+                                             data.append(field[0], field[1]);
+                                         fetch('/control/api/launch', {
+                                             method: 'POST',
+                                             body: data
+                                         });
+                                     }
+                                 },
+                                 'Start'
+                             )
+                         )
+                     )
+                 )
+             );
+         }
+     }
 
-     document.addEventListener('DOMContentLoaded', () => {
-         const proto = location.protocol == 'https:' ? 'wss://' : 'ws://';
-         const url = proto + location.host + '/control/api/status';
-         const ws = new WebSocket(url);
-         ws.addEventListener('close', () => {
-             showError('Connection has lost; please reload the page.');
-         });
-         ws.addEventListener('message', e => {
-             const event = JSON.parse(e.data);
-             if (event.hasError) {
-                 showError(event.status);
-             } else {
-                 showStatus(event.status);
+     class ServerControlPanel extends React.Component {
+         render() {
+             return React.createElement(
+                 'div',
+                 {className: 'my-5 card mx-auto'},
+                 React.createElement(
+                     'div',
+                     {className: 'card-body'},
+                     React.createElement(
+                         'form',
+                         {},
+                         React.createElement(
+                             'div',
+                             {className: 'd-md-block mt-3 text-end'},
+                             React.createElement(
+                                 'button',
+                                 {
+                                     className: 'btn btn-danger bg-gradient',
+                                     type: 'button',
+                                     onClick: () => {
+                                         fetch('/control/api/stop', {
+                                             method: 'POST'
+                                         })
+                                     }
+                                 },
+                                 'Stop'
+                             )
+                         )
+                     )
+                 )
+             );
+         }
+     }
+
+     class Status extends React.Component {
+         constructor(props) {
+             super(props);
+             this.state = {isError: props.isError, message: props.message};
+         }
+
+         render() {
+             const appearance = this.props.isError ? 'alert-danger' : 'alert-success';
+             return React.createElement(
+                 'div',
+                 {className: `alert ${appearance}`},
+                 this.props.message
+             );
+         }
+     }
+
+     class App extends React.Component {
+         constructor(props) {
+             super(props);
+             this.state = {
+                 serverShutdown: true,
+                 isError: props.isError,
+                 message: props.message
              }
-             if (event.shutdown) {
-                 document.getElementById('menu-build-server').classList.remove('d-none');
-                 document.getElementById('menu-server-control').classList.add('d-none');
+         }
+
+         componentDidMount() {
+             this.wsWatch();
+         }
+
+         wsWatch() {
+             const proto = location.protocol == 'https:' ? 'wss://' : 'ws://';
+             const url = proto + location.host + '/control/api/status';
+             const ws = new WebSocket(url);
+             ws.addEventListener('close', this.handleWsClose.bind(this));
+             ws.addEventListener('message', this.handleWsMessage.bind(this));
+         }
+
+         handleWsClose() {
+             this.setState({isError: true, message: 'Connection has lost; please reload the page.'});
+         }
+
+         handleWsMessage(ev) {
+             const event = JSON.parse(ev.data);
+             this.setState({isServerShutdown: event.shutdown, isError: event.hasError, message: event.status})
+         }
+
+         render() {
+             let control;
+             if (this.state.isServerShutdown) {
+                 control = React.createElement(BuildServerPanel);
              } else {
-                 document.getElementById('menu-build-server').classList.add('d-none');
-                 document.getElementById('menu-server-control').classList.remove('d-none');
+                 control = React.createElement(ServerControlPanel);
              }
-         });
+             return React.createElement(
+                 'div',
+                 {className: 'container'},
+                 React.createElement(Status, {message: this.state.message, isError: this.state.isError}),
+                 control
+             );
+         }
+     }
 
-         document.getElementById('start').addEventListener('click', (e) => {
-             e.preventDefault();
-
-             e.target.setAttribute('disabled', '');
-             showStatus('Requesting...');
-
-             fetch('/control/api/launch', {
-                 method: 'POST'
-             })
-                 .then(response => response.json())
-                 .then(data => {
-                     if (!data.success) {
-                         showError(data.message);
-                         return;
-                     }
-                     e.target.removeAttribute('disabled')
-                     document.getElementById('menu-build-server').classList.add('d-none');
-                 })
-                 .catch(err => {
-                     showError('Failed to communicate with the server');
-                     e.target.removeAttribute('disabled')
-                 });
-         });
-
-         document.getElementById('stop').addEventListener('click', (e) => {
-             e.preventDefault();
-
-             e.target.setAttribute('disabled', '');
-             showStatus('Requesting...');
-
-             fetch('/control/api/stop', {
-                 method: 'POST'
-             })
-                 .then(resp => resp.json())
-                 .then(data => {
-                     if (!data.success) {
-                         showError(data.message);
-                         return;
-                     }
-                     e.target.removeAttribute('disabled');
-                     document.getElementById('menu-server-control').classList.add('d-none');
-                 })
-                 .catch(err => {
-                     showError('Failed to communicate with the server');
-                     e.target.removeAttribute('disabled');
-                 });
-         });
-     });
+     ReactDOM.render(React.createElement(App), document.getElementById('app'));
     </script>
   </body>
 </html>
