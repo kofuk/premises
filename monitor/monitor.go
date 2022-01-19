@@ -15,7 +15,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type statusData struct {
+type StatusData struct {
 	Status   string `json:"status"`
 	Shutdown bool   `json:"shutdown"`
 	HasError bool   `json:"hasError"`
@@ -35,7 +35,7 @@ func makeTLSConfig(config *config.Config) (*tls.Config, error) {
 
 }
 
-func MonitorServer(cfg *config.Config, addr string, evCh chan string) error {
+func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData) error {
 	tlsConfig, err := makeTLSConfig(cfg)
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func MonitorServer(cfg *config.Config, addr string, evCh chan string) error {
 	}
 	for {
 	newConn:
-		conn, _, err := dialer.Dial("wss://"+addr+"/monitor", http.Header{"X-Auth-Key": []string{cfg.MonitorKey}})
+		conn, _, err := dialer.Dial("wss://"+addr+":8521/monitor", http.Header{"X-Auth-Key": []string{cfg.MonitorKey}})
 		if err != nil {
 			log.Println(err)
 			time.Sleep(10 * time.Second)
@@ -55,13 +55,13 @@ func MonitorServer(cfg *config.Config, addr string, evCh chan string) error {
 		defer conn.Close()
 
 		for {
-			var status statusData
+			var status StatusData
 			if err := conn.ReadJSON(&status); err != nil {
 				log.Println(err)
 				goto newConn
 			}
 
-			evCh <- status.Status
+			evCh <- &status
 
 			if status.Shutdown {
 				close(evCh)
@@ -81,7 +81,7 @@ func StopServer(cfg *config.Config, addr string) error {
 		},
 	}
 
-	req, err := http.NewRequest("GET", "https://"+addr+"/stop", nil)
+	req, err := http.NewRequest("GET", "https://"+addr+":8521/stop", nil)
 	if err != nil {
 		return err
 	}

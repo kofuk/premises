@@ -14,17 +14,60 @@ import (
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/bcrypt"
 
 	"chronoscoper.com/premises/config"
 	"chronoscoper.com/premises/conoha"
+	"chronoscoper.com/premises/monitor"
 )
 
-var serverState struct {
-	mutex         sync.Mutex
-	launched      bool
-	status        string
-	selectedWorld string
+type serverState struct {
+	statusMu         sync.Mutex
+	status           *monitor.StatusData
+	selectedWorld    string
+	monitorChan      chan *monitor.StatusData
+	monitorClients   []chan *monitor.StatusData
+	monitorClientsMu sync.Mutex
+}
+
+var server serverState
+
+func (s *serverState) addMonitorClient(ch chan *monitor.StatusData) {
+	s.monitorClientsMu.Lock()
+	defer s.monitorClientsMu.Unlock()
+
+	s.monitorClients = append(s.monitorClients, ch)
+}
+
+func (s *serverState) removeMonitorClient(ch chan *monitor.StatusData) {
+	s.monitorClientsMu.Lock()
+	defer s.monitorClientsMu.Unlock()
+
+	for i, c := range s.monitorClients {
+		if c == ch {
+			if i != len(s.monitorClients)-1 {
+				s.monitorClients[i] = s.monitorClients[len(s.monitorClients)-1]
+			}
+			break
+		}
+	}
+}
+
+func (s *serverState) dispatchMonitorEvent() {
+	for {
+		status := <-s.monitorChan
+
+		s.statusMu.Lock()
+		s.status = status
+		s.statusMu.Unlock()
+
+		s.monitorClientsMu.Lock()
+		for _, ch := range s.monitorClients {
+			ch <- status
+		}
+		s.monitorClientsMu.Unlock()
+	}
 }
 
 func BuildVM(gameConfig []byte, cfg *config.Config) error {
@@ -113,10 +156,16 @@ func LaunchServer(gameConfig *GameConfig, cfg *config.Config) {
 }
 
 func StopServer(cfg *config.Config) {
+	monitor.StopServer(cfg, cfg.ServerAddr)
 }
 
 //go:embed templates/*.html
 var templates embed.FS
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
 
 func main() {
 	debugMode := false
@@ -139,6 +188,22 @@ func main() {
 		log.Fatal(err)
 	}
 	cfg.Prefix = prefix
+
+	//===================
+	// temporary implementation for testing
+	cfg.MonitorKey = "hoge"
+	cfg.ServerAddr = "localhost"
+	monitorChan := make(chan *monitor.StatusData)
+	server.monitorChan = monitorChan
+	go func() {
+		if err := monitor.MonitorServer(cfg, cfg.ServerAddr, monitorChan); err != nil {
+			log.Println(err)
+		}
+	}()
+	go func() {
+		server.dispatchMonitorEvent()
+	}()
+	//===================
 
 	r := gin.Default()
 	r.SetTrustedProxies([]string{"127.0.0.1"})
@@ -231,21 +296,41 @@ func main() {
 			}
 		})
 		{
-			api.POST("/status", func(c *gin.Context) {
-				serverState.mutex.Lock()
-				defer serverState.mutex.Unlock()
-				c.JSON(200, gin.H{
-					"success": true,
-					"launched": serverState.launched,
-					"status": serverState.status,
-					"world": serverState.selectedWorld,
-				})
+			api.GET("/status", func(c *gin.Context) {
+				conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+				if err != nil {
+					log.Println(err)
+					return
+				}
+				defer conn.Close()
+
+				ch := make(chan *monitor.StatusData)
+				server.addMonitorClient(ch)
+				defer close(ch)
+				defer server.removeMonitorClient(ch)
+
+				server.statusMu.Lock()
+				if server.status != nil {
+					if err := conn.WriteJSON(*server.status); err != nil {
+						log.Println(err)
+						return
+					}
+				}
+				server.statusMu.Unlock()
+
+				for {
+					status := <-ch
+
+					if err := conn.WriteJSON(status); err != nil {
+						log.Println(err)
+						break
+					}
+				}
 			})
 
 			api.POST("/launch", func(c *gin.Context) {
-				serverState.mutex.Lock()
-				defer serverState.mutex.Unlock()
-				serverState.launched = true
+				server.statusMu.Lock()
+				defer server.statusMu.Unlock()
 
 				var gameConfig GameConfig
 				go LaunchServer(&gameConfig, cfg)
@@ -254,14 +339,12 @@ func main() {
 			})
 
 			api.POST("/stop", func(c *gin.Context) {
-				serverState.mutex.Lock()
-				defer serverState.mutex.Unlock()
-
-				serverState.launched = false;
+				server.statusMu.Lock()
+				defer server.statusMu.Unlock()
 
 				go StopServer(cfg)
 
-				c.JSON(200, gin.H{"success" : true})
+				c.JSON(200, gin.H{"success": true})
 			})
 		}
 	}

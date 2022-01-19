@@ -36,6 +36,7 @@ type Config struct {
 	} `json:"controlPanel"`
 	Prefix     string
 	MonitorKey string
+	ServerAddr string
 }
 
 func LoadConfig(prefix string) (*Config, error) {

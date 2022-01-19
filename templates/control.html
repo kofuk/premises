@@ -92,6 +92,25 @@
      };
 
      document.addEventListener('DOMContentLoaded', () => {
+         const proto = location.protocol == 'https:' ? 'wss://' : 'ws://';
+         const url = proto + location.host + '/control/api/status';
+         const ws = new WebSocket(url);
+         ws.addEventListener('message', e => {
+             const event = JSON.parse(e.data);
+             if (event.hasError) {
+                 showError(event.status);
+             } else {
+                 showStatus(event.status);
+             }
+             if (event.shutdown) {
+                 document.getElementById('menu-build-server').classList.remove('d-none');
+                 document.getElementById('menu-server-control').classList.add('d-none');
+             } else {
+                 document.getElementById('menu-build-server').classList.add('d-none');
+                 document.getElementById('menu-server-control').classList.remove('d-none');
+             }
+         });
+
          document.getElementById('start').addEventListener('click', (e) => {
              e.preventDefault();
 
@@ -139,42 +158,7 @@
                      e.target.removeAttribute('disabled');
                  });
          });
-
-         syncStateLoop();
-         });
-
-     const syncState = () => {
-         fetch('/control/api/status', {
-             method: 'POST'
-         })
-             .then(response => response.json())
-             .then(data => {
-                 if (!data.success) {
-                     showError(data.message);
-                     return;
-                 }
-                 if (data.launched) {
-                     document.getElementById('menu-build-server').classList.add('d-none');
-                     document.getElementById('menu-server-control').classList.remove('d-none');
-                 } else {
-                     document.getElementById('menu-build-server').classList.remove('d-none');
-                     document.getElementById('menu-server-control').classList.add('d-none');
-                 }
-                 if (data.status) {
-                     showStatus(data.status);
-                 } else {
-                     hideAlert();
-                 }
-             })
-             .catch(err => {
-                 showError('Failed to communicate with the server');
-             });
-     };
-
-     const syncStateLoop = () => {
-         syncState();
-         setTimeout(syncStateLoop, 5000);
-     };
+     });
     </script>
   </body>
 </html>
