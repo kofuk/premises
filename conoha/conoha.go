@@ -209,6 +209,9 @@ type VMDetail struct {
 		Addr    string `json:"addr"`
 		Version int    `json:"version"`
 	} `json:"addresses"`
+	Metadata struct {
+		InstanceNameTag string `json:"instance_name_tag"`
+	} `json:"metadata"`
 }
 
 type VMDetailResp struct {
@@ -226,9 +229,6 @@ func GetVMDetail(cfg *config.Config, token, name string) (*VMDetail, error) {
 	if err != nil {
 		return nil, err
 	}
-	query := req.URL.Query()
-	query.Add("name", name)
-	req.URL.RawQuery = query.Encode()
 	req.Header.Add(HeaderKeyAuthToken, token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -249,11 +249,13 @@ func GetVMDetail(cfg *config.Config, token, name string) (*VMDetail, error) {
 		return nil, err
 	}
 
-	if len(result.Servers) == 0 {
-		return nil, errors.New("No such VM")
+	for _, instance := range result.Servers {
+		if instance.Metadata.InstanceNameTag == name {
+			return &instance, nil
+		}
 	}
 
-	return &result.Servers[0], nil
+	return nil, errors.New("No such VM")
 }
 
 func (d *VMDetail) GetIPAddress(ipVersion int) string {
@@ -269,50 +271,51 @@ func (d *VMDetail) GetIPAddress(ipVersion int) string {
 
 type ImageResp struct {
 	Images []struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
+		ID     string `json:"id"`
+		Name   string `json:"name"`
+		Status string `json:"status"`
 	} `json:"images"`
 }
 
-func GetImageID(cfg *config.Config, token, tag string) (string, error) {
+func GetImageID(cfg *config.Config, token, tag string) (string, string, error) {
 	url, err := url.Parse(cfg.Conoha.Services.Image)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	url.Path = path.Join(url.Path, "images")
+	url.Path = path.Join(url.Path, "v2/images")
 
 	req, err := http.NewRequest("GET", url.String(), nil)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	query := req.URL.Query()
-	query.Add("tag", tag)
+	query.Add("name", tag)
 	req.URL.RawQuery = query.Encode()
 	req.Header.Add(HeaderKeyAuthToken, token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return "", errors.New(fmt.Sprintf("Failed to retrive image list: %d", resp.StatusCode))
+		return "", "", errors.New(fmt.Sprintf("Failed to retrive image list: %d", resp.StatusCode))
 	}
 
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	var result ImageResp
 	if err := json.Unmarshal(respData, &result); err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if len(result.Images) == 0 {
-		return "", errors.New("No such image")
+		return "", "", errors.New("No such image")
 	}
 
-	return result.Images[0].ID, nil
+	return result.Images[0].ID, result.Images[0].Status, nil
 }
 
 type FlavorsResp struct {

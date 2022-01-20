@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"errors"
 	"html/template"
 	"log"
 	"net/http"
@@ -87,9 +88,11 @@ func BuildVM(gameConfig []byte, cfg *config.Config) error {
 	}
 	flavorID := flavors.GetIDByCondition(2, 1, 100)
 
-	imageID, err := conoha.GetImageID(cfg, token, "mc-premises")
+	imageID, imageStatus, err := conoha.GetImageID(cfg, token, "mc-premises")
 	if err != nil {
 		return err
+	} else if imageStatus != "active" {
+		return errors.New("Image is not active")
 	}
 
 	startupScript, err := conoha.GenerateStartupScript(gameConfig, cfg)
@@ -125,6 +128,8 @@ func DestroyVM(cfg *config.Config) error {
 
 	// Wait for VM to stop
 	for {
+		time.Sleep(20 * time.Second)
+
 		detail, err := conoha.GetVMDetail(cfg, token, "mc-premises")
 		if err != nil {
 			return err
@@ -132,7 +137,6 @@ func DestroyVM(cfg *config.Config) error {
 		if detail.Status == "SHUTOFF" {
 			break
 		}
-		time.Sleep(30 * time.Second)
 	}
 
 	if err := conoha.CreateImage(cfg, token, detail.ID, "mc-premises"); err != nil {
@@ -141,7 +145,7 @@ func DestroyVM(cfg *config.Config) error {
 
 	// Wait for image to be saved
 	for {
-		if _, err := conoha.GetImageID(cfg, token, "mc-premises"); err == nil {
+		if _, imageStatus, err := conoha.GetImageID(cfg, token, "mc-premises"); err == nil && imageStatus == "active" {
 			break
 		}
 		time.Sleep(30 * time.Second)
