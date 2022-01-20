@@ -2,13 +2,17 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"errors"
 	"html/template"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -184,6 +188,66 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config) {
 
 func StopServer(cfg *config.Config) {
 	monitor.StopServer(cfg, cfg.ServerAddr)
+}
+
+func isValidMemSize(memSize int) bool {
+	return memSize == 1 || memSize == 2 || memSize == 4 || memSize == 8 || memSize == 16 || memSize == 32 || memSize == 64
+}
+
+func createConfigFromPostData(values url.Values, cfg *config.Config) (*gameconfig.GameConfig, error) {
+	if !values.Has("game-config") {
+		return nil, errors.New("Game configuration is not set")
+	}
+	result := gameconfig.New(values.Get("game-config"))
+
+	if !values.Has("machine-type") {
+		return nil, errors.New("Machine type is not set")
+	}
+	memSizeGB, err := strconv.Atoi(strings.Replace(values.Get("machine-type"), "g", "", 1))
+	if err != nil {
+		return nil, err
+	}
+	if !isValidMemSize(memSizeGB) {
+		return nil, errors.New("Invalid machine type")
+	}
+	result.SetAllocFromAvailableMemSize(memSizeGB * 1024)
+	result.GenerateAuthKey()
+
+	if values.Get("new-world") == "on" {
+		if err := result.SetLevelType(values.Get("level-type")); err != nil {
+			return nil, err
+		}
+
+		if !values.Has("world") {
+			return nil, errors.New("World is not set")
+		}
+		result.SetWorld(values.Get("world"), 0)
+	} else if values.Get("migrate-world") == "on" {
+		if !values.Has("migrate-from") {
+			return nil, errors.New("Migratation source world is not set")
+		}
+		var config backup.WorldBackup
+		if json.Unmarshal([]byte(values.Get("migrate-from")), &config) != nil {
+			return nil, errors.New("Invalid migratation source world")
+		}
+		result.MigrateFromOtherConfig(config.ServerName, config.WorldName, config.Generation)
+	} else {
+		if !values.Has("world-gen") {
+			return nil, errors.New("World generation is not set")
+		}
+		worldGen, err := strconv.Atoi(values.Get("world-gen"))
+		if err != nil {
+			return nil, errors.New("Invalid world generation")
+		}
+		result.SetWorld(values.Get("world"), worldGen)
+	}
+
+	result.SetOperators(cfg.Game.Operators)
+	result.SetWhitelist(cfg.Game.Whitelist)
+	result.SetMegaCredential(cfg.Mega.Email, cfg.Mega.Password)
+	result.SetMotd(cfg.Game.Motd)
+
+	return result, nil
 }
 
 //go:embed templates/*.html
@@ -365,7 +429,21 @@ func main() {
 				server.statusMu.Lock()
 				defer server.statusMu.Unlock()
 
-				gameConfig := gameconfig.New("hogehoge")
+				if err := c.Request.ParseForm(); err != nil {
+					log.Println(err)
+					c.JSON(400, gin.H{"success": false, "message": "Form parse error"})
+					return
+				}
+
+				gameConfig, err := createConfigFromPostData(c.Request.Form, cfg)
+				if err != nil {
+					c.JSON(400, gin.H{"success": false, "message": err.Error()})
+					return
+				}
+
+				j, _ := json.Marshal(gameConfig)
+				log.Println(string(j))
+
 				go LaunchServer(gameConfig, cfg)
 
 				c.JSON(200, gin.H{"success": true})
@@ -388,7 +466,7 @@ func main() {
 			})
 
 			api.POST("/getgameconfigs", func(c *gin.Context) {
-				c.JSON(200, cfg.GameConfigs)
+				c.JSON(200, cfg.Game.Configs)
 			})
 		}
 	}

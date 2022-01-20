@@ -62,14 +62,14 @@
                      {className: 'mb-3'},
                      React.createElement(
                          'label',
-                         {className: 'form-label', 'for': 'new-world-name'},
+                         {className: 'form-label', 'for': 'world'},
                          'World Name'
                      ),
                      React.createElement(
                          'input',
                          {
                              className: 'form-control', type: 'text',
-                             id: 'new-world-name', name: 'new-world-name',
+                             id: 'world', name: 'world',
                              placeholder: 'myworld'
                          }
                      )
@@ -199,6 +199,8 @@
                      'select',
                      {
                          className: 'form-select',
+                         name: 'world',
+                         id: 'world',
                          onChange: (e) => this.props.changeWorld(e.target.value)
                      },
                      worldOptions
