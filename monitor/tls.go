@@ -4,7 +4,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"chronoscoper.com/premises/config"
+	"github.com/kofuk/premises/config"
 )
 
 func GenerateTLSKey(cfg *config.Config) error {

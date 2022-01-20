@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"chronoscoper.com/premises/config"
+	"github.com/kofuk/premises/config"
 	"github.com/t3rm1n4l/go-mega"
 )
 

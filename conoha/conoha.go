@@ -11,7 +11,7 @@ import (
 	"os"
 	"path"
 
-	"chronoscoper.com/premises/config"
+	"github.com/kofuk/premises/config"
 )
 
 const (

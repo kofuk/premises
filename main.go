@@ -18,11 +18,11 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/bcrypt"
 
-	"chronoscoper.com/premises/backup"
-	"chronoscoper.com/premises/config"
-	"chronoscoper.com/premises/conoha"
-	"chronoscoper.com/premises/gameconfig"
-	"chronoscoper.com/premises/monitor"
+	"github.com/kofuk/premises/backup"
+	"github.com/kofuk/premises/config"
+	"github.com/kofuk/premises/conoha"
+	"github.com/kofuk/premises/gameconfig"
+	"github.com/kofuk/premises/monitor"
 )
 
 type serverState struct {
@@ -361,7 +361,7 @@ func main() {
 				server.statusMu.Lock()
 				defer server.statusMu.Unlock()
 
-				gameConfig := gameconfig.New()
+				gameConfig := gameconfig.New("hogehoge")
 				go LaunchServer(gameConfig, cfg)
 
 				c.JSON(200, gin.H{"success": true})

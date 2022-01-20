@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"chronoscoper.com/premises/config"
+	"github.com/kofuk/premises/config"
 	"github.com/gorilla/websocket"
 )
 

@@ -1,4 +1,4 @@
-module chronoscoper.com/premises
+module github.com/kofuk/premises
 
 go 1.17
 

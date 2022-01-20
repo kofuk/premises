@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"chronoscoper.com/premises/config"
+	"github.com/kofuk/premises/config"
 )
 
 //go:embed startup.sh

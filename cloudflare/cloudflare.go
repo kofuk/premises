@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"path"
 
-	"chronoscoper.com/premises/config"
+	"github.com/kofuk/premises/config"
 )
 
 const (
