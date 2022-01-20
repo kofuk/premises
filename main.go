@@ -21,6 +21,7 @@ import (
 	"chronoscoper.com/premises/backup"
 	"chronoscoper.com/premises/config"
 	"chronoscoper.com/premises/conoha"
+	"chronoscoper.com/premises/gameconfig"
 	"chronoscoper.com/premises/monitor"
 )
 
@@ -153,10 +154,7 @@ func DestroyVM(cfg *config.Config) error {
 	return nil
 }
 
-type GameConfig struct {
-}
-
-func LaunchServer(gameConfig *GameConfig, cfg *config.Config) {
+func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config) {
 	//TODO: temporary
 	cmd := exec.Command("go", "run", ".")
 	cmd.Dir = filepath.Join(os.Getenv("HOME"), "source/premises-mcmanager")
@@ -363,8 +361,8 @@ func main() {
 				server.statusMu.Lock()
 				defer server.statusMu.Unlock()
 
-				var gameConfig GameConfig
-				go LaunchServer(&gameConfig, cfg)
+				gameConfig := gameconfig.New()
+				go LaunchServer(gameConfig, cfg)
 
 				c.JSON(200, gin.H{"success": true})
 			})
