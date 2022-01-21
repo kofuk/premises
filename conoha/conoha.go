@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
+	"strings"
 
 	"github.com/kofuk/premises/config"
 )
@@ -359,10 +361,56 @@ func GetFlavors(cfg *config.Config, token string) (*FlavorsResp, error) {
 	return &result, nil
 }
 
+var unsupportedFlavorError = errors.New("Unsupported flavor name")
+
+func getSpecFromFlavorName(name string) (int, int, int, error) {
+	if name[:3] != "g-c" {
+		return 0, 0, 0, unsupportedFlavorError
+	}
+	var strFields [3]strings.Builder
+	curField := 0
+	name = name[3:]
+	for _, c := range name {
+		if curField == 0 && c == 'm' {
+			curField++
+		} else if curField == 1 && c == 'd' {
+			curField++
+		} else if '0' <= c && c <= '9' {
+			strFields[curField].WriteRune(c)
+		} else {
+			return 0, 0, 0, unsupportedFlavorError
+		}
+	}
+
+	var fields [3]int
+
+	for i, f := range strFields {
+		if f.Len() == 0 {
+			return 0, 0, 0, unsupportedFlavorError
+		}
+		fields[i], _ = strconv.Atoi(f.String())
+	}
+
+	return fields[0], fields[1], fields[2], nil
+}
+
 func (fl *FlavorsResp) GetIDByCondition(cpus, ram, disk int) string {
 	name := fmt.Sprintf("g-c%dm%dd%d", cpus, ram, disk)
 	for _, f := range fl.Flavors {
 		if f.Name == name {
+			return f.ID
+		}
+	}
+	return ""
+}
+
+func (fl *FlavorsResp) GetIDByMemSize(memSize int) string {
+	for _, f := range fl.Flavors {
+		_, mem, _, err := getSpecFromFlavorName(f.Name)
+		if err != nil {
+			continue
+		}
+		if mem == memSize {
 			return f.ID
 		}
 	}
