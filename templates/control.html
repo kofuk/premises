@@ -27,10 +27,9 @@
 
      class MachineTypeSelection extends React.Component {
          render() {
-             const machines = [['1g', '1GB', '2-core', '1.7JPY/h'], ['2g', '2GB','3-core', '3.3JPY/h'],
-                               ['4g', '4GB', '4-core', '6.6JPY/h'], ['8g', '8GB', '6-core', '13.2JPY/h'],
-                               ['16g', '16GB', '8-core', '24.2JPY/h'], ['32g', '32GB', '12-core', '48JPY/h'],
-                               ['64g', '64GB', '24-core', '96.8JPY/h']]
+             const machines = [['2g', '2GB','3-core', '3.3JPY/h'], ['4g', '4GB', '4-core', '6.6JPY/h'],
+                               ['8g', '8GB', '6-core', '13.2JPY/h'], ['16g', '16GB', '8-core', '24.2JPY/h'],
+                               ['32g', '32GB', '12-core', '48JPY/h'], ['64g', '64GB', '24-core', '96.8JPY/h']]
                  .map(e => [React.createElement('input', {type: 'radio', className: 'btn-check',
                                                           name: 'machine-type', id: `machine-type-${e[0]}`,
                                                           autocomplete: 'off', value: e[0],
