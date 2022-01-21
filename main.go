@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -162,12 +161,38 @@ func DestroyVM(cfg *config.Config) error {
 	return nil
 }
 
-func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config) {
-	//TODO: temporary
-	cmd := exec.Command("go", "run", ".")
-	cmd.Dir = filepath.Join(os.Getenv("HOME"), "source/premises-mcmanager")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+func notifyNonRecoverableFailure() {
+	server.monitorChan <- &monitor.StatusData{
+		Status:   "Operation failed. Manual operation required!",
+		HasError: true,
+		Shutdown: true,
+	}
+}
+
+func monitorServer(cfg *config.Config, gameServer GameServer) {
+	if err := monitor.MonitorServer(cfg, cfg.ServerAddr, server.monitorChan); err != nil {
+		log.Println(err)
+	}
+
+	if !gameServer.StopVM() {
+		notifyNonRecoverableFailure()
+		return
+	}
+	if !gameServer.SaveImage() {
+		notifyNonRecoverableFailure()
+		return
+	}
+	if !gameServer.DeleteVM() {
+		notifyNonRecoverableFailure()
+		return
+	}
+
+	os.Remove(filepath.Join(cfg.Prefix, "/opt/premises/monitor_key"))
+}
+
+func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer) {
+	cfg.MonitorKey = gameConfig.AuthKey
+	os.WriteFile(filepath.Join(cfg.Prefix, "/opt/premises/monitor_key"), []byte(gameConfig.AuthKey), 0600)
 
 	server.monitorChan <- &monitor.StatusData{
 		Status:   "Waiting for the server to start up...",
@@ -175,19 +200,41 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config) {
 		Shutdown: false,
 	}
 
-	go func() {
-		if err := monitor.MonitorServer(cfg, cfg.ServerAddr, server.monitorChan); err != nil {
-			log.Println(err)
+	if !gameServer.SetUp(gameConfig) {
+		server.monitorChan <- &monitor.StatusData{
+			Status:   "Failed to start VM",
+			HasError: true,
+			Shutdown: false,
 		}
-	}()
-
-	if err := cmd.Run(); err != nil {
-		log.Println(err)
+		return
 	}
+
+	if !gameServer.UpdateDNS() {
+		server.monitorChan <- &monitor.StatusData{
+			Status:   "Failed to update DNS",
+			HasError: true,
+			Shutdown: false,
+		}
+		return
+	}
+
+	if !gameServer.DeleteImage() {
+		server.monitorChan <- &monitor.StatusData{
+			Status:   "Failed to delete outdated image",
+			HasError: true,
+			Shutdown: false,
+		}
+
+		return
+	}
+
+	go monitorServer(cfg, gameServer)
 }
 
-func StopServer(cfg *config.Config) {
-	monitor.StopServer(cfg, cfg.ServerAddr)
+func StopServer(cfg *config.Config, gameServer GameServer) {
+	if err := monitor.StopServer(cfg, cfg.ServerAddr); err != nil {
+		log.Println(err)
+	}
 }
 
 func isValidMemSize(memSize int) bool {
@@ -258,6 +305,28 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
+func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
+	if gameServer.VMExists() {
+		if gameServer.VMRunning() {
+			go monitorServer(cfg, gameServer)
+			if gameServer.ImageExists() {
+				if !gameServer.DeleteImage() {
+					log.Println("Failed to delete image")
+				}
+			}
+		} else {
+			if !gameServer.ImageExists() && !gameServer.SaveImage() {
+				notifyNonRecoverableFailure()
+				return
+			}
+			if !gameServer.DeleteVM() {
+				notifyNonRecoverableFailure()
+				return
+			}
+		}
+	}
+}
+
 func main() {
 	debugMode := false
 	prefix := ""
@@ -292,14 +361,12 @@ func main() {
 		server.worldBackups = backups
 	}()
 
-	//===================
-	// temporary implementation for testing
-	cfg.MonitorKey = "hoge"
-	cfg.ServerAddr = "localhost"
-	//===================
+	gameServer := NewLocalDebugServer(cfg)
 
-	server.status.Status = "Server is shutdown"
+	server.status.Status = "Server stopped"
 	server.status.Shutdown = true
+
+	guessAndHandleCurrentVMState(cfg, gameServer)
 
 	monitorChan := make(chan *monitor.StatusData)
 	server.monitorChan = monitorChan
@@ -444,7 +511,7 @@ func main() {
 				j, _ := json.Marshal(gameConfig)
 				log.Println(string(j))
 
-				go LaunchServer(gameConfig, cfg)
+				go LaunchServer(gameConfig, cfg, gameServer)
 
 				c.JSON(200, gin.H{"success": true})
 			})
@@ -453,7 +520,7 @@ func main() {
 				server.statusMu.Lock()
 				defer server.statusMu.Unlock()
 
-				go StopServer(cfg)
+				go StopServer(cfg, gameServer)
 
 				c.JSON(200, gin.H{"success": true})
 			})
