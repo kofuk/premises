@@ -328,11 +328,28 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 }
 
 func main() {
-	debugMode := false
-	prefix := ""
+	debugEnv := false
+	debugWeb := false
+
 	if len(os.Getenv("PREMISES_DEBUG")) > 0 {
-		debugMode = true
+		for _, mod := range strings.Split(os.Getenv("PREMISES_DEBUG"), ",") {
+			if mod == "all" {
+				debugEnv = true
+				debugWeb = true
+			} else if mod == "env" {
+				debugEnv = true
+			} else if mod == "web" {
+				debugWeb = true
+			}
+		}
+	}
+
+	prefix := ""
+	if debugEnv {
 		prefix = "/tmp/premises"
+	}
+
+	if debugWeb {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
@@ -386,7 +403,7 @@ func main() {
 	r.SetHTMLTemplate(template)
 
 	var sessionStore sessions.Store
-	if debugMode {
+	if debugWeb {
 		sessionStore = cookie.NewStore([]byte(cfg.ControlPanel.Secret))
 	} else {
 		sessionStore, err = redis.NewStore(4, "tcp", cfg.ControlPanel.Redis.Address, cfg.ControlPanel.Redis.Password, []byte(cfg.ControlPanel.Secret))
