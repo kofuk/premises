@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
@@ -24,7 +23,6 @@ import (
 
 	"github.com/kofuk/premises/backup"
 	"github.com/kofuk/premises/config"
-	"github.com/kofuk/premises/conoha"
 	"github.com/kofuk/premises/gameconfig"
 	"github.com/kofuk/premises/monitor"
 )
@@ -79,88 +77,6 @@ func (s *serverState) dispatchMonitorEvent() {
 	}
 }
 
-func BuildVM(gameConfig []byte, cfg *config.Config) error {
-	token, err := conoha.GetToken(cfg)
-	if err != nil {
-		return err
-	}
-
-	flavors, err := conoha.GetFlavors(cfg, token)
-	if err != nil {
-		return err
-	}
-	flavorID := flavors.GetIDByCondition(2, 1, 100)
-
-	imageID, imageStatus, err := conoha.GetImageID(cfg, token, "mc-premises")
-	if err != nil {
-		return err
-	} else if imageStatus != "active" {
-		return errors.New("Image is not active")
-	}
-
-	startupScript, err := conoha.GenerateStartupScript(gameConfig, cfg)
-	if err != nil {
-		return err
-	}
-
-	if _, err := conoha.CreateVM(cfg, token, imageID, flavorID, startupScript); err != nil {
-		return err
-	}
-
-	if err := conoha.DeleteImage(cfg, token, imageID); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func DestroyVM(cfg *config.Config) error {
-	token, err := conoha.GetToken(cfg)
-	if err != nil {
-		return err
-	}
-
-	detail, err := conoha.GetVMDetail(cfg, token, "mc-premises")
-	if err != nil {
-		return err
-	}
-
-	if err := conoha.StopVM(cfg, token, detail.ID); err != nil {
-		return err
-	}
-
-	// Wait for VM to stop
-	for {
-		time.Sleep(20 * time.Second)
-
-		detail, err := conoha.GetVMDetail(cfg, token, "mc-premises")
-		if err != nil {
-			return err
-		}
-		if detail.Status == "SHUTOFF" {
-			break
-		}
-	}
-
-	if err := conoha.CreateImage(cfg, token, detail.ID, "mc-premises"); err != nil {
-		return err
-	}
-
-	// Wait for image to be saved
-	for {
-		if _, imageStatus, err := conoha.GetImageID(cfg, token, "mc-premises"); err == nil && imageStatus == "active" {
-			break
-		}
-		time.Sleep(30 * time.Second)
-	}
-
-	if err := conoha.DeleteVM(cfg, token, detail.ID); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func notifyNonRecoverableFailure() {
 	server.monitorChan <- &monitor.StatusData{
 		Status:   "Operation failed. Manual operation required!",
@@ -170,6 +86,10 @@ func notifyNonRecoverableFailure() {
 }
 
 func monitorServer(cfg *config.Config, gameServer GameServer) {
+	server.monitorChan <- &monitor.StatusData{
+		Status: "Waiting for the server...",
+	}
+
 	if err := monitor.MonitorServer(cfg, cfg.ServerAddr, server.monitorChan); err != nil {
 		log.Println(err)
 	}
@@ -190,7 +110,7 @@ func monitorServer(cfg *config.Config, gameServer GameServer) {
 	os.Remove(filepath.Join(cfg.Prefix, "/opt/premises/monitor_key"))
 }
 
-func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer) {
+func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer, memSizeGB int) {
 	cfg.MonitorKey = gameConfig.AuthKey
 	os.WriteFile(filepath.Join(cfg.Prefix, "/opt/premises/monitor_key"), []byte(gameConfig.AuthKey), 0600)
 
@@ -200,7 +120,7 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameSer
 		Shutdown: false,
 	}
 
-	if !gameServer.SetUp(gameConfig) {
+	if !gameServer.SetUp(gameConfig, memSizeGB) {
 		server.monitorChan <- &monitor.StatusData{
 			Status:   "Failed to start VM",
 			HasError: true,
@@ -308,12 +228,22 @@ var upgrader = websocket.Upgrader{
 func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 	if gameServer.VMExists() {
 		if gameServer.VMRunning() {
-			go monitorServer(cfg, gameServer)
+			monitorKey, err := os.ReadFile(filepath.Join(cfg.Prefix, "/opt/premises/monitor_key"))
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			cfg.MonitorKey = string(monitorKey)
+
 			if gameServer.ImageExists() {
 				if !gameServer.DeleteImage() {
 					log.Println("Failed to delete image")
 				}
 			}
+
+			gameServer.UpdateDNS()
+
+			go monitorServer(cfg, gameServer)
 		} else {
 			if !gameServer.ImageExists() && !gameServer.SaveImage() {
 				notifyNonRecoverableFailure()
@@ -330,16 +260,20 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 func main() {
 	debugEnv := false
 	debugWeb := false
+	debugRunner := false
 
 	if len(os.Getenv("PREMISES_DEBUG")) > 0 {
 		for _, mod := range strings.Split(os.Getenv("PREMISES_DEBUG"), ",") {
 			if mod == "all" {
 				debugEnv = true
 				debugWeb = true
+				debugRunner = true
 			} else if mod == "env" {
 				debugEnv = true
 			} else if mod == "web" {
 				debugWeb = true
+			} else if mod == "runner" {
+				debugRunner = true
 			}
 		}
 	}
@@ -378,12 +312,15 @@ func main() {
 		server.worldBackups = backups
 	}()
 
-	gameServer := NewLocalDebugServer(cfg)
+	var gameServer GameServer
+	if debugRunner {
+		gameServer = NewLocalDebugServer(cfg)
+	} else {
+		gameServer = NewConohaServer(cfg)
+	}
 
 	server.status.Status = "Server stopped"
 	server.status.Shutdown = true
-
-	guessAndHandleCurrentVMState(cfg, gameServer)
 
 	monitorChan := make(chan *monitor.StatusData)
 	server.monitorChan = monitorChan
@@ -525,10 +462,9 @@ func main() {
 					return
 				}
 
-				j, _ := json.Marshal(gameConfig)
-				log.Println(string(j))
+				memSizeGB, _ := strconv.Atoi(strings.Replace(c.PostForm("machine-type"), "g", "", 1))
 
-				go LaunchServer(gameConfig, cfg, gameServer)
+				go LaunchServer(gameConfig, cfg, gameServer, memSizeGB)
 
 				c.JSON(200, gin.H{"success": true})
 			})
@@ -559,32 +495,7 @@ func main() {
 		server.dispatchMonitorEvent()
 	}()
 
+	guessAndHandleCurrentVMState(cfg, gameServer)
+
 	log.Fatal(r.Run(bindAddr))
-
-	// zoneID, err := cloudflare.GetZoneID(cfg)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// if err := cloudflare.UpdateDNS(cfg, zoneID, "2001:db8::2", 6); err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// if err := monitor.GenerateTLSKey(cfg); err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// ss, err := conoha.GenerateStartupScript([]byte("hoge"), cfg)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// log.Println(ss)
-
-	// if err := BuildVM(cfg); err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// if err := DestroyVM(cfg); err != nil {
-	// 	log.Fatal(err)
-	// }
 }

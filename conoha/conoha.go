@@ -91,7 +91,7 @@ func DeleteImage(cfg *config.Config, token, imageID string) error {
 	if err != nil {
 		return err
 	}
-	url.Path = path.Join(url.Path, "images", imageID)
+	url.Path = path.Join(url.Path, "v2/images", imageID)
 
 	req, err := http.NewRequest("DELETE", url.String(), nil)
 	if err != nil {
@@ -105,6 +105,7 @@ func DeleteImage(cfg *config.Config, token, imageID string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 204 {
+		io.Copy(os.Stdout, resp.Body)
 		return errors.New(fmt.Sprintf("Failed to delete the image: %d", resp.StatusCode))
 	}
 
@@ -430,16 +431,13 @@ type IdentityReq struct {
 type IdentityResp struct {
 	Access struct {
 		Token struct {
-			Id       string   `json:"id"`
-			AuditIDs []string `json:"audit_ids"`
+			Id      string `json:"id"`
+			Expires string `json:"expires"`
 		} `json:"token"`
-		User struct {
-			Id string `json:"id"`
-		} `json:"user"`
 	} `json:"access"`
 }
 
-func GetToken(cfg *config.Config) (string, error) {
+func GetToken(cfg *config.Config) (string, string, error) {
 	var auth IdentityReq
 	auth.Auth.PasswordCredentials.UserName = cfg.Conoha.UserName
 	auth.Auth.PasswordCredentials.Password = cfg.Conoha.Password
@@ -448,29 +446,29 @@ func GetToken(cfg *config.Config) (string, error) {
 
 	url, err := url.Parse(cfg.Conoha.Services.Identity)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	url.Path = path.Join(url.Path, "tokens")
 
 	req, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(identData))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return "", errors.New(fmt.Sprintf("Authentication failed: %d", resp.StatusCode))
+		return "", "", errors.New(fmt.Sprintf("Authentication failed: %d", resp.StatusCode))
 	}
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	var ident IdentityResp
 	if err := json.Unmarshal(respBody, &ident); err != nil {
-		return "", err
+		return "", "", err
 	}
-	return ident.Access.Token.Id, nil
+	return ident.Access.Token.Id, ident.Access.Token.Expires, nil
 }
