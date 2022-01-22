@@ -223,6 +223,8 @@ var templates embed.FS
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	// already checked by middleware
+	CheckOrigin: func(*http.Request) bool { return true },
 }
 
 func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
