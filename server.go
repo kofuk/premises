@@ -26,6 +26,7 @@ type GameServer interface {
 	SaveImage() bool
 	DeleteImage() bool
 	UpdateDNS() bool
+	RevertDNS() bool
 }
 
 type LocalDebugServer struct {
@@ -107,6 +108,10 @@ func (s *LocalDebugServer) ImageExists() bool {
 }
 
 func (s *LocalDebugServer) UpdateDNS() bool {
+	return true
+}
+
+func (s *LocalDebugServer) RevertDNS() bool {
 	return true
 }
 
@@ -430,6 +435,42 @@ func (s *ConohaServer) UpdateDNS() bool {
 			HasError: true,
 		}
 		return false
+	}
+
+	return true
+}
+
+func (s *ConohaServer) RevertDNS() bool {
+	server.monitorChan <- &monitor.StatusData{
+		Status: "Reverting DNS records...",
+	}
+
+	zoneID, err := cloudflare.GetZoneID(s.cfg)
+	if err != nil {
+		log.Println(err)
+		server.monitorChan <- &monitor.StatusData{
+			Status:   "Failed to update DNS records",
+			HasError: true,
+		}
+		return true
+	}
+
+	if err := cloudflare.UpdateDNS(s.cfg, zoneID, "127.0.0.1", 4); err != nil {
+		log.Println(err)
+		server.monitorChan <- &monitor.StatusData{
+			Status:   "Failed to update DNS records",
+			HasError: true,
+		}
+		return true
+	}
+
+	if err := cloudflare.UpdateDNS(s.cfg, zoneID, "::1", 6); err != nil {
+		log.Println(err)
+		server.monitorChan <- &monitor.StatusData{
+			Status:   "Failed to update DNS records",
+			HasError: true,
+		}
+		return true
 	}
 
 	return true

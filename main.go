@@ -108,6 +108,8 @@ func monitorServer(cfg *config.Config, gameServer GameServer) {
 	}
 
 	os.Remove(filepath.Join(cfg.Prefix, "/opt/premises/monitor_key"))
+
+	gameServer.RevertDNS()
 }
 
 func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer, memSizeGB int) {
