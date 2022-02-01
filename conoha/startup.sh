@@ -2,8 +2,12 @@
 PREMISES_BASEDIR=/opt/premises
 
 # Keep system up-to-date
-apt update
-apt upgrade
+(
+    export DEBIAN_FRONTEND=noninteractive
+    apt update
+    apt upgrade -y
+) &
+_apt_pid=$!
 
 cat <<'EOF' >"${PREMISES_BASEDIR}/config.json"
 #__CONFIG_FILE__
@@ -18,3 +22,5 @@ cat <<'EOF' >"${PREMISES_BASEDIR}/server.key"
 EOF
 
 chown -R premises:premises "${PREMISES_BASEDIR}"
+
+wait "${api_pid}"
