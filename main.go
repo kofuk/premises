@@ -71,7 +71,15 @@ func (s *serverState) dispatchMonitorEvent() {
 
 		s.monitorClientsMu.Lock()
 		for _, ch := range s.monitorClients {
-			ch <- status
+			go func(ch chan *monitor.StatusData) {
+				defer func() {
+					if err := recover(); err != nil {
+						log.Println(err)
+					}
+				}()
+
+				ch <- status
+			}(ch)
 		}
 		s.monitorClientsMu.Unlock()
 	}
@@ -110,6 +118,11 @@ func monitorServer(cfg *config.Config, gameServer GameServer) {
 	os.Remove(filepath.Join(cfg.Prefix, "/opt/premises/monitor_key"))
 
 	gameServer.RevertDNS()
+
+	server.monitorChan <- &monitor.StatusData{
+		Status:   "Server stopped",
+		Shutdown: true,
+	}
 }
 
 func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer, memSizeGB int) {

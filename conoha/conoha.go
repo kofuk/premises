@@ -6,12 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/kofuk/premises/config"
 )
@@ -98,17 +100,26 @@ func DeleteImage(cfg *config.Config, token, imageID string) error {
 		return err
 	}
 	req.Header.Add(HeaderKeyAuthToken, token)
-	resp, err := http.DefaultClient.Do(req)
+
+	for i := 0; i < 10; i++ {
+		var resp *http.Response
+		resp, err = http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+
+		if resp.StatusCode == 409 {
+			time.Sleep(time.Duration(rand.Intn(10)))
+			continue
+		}
+		if resp.StatusCode != 204 {
+			return errors.New(fmt.Sprintf("Failed to delete the image: %d", resp.StatusCode))
+		}
+	}
+
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 204 {
-		io.Copy(os.Stdout, resp.Body)
-		return errors.New(fmt.Sprintf("Failed to delete the image: %d", resp.StatusCode))
-	}
-
 	return nil
 }
 

@@ -30,7 +30,7 @@ func makeTLSConfig(config *config.Config) (*tls.Config, error) {
 	rootCAs.AppendCertsFromPEM(certFile)
 
 	return &tls.Config{
-		RootCAs:            rootCAs,
+		RootCAs: rootCAs,
 		//TODO: Can't we use TLS without setting InsecureSkipVerify???
 		InsecureSkipVerify: true,
 	}, nil
