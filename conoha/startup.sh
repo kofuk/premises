@@ -4,8 +4,8 @@ PREMISES_BASEDIR=/opt/premises
 # Keep system up-to-date
 (
     export DEBIAN_FRONTEND=noninteractive
-    apt update
-    apt upgrade -y
+    apt-get update
+    apt-get upgrade -y
 ) &
 _apt_pid=$!
 
