@@ -28,7 +28,7 @@ func Test_loadToStruct(t *testing.T) {
 	os.Setenv("inner.bar", "foo,bar")
 	os.Setenv("inner.baz", "1,3,5")
 	os.Setenv("inner.fuga", "moge")
-	if err := loadToStruct(&v); err != nil {
+	if err := loadToStruct("", &v); err != nil {
 		t.Fatal(err)
 	}
 	if v.Name != "hoge" {

@@ -1,66 +1,80 @@
 package config
 
 import (
-	"encoding/json"
-	"os"
-	"path/filepath"
+	"log"
+	"strings"
 )
 
 type Config struct {
+	Debug struct {
+		Env    bool `env:"env"`
+		Web    bool `env:"web"`
+		Runner bool `env:"runner"`
+	} `env:"debug"`
 	Conoha struct {
-		UserName string `json:"username"`
-		Password string `json:"password"`
-		TenantID string `json:"tenantId"`
+		UserName string `env:"username"`
+		Password string `env:"password"`
+		TenantID string `env:"tenant_id"`
 		Services struct {
-			Identity string `json:"identity"`
-			Image    string `json:"image"`
-			Compute  string `json:"compute"`
-		} `json:"services"`
-	} `json:"conoha"`
+			Identity string `env:"identity"`
+			Image    string `env:"image"`
+			Compute  string `env:"compute"`
+		} `env:"services"`
+	} `env:"conoha"`
 	Cloudflare struct {
-		Token          string `json:"token"`
-		DomainName     string `json:"domainName"`
-		GameDomainName string `json:"gameDomainName"`
-	} `json:"cloudflare"`
+		Token          string `env:"token"`
+		DomainName     string `env:"domain"`
+		GameDomainName string `env:"game_domain"`
+	} `env:"cloudflare"`
 	Mega struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	} `json:"mega"`
+		Email    string `env:"email"`
+		Password string `env:"password"`
+	} `env:"mega"`
 	Game struct {
-		Configs []struct {
-			Name      string `json:"name"`
-			IsVanilla bool   `json:"isVanilla"`
-		} `json:"configs"`
-		Motd      string   `json:"motd"`
-		Operators []string `json:"operators"`
-		Whitelist []string `json:"whitelist"`
-	} `json:"game"`
+		RawConfigs []string `env:"configs"`
+		Motd       string   `env:"motd"`
+		Operators  []string `env:"operators"`
+		Whitelist  []string `env:"whitelist"`
+	} `env:"game"`
 	ControlPanel struct {
-		Secret        string `json:"secret"`
-		AllowedOrigin string `json:"allowedOrigin"`
+		Secret        string `env:"secret"`
+		AllowedOrigin string `env:"allowed_origin"`
 		Redis         struct {
-			Address  string `json:"address"`
-			Password string `json:"password"`
-		} `json:"redis"`
+			Address  string `env:"address"`
+			Password string `env:"password"`
+		} `env:"redis"`
 		Users []struct {
-			Name     string `json:"name"`
-			Password string `json:"password"`
-		} `json:"users"`
-	} `json:"controlPanel"`
-	Prefix     string
-	MonitorKey string
-	ServerAddr string
+			Name     string `env:"name"`
+			Password string `env:"password"`
+		} `env:"users"`
+	} `env:"control_panel"`
+	Prefix     string `env:"_ignore"`
+	MonitorKey string `env:"_ignore"`
+	ServerAddr string `env:"_ignore"`
 }
 
-func LoadConfig(prefix string) (*Config, error) {
-	data, err := os.ReadFile(filepath.Join(prefix, "/opt/premises/server_config.json"))
-	if err != nil {
-		return nil, err
-	}
+type ServerConfig struct {
+	Name      string
+	IsVanilla bool
+}
 
+func (cfg *Config) GetGameConfigs() []ServerConfig {
+	result := make([]ServerConfig, 0)
+	for _, c := range cfg.Game.RawConfigs {
+		fields := strings.Split(c, ":")
+		if len(fields) != 2 {
+			log.Printf("Env game.configs should consists of 2 fields, but %d field(s) detected; will ignore silently\n", len(fields))
+			continue
+		}
+		result = append(result, ServerConfig{Name: fields[0], IsVanilla: fields[1] == "vanilla"})
+	}
+	return result
+}
+
+func LoadConfig() (*Config, error) {
 	var result Config
-	if err := json.Unmarshal(data, &result); err != nil {
+	if err := loadToStruct("premises", &result); err != nil {
 		return nil, err
 	}
-	return &result, err
+	return &result, nil
 }

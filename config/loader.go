@@ -131,6 +131,8 @@ func loadInnerField(prefix string, val reflect.Value, ty reflect.Type) error {
 		fieldName, ok := fieldType.Tag.Lookup("env")
 		if !ok {
 			fieldName = strings.ToLower(fieldType.Name)
+		} else if ok && fieldName == "_ignore" {
+			continue
 		}
 		name := prefix + "." + fieldName
 
@@ -149,7 +151,7 @@ func loadInnerField(prefix string, val reflect.Value, ty reflect.Type) error {
 	return nil
 }
 
-func loadToStruct(v interface{}) error {
+func loadToStruct(prefix string, v interface{}) error {
 	elemType := reflect.TypeOf(v).Elem()
 	elem := reflect.ValueOf(v).Elem()
 	for i := 0; i < elem.NumField(); i++ {
@@ -162,6 +164,12 @@ func loadToStruct(v interface{}) error {
 		name, ok := fieldType.Tag.Lookup("env")
 		if !ok {
 			name = strings.ToLower(fieldType.Name)
+		} else if ok && name == "_ignore" {
+			continue
+		}
+
+		if prefix != "" {
+			name = prefix + "." + name
 		}
 
 		if fieldType.Type.Kind() == reflect.Struct {

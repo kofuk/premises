@@ -19,6 +19,7 @@ import (
 	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/kofuk/premises/backup"
@@ -275,32 +276,22 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 }
 
 func main() {
-	debugEnv := false
-	debugWeb := false
-	debugRunner := false
+	if err := godotenv.Load(); err != nil {
+		log.Println("Failed to load .env file. If you want to use real envvars, you can ignore this diag safely.")
+	}
 
-	if len(os.Getenv("PREMISES_DEBUG")) > 0 {
-		for _, mod := range strings.Split(os.Getenv("PREMISES_DEBUG"), ",") {
-			if mod == "all" {
-				debugEnv = true
-				debugWeb = true
-				debugRunner = true
-			} else if mod == "env" {
-				debugEnv = true
-			} else if mod == "web" {
-				debugWeb = true
-			} else if mod == "runner" {
-				debugRunner = true
-			}
-		}
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	prefix := ""
-	if debugEnv {
+	if cfg.Debug.Env {
 		prefix = "/tmp/premises"
 	}
+	cfg.Prefix = prefix
 
-	if debugWeb {
+	if cfg.Debug.Web {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
@@ -310,12 +301,6 @@ func main() {
 	if len(os.Args) > 1 {
 		bindAddr = os.Args[1]
 	}
-
-	cfg, err := config.LoadConfig(prefix)
-	if err != nil {
-		log.Fatal(err)
-	}
-	cfg.Prefix = prefix
 
 	go func() {
 		backups, err := backup.GetBackupList(cfg)
@@ -330,7 +315,7 @@ func main() {
 	}()
 
 	var gameServer GameServer
-	if debugRunner {
+	if cfg.Debug.Runner {
 		gameServer = NewLocalDebugServer(cfg)
 	} else {
 		gameServer = NewConohaServer(cfg)
@@ -357,7 +342,7 @@ func main() {
 	r.SetHTMLTemplate(template)
 
 	var sessionStore sessions.Store
-	if debugWeb {
+	if cfg.Debug.Web {
 		sessionStore = cookie.NewStore([]byte(cfg.ControlPanel.Secret))
 	} else {
 		sessionStore, err = redis.NewStore(4, "tcp", cfg.ControlPanel.Redis.Address, cfg.ControlPanel.Redis.Password, []byte(cfg.ControlPanel.Secret))
@@ -503,7 +488,7 @@ func main() {
 			})
 
 			api.POST("/getgameconfigs", func(c *gin.Context) {
-				c.JSON(200, cfg.Game.Configs)
+				c.JSON(200, cfg.GetGameConfigs())
 			})
 		}
 	}
