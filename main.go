@@ -427,7 +427,10 @@ func main() {
 
 		api := controlPanel.Group("api")
 		api.Use(func(c *gin.Context) {
-			if c.GetHeader("Origin") != cfg.ControlPanel.AllowedOrigin {
+			if c.Request.Method == http.MethodPost || (c.Request.Method == http.MethodGet && c.GetHeader("Upgrade") == "WebSocket") {
+				if c.GetHeader("Origin") == cfg.ControlPanel.AllowedOrigin {
+					return
+				}
 				c.JSON(400, gin.H{"success": false, "message": "Invalid request (origin not allowed)"})
 				c.Abort()
 			}
@@ -495,14 +498,14 @@ func main() {
 				c.JSON(200, gin.H{"success": true})
 			})
 
-			api.POST("/getbackups", func(c *gin.Context) {
+			api.GET("/backups", func(c *gin.Context) {
 				server.worldBackupMu.Lock()
 				defer server.worldBackupMu.Unlock()
 
 				c.JSON(200, server.worldBackups)
 			})
 
-			api.POST("/getgameconfigs", func(c *gin.Context) {
+			api.GET("/gameconfigs", func(c *gin.Context) {
 				c.JSON(200, cfg.GetGameConfigs())
 			})
 		}

@@ -273,7 +273,7 @@
          }
 
          fetchGameConfigs() {
-             fetch('/control/api/getgameconfigs', {method: 'POST'})
+             fetch('/control/api/gameconfigs')
                  .then(resp => resp.json())
                  .then(resp => {
                      if (resp != null) {
@@ -286,7 +286,7 @@
          }
 
          fetchWorldBackups() {
-             fetch('/control/api/getbackups', {method: 'POST'})
+             fetch('/control/api/backups')
                  .then(resp => resp.json())
                  .then(resp => {
                      if (resp != null) {
@@ -488,6 +488,10 @@
                  isError: props.isError,
                  message: props.message
              }
+
+             const proto = location.protocol == 'https:' ? 'wss://' : 'ws://';
+             this.socketUrl = proto + location.host + '/control/api/status';
+             this.retryCount = 0;
          }
 
          componentDidMount() {
@@ -495,15 +499,31 @@
          }
 
          wsWatch() {
-             const proto = location.protocol == 'https:' ? 'wss://' : 'ws://';
-             const url = proto + location.host + '/control/api/status';
-             const ws = new WebSocket(url);
+             const ws = new WebSocket(this.socketUrl);
              ws.addEventListener('close', this.handleWsClose.bind(this));
              ws.addEventListener('message', this.handleWsMessage.bind(this));
          }
 
+         handleWsOpen() {
+             this.setState({isError: false, message: 'Connected.'});
+             this.retryCount = 0;
+         }
+
          handleWsClose() {
-             this.setState({isError: true, message: 'Connection has lost; please reload the page.'});
+             if (this.retryCount == 20) {
+                 this.setState({isError: true, message: 'Connection has lost; Please reload the page.'});
+                 return;
+             } else {
+                 this.setState({isError: true, message: 'Connection has lost; Reconnecting...'});
+                 this.retryCount++;
+             }
+
+             setTimeout(() => {
+                 const ws = new WebSocket(this.socketUrl);
+                 ws.addEventListener('open', this.handleWsOpen.bind(this));
+                 ws.addEventListener('close', this.handleWsClose.bind(this));
+                 ws.addEventListener('message', this.handleWsMessage.bind(this));
+             }, Math.random() * 5);
          }
 
          handleWsMessage(ev) {
