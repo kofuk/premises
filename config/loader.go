@@ -19,15 +19,6 @@ func loadField(name string, field reflect.Value) error {
 		break
 
 	case reflect.Int:
-		fallthrough
-	case reflect.Int8:
-		fallthrough
-	case reflect.Int16:
-		fallthrough
-	case reflect.Int32:
-		fallthrough
-	case reflect.Int64:
-
 		result, err := strconv.ParseInt(os.Getenv(name), 0, 64)
 		if err != nil {
 			return err
@@ -36,14 +27,6 @@ func loadField(name string, field reflect.Value) error {
 		break
 
 	case reflect.Uint:
-		fallthrough
-	case reflect.Uint8:
-		fallthrough
-	case reflect.Uint16:
-		fallthrough
-	case reflect.Uint32:
-		fallthrough
-	case reflect.Uint64:
 		result, err := strconv.ParseUint(os.Getenv(name), 0, 64)
 		if err != nil {
 			return err
@@ -69,6 +52,67 @@ func loadField(name string, field reflect.Value) error {
 		field.SetBool(result)
 		break
 
+	case reflect.Slice:
+		sliceInterface := field.Interface()
+		switch field.Type().Elem().Kind() {
+		case reflect.String:
+			slice := sliceInterface.([]string)
+			for _, v := range strings.Split(os.Getenv(name), ",") {
+				slice = append(slice, v)
+			}
+			field.Set(reflect.ValueOf(slice))
+			break
+
+		case reflect.Int:
+			slice := sliceInterface.([]int)
+			for _, v := range strings.Split(os.Getenv(name), ",") {
+				val, err := strconv.ParseInt(v, 0, 64)
+				if err != nil {
+					return err
+				}
+				slice = append(slice, int(val))
+			}
+			field.Set(reflect.ValueOf(slice))
+			break
+
+		case reflect.Uint:
+			slice := sliceInterface.([]uint)
+			for _, v := range strings.Split(os.Getenv(name), ",") {
+				val, err := strconv.ParseUint(v, 0, 64)
+				if err != nil {
+					return err
+				}
+				slice = append(slice, uint(val))
+			}
+			field.Set(reflect.ValueOf(slice))
+			break
+
+		case reflect.Float32:
+			slice := sliceInterface.([]float32)
+			for _, v := range strings.Split(os.Getenv(name), ",") {
+				val, err := strconv.ParseFloat(v, 32)
+				if err != nil {
+					return err
+				}
+				slice = append(slice, float32(val))
+			}
+			field.Set(reflect.ValueOf(slice))
+			break
+
+		case reflect.Float64:
+			slice := sliceInterface.([]float64)
+			for _, v := range strings.Split(os.Getenv(name), ",") {
+				val, err := strconv.ParseFloat(v, 64)
+				if err != nil {
+					return err
+				}
+				slice = append(slice, float64(val))
+			}
+			field.Set(reflect.ValueOf(slice))
+			break
+		}
+		break
+
 	default:
 		return ErrUnsupportedType
 	}
@@ -84,7 +128,11 @@ func loadInnerField(prefix string, val reflect.Value, ty reflect.Type) error {
 
 		field := val.Field(i)
 		fieldType := ty.Field(i)
-		name := prefix + "." + strings.ToLower(fieldType.Name)
+		fieldName, ok := fieldType.Tag.Lookup("env")
+		if !ok {
+			fieldName = strings.ToLower(fieldType.Name)
+		}
+		name := prefix + "." + fieldName
 
 		if field.Type().Kind() == reflect.Struct {
 			if err := loadInnerField(name, reflect.ValueOf(field), ty.Field(i).Type); err != nil {
@@ -111,7 +159,10 @@ func loadToStruct(v interface{}) error {
 
 		fieldType := elemType.Field(i)
 		field := elem.Field(i)
-		name := strings.ToLower(elemType.Field(i).Name)
+		name, ok := fieldType.Tag.Lookup("env")
+		if !ok {
+			name = strings.ToLower(fieldType.Name)
+		}
 
 		if fieldType.Type.Kind() == reflect.Struct {
 			if err := loadInnerField(name, field, fieldType.Type); err != nil {
