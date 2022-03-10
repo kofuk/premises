@@ -127,6 +127,16 @@ func monitorServer(cfg *config.Config, gameServer GameServer) {
 }
 
 func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer, memSizeGB int) {
+	if err := monitor.GenerateTLSKey(cfg); err != nil {
+		log.Println(err)
+		server.monitorChan <- &monitor.StatusData{
+			Status:   "Failed to generate TLS key",
+			HasError: true,
+			Shutdown: true,
+		}
+		return
+	}
+
 	cfg.MonitorKey = gameConfig.AuthKey
 	os.WriteFile(filepath.Join(cfg.Prefix, "/opt/premises/monitor_key"), []byte(gameConfig.AuthKey), 0600)
 
@@ -372,8 +382,13 @@ func main() {
 
 		hashPassword := ""
 		for _, usr := range cfg.ControlPanel.Users {
-			if usr.Name == username {
-				hashPassword = usr.Password
+			fields := strings.Split(usr, ":")
+			if len(fields) != 2 {
+				log.Println("Unexpected field count of controlPanel.users")
+				continue
+			}
+			if fields[0] == username {
+				hashPassword = fields[1]
 				break
 			}
 		}

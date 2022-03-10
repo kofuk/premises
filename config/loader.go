@@ -137,7 +137,7 @@ func loadInnerField(prefix string, val reflect.Value, ty reflect.Type) error {
 		name := prefix + "_" + fieldName
 
 		if field.Type().Kind() == reflect.Struct {
-			if err := loadInnerField(name, reflect.ValueOf(field), ty.Field(i).Type); err != nil {
+			if err := loadInnerField(name, field, fieldType.Type); err != nil {
 				return err
 			}
 			continue

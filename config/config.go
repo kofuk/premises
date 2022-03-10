@@ -43,10 +43,7 @@ type Config struct {
 			Address  string `env:"address"`
 			Password string `env:"password"`
 		} `env:"redis"`
-		Users []struct {
-			Name     string `env:"name"`
-			Password string `env:"password"`
-		} `env:"users"`
+		Users []string `env:"users"`
 	} `env:"controlPanel"`
 	Prefix     string `env:"_ignore"`
 	MonitorKey string `env:"_ignore"`
@@ -54,8 +51,8 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Name      string
-	IsVanilla bool
+	Name      string `json:"name"`
+	IsVanilla bool   `json:"isVanilla"`
 }
 
 func (cfg *Config) GetGameConfigs() []ServerConfig {
