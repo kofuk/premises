@@ -14,7 +14,7 @@ type Config struct {
 	Conoha struct {
 		UserName string `env:"username"`
 		Password string `env:"password"`
-		TenantID string `env:"tenant_id"`
+		TenantID string `env:"tenantId"`
 		Services struct {
 			Identity string `env:"identity"`
 			Image    string `env:"image"`
@@ -24,7 +24,7 @@ type Config struct {
 	Cloudflare struct {
 		Token          string `env:"token"`
 		DomainName     string `env:"domain"`
-		GameDomainName string `env:"game_domain"`
+		GameDomainName string `env:"gameDomain"`
 	} `env:"cloudflare"`
 	Mega struct {
 		Email    string `env:"email"`
@@ -38,7 +38,7 @@ type Config struct {
 	} `env:"game"`
 	ControlPanel struct {
 		Secret        string `env:"secret"`
-		AllowedOrigin string `env:"allowed_origin"`
+		AllowedOrigin string `env:"allowedOrigin"`
 		Redis         struct {
 			Address  string `env:"address"`
 			Password string `env:"password"`
@@ -47,7 +47,7 @@ type Config struct {
 			Name     string `env:"name"`
 			Password string `env:"password"`
 		} `env:"users"`
-	} `env:"control_panel"`
+	} `env:"controlPanel"`
 	Prefix     string `env:"_ignore"`
 	MonitorKey string `env:"_ignore"`
 	ServerAddr string `env:"_ignore"`

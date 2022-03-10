@@ -134,7 +134,7 @@ func loadInnerField(prefix string, val reflect.Value, ty reflect.Type) error {
 		} else if ok && fieldName == "_ignore" {
 			continue
 		}
-		name := prefix + "." + fieldName
+		name := prefix + "_" + fieldName
 
 		if field.Type().Kind() == reflect.Struct {
 			if err := loadInnerField(name, reflect.ValueOf(field), ty.Field(i).Type); err != nil {
@@ -169,7 +169,7 @@ func loadToStruct(prefix string, v interface{}) error {
 		}
 
 		if prefix != "" {
-			name = prefix + "." + name
+			name = prefix + "_" + name
 		}
 
 		if fieldType.Type.Kind() == reflect.Struct {

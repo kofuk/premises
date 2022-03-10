@@ -24,10 +24,10 @@ func Test_loadToStruct(t *testing.T) {
 	os.Setenv("num", "5")
 	os.Setenv("bool", "true")
 	os.Setenv("float", "1.5")
-	os.Setenv("inner.foo", "hogehoge")
-	os.Setenv("inner.bar", "foo,bar")
-	os.Setenv("inner.baz", "1,3,5")
-	os.Setenv("inner.fuga", "moge")
+	os.Setenv("inner_foo", "hogehoge")
+	os.Setenv("inner_bar", "foo,bar")
+	os.Setenv("inner_baz", "1,3,5")
+	os.Setenv("inner_fuga", "moge")
 	if err := loadToStruct("", &v); err != nil {
 		t.Fatal(err)
 	}
