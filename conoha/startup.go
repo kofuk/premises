@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"encoding/base64"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/kofuk/premises/config"
@@ -14,11 +13,11 @@ import (
 var startupScriptTemplate string
 
 func GenerateStartupScript(gameConfig []byte, cfg *config.Config) (string, error) {
-	serverCrt, err := os.ReadFile(filepath.Join(cfg.Prefix, "/opt/premises/server.crt"))
+	serverCrt, err := os.ReadFile(cfg.Locate("server.crt"))
 	if err != nil {
 		return "", err
 	}
-	serverKey, err := os.ReadFile(filepath.Join(cfg.Prefix, "/opt/premises/server.key"))
+	serverKey, err := os.ReadFile(cfg.Locate("server.key"))
 	if err != nil {
 		return "", err
 	}

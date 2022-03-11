@@ -46,7 +46,7 @@ func (s *LocalDebugServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB in
 		log.WithError(err).Error("Failed to marshal config")
 		return false
 	}
-	if err := os.WriteFile(filepath.Join(s.cfg.Prefix, "/opt/premises/config.json"), configData, 0644); err != nil {
+	if err := os.WriteFile(s.cfg.Locate("config.json"), configData, 0644); err != nil {
 		log.WithError(err).Error("Failed to write config")
 		return false
 	}

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -23,7 +22,7 @@ type StatusData struct {
 
 func makeTLSConfig(config *config.Config) (*tls.Config, error) {
 	rootCAs := x509.NewCertPool()
-	certFile, err := os.ReadFile(filepath.Join(config.Prefix, "/opt/premises/server.crt"))
+	certFile, err := os.ReadFile(config.Locate("server.crt"))
 	if err != nil {
 		return nil, err
 	}

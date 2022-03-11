@@ -116,7 +116,7 @@ func monitorServer(cfg *config.Config, gameServer GameServer) {
 		return
 	}
 
-	os.Remove(filepath.Join(cfg.Prefix, "/opt/premises/monitor_key"))
+	os.Remove(cfg.Locate("monitor_key"))
 
 	gameServer.RevertDNS()
 
@@ -138,7 +138,7 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameSer
 	}
 
 	cfg.MonitorKey = gameConfig.AuthKey
-	os.WriteFile(filepath.Join(cfg.Prefix, "/opt/premises/monitor_key"), []byte(gameConfig.AuthKey), 0600)
+	os.WriteFile(cfg.Locate("monitor_key"), []byte(gameConfig.AuthKey), 0600)
 
 	server.monitorChan <- &monitor.StatusData{
 		Status:   "Waiting for the server to start up...",
@@ -256,7 +256,7 @@ var upgrader = websocket.Upgrader{
 func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 	if gameServer.VMExists() {
 		if gameServer.VMRunning() {
-			monitorKey, err := os.ReadFile(filepath.Join(cfg.Prefix, "/opt/premises/monitor_key"))
+			monitorKey, err := os.ReadFile(cfg.Locate("monitor_key"))
 			if err != nil {
 				log.WithError(err).Info("Failed to read previous monitor key")
 				return
@@ -296,12 +296,6 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to load config")
 	}
-
-	prefix := ""
-	if cfg.Debug.Env {
-		prefix = "/tmp/premises"
-	}
-	cfg.Prefix = prefix
 
 	if cfg.Debug.Web {
 		gin.SetMode(gin.DebugMode)
@@ -442,7 +436,7 @@ func main() {
 			api.GET("/status", func(c *gin.Context) {
 				conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 				if err != nil {
-					log.Println(err)
+					log.WithError(err).Error("Failed to upgrade protocol to WebSocket")
 					return
 				}
 				defer conn.Close()
@@ -454,7 +448,7 @@ func main() {
 
 				server.statusMu.Lock()
 				if err := conn.WriteJSON(server.status); err != nil {
-					log.Println(err)
+					log.WithError(err).Error("Failed to write data")
 					return
 				}
 				server.statusMu.Unlock()
@@ -463,7 +457,7 @@ func main() {
 					status := <-ch
 
 					if err := conn.WriteJSON(status); err != nil {
-						log.Println(err)
+						log.WithError(err).Error("Failed to write data")
 						break
 					}
 				}
@@ -474,7 +468,7 @@ func main() {
 				defer server.statusMu.Unlock()
 
 				if err := c.Request.ParseForm(); err != nil {
-					log.Println(err)
+					log.WithError(err).Error("Failed to parse form")
 					c.JSON(400, gin.H{"success": false, "message": "Form parse error"})
 					return
 				}

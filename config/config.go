@@ -1,6 +1,7 @@
 package config
 
 import (
+	"path/filepath"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -46,7 +47,6 @@ type Config struct {
 		} `env:"redis"`
 		Users []string `env:"users"`
 	} `env:"controlPanel"`
-	Prefix     string `env:"_ignore"`
 	MonitorKey string `env:"_ignore"`
 	ServerAddr string `env:"_ignore"`
 }
@@ -67,6 +67,13 @@ func (cfg *Config) GetGameConfigs() []ServerConfig {
 		result = append(result, ServerConfig{Name: fields[0], IsVanilla: fields[1] == "vanilla"})
 	}
 	return result
+}
+
+func (cfg *Config) Locate(path string) string {
+	if cfg.Debug.Env {
+		return filepath.Join("/tmp/premises", path)
+	}
+	return filepath.Join("/opt/premises", path)
 }
 
 func LoadConfig() (*Config, error) {
