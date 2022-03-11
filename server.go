@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"github.com/kofuk/premises/conoha"
 	"github.com/kofuk/premises/gameconfig"
 	"github.com/kofuk/premises/monitor"
+	log "github.com/sirupsen/logrus"
 )
 
 type GameServer interface {
@@ -43,11 +43,11 @@ func NewLocalDebugServer(cfg *config.Config) *LocalDebugServer {
 func (s *LocalDebugServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB int) bool {
 	configData, err := json.Marshal(gameConfig)
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to marshal config")
 		return false
 	}
 	if err := os.WriteFile(filepath.Join(s.cfg.Prefix, "/opt/premises/config.json"), configData, 0644); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to write config")
 		return false
 	}
 
@@ -58,7 +58,7 @@ func (s *LocalDebugServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB in
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Start(); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to start debug runner")
 		return false
 	}
 	s.pid = cmd.Process.Pid
@@ -66,7 +66,7 @@ func (s *LocalDebugServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB in
 
 	go func() {
 		if err := cmd.Wait(); err != nil {
-			log.Println(err)
+			log.WithError(err).Error("Failed to wait command to finish")
 		}
 	}()
 
@@ -94,7 +94,7 @@ func (s *LocalDebugServer) VMRunning() bool {
 
 func (s *LocalDebugServer) StopVM() bool {
 	if err := syscall.Kill(-s.pid, syscall.SIGKILL); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to kill debug runner")
 		return true
 	}
 	return true
@@ -158,35 +158,35 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB int) b
 
 	token, err := s.getToken()
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get token")
 		return false
 	}
 
 	flavors, err := conoha.GetFlavors(s.cfg, token)
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get flavors")
 		return false
 	}
 	flavorID := flavors.GetIDByMemSize(memSizeGB)
 
 	imageID, imageStatus, err := conoha.GetImageID(s.cfg, token, "mc-premises")
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get image ID")
 		return false
 	} else if imageStatus != "active" {
-		log.Println("Image is not active")
+		log.Error("Image is not active")
 		return false
 	}
 
 	gameConfigData, err := json.Marshal(gameConfig)
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to marshal config")
 		return false
 	}
 
 	startupScript, err := conoha.GenerateStartupScript(gameConfigData, s.cfg)
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to generate startup script")
 		return false
 	}
 
@@ -195,7 +195,7 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB int) b
 	}
 
 	if _, err := conoha.CreateVM(s.cfg, token, imageID, flavorID, startupScript); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to create VM")
 		return false
 	}
 
@@ -205,7 +205,7 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB int) b
 func (s *ConohaServer) VMExists() bool {
 	token, err := s.getToken()
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get token")
 		return false
 	}
 
@@ -222,12 +222,12 @@ func (s *ConohaServer) VMExists() bool {
 func (s *ConohaServer) VMRunning() bool {
 	token, err := s.getToken()
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get token")
 		return false
 	}
 	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get VM detail")
 		return false
 	}
 
@@ -239,18 +239,18 @@ func (s *ConohaServer) VMRunning() bool {
 func (s *ConohaServer) StopVM() bool {
 	token, err := s.getToken()
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get token")
 		return false
 	}
 
 	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get VM detail")
 		return false
 	}
 
 	if err := conoha.StopVM(s.cfg, token, detail.ID); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to stop VM")
 		return false
 	}
 
@@ -273,18 +273,18 @@ func (s *ConohaServer) StopVM() bool {
 func (s *ConohaServer) DeleteVM() bool {
 	token, err := s.getToken()
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get token")
 		return false
 	}
 
 	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get VM detail")
 		return false
 	}
 
 	if err := conoha.DeleteVM(s.cfg, token, detail.ID); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to delete VM")
 		return false
 	}
 
@@ -294,16 +294,16 @@ func (s *ConohaServer) DeleteVM() bool {
 func (s *ConohaServer) ImageExists() bool {
 	token, err := s.getToken()
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get token")
 		return false
 	}
 
 	_, imageStatus, err := conoha.GetImageID(s.cfg, token, "mc-premises")
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get token")
 		return false
 	} else if imageStatus != "active" {
-		log.Println("Image is not active")
+		log.Info("Image is not active")
 		return false
 	}
 
@@ -313,18 +313,18 @@ func (s *ConohaServer) ImageExists() bool {
 func (s *ConohaServer) SaveImage() bool {
 	token, err := s.getToken()
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get token")
 		return false
 	}
 
 	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get VM detail")
 		return false
 	}
 
 	if err := conoha.CreateImage(s.cfg, token, detail.ID, "mc-premises"); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to create image")
 		return false
 	}
 
@@ -341,7 +341,7 @@ func (s *ConohaServer) SaveImage() bool {
 func (s *ConohaServer) DeleteImage() bool {
 	token, err := s.getToken()
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get token")
 		return false
 	}
 
@@ -351,15 +351,15 @@ func (s *ConohaServer) DeleteImage() bool {
 
 	imageID, imageStatus, err := conoha.GetImageID(s.cfg, token, "mc-premises")
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get image ID")
 		return false
 	} else if imageStatus != "active" {
-		log.Println("Image is not active")
+		log.Error("Image is not active")
 		return false
 	}
 
 	if err := conoha.DeleteImage(s.cfg, token, imageID); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to delete image")
 
 		server.monitorChan <- &monitor.StatusData{
 			Status:   "Failed to outdated image",
@@ -374,7 +374,7 @@ func (s *ConohaServer) DeleteImage() bool {
 func (s *ConohaServer) UpdateDNS() bool {
 	token, err := s.getToken()
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get token")
 		return false
 	}
 
@@ -386,6 +386,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 	for i := 0; i < 10; i++ {
 		vms, err = conoha.GetVMDetail(s.cfg, token, "mc-premises")
 		if err != nil || vms.Status == "BUILD" {
+			log.Info("Waiting VM to be created")
 			time.Sleep(10 * time.Second)
 			continue
 		}
@@ -393,7 +394,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 	}
 
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get VM detail")
 		server.monitorChan <- &monitor.StatusData{
 			Status:   "Failed to get information on created VM",
 			HasError: true,
@@ -412,7 +413,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 
 	zoneID, err := cloudflare.GetZoneID(s.cfg)
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get zone ID")
 		server.monitorChan <- &monitor.StatusData{
 			Status:   "Failed to update DNS records",
 			HasError: true,
@@ -421,7 +422,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 	}
 
 	if err := cloudflare.UpdateDNS(s.cfg, zoneID, ip4Addr, 4); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to update DNS (v4)")
 		server.monitorChan <- &monitor.StatusData{
 			Status:   "Failed to update DNS records",
 			HasError: true,
@@ -430,7 +431,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 	}
 
 	if err := cloudflare.UpdateDNS(s.cfg, zoneID, ip6Addr, 6); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to update DNS (v6)")
 		server.monitorChan <- &monitor.StatusData{
 			Status:   "Failed to update DNS records",
 			HasError: true,
@@ -448,7 +449,7 @@ func (s *ConohaServer) RevertDNS() bool {
 
 	zoneID, err := cloudflare.GetZoneID(s.cfg)
 	if err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to get zone ID")
 		server.monitorChan <- &monitor.StatusData{
 			Status:   "Failed to update DNS records",
 			HasError: true,
@@ -457,7 +458,7 @@ func (s *ConohaServer) RevertDNS() bool {
 	}
 
 	if err := cloudflare.UpdateDNS(s.cfg, zoneID, "127.0.0.1", 4); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to update DNS (v4)")
 		server.monitorChan <- &monitor.StatusData{
 			Status:   "Failed to update DNS records",
 			HasError: true,
@@ -466,7 +467,7 @@ func (s *ConohaServer) RevertDNS() bool {
 	}
 
 	if err := cloudflare.UpdateDNS(s.cfg, zoneID, "::1", 6); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to update DNS (v6)")
 		server.monitorChan <- &monitor.StatusData{
 			Status:   "Failed to update DNS records",
 			HasError: true,

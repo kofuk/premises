@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/kofuk/premises/config"
+	log "github.com/sirupsen/logrus"
 )
 
 type StatusData struct {
@@ -52,7 +52,7 @@ func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData) error
 	newConn:
 		conn, _, err := dialer.Dial("wss://"+addr+":8521/monitor", http.Header{"X-Auth-Key": []string{cfg.MonitorKey}})
 		if err != nil {
-			log.Println(err)
+			log.WithError(err).Error("Failed to connect to status server")
 
 			if connLost {
 				evCh <- &StatusData{
@@ -78,7 +78,7 @@ func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData) error
 		for {
 			var status StatusData
 			if err := conn.ReadJSON(&status); err != nil {
-				log.Println(err)
+				log.WithError(err).Error("Failed to read data")
 
 				connLost = true
 

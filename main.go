@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"html/template"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,6 +19,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/kofuk/premises/backup"
@@ -75,7 +75,7 @@ func (s *serverState) dispatchMonitorEvent() {
 			go func(ch chan *monitor.StatusData) {
 				defer func() {
 					if err := recover(); err != nil {
-						log.Println(err)
+						log.WithField("error", err).Error("Recovering previous error")
 					}
 				}()
 
@@ -100,7 +100,7 @@ func monitorServer(cfg *config.Config, gameServer GameServer) {
 	}
 
 	if err := monitor.MonitorServer(cfg, cfg.ServerAddr, server.monitorChan); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to monitor server")
 	}
 
 	if !gameServer.StopVM() {
@@ -128,7 +128,7 @@ func monitorServer(cfg *config.Config, gameServer GameServer) {
 
 func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer, memSizeGB int) {
 	if err := monitor.GenerateTLSKey(cfg); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to generate TLS key")
 		server.monitorChan <- &monitor.StatusData{
 			Status:   "Failed to generate TLS key",
 			HasError: true,
@@ -179,7 +179,7 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameSer
 
 func StopServer(cfg *config.Config, gameServer GameServer) {
 	if err := monitor.StopServer(cfg, cfg.ServerAddr); err != nil {
-		log.Println(err)
+		log.WithError(err).Error("Failed to request stopping server")
 	}
 }
 
@@ -258,19 +258,21 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 		if gameServer.VMRunning() {
 			monitorKey, err := os.ReadFile(filepath.Join(cfg.Prefix, "/opt/premises/monitor_key"))
 			if err != nil {
-				log.Println(err)
+				log.WithError(err).Info("Failed to read previous monitor key")
 				return
 			}
 			cfg.MonitorKey = string(monitorKey)
 
 			if gameServer.ImageExists() {
+				log.Info("Server seems to be running, but remote image exists")
 				if !gameServer.DeleteImage() {
-					log.Println("Failed to delete image")
+					log.Error("Failed to delete image")
 				}
 			}
 
 			gameServer.UpdateDNS()
 
+			log.Info("Start monitoring server")
 			go monitorServer(cfg, gameServer)
 		} else {
 			if !gameServer.ImageExists() && !gameServer.SaveImage() {
@@ -287,12 +289,12 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Println("Failed to load .env file. If you want to use real envvars, you can ignore this diag safely.")
+		log.WithError(err).Info("Failed to load .env file. If you want to use real envvars, you can ignore this diag safely.")
 	}
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.WithError(err).Fatal("Failed to load config")
 	}
 
 	prefix := ""
@@ -315,7 +317,7 @@ func main() {
 	go func() {
 		backups, err := backup.GetBackupList(cfg)
 		if err != nil {
-			log.Println(err)
+			log.WithError(err).Error("Failed to retrive backup list")
 			return
 		}
 
@@ -345,7 +347,7 @@ func main() {
 	for _, ent := range templateEntries {
 		data, err := templates.ReadFile(filepath.Join("templates", ent.Name()))
 		if err != nil {
-			log.Fatal(err)
+			log.WithError(err).Fatal("Failed to load templates")
 		}
 		template.New(ent.Name()).Parse(string(data))
 	}
@@ -357,8 +359,9 @@ func main() {
 	} else {
 		sessionStore, err = redis.NewStore(4, "tcp", cfg.ControlPanel.Redis.Address, cfg.ControlPanel.Redis.Password, []byte(cfg.ControlPanel.Secret))
 		if err != nil {
-			log.Fatal(err)
+			log.WithError(err).Fatal("Failed to initialize Redis store")
 		}
+		redis.SetKeyPrefix(sessionStore, "session:")
 	}
 
 	r.Use(sessions.Sessions("session", sessionStore))
@@ -384,7 +387,7 @@ func main() {
 		for _, usr := range cfg.ControlPanel.Users {
 			fields := strings.Split(usr, ":")
 			if len(fields) != 2 {
-				log.Println("Unexpected field count of controlPanel.users")
+				log.Error("Unexpected field count of controlPanel.users")
 				continue
 			}
 			if fields[0] == username {

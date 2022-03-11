@@ -1,8 +1,9 @@
 package config
 
 import (
-	"log"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -60,7 +61,7 @@ func (cfg *Config) GetGameConfigs() []ServerConfig {
 	for _, c := range cfg.Game.RawConfigs {
 		fields := strings.Split(c, ":")
 		if len(fields) != 2 {
-			log.Printf("Env game.configs should consists of 2 fields, but %d field(s) detected; will ignore silently\n", len(fields))
+			log.Error("Env game.configs should consists of 2 fields, but another count of field(s) detected; will ignore silently")
 			continue
 		}
 		result = append(result, ServerConfig{Name: fields[0], IsVanilla: fields[1] == "vanilla"})
