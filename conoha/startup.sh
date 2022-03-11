@@ -23,4 +23,4 @@ EOF
 
 chown -R premises:premises "${PREMISES_BASEDIR}"
 
-wait "${api_pid}"
+wait "${_apt_pid}"
