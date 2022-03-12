@@ -22,12 +22,13 @@ type GameConfig struct {
 		Name           string `json:"name"`
 		Generation     string `json:"generation"`
 		Seed           string `json:"seed"`
+		LevelType  string   `json:"levelType"`
+		Difficulty string   `json:"difficulty"`
+		UseCache bool `json:"useCache"`
 	} `json:"world"`
 	Motd       string   `json:"motd"`
-	LevelType  string   `json:"levelType"`
 	Operators  []string `json:"operators"`
 	Whitelist  []string `json:"whitelist"`
-	Difficulty string   `json:"difficulty"`
 	Mega       struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -35,11 +36,13 @@ type GameConfig struct {
 }
 
 func New() *GameConfig {
-	return &GameConfig{
+	result := GameConfig{
 		RemoveMe:   true,
-		LevelType:  "default",
-		Difficulty: "normal",
 	}
+	result.World.LevelType = "default"
+	result.World.Difficulty = "normal"
+
+	return &result
 }
 
 func (gc *GameConfig) SetServerVersion(version string) error {
@@ -101,7 +104,7 @@ func (gc *GameConfig) SetLevelType(levelType string) error {
 	if levelType != "default" && levelType != "flat" && levelType != "largeBiomes" && levelType != "amplified" && levelType != "buffet" {
 		return errors.New("Unknown level type")
 	}
-	gc.LevelType = levelType
+	gc.World.LevelType = levelType
 	return nil
 }
 
@@ -109,8 +112,12 @@ func (gc *GameConfig) SetDifficulty(difficulty string) error {
 	if difficulty != "peaceful" && difficulty != "easy" && difficulty != "normal" && difficulty != "hard" {
 		return errors.New("Unknown difficulty")
 	}
-	gc.Difficulty = difficulty
+	gc.World.Difficulty = difficulty
 	return nil
+}
+
+func (gc *GameConfig) UseCache(useCache bool) {
+	gc.World.UseCache = useCache
 }
 
 func appendIfNotIncluded(to []string, elm string) ([]string, bool) {

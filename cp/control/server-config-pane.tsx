@@ -15,6 +15,7 @@ type ServerConfig = {
     worldSource: WorldLocation,
     worldName: string,
     backupGeneration: string,
+    useCachedWorld: boolean,
     seed: string,
     levelType: LevelType,
     currentStep: number
@@ -31,6 +32,7 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
         worldSource: WorldLocation.Backups,
         worldName: '',
         backupGeneration: '',
+        useCachedWorld: true,
         seed: '',
         levelType: LevelType.Default,
         currentStep: 0
@@ -45,6 +47,7 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
         if (this.state.worldSource === WorldLocation.Backups) {
             data.append('world-name', this.state.worldName);
             data.append('backup-generation', this.state.backupGeneration);
+            data.append('use-cache', this.state.useCachedWorld.toString());
         } else {
             data.append('world-name', this.state.worldName);
             data.append('seed', this.state.seed);
@@ -87,6 +90,10 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
 
     setBackupGeneration(generation: string) {
         this.setState({backupGeneration: generation});
+    }
+
+    setUseCachedWorld(useCachedWorld: boolean) {
+        this.setState({useCachedWorld: useCachedWorld});
     }
 
     setLevelType(levelType: LevelType) {
@@ -159,8 +166,10 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
                                   stepNum={stepIndex + 1}
                                   worldName={this.state.worldName}
                                   backupGeneration={this.state.backupGeneration}
+                                  useCachedWorld={this.state.useCachedWorld}
                                   setWorldName={this.setWorldName.bind(this)}
-                                  setBackupGeneration={this.setBackupGeneration.bind(this)} />
+                                  setBackupGeneration={this.setBackupGeneration.bind(this)}
+                                  setUseCachedWorld={this.setUseCachedWorld.bind(this)} />
                 );
             }
         } else {

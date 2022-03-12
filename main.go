@@ -218,6 +218,7 @@ func createConfigFromPostData(values url.Values, cfg *config.Config) (*gameconfi
 			return nil, errors.New("Backup generation is not set")
 		}
 		result.SetWorld(values.Get("world-name"), values.Get("backup-generation"))
+		result.UseCache(values.Get("use-cache") == "true")
 	} else {
 		if !values.Has("world-name") {
 			return nil, errors.New("World name is not set")

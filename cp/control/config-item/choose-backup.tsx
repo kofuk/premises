@@ -7,8 +7,10 @@ import {WorldBackup} from './world-backup';
 type Prop = ItemProp & {
     worldName: string,
     backupGeneration: string,
+    useCachedWorld: boolean,
     setWorldName: (val: string) => void,
-    setBackupGeneration: (val: string) => void
+    setBackupGeneration: (val: string) => void,
+    setUseCachedWorld: (val: boolean) => void
 };
 
 type State = {
@@ -71,6 +73,11 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
             <>
                 {worlds}
                 {generations}
+                <div className="m-2 form-check form-switch">
+                    <input className="form-check-input" type="checkbox" id="useCachedWorld" checked={this.props.useCachedWorld}
+                           onChange={(e) => this.props.setUseCachedWorld(e.target.checked)}/>
+                    <label className="form-check-label" htmlFor="useCachedWorld">Use Cached World Data If Possible</label>
+                </div>
             </>
         );
     }
