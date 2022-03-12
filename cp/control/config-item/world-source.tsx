@@ -4,8 +4,8 @@ import {ItemProp} from './prop';
 import {ConfigItem} from './config-item';
 
 export enum WorldLocation {
-    Backups,
-    NewWorld
+    Backups = 'backups',
+    NewWorld = 'new-world'
 }
 
 type Prop = ItemProp & {

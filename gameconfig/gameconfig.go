@@ -21,6 +21,7 @@ type GameConfig struct {
 		ShouldGenerate bool   `json:"shouldGenerate"`
 		Name           string `json:"name"`
 		Generation     string `json:"generation"`
+		Seed           string `json:"seed"`
 	} `json:"world"`
 	Motd       string   `json:"motd"`
 	LevelType  string   `json:"levelType"`
@@ -86,9 +87,10 @@ func (gc *GameConfig) SetWorld(worldName string, generation string) {
 	gc.World.Generation = generation
 }
 
-func (gc *GameConfig) GenerateWorld(worldName string) {
+func (gc *GameConfig) GenerateWorld(worldName, seed string) {
 	gc.World.ShouldGenerate = true
 	gc.World.Name = worldName
+	gc.World.Seed = seed
 }
 
 func (gc *GameConfig) SetMotd(motd string) {

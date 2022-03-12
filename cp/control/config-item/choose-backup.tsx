@@ -2,17 +2,13 @@ import * as React from 'react';
 
 import {ItemProp} from './prop';
 import {ConfigItem} from './config-item';
+import {WorldBackup} from './world-backup';
 
 type Prop = ItemProp & {
     worldName: string,
     backupGeneration: string,
     setWorldName: (val: string) => void,
     setBackupGeneration: (val: string) => void
-};
-
-type WorldBackup = {
-    worldName: string,
-    generations: string[]
 };
 
 type State = {
@@ -52,15 +48,23 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
 
     createBackupSelector(): React.ReactElement {
         const worlds = (
-            <select className="form-select" value={this.props.worldName} onChange={(e) => this.handleChangeWorld(e.target.value)}>
-                {this.state.backups.map(e => <option value={e.worldName} key={e.worldName}>{e.worldName}</option>)}
-            </select>
+            <div className="m-2">
+                <label className="form-label" htmlFor="worldSelect">World</label>
+                <select className="form-select" value={this.props.worldName} id="worldSelect"
+                        onChange={(e) => this.handleChangeWorld(e.target.value)}>
+                    {this.state.backups.map(e => <option value={e.worldName} key={e.worldName}>{e.worldName}</option>)}
+                </select>
+            </div>
         );
         const worldData = this.state.backups.find(e => e.worldName === this.props.worldName);
         const generations = worldData ? (
-            <select className="form-select" value={this.props.backupGeneration} onChange={(e) => this.handleChangeGeneration(e.target.value)}>
-                {worldData.generations.map(e => <option value={e} key={e}>{e}</option>)}
-            </select>
+            <div className="m-2">
+                <label className="form-label" htmlFor="backupGenerationSelect">Backup Generation</label>
+                <select className="form-select" value={this.props.backupGeneration} id="backupGenerationSelect"
+                        onChange={(e) => this.handleChangeGeneration(e.target.value)}>
+                    {worldData.generations.map(e => <option value={e} key={e}>{e == 'latest' ? 'Latest' : `${e} gen ago`}</option>)}
+                </select>
+            </div>
         ) : <></>;
 
         return (

@@ -219,7 +219,13 @@ func createConfigFromPostData(values url.Values, cfg *config.Config) (*gameconfi
 		}
 		result.SetWorld(values.Get("world-name"), values.Get("backup-generation"))
 	} else {
-		//TODO: generate a new world
+		if !values.Has("world-name") {
+			return nil, errors.New("World name is not set")
+		}
+		result.GenerateWorld(values.Get("world-name"), values.Get("seed"))
+		if err := result.SetLevelType(values.Get("level-type")); err != nil {
+			return nil, err
+		}
 	}
 
 	result.SetOperators(cfg.Game.Operators)

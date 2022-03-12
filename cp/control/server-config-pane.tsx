@@ -5,6 +5,9 @@ import ServerVersion from './config-item/server-version';
 import WorldSource from './config-item/world-source';
 import {WorldLocation} from './config-item/world-source';
 import ChooseBackup from './config-item/choose-backup';
+import WorldName from './config-item/world-name';
+import ConfigureWorld from './config-item/configure-world';
+import {LevelType} from './config-item/configure-world';
 
 type ServerConfig = {
     machineType: string,
@@ -12,6 +15,8 @@ type ServerConfig = {
     worldSource: WorldLocation,
     worldName: string,
     backupGeneration: string,
+    seed: string,
+    levelType: LevelType,
     currentStep: number
 }
 
@@ -26,6 +31,8 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
         worldSource: WorldLocation.Backups,
         worldName: '',
         backupGeneration: '',
+        seed: '',
+        levelType: LevelType.Default,
         currentStep: 0
     };
     stepCount: number = 2;
@@ -34,12 +41,14 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
         const data = new URLSearchParams;
         data.append('machine-type', this.state.machineType);
         data.append('server-version', this.state.serverVersion);
-        data.append('world-source', this.state.worldSource === WorldLocation.Backups ? 'backups' : 'new-world');
+        data.append('world-source', this.state.worldSource);
         if (this.state.worldSource === WorldLocation.Backups) {
             data.append('world-name', this.state.worldName);
             data.append('backup-generation', this.state.backupGeneration);
         } else {
-            //TODO
+            data.append('world-name', this.state.worldName);
+            data.append('seed', this.state.seed);
+            data.append('level-type', this.state.levelType);
         }
 
         fetch('/control/api/launch', {
@@ -67,6 +76,9 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
 
     setWorldSource(worldSource: WorldLocation) {
         this.setState({worldSource: worldSource});
+        if (worldSource !== WorldLocation.Backups) {
+            this.setState({worldName: ''});
+        }
     }
 
     setWorldName(worldName: string) {
@@ -75,6 +87,14 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
 
     setBackupGeneration(generation: string) {
         this.setState({backupGeneration: generation});
+    }
+
+    setLevelType(levelType: LevelType) {
+        this.setState({levelType: levelType});
+    }
+
+    setSeed(seed: string) {
+        this.setState({seed: seed});
     }
 
     handleRequestFocus(step: number) {
@@ -144,6 +164,32 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
                 );
             }
         } else {
+            {
+                const stepIndex = configItems.length;
+                configItems.push(
+                    <WorldName key="worldName"
+                               isFocused={this.state.currentStep === stepIndex}
+                               nextStep={this.handleNextStep.bind(this)}
+                               requestFocus={() => this.handleRequestFocus(stepIndex)}
+                               stepNum={stepIndex + 1}
+                               worldName={this.state.worldName}
+                               setWorldName={this.setWorldName.bind(this)} />
+                );
+            }
+            {
+                const stepIndex = configItems.length;
+                configItems.push(
+                    <ConfigureWorld key="configureWorld"
+                                    isFocused={this.state.currentStep === stepIndex}
+                                    nextStep={this.handleNextStep.bind(this)}
+                                    requestFocus={() => this.handleRequestFocus(stepIndex)}
+                                    stepNum={stepIndex + 1}
+                                    levelType={this.state.levelType}
+                                    seed={this.state.seed}
+                                    setLevelType={this.setLevelType.bind(this)}
+                                    setSeed={this.setSeed.bind(this)}/>
+                );
+            }
         }
 
         this.stepCount = configItems.length;
