@@ -8,5 +8,9 @@ jobs:
       - uses: actions/setup-go@v3
         with:
           go-version: '^1.17'
+      - name: Create fake JS assets to make build to pass
+        run: |
+          mkdir gen
+          touch gen/foo.js
       - name: Run test
         run: go test -v ./...
