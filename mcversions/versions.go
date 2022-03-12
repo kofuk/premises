@@ -13,7 +13,7 @@ const (
 
 var (
 	ErrHttpFailure = errors.New("Failed to retrive versions")
-	ErrNotFound = errors.New("Specified version not found")
+	ErrNotFound    = errors.New("Specified version not found")
 )
 
 type MCVersion struct {
@@ -91,7 +91,7 @@ func GetDownloadUrl(version string) (url string, err error) {
 	defer func() {
 		recover()
 	}()
-	doc.Find("a[download]").Each(func(_ int, s *goquery.Selection){
+	doc.Find("a[download]").Each(func(_ int, s *goquery.Selection) {
 		if s.Text() == "Download Server Jar" {
 			dlUrl, ok := s.Attr("href")
 			if !ok {

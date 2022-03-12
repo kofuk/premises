@@ -1,0 +1,96 @@
+import * as React from 'react';
+
+import {ItemProp} from './prop';
+import {ConfigItem} from './config-item';
+
+type Prop = ItemProp & {
+    worldName: string,
+    backupGeneration: string,
+    setWorldName: (val: string) => void,
+    setBackupGeneration: (val: string) => void
+};
+
+type WorldBackup = {
+    worldName: string,
+    generations: string[]
+};
+
+type State = {
+    backups: WorldBackup[]
+};
+
+export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
+    state: State = {
+        backups: []
+    };
+
+    constructor(prop: Prop) {
+        super(prop, 'World');
+    }
+
+    componentDidMount() {
+        fetch('/control/api/backups')
+            .then(resp => resp.json())
+            .then(resp => {
+                this.setState({backups: resp});
+                if (resp.length > 0) {
+                    this.props.setWorldName(resp[0].worldName);
+                    this.props.setBackupGeneration(resp[0].generations[0])
+                }
+            });
+    }
+
+    handleChangeWorld(worldName: string) {
+        this.props.setWorldName(worldName);
+        const generations = this.state.backups.find(e => e.worldName === worldName)!.generations;
+        this.props.setBackupGeneration(generations[0]);
+    }
+
+    handleChangeGeneration(generation: string) {
+        this.props.setBackupGeneration(generation);
+    }
+
+    createBackupSelector(): React.ReactElement {
+        const worlds = (
+            <select className="form-select" value={this.props.worldName} onChange={(e) => this.handleChangeWorld(e.target.value)}>
+                {this.state.backups.map(e => <option value={e.worldName} key={e.worldName}>{e.worldName}</option>)}
+            </select>
+        );
+        const worldData = this.state.backups.find(e => e.worldName === this.props.worldName);
+        const generations = worldData ? (
+            <select className="form-select" value={this.props.backupGeneration} onChange={(e) => this.handleChangeGeneration(e.target.value)}>
+                {worldData.generations.map(e => <option value={e} key={e}>{e}</option>)}
+            </select>
+        ) : <></>;
+
+        return (
+            <>
+                {worlds}
+                {generations}
+            </>
+        );
+    }
+
+    createEmptyMessage(): React.ReactElement {
+        return (
+            <div className="alert alert-warning" role="alert">
+                No world backups found. Please generate a new world.
+            </div>
+        );
+    }
+
+    createContent(): React.ReactElement {
+        const content = this.state.backups.length === 0 ? this.createEmptyMessage() : this.createBackupSelector();
+        return (
+            <>
+                {content}
+                <div className="m-1 text-end">
+                    <button type="button" className="btn btn-primary" onClick={this.props.nextStep}
+                            disabled={this.state.backups.length === 0}>
+                        Next
+                    </button>
+                </div>
+            </>
+        );
+    }
+};

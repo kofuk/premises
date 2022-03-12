@@ -3,17 +3,15 @@ package backup
 import (
 	"errors"
 	"regexp"
-	"strconv"
-	"strings"
+	"sort"
 
 	"github.com/kofuk/premises/config"
 	"github.com/t3rm1n4l/go-mega"
 )
 
 type WorldBackup struct {
-	ServerName string `json:"serverName"`
-	WorldName  string `json:"worldName"`
-	Generation int    `json:"generation"`
+	WorldName   string   `json:"worldName"`
+	Generations []string `json:"generations"`
 }
 
 func getFolderRef(m *mega.Mega, parent *mega.Node, name string) (*mega.Node, error) {
@@ -58,32 +56,50 @@ func GetBackupList(cfg *config.Config) ([]WorldBackup, error) {
 		return nil, err
 	}
 
-	backups, err := m.FS.GetChildren(worldsFolder)
+	worlds, err := m.FS.GetChildren(worldsFolder)
 	if err != nil {
 		return nil, err
 	}
 
 	var result []WorldBackup
-	for _, backup := range backups {
-		name := archiveExtensionRegexp.ReplaceAllString(backup.GetName(), "")
-		components := strings.Split(name, "@")
-		if len(components) != 3 {
+	for _, world := range worlds {
+		if world.GetType() != mega.FOLDER {
 			continue
 		}
 
-		generation, err := strconv.Atoi(components[2])
+		worldFolder, err := getFolderRef(m, worldsFolder, world.GetName())
 		if err != nil {
-			if components[2] == "latest" {
-				generation = 0
-			} else {
-				continue
+			return nil, err
+		}
+
+		backups, err := m.FS.GetChildren(worldFolder)
+		if err != nil {
+			return nil, err
+		}
+
+		var generations []string
+		for _, backup := range backups {
+			name := backup.GetName()
+			if name[len(name)-7:] == ".tar.xz" {
+				name = name[:len(name)-7]
 			}
+
+			generations = append(generations, name)
+		}
+
+		if len(generations) == 0 {
+			continue
+		}
+
+		sort.Strings(generations)
+		// "latest" should be the first.
+		if len(generations) > 1 && generations[len(generations)-1] == "latest" {
+			generations = append([]string{"latest"}, generations[:len(generations)-1]...)
 		}
 
 		result = append(result, WorldBackup{
-			ServerName: components[0],
-			WorldName:  components[1],
-			Generation: generation,
+			WorldName:   world.GetName(),
+			Generations: generations,
 		})
 	}
 

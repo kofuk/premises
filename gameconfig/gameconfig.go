@@ -5,17 +5,22 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/kofuk/premises/mcversions"
 )
 
 type GameConfig struct {
-	RemoveMe   bool   `json:"removeMe"`
-	AllocSize  int    `json:"allocSize"`
-	AuthKey    string `json:"authKey"`
-	ServerName string `json:"serverName"`
-	World      struct {
-		Name              string `json:"name"`
-		ArchiveVersion    int    `json:"archiveVersion"`
-		MigrateFromServer string `json:"migrateFromServer"`
+	RemoveMe  bool   `json:"removeMe"`
+	AllocSize int    `json:"allocSize"`
+	AuthKey   string `json:"authKey"`
+	Server    struct {
+		Version     string `json:"name"`
+		DownloadUrl string `json:"downloadUrl"`
+	} `json:"server"`
+	World struct {
+		ShouldGenerate bool   `json:"shouldGenerate"`
+		Name           string `json:"name"`
+		Generation     string `json:"generation"`
 	} `json:"world"`
 	Motd       string   `json:"motd"`
 	LevelType  string   `json:"levelType"`
@@ -28,13 +33,24 @@ type GameConfig struct {
 	} `json:"mega"`
 }
 
-func New(serverName string) *GameConfig {
+func New() *GameConfig {
 	return &GameConfig{
 		RemoveMe:   true,
-		ServerName: serverName,
 		LevelType:  "default",
 		Difficulty: "normal",
 	}
+}
+
+func (gc *GameConfig) SetServerVersion(version string) error {
+	dlUrl, err := mcversions.GetDownloadUrl(version)
+	if err != nil {
+		return err
+	}
+
+	gc.Server.Version = version
+	gc.Server.DownloadUrl = dlUrl
+
+	return nil
 }
 
 func (gc *GameConfig) SetAllocFromAvailableMemSize(memSizeMiB int) error {
@@ -65,16 +81,14 @@ func (gc *GameConfig) GenerateAuthKey() string {
 	return result
 }
 
-func (gc *GameConfig) SetWorld(worldName string, archiveVer int) {
-	gc.World.MigrateFromServer = ""
+func (gc *GameConfig) SetWorld(worldName string, generation string) {
 	gc.World.Name = worldName
-	gc.World.ArchiveVersion = archiveVer
+	gc.World.Generation = generation
 }
 
-func (gc *GameConfig) MigrateFromOtherConfig(serverName, worldName string, archiveVer int) {
-	gc.World.MigrateFromServer = serverName
+func (gc *GameConfig) GenerateWorld(worldName string) {
+	gc.World.ShouldGenerate = true
 	gc.World.Name = worldName
-	gc.World.ArchiveVersion = archiveVer
 }
 
 func (gc *GameConfig) SetMotd(motd string) {

@@ -2,9 +2,9 @@ package main
 
 import (
 	"embed"
-	"encoding/json"
 	"errors"
 	"html/template"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -25,6 +25,7 @@ import (
 	"github.com/kofuk/premises/backup"
 	"github.com/kofuk/premises/config"
 	"github.com/kofuk/premises/gameconfig"
+	"github.com/kofuk/premises/mcversions"
 	"github.com/kofuk/premises/monitor"
 )
 
@@ -37,6 +38,7 @@ type serverState struct {
 	monitorClientsMu sync.Mutex
 	worldBackupMu    sync.Mutex
 	worldBackups     []backup.WorldBackup
+	serverVersions   []mcversions.MCVersion
 }
 
 var server serverState
@@ -188,10 +190,13 @@ func isValidMemSize(memSize int) bool {
 }
 
 func createConfigFromPostData(values url.Values, cfg *config.Config) (*gameconfig.GameConfig, error) {
-	if !values.Has("game-config") {
-		return nil, errors.New("Game configuration is not set")
+	if !values.Has("server-version") {
+		return nil, errors.New("Server version is not set")
 	}
-	result := gameconfig.New(values.Get("game-config"))
+	result := gameconfig.New()
+	if err := result.SetServerVersion(values.Get("server-version")); err != nil {
+		return nil, err
+	}
 
 	if !values.Has("machine-type") {
 		return nil, errors.New("Machine type is not set")
@@ -206,33 +211,15 @@ func createConfigFromPostData(values url.Values, cfg *config.Config) (*gameconfi
 	result.SetAllocFromAvailableMemSize(memSizeGB * 1024)
 	result.GenerateAuthKey()
 
-	if values.Get("new-world") == "on" {
-		if err := result.SetLevelType(values.Get("level-type")); err != nil {
-			return nil, err
+	if values.Get("world-source") == "backups" {
+		if !values.Has("world-name") {
+			return nil, errors.New("World name is not set")
+		} else if !values.Has("backup-generation") {
+			return nil, errors.New("Backup generation is not set")
 		}
-
-		if !values.Has("world") {
-			return nil, errors.New("World is not set")
-		}
-		result.SetWorld(values.Get("world"), 0)
-	} else if values.Get("migrate-world") == "on" {
-		if !values.Has("migrate-from") {
-			return nil, errors.New("Migratation source world is not set")
-		}
-		var config backup.WorldBackup
-		if json.Unmarshal([]byte(values.Get("migrate-from")), &config) != nil {
-			return nil, errors.New("Invalid migratation source world")
-		}
-		result.MigrateFromOtherConfig(config.ServerName, config.WorldName, config.Generation)
+		result.SetWorld(values.Get("world-name"), values.Get("backup-generation"))
 	} else {
-		if !values.Has("world-gen") {
-			return nil, errors.New("World generation is not set")
-		}
-		worldGen, err := strconv.Atoi(values.Get("world-gen"))
-		if err != nil {
-			return nil, errors.New("Invalid world generation")
-		}
-		result.SetWorld(values.Get("world"), worldGen)
+		//TODO: generate a new world
 	}
 
 	result.SetOperators(cfg.Game.Operators)
@@ -245,6 +232,9 @@ func createConfigFromPostData(values url.Values, cfg *config.Config) (*gameconfi
 
 //go:embed templates/*.html
 var templates embed.FS
+
+//go:embed gen/*.js
+var jsFiles embed.FS
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -297,6 +287,12 @@ func main() {
 		log.WithError(err).Fatal("Failed to load config")
 	}
 
+	if cfg.Debug.Env {
+		if err := os.Mkdir("/tmp/premises", 0755); err != nil {
+			log.WithError(err).Info("Cannot create directory for debug environment")
+		}
+	}
+
 	if cfg.Debug.Web {
 		gin.SetMode(gin.DebugMode)
 	} else {
@@ -307,18 +303,6 @@ func main() {
 	if len(os.Args) > 1 {
 		bindAddr = os.Args[1]
 	}
-
-	go func() {
-		backups, err := backup.GetBackupList(cfg)
-		if err != nil {
-			log.WithError(err).Error("Failed to retrive backup list")
-			return
-		}
-
-		server.worldBackupMu.Lock()
-		defer server.worldBackupMu.Unlock()
-		server.worldBackups = backups
-	}()
 
 	var gameServer GameServer
 	if cfg.Debug.Runner {
@@ -408,6 +392,40 @@ func main() {
 		session.Save()
 		c.Redirect(http.StatusFound, "/")
 	})
+	r.GET("/login.js", func(c *gin.Context) {
+		c.Header("Content-Type", "application/javascript")
+
+		var file io.Reader
+		var err error
+		if cfg.Debug.Web {
+			file, err = os.Open("gen/login.js")
+		} else {
+			file, err = jsFiles.Open("gen/login.js")
+		}
+		if err != nil {
+			log.WithError(err).Error("Failed to embedded file")
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		io.Copy(c.Writer, file)
+	})
+	r.GET("/control.js", func(c *gin.Context) {
+		c.Header("Content-Type", "application/javascript")
+
+		var file io.Reader
+		var err error
+		if cfg.Debug.Web {
+			file, err = os.Open("gen/control.js")
+		} else {
+			file, err = jsFiles.Open("gen/control.js")
+		}
+		if err != nil {
+			log.WithError(err).Error("Failed to embedded file")
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		io.Copy(c.Writer, file)
+	})
 
 	controlPanel := r.Group("control")
 	controlPanel.Use(func(c *gin.Context) {
@@ -496,14 +514,35 @@ func main() {
 			})
 
 			api.GET("/backups", func(c *gin.Context) {
-				server.worldBackupMu.Lock()
-				defer server.worldBackupMu.Unlock()
-
-				c.JSON(200, server.worldBackups)
+				if len(server.worldBackups) == 0 {
+					backups, err := backup.GetBackupList(cfg)
+					if err != nil {
+						log.WithError(err).Error("Failed to retrive backup list")
+						c.Status(http.StatusInternalServerError)
+						return
+					}
+					server.worldBackupMu.Lock()
+					server.worldBackups = backups
+					server.worldBackupMu.Unlock()
+				}
+				c.JSON(http.StatusOK, server.worldBackups)
 			})
 
 			api.GET("/gameconfigs", func(c *gin.Context) {
 				c.JSON(200, cfg.GetGameConfigs())
+			})
+
+			api.GET("/mcversions", func(c *gin.Context) {
+				if len(server.serverVersions) == 0 {
+					versions, err := mcversions.GetVersions()
+					if err != nil {
+						log.WithError(err).Error("Failed to retrive Minecraft versions")
+						c.Status(http.StatusInternalServerError)
+						return
+					}
+					server.serverVersions = versions
+				}
+				c.JSON(http.StatusOK, server.serverVersions)
 			})
 		}
 	}
