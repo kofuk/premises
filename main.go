@@ -4,7 +4,6 @@ import (
 	"embed"
 	"errors"
 	"html/template"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-contrib/sessions/redis"
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
@@ -233,9 +233,6 @@ func createConfigFromPostData(values url.Values, cfg *config.Config) (*gameconfi
 //go:embed templates/*.html
 var templates embed.FS
 
-//go:embed gen/*.js
-var jsFiles embed.FS
-
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -344,6 +341,8 @@ func main() {
 
 	r.Use(sessions.Sessions("session", sessionStore))
 
+	r.NoRoute(static.Serve("/", static.LocalFile("gen", false)))
+
 	r.GET("/", func(c *gin.Context) {
 		session := sessions.Default(c)
 		if session.Get("username") != nil {
@@ -391,40 +390,6 @@ func main() {
 		session.Delete("username")
 		session.Save()
 		c.Redirect(http.StatusFound, "/")
-	})
-	r.GET("/login.js", func(c *gin.Context) {
-		c.Header("Content-Type", "application/javascript")
-
-		var file io.Reader
-		var err error
-		if cfg.Debug.Web {
-			file, err = os.Open("gen/login.js")
-		} else {
-			file, err = jsFiles.Open("gen/login.js")
-		}
-		if err != nil {
-			log.WithError(err).Error("Failed to embedded file")
-			c.Status(http.StatusInternalServerError)
-			return
-		}
-		io.Copy(c.Writer, file)
-	})
-	r.GET("/control.js", func(c *gin.Context) {
-		c.Header("Content-Type", "application/javascript")
-
-		var file io.Reader
-		var err error
-		if cfg.Debug.Web {
-			file, err = os.Open("gen/control.js")
-		} else {
-			file, err = jsFiles.Open("gen/control.js")
-		}
-		if err != nil {
-			log.WithError(err).Error("Failed to embedded file")
-			c.Status(http.StatusInternalServerError)
-			return
-		}
-		io.Copy(c.Writer, file)
 	})
 
 	controlPanel := r.Group("control")
