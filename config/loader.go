@@ -12,14 +12,34 @@ var (
 	ErrUnsupportedType = errors.New("Unsupported field type")
 )
 
+var (
+	isInDocker = false
+)
+
+func init() {
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		isInDocker = true
+	}
+}
+
+func xGetenv(name string) string {
+	val := os.Getenv(name)
+	if isInDocker {
+		if len(val) >= 2 && val[0] == '\'' && val[len(val)-1] == '\'' {
+			return val[1:len(val)-1]
+		}
+	}
+	return val
+}
+
 func loadField(name string, field reflect.Value) error {
 	switch field.Type().Kind() {
 	case reflect.String:
-		field.SetString(os.Getenv(name))
+		field.SetString(xGetenv(name))
 		break
 
 	case reflect.Int:
-		result, err := strconv.ParseInt(os.Getenv(name), 0, 64)
+		result, err := strconv.ParseInt(xGetenv(name), 0, 64)
 		if err != nil {
 			return err
 		}
@@ -27,7 +47,7 @@ func loadField(name string, field reflect.Value) error {
 		break
 
 	case reflect.Uint:
-		result, err := strconv.ParseUint(os.Getenv(name), 0, 64)
+		result, err := strconv.ParseUint(xGetenv(name), 0, 64)
 		if err != nil {
 			return err
 		}
@@ -37,7 +57,7 @@ func loadField(name string, field reflect.Value) error {
 	case reflect.Float32:
 		fallthrough
 	case reflect.Float64:
-		result, err := strconv.ParseFloat(os.Getenv(name), 64)
+		result, err := strconv.ParseFloat(xGetenv(name), 64)
 		if err != nil {
 			return err
 		}
@@ -45,7 +65,7 @@ func loadField(name string, field reflect.Value) error {
 		break
 
 	case reflect.Bool:
-		result, err := strconv.ParseBool(os.Getenv(name))
+		result, err := strconv.ParseBool(xGetenv(name))
 		if err != nil {
 			return err
 		}
@@ -57,7 +77,7 @@ func loadField(name string, field reflect.Value) error {
 		switch field.Type().Elem().Kind() {
 		case reflect.String:
 			slice := sliceInterface.([]string)
-			for _, v := range strings.Split(os.Getenv(name), ",") {
+			for _, v := range strings.Split(xGetenv(name), ",") {
 				slice = append(slice, v)
 			}
 			field.Set(reflect.ValueOf(slice))
@@ -65,7 +85,7 @@ func loadField(name string, field reflect.Value) error {
 
 		case reflect.Int:
 			slice := sliceInterface.([]int)
-			for _, v := range strings.Split(os.Getenv(name), ",") {
+			for _, v := range strings.Split(xGetenv(name), ",") {
 				val, err := strconv.ParseInt(v, 0, 64)
 				if err != nil {
 					return err
@@ -77,7 +97,7 @@ func loadField(name string, field reflect.Value) error {
 
 		case reflect.Uint:
 			slice := sliceInterface.([]uint)
-			for _, v := range strings.Split(os.Getenv(name), ",") {
+			for _, v := range strings.Split(xGetenv(name), ",") {
 				val, err := strconv.ParseUint(v, 0, 64)
 				if err != nil {
 					return err
@@ -89,7 +109,7 @@ func loadField(name string, field reflect.Value) error {
 
 		case reflect.Float32:
 			slice := sliceInterface.([]float32)
-			for _, v := range strings.Split(os.Getenv(name), ",") {
+			for _, v := range strings.Split(xGetenv(name), ",") {
 				val, err := strconv.ParseFloat(v, 32)
 				if err != nil {
 					return err
@@ -101,7 +121,7 @@ func loadField(name string, field reflect.Value) error {
 
 		case reflect.Float64:
 			slice := sliceInterface.([]float64)
-			for _, v := range strings.Split(os.Getenv(name), ",") {
+			for _, v := range strings.Split(xGetenv(name), ",") {
 				val, err := strconv.ParseFloat(v, 64)
 				if err != nil {
 					return err
