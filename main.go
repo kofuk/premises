@@ -544,6 +544,17 @@ func main() {
 				}
 				c.JSON(http.StatusOK, server.serverVersions)
 			})
+
+			api.GET("/systeminfo", func(c *gin.Context) {
+				c.Header("Content-Type", "application/json")
+				data, err := monitor.GetSystemInfoData(cfg, cfg.ServerAddr)
+				if err != nil {
+					c.Status(http.StatusInternalServerError)
+					return
+				}
+
+				c.Writer.Write(data)
+			})
 		}
 	}
 

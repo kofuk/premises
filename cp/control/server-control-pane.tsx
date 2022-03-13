@@ -1,10 +1,12 @@
 import * as React from 'react';
 
 import ReconfigureMenu from './reconfigure-menu';
+import SystemInfo from './control-item/system-info';
 
 enum Modes {
     MainMenu,
-    Reconfigure
+    Reconfigure,
+    SystemInfo
 };
 
 type Prop = {
@@ -34,6 +36,10 @@ export default class ServerControlPane extends React.Component<Prop, State> {
                             onClick={() => {this.setState({mode: Modes.Reconfigure})}}>
                         Reconfigure Server
                     </button>
+                    <button type="button" className="list-group-item list-group-item-action"
+                            onClick={() => {this.setState({mode: Modes.SystemInfo})}}>
+                        System Information
+                    </button>
                 </div>
             )
         } else if (this.state.mode === Modes.Reconfigure) {
@@ -41,6 +47,11 @@ export default class ServerControlPane extends React.Component<Prop, State> {
                 <ReconfigureMenu backToMenu={this.handleBackToMenu.bind(this)}
                                  showError={this.props.showError}
                                  key="reconfigure" />
+            );
+        } else if (this.state.mode === Modes.SystemInfo) {
+            controlItems.push(
+                <SystemInfo backToMenu={this.handleBackToMenu.bind(this)}
+                            key="systemInfo" />
             );
         }
 

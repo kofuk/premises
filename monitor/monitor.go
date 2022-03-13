@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -172,4 +173,31 @@ func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, ad
 	}
 
 	return nil
+}
+
+func GetSystemInfoData(cfg *config.Config, addr string) ([]byte, error) {
+	tlsConfig, err := makeTLSConfig(cfg)
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+
+	req, err := http.NewRequest("POST", "https://"+addr+":8521/systeminfo", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("X-Auth-Key", cfg.MonitorKey)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 }
