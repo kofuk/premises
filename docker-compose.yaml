@@ -25,9 +25,19 @@ services:
       - 'premises_controlPanel_redis_address=redis:6379'
       - 'premises_controlPanel_redis_password='
       - 'premises_controlPanel_users'
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
     ports:
       - '8000:8000'
   redis:
     image: 'redis:alpine'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 30s
+      retries: 30
+    restart: always
     ports:
       - '6379'
