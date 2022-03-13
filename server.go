@@ -432,7 +432,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 	}
 
 	server.monitorChan <- &monitor.StatusData{
-		Status: "Obtaining IP address...",
+		Status: "Waiting for an IP address to be assigned to the VM...",
 	}
 
 	log.Info("Getting VM information...")

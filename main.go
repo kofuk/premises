@@ -99,7 +99,7 @@ func notifyNonRecoverableFailure() {
 
 func monitorServer(cfg *config.Config, gameServer GameServer) {
 	server.monitorChan <- &monitor.StatusData{
-		Status: "Waiting for the server...",
+		Status: "Connecting to the server...",
 	}
 
 	if err := monitor.MonitorServer(cfg, cfg.ServerAddr, server.monitorChan); err != nil {
