@@ -13,8 +13,7 @@ import (
 	"sync"
 
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
-	"github.com/gin-contrib/sessions/redis"
+	redisSess "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -342,17 +341,11 @@ func main() {
 	}
 	r.SetHTMLTemplate(template)
 
-	var sessionStore sessions.Store
-	if cfg.Debug.Web {
-		sessionStore = cookie.NewStore([]byte(cfg.ControlPanel.Secret))
-	} else {
-		sessionStore, err = redis.NewStore(4, "tcp", cfg.ControlPanel.Redis.Address, cfg.ControlPanel.Redis.Password, []byte(cfg.ControlPanel.Secret))
-		if err != nil {
-			log.WithError(err).Fatal("Failed to initialize Redis store")
-		}
-		redis.SetKeyPrefix(sessionStore, "session:")
+	sessionStore, err := redisSess.NewStore(4, "tcp", cfg.ControlPanel.Redis.Address, cfg.ControlPanel.Redis.Password, []byte(cfg.ControlPanel.Secret))
+	if err != nil {
+		log.WithError(err).Fatal("Failed to initialize Redis store")
 	}
-
+	redisSess.SetKeyPrefix(sessionStore, "session:")
 	r.Use(sessions.Sessions("session", sessionStore))
 
 	r.NoRoute(static.Serve("/", static.LocalFile("gen", false)))
