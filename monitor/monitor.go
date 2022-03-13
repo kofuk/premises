@@ -153,8 +153,6 @@ func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, ad
 		return err
 	}
 
-	log.Println(string(data))
-
 	buf := bytes.NewBuffer(data)
 
 	req, err := http.NewRequest("POST", "https://"+addr+":8521/newconfig", buf)

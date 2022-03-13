@@ -260,6 +260,10 @@ func (s *ConohaServer) StopVM() bool {
 		return false
 	}
 
+	server.monitorChan <- &monitor.StatusData{
+		Status: "Stopping VM...",
+	}
+
 	log.Info("Getting VM information...")
 	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
 	if err != nil {
@@ -346,6 +350,10 @@ func (s *ConohaServer) SaveImage() bool {
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
 		return false
+	}
+
+	server.monitorChan <- &monitor.StatusData{
+		Status: "Saving VM image...",
 	}
 
 	log.Info("Getting VM information...")
