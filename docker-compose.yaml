@@ -1,0 +1,33 @@
+version: '3.8'
+services:
+  web:
+    image: 'ghcr.io/kofuk/premises:latest'
+    environment:
+      - 'premises_debug_env'
+      - 'premises_debug_web'
+      - 'premises_debug_runner'
+      - 'premises_conoha_username'
+      - 'premises_conoha_password'
+      - 'premises_conoha_tenantId'
+      - 'premises_conoha_services_identity'
+      - 'premises_conoha_services_image'
+      - 'premises_conoha_services_compute'
+      - 'premises_cloudflare_token'
+      - 'premises_cloudflare_domain'
+      - 'premises_cloudflare_gameDomain'
+      - 'premises_mega_email'
+      - 'premises_mega_password'
+      - 'premises_game_motd'
+      - 'premises_game_operators'
+      - 'premises_game_whitelist'
+      - 'premises_controlPanel_secret'
+      - 'premises_controlPanel_allowedOrigin'
+      - 'premises_controlPanel_redis_address=redis:6379'
+      - 'premises_controlPanel_redis_password='
+      - 'premises_controlPanel_users'
+    ports:
+      - '8000:8000'
+  redis:
+    image: 'redis:alpine'
+    ports:
+      - '6379'
