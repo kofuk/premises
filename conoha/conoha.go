@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/kofuk/premises/config"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -101,12 +102,15 @@ func DeleteImage(cfg *config.Config, token, imageID string) error {
 	}
 	req.Header.Add(HeaderKeyAuthToken, token)
 
+	log.Info("Deleting image...")
 	for i := 0; i < 10; i++ {
 		var resp *http.Response
 		resp, err = http.DefaultClient.Do(req)
 		if err != nil {
 			return err
 		}
+
+		log.WithField("status_code", resp.StatusCode).Error("Requested deleting image")
 
 		if resp.StatusCode == 409 {
 			time.Sleep(time.Duration(rand.Intn(10)))
@@ -116,6 +120,7 @@ func DeleteImage(cfg *config.Config, token, imageID string) error {
 			return errors.New(fmt.Sprintf("Failed to delete the image: %d", resp.StatusCode))
 		}
 	}
+	log.Info("Deleting image...Done")
 
 	if err != nil {
 		return err

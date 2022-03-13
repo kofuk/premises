@@ -259,9 +259,7 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 
 			if gameServer.ImageExists() {
 				log.Info("Server seems to be running, but remote image exists")
-				if !gameServer.DeleteImage() {
-					log.Error("Failed to delete image")
-				}
+				gameServer.DeleteImage()
 			}
 
 			gameServer.UpdateDNS()
@@ -282,6 +280,8 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 }
 
 func main() {
+	log.SetReportCaller(true)
+
 	if err := godotenv.Load(); err != nil {
 		log.WithError(err).Info("Failed to load .env file. If you want to use real envvars, you can ignore this diag safely.")
 	}

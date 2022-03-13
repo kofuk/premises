@@ -87,11 +87,13 @@ func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData) error
 				goto newConn
 			}
 
-			evCh <- &status
-
+			// Don't send "shutdown" event.
+			// We'll send one to clients after cleaning up VMs.
 			if status.Shutdown {
 				goto end
 			}
+
+			evCh <- &status
 		}
 	}
 end:

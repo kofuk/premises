@@ -139,12 +139,14 @@ func (s *ConohaServer) getToken() (string, error) {
 	} else {
 		expires, err := time.Parse(time.RFC3339, s.expires)
 		if err != nil || expires.Before(time.Now().Add(10*time.Minute)) {
+			log.Info("Refreshing token...")
 			token, expires, err := conoha.GetToken(s.cfg)
 			if err != nil {
 				return "", err
 			}
 			s.token = token
 			s.expires = expires
+			log.Info("Refreshing token...Done")
 		}
 	}
 
@@ -162,13 +164,16 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB int) b
 		return false
 	}
 
+	log.Info("Retriving flavors...")
 	flavors, err := conoha.GetFlavors(s.cfg, token)
 	if err != nil {
 		log.WithError(err).Error("Failed to get flavors")
 		return false
 	}
 	flavorID := flavors.GetIDByMemSize(memSizeGB)
+	log.WithField("selected_flavor", flavorID).Info("Retriving flavors...Done")
 
+	log.Info("Retriving image ID...")
 	imageID, imageStatus, err := conoha.GetImageID(s.cfg, token, "mc-premises")
 	if err != nil {
 		log.WithError(err).Error("Failed to get image ID")
@@ -177,7 +182,9 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB int) b
 		log.Error("Image is not active")
 		return false
 	}
+	log.WithField("image_id", imageID).Info("Retriving image ID...Done")
 
+	log.Info("Generating startup script...")
 	gameConfigData, err := json.Marshal(gameConfig)
 	if err != nil {
 		log.WithError(err).Error("Failed to marshal config")
@@ -189,15 +196,17 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB int) b
 		log.WithError(err).Error("Failed to generate startup script")
 		return false
 	}
+	log.Info("Generating startup script...Done")
 
+	log.Info("Creating VM...")
 	server.monitorChan <- &monitor.StatusData{
 		Status: "Creating VM...",
 	}
-
 	if _, err := conoha.CreateVM(s.cfg, token, imageID, flavorID, startupScript); err != nil {
 		log.WithError(err).Error("Failed to create VM")
 		return false
 	}
+	log.Info("Creating VM...")
 
 	return true
 }
@@ -209,12 +218,16 @@ func (s *ConohaServer) VMExists() bool {
 		return false
 	}
 
+	log.Info("Getting VM information...")
 	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
 	if err != nil {
+		log.WithError(err).Error("Failed to get VM information")
 		return false
 	}
+	log.Info("Getting VM information...Done")
 
 	s.cfg.ServerAddr = detail.GetIPAddress(4)
+	log.WithField("ip_addr", s.cfg.ServerAddr).Info("Stored IP address")
 
 	return true
 }
@@ -225,13 +238,17 @@ func (s *ConohaServer) VMRunning() bool {
 		log.WithError(err).Error("Failed to get token")
 		return false
 	}
+
+	log.Info("Getting VM information...")
 	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
 	if err != nil {
 		log.WithError(err).Error("Failed to get VM detail")
 		return false
 	}
+	log.Info("Getting VM information...Done")
 
 	s.cfg.ServerAddr = detail.GetIPAddress(4)
+	log.WithField("ip_addr", s.cfg.ServerAddr).Info("Stored IP address")
 
 	return detail.Status == "ACTIVE"
 }
@@ -243,25 +260,32 @@ func (s *ConohaServer) StopVM() bool {
 		return false
 	}
 
+	log.Info("Getting VM information...")
 	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
 	if err != nil {
 		log.WithError(err).Error("Failed to get VM detail")
 		return false
 	}
+	log.Info("Getting VM information...Done")
 
+	log.Info("Requesting to Stop VM...")
 	if err := conoha.StopVM(s.cfg, token, detail.ID); err != nil {
 		log.WithError(err).Error("Failed to stop VM")
 		return false
 	}
+	log.Info("Requesting to Stop VM...Done")
 
 	// Wait for VM to stop
+	log.Info("Waiting for the VM to stop...")
 	for {
 		time.Sleep(20 * time.Second)
 
 		detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
 		if err != nil {
+			log.WithError(err).Error("Failed to get VM information")
 			return false
 		}
+		log.WithField("status", detail.Status).Info("Waiting for the VM to stop...")
 		if detail.Status == "SHUTOFF" {
 			break
 		}
@@ -277,16 +301,20 @@ func (s *ConohaServer) DeleteVM() bool {
 		return false
 	}
 
+	log.Info("Getting VM information...")
 	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
 	if err != nil {
 		log.WithError(err).Error("Failed to get VM detail")
 		return false
 	}
+	log.Info("Getting VM information...Done")
 
+	log.Info("Deleting VM...")
 	if err := conoha.DeleteVM(s.cfg, token, detail.ID); err != nil {
 		log.WithError(err).Error("Failed to delete VM")
 		return false
 	}
+	log.Info("Deleting VM...Done")
 
 	return true
 }
@@ -298,14 +326,17 @@ func (s *ConohaServer) ImageExists() bool {
 		return false
 	}
 
+	log.Info("Getting image information...")
 	_, imageStatus, err := conoha.GetImageID(s.cfg, token, "mc-premises")
 	if err != nil {
-		log.WithError(err).Error("Failed to get token")
+		log.WithError(err).Error("Failed to get image information")
 		return false
 	} else if imageStatus != "active" {
-		log.Info("Image is not active")
+		log.Info("Getting image information...Done")
+		log.WithField("status", imageStatus).Info("Image is not active")
 		return false
 	}
+	log.Info("Getting image information...Done")
 
 	return true
 }
@@ -317,23 +348,33 @@ func (s *ConohaServer) SaveImage() bool {
 		return false
 	}
 
+	log.Info("Getting VM information...")
 	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
 	if err != nil {
 		log.WithError(err).Error("Failed to get VM detail")
 		return false
 	}
+	log.Info("Getting VM information...Done")
 
+	log.Info("Requesting to create image...")
 	if err := conoha.CreateImage(s.cfg, token, detail.ID, "mc-premises"); err != nil {
 		log.WithError(err).Error("Failed to create image")
 		return false
 	}
+	log.Info("Requesting to create image...Done")
 
+	log.Info("Waiting for image to be created...")
 	for {
-		if _, imageStatus, err := conoha.GetImageID(s.cfg, token, "mc-premises"); err == nil && imageStatus == "active" {
+		_, imageStatus, err := conoha.GetImageID(s.cfg, token, "mc-premises")
+		if err != nil {
+			log.WithError(err).Error("Error getting image information; retrying...")
+		} else if imageStatus == "active" {
 			break
 		}
+		log.WithField("image_status", imageStatus).Info("Waiting for image to be created...")
 		time.Sleep(30 * time.Second)
 	}
+	log.Info("Waiting for image to be created...Done")
 
 	return true
 }
@@ -349,24 +390,36 @@ func (s *ConohaServer) DeleteImage() bool {
 		Status: "Cleaning up...",
 	}
 
+	log.Info("Getting image information...")
 	imageID, imageStatus, err := conoha.GetImageID(s.cfg, token, "mc-premises")
 	if err != nil {
 		log.WithError(err).Error("Failed to get image ID")
 		return false
 	} else if imageStatus != "active" {
-		log.Error("Image is not active")
+		log.WithField("image_status", imageStatus).Error("Image is not active")
 		return false
 	}
+	log.WithField("image_id", imageID).WithField("image_status", imageStatus).Info("Getting image information...Done")
 
+	log.Info("Deleting image...")
 	if err := conoha.DeleteImage(s.cfg, token, imageID); err != nil {
-		log.WithError(err).Error("Failed to delete image")
+		log.WithError(err).Error("Seems we got undocumented response from image API; checking image existence...")
+		for i := 0; i < 10; i++ {
+			time.Sleep(2 * time.Second)
+			if !s.ImageExists() {
+				goto success
+			}
+			time.Sleep(3 * time.Second)
+		}
 
 		server.monitorChan <- &monitor.StatusData{
-			Status:   "Failed to outdated image",
+			Status:   "Failed to delete outdated image",
 			HasError: true,
 		}
 		return false
 	}
+success:
+	log.Info("Deleting image...Done")
 
 	return true
 }
@@ -382,25 +435,30 @@ func (s *ConohaServer) UpdateDNS() bool {
 		Status: "Obtaining IP address...",
 	}
 
+	log.Info("Getting VM information...")
 	var vms *conoha.VMDetail
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 500; i++ {
 		vms, err = conoha.GetVMDetail(s.cfg, token, "mc-premises")
 		if err != nil || vms.Status == "BUILD" {
-			log.Info("Waiting VM to be created")
+			log.WithField("vm_status", vms.Status).Info("Waiting VM to be created")
 			time.Sleep(10 * time.Second)
 			continue
 		}
 		break
 	}
 
-	if err != nil {
+	if err != nil || vms.Status == "BUILD" {
 		log.WithError(err).Error("Failed to get VM detail")
+		if err == nil {
+			log.Error("Building VM didn't completed")
+		}
 		server.monitorChan <- &monitor.StatusData{
 			Status:   "Failed to get information on created VM",
 			HasError: true,
 		}
 		return false
 	}
+	log.WithField("vm_status", vms.Status).Info("Getting VM information...Done")
 
 	server.monitorChan <- &monitor.StatusData{
 		Status: "Updating DNS records...",
@@ -408,9 +466,11 @@ func (s *ConohaServer) UpdateDNS() bool {
 
 	ip4Addr := vms.GetIPAddress(4)
 	ip6Addr := vms.GetIPAddress(6)
+	log.WithField("ip_addr_4", ip4Addr).WithField("ip_addr_6", ip6Addr).Info("Got IP addresses")
 
 	s.cfg.ServerAddr = ip4Addr
 
+	log.Info("Getting Cloudflare zone ID...")
 	zoneID, err := cloudflare.GetZoneID(s.cfg)
 	if err != nil {
 		log.WithError(err).Error("Failed to get zone ID")
@@ -420,7 +480,9 @@ func (s *ConohaServer) UpdateDNS() bool {
 		}
 		return false
 	}
+	log.WithField("zoen_id", zoneID).Info("Getting Cloudflare zone ID...Done")
 
+	log.Info("Updating DNS record (v4)...")
 	if err := cloudflare.UpdateDNS(s.cfg, zoneID, ip4Addr, 4); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v4)")
 		server.monitorChan <- &monitor.StatusData{
@@ -429,7 +491,9 @@ func (s *ConohaServer) UpdateDNS() bool {
 		}
 		return false
 	}
+	log.Info("Updating DNS record (v4)...Done")
 
+	log.Info("Updating DNS record (v6)...")
 	if err := cloudflare.UpdateDNS(s.cfg, zoneID, ip6Addr, 6); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v6)")
 		server.monitorChan <- &monitor.StatusData{
@@ -438,6 +502,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 		}
 		return false
 	}
+	log.Info("Updating DNS record (v6)...Done")
 
 	return true
 }
@@ -447,6 +512,7 @@ func (s *ConohaServer) RevertDNS() bool {
 		Status: "Reverting DNS records...",
 	}
 
+	log.Info("Getting Cloudflare zone ID...")
 	zoneID, err := cloudflare.GetZoneID(s.cfg)
 	if err != nil {
 		log.WithError(err).Error("Failed to get zone ID")
@@ -456,7 +522,9 @@ func (s *ConohaServer) RevertDNS() bool {
 		}
 		return true
 	}
+	log.WithField("zoen_id", zoneID).Info("Getting Cloudflare zone ID...Done")
 
+	log.Info("Updating DNS record (v4)...")
 	if err := cloudflare.UpdateDNS(s.cfg, zoneID, "127.0.0.1", 4); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v4)")
 		server.monitorChan <- &monitor.StatusData{
@@ -465,7 +533,9 @@ func (s *ConohaServer) RevertDNS() bool {
 		}
 		return true
 	}
+	log.Info("Updating DNS record (v4)...Done")
 
+	log.Info("Updating DNS record (v6)...")
 	if err := cloudflare.UpdateDNS(s.cfg, zoneID, "::1", 6); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v6)")
 		server.monitorChan <- &monitor.StatusData{
@@ -474,6 +544,7 @@ func (s *ConohaServer) RevertDNS() bool {
 		}
 		return true
 	}
+	log.Info("Updating DNS record (v6)...Done")
 
 	return true
 }
