@@ -2,9 +2,6 @@ package config
 
 import (
 	"path/filepath"
-	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -33,7 +30,6 @@ type Config struct {
 		Password string `env:"password"`
 	} `env:"mega"`
 	Game struct {
-		RawConfigs []string `env:"configs"`
 		Motd       string   `env:"motd"`
 		Operators  []string `env:"operators"`
 		Whitelist  []string `env:"whitelist"`
@@ -54,19 +50,6 @@ type Config struct {
 type ServerConfig struct {
 	Name      string `json:"name"`
 	IsVanilla bool   `json:"isVanilla"`
-}
-
-func (cfg *Config) GetGameConfigs() []ServerConfig {
-	result := make([]ServerConfig, 0)
-	for _, c := range cfg.Game.RawConfigs {
-		fields := strings.Split(c, ":")
-		if len(fields) != 2 {
-			log.Error("Env game.configs should consists of 2 fields, but another count of field(s) detected; will ignore silently")
-			continue
-		}
-		result = append(result, ServerConfig{Name: fields[0], IsVanilla: fields[1] == "vanilla"})
-	}
-	return result
 }
 
 func (cfg *Config) Locate(path string) string {

@@ -500,10 +500,6 @@ func main() {
 				c.JSON(http.StatusOK, server.worldBackups)
 			})
 
-			api.GET("/gameconfigs", func(c *gin.Context) {
-				c.JSON(200, cfg.GetGameConfigs())
-			})
-
 			api.GET("/mcversions", func(c *gin.Context) {
 				if len(server.serverVersions) == 0 {
 					versions, err := mcversions.GetVersions()
