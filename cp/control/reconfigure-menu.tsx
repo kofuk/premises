@@ -1,6 +1,5 @@
 import * as React from 'react';
 
-import MachineType from './config-item/machine-type';
 import ServerVersion from './config-item/server-version';
 import WorldSource from './config-item/world-source';
 import {WorldLocation} from './config-item/world-source';
@@ -12,12 +11,13 @@ import {LevelType} from './config-item/configure-world';
 import {ServerConfig} from './server-config';
 
 type Prop = {
-    showError: (message: string) => void;
+    backToMenu: () => void,
+    showError: (message: string) => void
 };
 
-export default class ServerConfigPane extends React.Component<Prop, ServerConfig> {
+export default class ReconfigureMenu extends React.Component<Prop, ServerConfig> {
     state: ServerConfig = {
-        machineType: '4g',
+        machineType: '',
         serverVersion: '',
         worldSource: WorldLocation.Backups,
         worldName: '',
@@ -31,7 +31,6 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
 
     handleStart() {
         const data = new URLSearchParams;
-        data.append('machine-type', this.state.machineType);
         data.append('server-version', this.state.serverVersion);
         data.append('world-source', this.state.worldSource);
         if (this.state.worldSource === WorldLocation.Backups) {
@@ -44,7 +43,7 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
             data.append('level-type', this.state.levelType);
         }
 
-        fetch('/control/api/launch', {
+        fetch('/control/api/reconfigure', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -53,14 +52,12 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
         })
             .then(resp => resp.json())
             .then(resp => {
-                if (!resp['success']) {
+                if (resp['success']) {
+                    this.props.backToMenu();
+                } else {
                     this.props.showError(resp['message']);
                 }
             });
-    }
-
-    setMachineType(machineType: string) {
-        this.setState({machineType: machineType});
     }
 
     setServerVersion(serverVersion: string) {
@@ -108,18 +105,6 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
 
     render() {
         const configItems = []
-        {
-            const stepIndex = configItems.length;
-            configItems.push(
-                <MachineType key="machineType"
-                             isFocused={this.state.currentStep === stepIndex}
-                             nextStep={this.handleNextStep.bind(this)}
-                             requestFocus={() => this.handleRequestFocus(stepIndex)}
-                             stepNum={stepIndex + 1}
-                             machineType={this.state.machineType}
-                             setMachineType={this.setMachineType.bind(this)} />
-            );
-        }
         {
             const stepIndex = configItems.length;
             configItems.push(
@@ -194,21 +179,22 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
         this.stepCount = configItems.length;
 
         return (
-            <div className="my-5 card mx-auto">
-                <div className="card-body">
-                    <form>
-                        {configItems}
-                        <div className="d-md-block mt-3 text-end">
-                            <button className="btn btn-primary bg-gradient"
-                                    type="button"
-                                    onClick={this.handleStart.bind(this)}
-                                    disabled={this.state.currentStep !== this.stepCount}>
-                                Start
-                            </button>
-                        </div>
-                    </form>
-                </div>
+            <div className="m-2">
+                <button className="btn btn-outline-primary" onClick={this.props.backToMenu}>
+                    Back
+                </button>
+                <div className="m-2">
+                    {configItems}
+                    <div className="d-md-block mt-3 text-end">
+                        <button className="btn btn-primary bg-gradient"
+                                type="button"
+                                onClick={this.handleStart.bind(this)}
+                                disabled={this.state.currentStep !== this.stepCount}>
+                            Restart
+                        </button>
+                    </div>
+            </div>
             </div>
         );
-    };
+    }
 };

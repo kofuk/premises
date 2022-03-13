@@ -13,9 +13,9 @@ type Prop = ItemProp & {
 
 export enum LevelType {
     Default = 'default',
-    Superflat = 'Superflat',
+    Superflat = 'superflat',
     LargeBiomes = 'largeBiomes',
-    Amplified  = 'Amplified'
+    Amplified  = 'amplified'
 };
 
 class LevelTypeInfo {

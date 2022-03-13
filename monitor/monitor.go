@@ -1,8 +1,10 @@
 package monitor
 
 import (
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,6 +13,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/kofuk/premises/config"
+	"github.com/kofuk/premises/gameconfig"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -133,5 +136,40 @@ func StopServer(cfg *config.Config, addr string) error {
 	if resp.StatusCode != 200 {
 		return errors.New(fmt.Sprintf("StopServer: request failed: %d", resp.StatusCode))
 	}
+	return nil
+}
+
+func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, addr string) error {
+	tlsConfig, err := makeTLSConfig(cfg)
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+
+	data, err := json.Marshal(gameConfig)
+	if err != nil {
+		return err
+	}
+
+	log.Println(string(data))
+
+	buf := bytes.NewBuffer(data)
+
+	req, err := http.NewRequest("POST", "https://"+addr+":8521/newconfig", buf)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("X-Auth-Key", cfg.MonitorKey)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(fmt.Sprintf("Request failed with %d", resp.StatusCode))
+	}
+
 	return nil
 }

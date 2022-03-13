@@ -39,6 +39,7 @@ type serverState struct {
 	worldBackupMu    sync.Mutex
 	worldBackups     []backup.WorldBackup
 	serverVersions   []mcversions.MCVersion
+	machineType      string
 }
 
 var server serverState
@@ -182,6 +183,12 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameSer
 func StopServer(cfg *config.Config, gameServer GameServer) {
 	if err := monitor.StopServer(cfg, cfg.ServerAddr); err != nil {
 		log.WithError(err).Error("Failed to request stopping server")
+	}
+}
+
+func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer) {
+	if err := monitor.ReconfigureServer(gameConfig, cfg, cfg.ServerAddr); err != nil {
+		log.WithError(err).Error("Failed to reconfigure server")
 	}
 }
 
@@ -469,11 +476,36 @@ func main() {
 					return
 				}
 
-				memSizeGB, _ := strconv.Atoi(strings.Replace(c.PostForm("machine-type"), "g", "", 1))
+				machineType := c.PostForm("machine-type")
+				server.machineType = machineType
+				memSizeGB, _ := strconv.Atoi(strings.Replace(machineType, "g", "", 1))
 
 				go LaunchServer(gameConfig, cfg, gameServer, memSizeGB)
 
 				c.JSON(200, gin.H{"success": true})
+			})
+
+			api.POST("/reconfigure", func(c *gin.Context) {
+				if err := c.Request.ParseForm(); err != nil {
+					log.WithError(err).Error("Failed to parse form")
+					c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Form parse error"})
+					return
+				}
+
+				formValues := c.Request.Form
+				formValues.Set("machine-type", server.machineType)
+
+				gameConfig, err := createConfigFromPostData(formValues, cfg)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+					return
+				}
+				// Use previously generated key.
+				gameConfig.AuthKey = cfg.MonitorKey
+
+				go ReconfigureServer(gameConfig, cfg, gameServer)
+
+				c.JSON(http.StatusOK, gin.H{"success": true})
 			})
 
 			api.POST("/stop", func(c *gin.Context) {

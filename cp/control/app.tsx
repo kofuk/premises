@@ -66,13 +66,13 @@ export default class App extends React.Component<{}, AppState> {
     }
 
     showError(message: string) {
-        this.setState({isServerShutdown: true, isError: true, message: message})
+        this.setState({isError: true, message: message})
     }
 
     render() {
         const mainPane: React.ReactElement = this.state.isServerShutdown
             ? <ServerConfigPane showError={this.showError.bind(this)} />
-            : <ServerControlPane />;
+            : <ServerControlPane showError={this.showError.bind(this)} />;
         return (
             <div className="container">
                 <StatusBar isError={this.state.isError} message={this.state.message} />
