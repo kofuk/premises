@@ -1,5 +1,6 @@
 const webpack = require('webpack');
 const path = require('path');
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const env = process.env.NODE_ENV || 'development';
 
@@ -12,11 +13,12 @@ module.exports = {
     },
     resolve: {
         modules: ['node_modules'],
-        extensions: ['.ts', '.tsx', '.js']
+        extensions: ['.mjs', '.ts', '.tsx', '.js']
     },
     output: {
         path: path.resolve(__dirname, 'gen'),
-        filename: '[name].js'
+        filename: '[name].js',
+        clean: true
     },
     module: {
         rules: [
@@ -30,5 +32,10 @@ module.exports = {
                 use: ['style-loader', 'css-loader', 'sass-loader']
             }
         ]
-    }
+    },
+    plugins: [
+        new BundleAnalyzerPlugin({
+            openAnalyzer: false
+        })
+    ]
 };

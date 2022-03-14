@@ -1,4 +1,3 @@
-import 'bootstrap';
 import "./control.scss";
 
 import * as ReactDOM from 'react-dom';

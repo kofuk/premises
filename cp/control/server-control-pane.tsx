@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {FaStop} from 'react-icons/fa';
+import {FaStop} from '@react-icons/all-files/fa/FaStop';
 
 import ReconfigureMenu from './reconfigure-menu';
 import SystemInfo from './control-item/system-info';

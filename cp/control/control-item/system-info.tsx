@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {IoIosArrowBack} from 'react-icons/io';
+import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
 
 type Prop = {
     backToMenu: () => void

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {VscDebugStart} from 'react-icons/vsc';
+import {VscDebugStart} from '@react-icons/all-files/vsc/VscDebugStart';
 
 import MachineType from './config-item/machine-type';
 import ServerVersion from './config-item/server-version';
