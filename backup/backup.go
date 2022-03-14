@@ -5,8 +5,9 @@ import (
 	"regexp"
 	"sort"
 
+	"github.com/kofuk/go-mega"
 	"github.com/kofuk/premises/config"
-	"github.com/t3rm1n4l/go-mega"
+	log "github.com/sirupsen/logrus"
 )
 
 type WorldBackup struct {
@@ -20,7 +21,7 @@ func getFolderRef(m *mega.Mega, parent *mega.Node, name string) (*mega.Node, err
 		return nil, err
 	}
 	for _, folder := range children {
-		if folder.GetName() == name && folder.GetType() == mega.FOLDER {
+		if folder.GetName() == name && folder.GetType() == mega.TypeFolder {
 			return folder, nil
 		}
 	}
@@ -58,6 +59,11 @@ func GetBackupList(cfg *config.Config) ([]WorldBackup, error) {
 	if err := m.Login(cfg.Mega.Email, cfg.Mega.Password); err != nil {
 		return nil, err
 	}
+	defer func() {
+		if err := m.Logout(); err != nil {
+			log.WithError(err).Warn("Failed to logout from Mega")
+		}
+	}()
 
 	worldsFolder, err := getCloudWorldsFolder(cfg, m)
 	if err != nil {
@@ -71,7 +77,7 @@ func GetBackupList(cfg *config.Config) ([]WorldBackup, error) {
 
 	var result []WorldBackup
 	for _, world := range worlds {
-		if world.GetType() != mega.FOLDER {
+		if world.GetType() != mega.TypeFolder {
 			continue
 		}
 
