@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
 
 import {ItemProp} from './prop';
 import {ConfigItem} from './config-item';
@@ -20,7 +21,8 @@ type State = {
     showStable: boolean,
     showSnapshot: boolean,
     showBeta: boolean,
-    showAlpha: boolean
+    showAlpha: boolean,
+    refreshing: boolean
 };
 
 export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
@@ -29,7 +31,8 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
         showStable: true,
         showSnapshot: false,
         showAlpha: false,
-        showBeta: false
+        showBeta: false,
+        refreshing: false
     };
 
     constructor(prop: Prop) {
@@ -42,6 +45,17 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
             .then(resp => {
                 this.setState({mcVersions: resp});
                 this.postUpdateCondition();
+            });
+    }
+
+    handleRefresh() {
+        this.setState({refreshing: true});
+        fetch('/control/api/mcversions?reload')
+            .then(resp => resp.json())
+            .then(resp => {
+                this.setState({mcVersions: resp});
+                this.postUpdateCondition();
+                this.setState({refreshing: false});
             });
     }
 
@@ -77,6 +91,15 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
                         onChange={(e) => this.handleChange(e.target.value)}>
                     {versions}
                 </select>
+                <div className="m-1 text-end">
+                    <button type="button" className="btn btn-sm btn-outline-secondary"
+                            onClick={this.handleRefresh.bind(this)} disabled={this.state.refreshing}>
+                        {this.state.refreshing
+                             ? <div className="spinner-border spinner-border-sm me-1" role="status"></div>
+                             : <IoIosRefresh />}
+                        Refresh
+                    </button>
+                </div>
                 <div className="m-1 form-check form-switch">
                     <input className="form-check-input" type="checkbox" id="showStable" checked={this.state.showStable}
                            onChange={() => {this.setState({showStable: !this.state.showStable}); this.postUpdateCondition();}} />

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
 
 import {ItemProp} from './prop';
 import {ConfigItem} from './config-item';
@@ -14,12 +15,14 @@ type Prop = ItemProp & {
 };
 
 type State = {
-    backups: WorldBackup[]
+    backups: WorldBackup[],
+    refreshing: boolean
 };
 
 export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
     state: State = {
-        backups: []
+        backups: [],
+        refreshing: false
     };
 
     constructor(prop: Prop) {
@@ -35,6 +38,20 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                     this.props.setWorldName(resp[0].worldName);
                     this.props.setBackupGeneration(resp[0].generations[0])
                 }
+            });
+    }
+
+    handleRefresh() {
+        this.setState({refreshing: true});
+        fetch('/control/api/backups?reload')
+            .then(resp => resp.json())
+            .then(resp => {
+                this.setState({backups: resp});
+                if (resp.length > 0) {
+                    this.props.setWorldName(resp[0].worldName);
+                    this.props.setBackupGeneration(resp[0].generations[0])
+                }
+                this.setState({refreshing: false});
             });
     }
 
@@ -77,6 +94,15 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                     <input className="form-check-input" type="checkbox" id="useCachedWorld" checked={this.props.useCachedWorld}
                            onChange={(e) => this.props.setUseCachedWorld(e.target.checked)}/>
                     <label className="form-check-label" htmlFor="useCachedWorld">Use Cached World Data If Possible</label>
+                </div>
+                <div className="m-1">
+                    <button type="button" className="btn btn-sm btn-outline-secondary"
+                            onClick={this.handleRefresh.bind(this)} disabled={this.state.refreshing}>
+                        {this.state.refreshing
+                             ? <div className="spinner-border spinner-border-sm me-1" role="status"></div>
+                             : <IoIosRefresh />}
+                        Refresh
+                    </button>
                 </div>
             </>
         );
