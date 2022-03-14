@@ -30,9 +30,9 @@ type Config struct {
 		Password string `env:"password"`
 	} `env:"mega"`
 	Game struct {
-		Motd       string   `env:"motd"`
-		Operators  []string `env:"operators"`
-		Whitelist  []string `env:"whitelist"`
+		Motd      string   `env:"motd"`
+		Operators []string `env:"operators"`
+		Whitelist []string `env:"whitelist"`
 	} `env:"game"`
 	ControlPanel struct {
 		Secret        string `env:"secret"`

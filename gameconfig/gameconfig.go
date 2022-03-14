@@ -22,14 +22,14 @@ type GameConfig struct {
 		Name           string `json:"name"`
 		Generation     string `json:"generation"`
 		Seed           string `json:"seed"`
-		LevelType  string   `json:"levelType"`
-		Difficulty string   `json:"difficulty"`
-		UseCache bool `json:"useCache"`
+		LevelType      string `json:"levelType"`
+		Difficulty     string `json:"difficulty"`
+		UseCache       bool   `json:"useCache"`
 	} `json:"world"`
-	Motd       string   `json:"motd"`
-	Operators  []string `json:"operators"`
-	Whitelist  []string `json:"whitelist"`
-	Mega       struct {
+	Motd      string   `json:"motd"`
+	Operators []string `json:"operators"`
+	Whitelist []string `json:"whitelist"`
+	Mega      struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	} `json:"mega"`
@@ -37,7 +37,7 @@ type GameConfig struct {
 
 func New() *GameConfig {
 	result := GameConfig{
-		RemoveMe:   true,
+		RemoveMe: true,
 	}
 	result.World.LevelType = "default"
 	result.World.Difficulty = "normal"
