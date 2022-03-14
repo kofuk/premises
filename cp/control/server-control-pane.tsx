@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {FaStop} from 'react-icons/fa';
 
 import ReconfigureMenu from './reconfigure-menu';
 import SystemInfo from './control-item/system-info';
@@ -64,7 +65,7 @@ export default class ServerControlPane extends React.Component<Prop, State> {
                             <button className="btn btn-danger bg-gradient"
                                     type="button"
                                     onClick={(e: React.MouseEvent) => {e.preventDefault(); fetch('/control/api/stop', {method: 'post'});}}>
-                                Stop
+                                <FaStop /> Stop
                             </button>
                         </div>
                     </form>

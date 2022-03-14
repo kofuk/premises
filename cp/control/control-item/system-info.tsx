@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {IoIosArrowBack} from 'react-icons/io';
 
 type Prop = {
     backToMenu: () => void
@@ -48,7 +49,7 @@ export default class SystemInfo extends React.Component<Prop, State> {
         return (
             <div className="m-2">
                 <button className="btn btn-outline-primary" onClick={this.props.backToMenu}>
-                    Back
+                    <IoIosArrowBack /> Back
                 </button>
                 <div className="m-2">
                     {mainContents}

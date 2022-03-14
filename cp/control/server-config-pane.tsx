@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {VscDebugStart} from 'react-icons/vsc';
 
 import MachineType from './config-item/machine-type';
 import ServerVersion from './config-item/server-version';
@@ -203,7 +204,7 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
                                     type="button"
                                     onClick={this.handleStart.bind(this)}
                                     disabled={this.state.currentStep !== this.stepCount}>
-                                Start
+                                <VscDebugStart /> Start
                             </button>
                         </div>
                     </form>

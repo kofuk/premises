@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {IoIosArrowBack} from 'react-icons/io';
 
 import ServerVersion from './config-item/server-version';
 import WorldSource from './config-item/world-source';
@@ -181,7 +182,7 @@ export default class ReconfigureMenu extends React.Component<Prop, ServerConfig>
         return (
             <div className="m-2">
                 <button className="btn btn-outline-primary" onClick={this.props.backToMenu}>
-                    Back
+                    <IoIosArrowBack /> Back
                 </button>
                 <div className="m-2">
                     {configItems}
