@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"embed"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 	"net/url"
@@ -11,11 +14,13 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-contrib/sessions"
 	redisSess "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
@@ -35,13 +40,16 @@ type serverState struct {
 	monitorChan      chan *monitor.StatusData
 	monitorClients   []chan *monitor.StatusData
 	monitorClientsMu sync.Mutex
-	worldBackupMu    sync.Mutex
-	worldBackups     []backup.WorldBackup
-	serverVersions   []mcversions.MCVersion
 	machineType      string
 }
 
 var server serverState
+
+const (
+	CacheKeyBackups          = "backups"
+	CacheKeyMCVersions       = "mcversions"
+	CacheKeySystemInfoPrefix = "system-info"
+)
 
 func (s *serverState) addMonitorClient(ch chan *monitor.StatusData) {
 	s.monitorClientsMu.Lock()
@@ -64,13 +72,19 @@ func (s *serverState) removeMonitorClient(ch chan *monitor.StatusData) {
 	}
 }
 
-func (s *serverState) dispatchMonitorEvent() {
+func (s *serverState) dispatchMonitorEvent(rdb *redis.Client) {
 	for {
 		status := <-s.monitorChan
 
 		s.statusMu.Lock()
 		s.status = *status
 		s.statusMu.Unlock()
+
+		if status.Shutdown {
+			if _, err := rdb.Del(context.Background(), CacheKeyBackups).Result(); err != nil {
+				log.WithError(err).Error("Failed to delete backup list cache")
+			}
+		}
 
 		s.monitorClientsMu.Lock()
 		for _, ch := range s.monitorClients {
@@ -327,6 +341,11 @@ func main() {
 	monitorChan := make(chan *monitor.StatusData)
 	server.monitorChan = monitorChan
 
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     cfg.ControlPanel.Redis.Address,
+		Password: cfg.ControlPanel.Redis.Password,
+	})
+
 	r := gin.Default()
 	r.SetTrustedProxies([]string{"127.0.0.1"})
 
@@ -511,48 +530,125 @@ func main() {
 			})
 
 			api.GET("/backups", func(c *gin.Context) {
-				if len(server.worldBackups) == 0 {
-					backups, err := backup.GetBackupList(cfg)
-					if err != nil {
-						log.WithError(err).Error("Failed to retrive backup list")
-						c.Status(http.StatusInternalServerError)
-						return
+				if _, ok := c.GetQuery("reload"); ok {
+					if _, err := rdb.Del(context.Background(), CacheKeyBackups).Result(); err != nil {
+						log.WithError(err).Error("Failed to delete backup list cache")
 					}
-					server.worldBackupMu.Lock()
-					server.worldBackups = backups
-					server.worldBackupMu.Unlock()
 				}
-				c.JSON(http.StatusOK, server.worldBackups)
+
+				if val, err := rdb.Get(context.Background(), CacheKeyBackups).Result(); err == nil {
+					c.Header("Content-Type", "application/json")
+					c.Writer.Write([]byte(val))
+					return
+				} else if err != redis.Nil {
+					log.WithError(err).Error("Error retriving mcversions cache")
+				}
+
+				log.WithField("cache_key", CacheKeyBackups).Info("cache miss")
+
+				backups, err := backup.GetBackupList(cfg)
+				if err != nil {
+					log.WithError(err).Error("Failed to retrive backup list")
+					c.Status(http.StatusInternalServerError)
+					return
+				}
+
+				jsonData, err := json.Marshal(backups)
+				if err != nil {
+					log.WithError(err).Error("Failed to marshal backpu list")
+					c.Status(http.StatusInternalServerError)
+					return
+				}
+
+				if _, err := rdb.Set(context.Background(), CacheKeyBackups, jsonData, 24*time.Hour).Result(); err != nil {
+					log.WithError(err).Error("Failed to store backup list")
+				}
+
+				c.Header("Content-Type", "application/json")
+				c.Writer.Write(jsonData)
 			})
 
 			api.GET("/mcversions", func(c *gin.Context) {
-				if len(server.serverVersions) == 0 {
-					versions, err := mcversions.GetVersions()
-					if err != nil {
-						log.WithError(err).Error("Failed to retrive Minecraft versions")
-						c.Status(http.StatusInternalServerError)
-						return
+				if _, ok := c.GetQuery("reload"); ok {
+					if _, err := rdb.Del(context.Background(), CacheKeyMCVersions).Result(); err != nil {
+						log.WithError(err).Error("Failed to delete mcversions cache")
 					}
-					server.serverVersions = versions
 				}
-				c.JSON(http.StatusOK, server.serverVersions)
+
+				if val, err := rdb.Get(context.Background(), CacheKeyMCVersions).Result(); err == nil {
+					c.Header("Content-Type", "application/json")
+					c.Writer.Write([]byte(val))
+					return
+				} else if err != redis.Nil {
+					log.WithError(err).Error("Error retriving mcversions cache")
+				}
+
+				log.WithField("cache_key", CacheKeyMCVersions).Info("cache miss")
+
+				versions, err := mcversions.GetVersions()
+				if err != nil {
+					log.WithError(err).Error("Failed to retrive Minecraft versions")
+					c.Status(http.StatusInternalServerError)
+					return
+				}
+
+				jsonData, err := json.Marshal(versions)
+				if err != nil {
+					log.WithError(err).Error("Failed to marshal mcversions")
+					c.Status(http.StatusInternalServerError)
+					return
+				}
+
+				if _, err := rdb.Set(context.Background(), CacheKeyMCVersions, jsonData, 7*24*time.Hour).Result(); err != nil {
+					log.WithError(err).Error("Failed to cache mcversions")
+				}
+
+				c.Header("Content-Type", "application/json")
+				c.Writer.Write(jsonData)
 			})
 
 			api.GET("/systeminfo", func(c *gin.Context) {
-				c.Header("Content-Type", "application/json")
+				if cfg.ServerAddr == "" {
+					c.Status(http.StatusTooEarly)
+					return
+				}
+
+				cacheKey := fmt.Sprintf("%s:%s", CacheKeySystemInfoPrefix, cfg.ServerAddr)
+
+				if _, ok := c.GetQuery("reload"); ok {
+					if _, err := rdb.Del(context.Background(), cacheKey).Result(); err != nil {
+						log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Failed to delete system info cache")
+					}
+				}
+
+				if val, err := rdb.Get(context.Background(), cacheKey).Result(); err == nil {
+					c.Header("Content-Type", "application/json")
+					c.Writer.Write([]byte(val))
+					return
+				} else if err != redis.Nil {
+					log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Error retriving system info cache")
+				}
+
+				log.WithField("cache_key", cacheKey).Info("cache miss")
+
 				data, err := monitor.GetSystemInfoData(cfg, cfg.ServerAddr)
 				if err != nil {
 					c.Status(http.StatusInternalServerError)
 					return
 				}
 
+				if _, err := rdb.Set(context.Background(), cacheKey, data, 24*time.Hour).Result(); err != nil {
+					log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Failed to cache mcversions")
+				}
+
+				c.Header("Content-Type", "application/json")
 				c.Writer.Write(data)
 			})
 		}
 	}
 
 	go func() {
-		server.dispatchMonitorEvent()
+		server.dispatchMonitorEvent(rdb)
 	}()
 
 	guessAndHandleCurrentVMState(cfg, gameServer)
