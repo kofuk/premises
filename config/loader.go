@@ -65,11 +65,8 @@ func loadField(name string, field reflect.Value) error {
 		break
 
 	case reflect.Bool:
-		result, err := strconv.ParseBool(xGetenv(name))
-		if err != nil {
-			return err
-		}
-		field.SetBool(result)
+		val := xGetenv(name)
+		field.SetBool(strings.EqualFold(val, "true") || strings.EqualFold(val, "yes") || strings.EqualFold(val, "on"))
 		break
 
 	case reflect.Slice:
