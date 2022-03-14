@@ -27,12 +27,20 @@ func getFolderRef(m *mega.Mega, parent *mega.Node, name string) (*mega.Node, err
 	return nil, errors.New("No such folder")
 }
 
-func getCloudWorldsFolder(m *mega.Mega) (*mega.Node, error) {
+func getCloudWorldsFolder(cfg *config.Config, m *mega.Mega) (*mega.Node, error) {
 	dataRoot, err := getFolderRef(m, m.FS.GetRoot(), "premises")
 	if err != nil {
 		return nil, err
 	}
-	worldsFolder, err := getFolderRef(m, dataRoot, "worlds")
+
+	var worldFolderName string
+	if cfg.Debug.Runner {
+		worldFolderName = "worlds.dev"
+	} else {
+		worldFolderName = "worlds"
+	}
+
+	worldsFolder, err := getFolderRef(m, dataRoot, worldFolderName)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +59,7 @@ func GetBackupList(cfg *config.Config) ([]WorldBackup, error) {
 		return nil, err
 	}
 
-	worldsFolder, err := getCloudWorldsFolder(m)
+	worldsFolder, err := getCloudWorldsFolder(cfg, m)
 	if err != nil {
 		return nil, err
 	}
