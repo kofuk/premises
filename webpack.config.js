@@ -1,10 +1,9 @@
 const webpack = require('webpack');
 const path = require('path');
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 
 const env = process.env.NODE_ENV || 'development';
 
-module.exports = {
+const config = {
     mode: env,
     devtool: env === 'development' ? 'inline-source-map' : false,
     entry: {
@@ -33,9 +32,17 @@ module.exports = {
             }
         ]
     },
-    plugins: [
+    plugins: []
+};
+
+if (process.env.USE_BUNDLE_ANALYZER) {
+    const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+
+    config.plugins.push(
         new BundleAnalyzerPlugin({
             openAnalyzer: false
         })
-    ]
-};
+    );
+}
+
+module.exports = config;
