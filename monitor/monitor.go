@@ -199,3 +199,29 @@ func GetSystemInfoData(cfg *config.Config, addr string) ([]byte, error) {
 
 	return data, nil
 }
+
+func TakeSnapshot(cfg *config.Config, addr string) error {
+	tlsConfig, err := makeTLSConfig(cfg)
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+
+	req, err := http.NewRequest("POST", "https://"+addr+":8521/snapshot", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("X-Auth-Key", cfg.MonitorKey)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return errors.New("Error creating snapshot")
+	}
+
+	return nil
+}

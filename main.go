@@ -644,6 +644,20 @@ func main() {
 				c.Header("Content-Type", "application/json")
 				c.Writer.Write(data)
 			})
+
+			api.POST("/snapshot", func(c *gin.Context) {
+				if cfg.ServerAddr == "" {
+					c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+					return
+				}
+
+				if err := monitor.TakeSnapshot(cfg, cfg.ServerAddr); err != nil {
+					c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+					return
+				}
+
+				c.JSON(http.StatusOK, gin.H{"success": true})
+			})
 		}
 	}
 
