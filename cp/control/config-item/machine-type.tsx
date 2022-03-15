@@ -21,11 +21,11 @@ class Machine {
         this.price = price;
     }
 
-    getLabel(): string {
+    getLabel = (): string => {
         return `${this.memSize}GB RAM & ${this.nCores}-core CPU, ¥${this.price}/h`;
-    }
+    };
 
-    createReactElement(selectedValue: string, clickHandler: (val: string) => void): React.ReactElement {
+    createReactElement = (selectedValue: string, clickHandler: (val: string) => void): React.ReactElement => {
         return (
             <React.Fragment key={this.name}>
                 <input type="radio" className="btn-check" id={`machineType_${this.name}`} name="machine-type"
@@ -36,7 +36,7 @@ class Machine {
                 </label>
             </React.Fragment>
         );
-    }
+    };
 };
 
 const machines: Machine[] = [
@@ -50,20 +50,20 @@ export default class MachineTypeConfigItem extends ConfigItem<Prop, {}> {
         super(prop, 'Machine Type');
     }
 
-    handleClick(val: string) {
+    handleClick = (val: string) => {
         this.props.setMachineType(val);
-    }
+    };
 
-    createContent(): React.ReactElement {
+    createContent = (): React.ReactElement => {
         return (
             <>
                 <div className="btn-group ms-3" role="group">
-                    {machines.map((e) => e.createReactElement(this.props.machineType, this.handleClick.bind(this)))}
+                    {machines.map((e) => e.createReactElement(this.props.machineType, this.handleClick))}
                 </div>
                 <div className="m-1 text-end">
                     <button type="button" className="btn btn-primary" onClick={this.props.nextStep}>Next</button>
                 </div>
             </>
         );
-    }
+    };
 };

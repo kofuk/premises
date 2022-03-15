@@ -19,15 +19,15 @@ export default class SystemInfo extends React.Component<Prop, State> {
         systemInfo: null
     };
 
-    componentDidMount() {
+    componentDidMount = () => {
         fetch('/control/api/systeminfo')
             .then(resp => resp.json())
             .then(resp => {
                 this.setState({systemInfo: resp});
             });
-    }
+    };
 
-    render() {
+    render = () => {
         let mainContents: React.ReactElement;
         if (this.state.systemInfo === null) {
             mainContents = <></>;
@@ -56,5 +56,5 @@ export default class SystemInfo extends React.Component<Prop, State> {
                 </div>
             </div>
         );
-    }
+    };
 };

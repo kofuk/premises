@@ -27,22 +27,22 @@ export default class App extends React.Component<{}, AppState> {
         this.retryCount = 0;
     }
 
-    componentDidMount() {
+    componentDidMount = () => {
         this.wsWatch();
-    }
+    };
 
-    wsWatch() {
+    wsWatch = () => {
         const ws: WebSocket = new WebSocket(this.socketUrl);
-        ws.addEventListener('close', this.handleWsClose.bind(this));
-        ws.addEventListener('message', this.handleWsMessage.bind(this));
-    }
+        ws.addEventListener('close', this.handleWsClose);
+        ws.addEventListener('message', this.handleWsMessage);
+    };
 
-    handleWsOpen() {
+    handleWsOpen = () => {
         this.setState({isError: false, message: 'Connected.'});
         this.retryCount = 0;
-    }
+    };
 
-    handleWsClose() {
+    handleWsClose = () => {
         if (this.retryCount === 20) {
             this.setState({isError: true, message: 'Connection has lost; Please reload the page.'});
             return;
@@ -53,31 +53,31 @@ export default class App extends React.Component<{}, AppState> {
 
         setTimeout(() => {
             const ws = new WebSocket(this.socketUrl);
-            ws.addEventListener('open', this.handleWsOpen.bind(this));
-            ws.addEventListener('close', this.handleWsClose.bind(this));
-            ws.addEventListener('message', this.handleWsMessage.bind(this));
+            ws.addEventListener('open', this.handleWsOpen);
+            ws.addEventListener('close', this.handleWsClose);
+            ws.addEventListener('message', this.handleWsMessage);
         }, Math.random() * 5);
-    }
+    };
 
 
-    handleWsMessage(ev: MessageEvent) {
+    handleWsMessage = (ev: MessageEvent) => {
         const event = JSON.parse(ev.data);
         this.setState({isServerShutdown: event.shutdown, isError: event.hasError, message: event.status})
-    }
+    };
 
-    showError(message: string) {
+    showError =  (message: string) => {
         this.setState({isError: true, message: message})
     }
 
-    render() {
+    render = () => {
         const mainPane: React.ReactElement = this.state.isServerShutdown
-            ? <ServerConfigPane showError={this.showError.bind(this)} />
-            : <ServerControlPane showError={this.showError.bind(this)} />;
+            ? <ServerConfigPane showError={this.showError} />
+            : <ServerControlPane showError={this.showError} />;
         return (
             <div className="container">
                 <StatusBar isError={this.state.isError} message={this.state.message} />
                 {mainPane}
             </div>
         );
-    }
+    };
 };

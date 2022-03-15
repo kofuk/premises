@@ -12,7 +12,7 @@ export abstract class ConfigItem<Prop extends ItemProp, State> extends React.Com
 
     abstract createContent(): React.ReactElement;
 
-    public render() {
+    render = () => {
         let mainContent: React.ReactElement;
         if (this.props.isFocused) {
             mainContent = this.createContent();
@@ -36,5 +36,5 @@ export abstract class ConfigItem<Prop extends ItemProp, State> extends React.Com
                 </div>
             </div>
         );
-    }
+    };
 };

@@ -39,16 +39,16 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
         super(prop, 'Game Version');
     }
 
-    componentDidMount() {
+    componentDidMount = () => {
         fetch('/control/api/mcversions')
             .then(resp => resp.json())
             .then(resp => {
                 this.setState({mcVersions: resp});
                 this.postUpdateCondition();
             });
-    }
+    };
 
-    handleRefresh() {
+    handleRefresh = () => {
         this.setState({refreshing: true});
         fetch('/control/api/mcversions?reload')
             .then(resp => resp.json())
@@ -57,13 +57,13 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
                 this.postUpdateCondition();
                 this.setState({refreshing: false});
             });
-    }
+    };
 
-    handleChange(val: string) {
+    handleChange = (val: string) => {
         this.props.setServerVersion(val);
-    }
+    };
 
-    postUpdateCondition() {
+    postUpdateCondition = () => {
         const versions = this.state.mcVersions
             .filter(e => this.state.showStable || (e.channel !== 'stable'))
             .filter(e => this.state.showSnapshot || (e.channel !== 'snapshot'))
@@ -72,13 +72,13 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
         if (!versions.find(e => e.name === this.props.serverVersion)) {
             if (versions.length > 0) {
                 this.props.setServerVersion(versions[0].name);
-            } else {
+            } else if (this.state.mcVersions.length > 0) {
                 this.props.setServerVersion(this.state.mcVersions[0].name);
             }
         }
-    }
+    };
 
-    createContent(): React.ReactElement {
+    createContent = (): React.ReactElement => {
         const versions = this.state.mcVersions
             .filter(e => this.state.showStable || (e.channel !== 'stable'))
             .filter(e => this.state.showSnapshot || (e.channel !== 'snapshot'))
@@ -93,7 +93,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
                 </select>
                 <div className="m-1 text-end">
                     <button type="button" className="btn btn-sm btn-outline-secondary"
-                            onClick={this.handleRefresh.bind(this)} disabled={this.state.refreshing}>
+                            onClick={this.handleRefresh} disabled={this.state.refreshing}>
                         {this.state.refreshing
                              ? <div className="spinner-border spinner-border-sm me-1" role="status"></div>
                              : <IoIosRefresh />}
@@ -125,5 +125,5 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
                 </div>
             </>
         );
-    }
+    };
 };

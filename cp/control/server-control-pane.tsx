@@ -23,11 +23,11 @@ export default class ServerControlPane extends React.Component<Prop, State> {
         mode: Modes.MainMenu
     };
 
-    handleBackToMenu() {
+    handleBackToMenu = () => {
         this.setState({mode: Modes.MainMenu});
-    }
+    };
 
-    render() {
+    render = () => {
         const controlItems: React.ReactElement[] = []
 
         if (this.state.mode === Modes.MainMenu) {
@@ -45,13 +45,13 @@ export default class ServerControlPane extends React.Component<Prop, State> {
             )
         } else if (this.state.mode === Modes.Reconfigure) {
             controlItems.push(
-                <ReconfigureMenu backToMenu={this.handleBackToMenu.bind(this)}
+                <ReconfigureMenu backToMenu={this.handleBackToMenu}
                                  showError={this.props.showError}
                                  key="reconfigure" />
             );
         } else if (this.state.mode === Modes.SystemInfo) {
             controlItems.push(
-                <SystemInfo backToMenu={this.handleBackToMenu.bind(this)}
+                <SystemInfo backToMenu={this.handleBackToMenu}
                             key="systemInfo" />
             );
         }

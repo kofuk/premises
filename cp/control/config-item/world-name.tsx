@@ -26,15 +26,15 @@ export default class WorldNameConfigItem extends ConfigItem<Prop, State> {
         super(prop, 'World Name');
     }
 
-    componentDidMount() {
+    componentDidMount = () => {
         fetch('/control/api/backups')
             .then(resp => resp.json())
             .then(resp => {
                 this.setState({backups: resp});
             });
-    }
+    };
 
-    handleChange(val: string) {
+    handleChange = (val: string) => {
         this.props.setWorldName(val);
 
         if (!val.match(/^[a-zA-Z0-9]+$/)) {
@@ -47,9 +47,9 @@ export default class WorldNameConfigItem extends ConfigItem<Prop, State> {
         }
 
         this.setState({duplicateName: false, invalidName: false});
-    }
+    };
 
-    createContent(): React.ReactElement {
+    createContent = (): React.ReactElement => {
         let alert = <></>;
         if (this.state.invalidName) {
             alert = (
@@ -79,5 +79,5 @@ export default class WorldNameConfigItem extends ConfigItem<Prop, State> {
                 </div>
             </>
         );
-    }
+    };
 };

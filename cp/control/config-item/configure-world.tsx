@@ -27,9 +27,9 @@ class LevelTypeInfo {
         this.label = label;
     }
 
-    createReactElement(): React.ReactElement {
+    createReactElement = (): React.ReactElement => {
         return <option value={this.levelType}>{this.label}</option>;
-    }
+    };
 };
 
 const levelTypes: LevelTypeInfo[] = [
@@ -44,7 +44,7 @@ export default class ConfigureWorldConfigItem extends ConfigItem<Prop, {}> {
         super(prop, 'Configure World');
     }
 
-    createContent(): React.ReactElement {
+    createContent = (): React.ReactElement => {
         return (
             <>
                 <div className="m-2">
@@ -66,5 +66,5 @@ export default class ConfigureWorldConfigItem extends ConfigItem<Prop, {}> {
                 </div>
             </>
         );
-    }
+    };
 };

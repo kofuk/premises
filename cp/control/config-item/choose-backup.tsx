@@ -29,7 +29,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
         super(prop, 'World');
     }
 
-    componentDidMount() {
+    componentDidMount = () => {
         fetch('/control/api/backups')
             .then(resp => resp.json())
             .then(resp => {
@@ -39,9 +39,9 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                     this.props.setBackupGeneration(resp[0].generations[0])
                 }
             });
-    }
+    };
 
-    handleRefresh() {
+    handleRefresh = () => {
         this.setState({refreshing: true});
         fetch('/control/api/backups?reload')
             .then(resp => resp.json())
@@ -53,19 +53,19 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                 }
                 this.setState({refreshing: false});
             });
-    }
+    };
 
-    handleChangeWorld(worldName: string) {
+    handleChangeWorld = (worldName: string) => {
         this.props.setWorldName(worldName);
         const generations = this.state.backups.find(e => e.worldName === worldName)!.generations;
         this.props.setBackupGeneration(generations[0]);
-    }
+    };
 
-    handleChangeGeneration(generation: string) {
+    handleChangeGeneration = (generation: string) => {
         this.props.setBackupGeneration(generation);
-    }
+    };
 
-    createBackupSelector(): React.ReactElement {
+    createBackupSelector = (): React.ReactElement => {
         const worlds = (
             <div className="m-2">
                 <label className="form-label" htmlFor="worldSelect">World</label>
@@ -97,7 +97,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                 </div>
                 <div className="m-1">
                     <button type="button" className="btn btn-sm btn-outline-secondary"
-                            onClick={this.handleRefresh.bind(this)} disabled={this.state.refreshing}>
+                            onClick={this.handleRefresh} disabled={this.state.refreshing}>
                         {this.state.refreshing
                              ? <div className="spinner-border spinner-border-sm me-1" role="status"></div>
                              : <IoIosRefresh />}
@@ -108,15 +108,15 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
         );
     }
 
-    createEmptyMessage(): React.ReactElement {
+    createEmptyMessage = (): React.ReactElement => {
         return (
             <div className="alert alert-warning" role="alert">
                 No world backups found. Please generate a new world.
             </div>
         );
-    }
+    };
 
-    createContent(): React.ReactElement {
+    createContent = (): React.ReactElement => {
         const content = this.state.backups.length === 0 ? this.createEmptyMessage() : this.createBackupSelector();
         return (
             <>
@@ -129,5 +129,5 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                 </div>
             </>
         );
-    }
+    };
 };

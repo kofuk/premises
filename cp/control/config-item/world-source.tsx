@@ -18,11 +18,11 @@ export default class WorldSourceConfigItem extends ConfigItem<Prop, {}> {
         super(prop, 'World Source');
     }
 
-    handleChange(val: string) {
+    handleChange = (val: string) => {
         this.props.setWorldSource(val === 'backups' ? WorldLocation.Backups : WorldLocation.NewWorld);
-    }
+    };
 
-    createContent(): React.ReactElement {
+    createContent = (): React.ReactElement => {
         return (
             <>
                 <div className="form-check">
@@ -43,5 +43,5 @@ export default class WorldSourceConfigItem extends ConfigItem<Prop, {}> {
                 </div>
             </>
         );
-    }
+    };
 };
