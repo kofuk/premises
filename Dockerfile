@@ -8,8 +8,8 @@ WORKDIR /build
 COPY . .
 RUN npm ci && npm run prod
 
-FROM scratch
+FROM alpine:latest
 COPY --from=0 /build/premises /premises
-COPY --from=0 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=1 /build/gen /gen
+RUN apk --no-cache add openssl
 ENTRYPOINT ["/premises"]
