@@ -67,6 +67,7 @@ func (s *serverState) removeMonitorClient(ch chan *monitor.StatusData) {
 			if i != len(s.monitorClients)-1 {
 				s.monitorClients[i] = s.monitorClients[len(s.monitorClients)-1]
 			}
+			s.monitorClients = s.monitorClients[:len(s.monitorClients)-1]
 			break
 		}
 	}
@@ -462,14 +463,31 @@ func main() {
 				}
 				server.statusMu.Unlock()
 
-				for {
-					status := <-ch
+				closeChan := make(chan struct{})
 
-					if err := conn.WriteJSON(status); err != nil {
-						log.WithError(err).Error("Failed to write data")
-						break
+				go func() {
+					for {
+						var v struct{}
+						if err := conn.ReadJSON(&v); err != nil {
+							log.Info("Connection closed")
+							close(closeChan)
+							break
+						}
+					}
+				}()
+
+				for {
+					select {
+					case status := <-ch:
+						if err := conn.WriteJSON(status); err != nil {
+							log.WithError(err).Error("Failed to write data")
+							break
+						}
+					case <-closeChan:
+						goto end
 					}
 				}
+			end:
 			})
 
 			api.POST("/launch", func(c *gin.Context) {
