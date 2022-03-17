@@ -49,7 +49,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                 this.setState({backups: resp});
                 if (resp.length > 0) {
                     this.props.setWorldName(resp[0].worldName);
-                    this.props.setBackupGeneration(resp[0].generations[0])
+                    this.props.setBackupGeneration(resp[0].generations[0].genertion)
                 }
                 this.setState({refreshing: false});
             });
@@ -58,11 +58,11 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
     handleChangeWorld = (worldName: string) => {
         this.props.setWorldName(worldName);
         const generations = this.state.backups.find(e => e.worldName === worldName)!.generations;
-        this.props.setBackupGeneration(generations[0]);
+        this.props.setBackupGeneration(generations[0].id);
     };
 
-    handleChangeGeneration = (generation: string) => {
-        this.props.setBackupGeneration(generation);
+    handleChangeGeneration = (generationId: string) => {
+        this.props.setBackupGeneration(generationId);
     };
 
     createBackupSelector = (): React.ReactElement => {
@@ -81,7 +81,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                 <label className="form-label" htmlFor="backupGenerationSelect">Backup Generation</label>
                 <select className="form-select" value={this.props.backupGeneration} id="backupGenerationSelect"
                         onChange={(e) => this.handleChangeGeneration(e.target.value)}>
-                    {worldData.generations.map(e => <option value={e} key={e}>{e == 'latest' ? 'Latest' : `${e} gen ago`}</option>)}
+                    {worldData.generations.map(e => <option value={e.id} key={e.gen}>{e.gen == 'latest' ? 'Latest' : `${e.gen} gen ago`}</option>)}
                 </select>
             </div>
         ) : <></>;

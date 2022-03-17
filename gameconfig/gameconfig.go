@@ -20,7 +20,7 @@ type GameConfig struct {
 	World struct {
 		ShouldGenerate bool   `json:"shouldGenerate"`
 		Name           string `json:"name"`
-		Generation     string `json:"generation"`
+		GenerationId   string `json:"generationId"`
 		Seed           string `json:"seed"`
 		LevelType      string `json:"levelType"`
 		Difficulty     string `json:"difficulty"`
@@ -85,9 +85,9 @@ func (gc *GameConfig) GenerateAuthKey() string {
 	return result
 }
 
-func (gc *GameConfig) SetWorld(worldName string, generation string) {
+func (gc *GameConfig) SetWorld(worldName string, generationId string) {
 	gc.World.Name = worldName
-	gc.World.Generation = generation
+	gc.World.GenerationId = generationId
 }
 
 func (gc *GameConfig) GenerateWorld(worldName, seed string) {

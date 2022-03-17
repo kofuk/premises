@@ -4,15 +4,21 @@ import (
 	"errors"
 	"regexp"
 	"sort"
+	"strconv"
 
 	"github.com/kofuk/go-mega"
 	"github.com/kofuk/premises/config"
 	log "github.com/sirupsen/logrus"
 )
 
+type GenerationInfo struct {
+	Gen string `json:"gen"`
+	ID  string `json:"id"`
+}
+
 type WorldBackup struct {
-	WorldName   string   `json:"worldName"`
-	Generations []string `json:"generations"`
+	WorldName   string           `json:"worldName"`
+	Generations []GenerationInfo `json:"generations"`
 }
 
 func getFolderRef(m *mega.Mega, parent *mega.Node, name string) (*mega.Node, error) {
@@ -91,25 +97,40 @@ func GetBackupList(cfg *config.Config) ([]WorldBackup, error) {
 			return nil, err
 		}
 
-		var generations []string
+		var generations []GenerationInfo
 		for _, backup := range backups {
 			name := backup.GetName()
+			hash := backup.GetHash()
 			if name[len(name)-7:] == ".tar.xz" {
 				name = name[:len(name)-7]
 			}
 
-			generations = append(generations, name)
+			if name != "5" {
+				generations = append(generations, GenerationInfo{Gen: name, ID: hash})
+			}
 		}
 
 		if len(generations) == 0 {
 			continue
 		}
 
-		sort.Strings(generations)
-		// "latest" should be the first.
-		if len(generations) > 1 && generations[len(generations)-1] == "latest" {
-			generations = append([]string{"latest"}, generations[:len(generations)-1]...)
-		}
+		sort.Slice(generations, func(i, j int) bool {
+			if generations[i].Gen == "latest" {
+				return true
+			}
+			if generations[j].Gen == "latest" {
+				return false
+			}
+			iGen, err := strconv.Atoi(generations[i].Gen)
+			if err != nil {
+				return false
+			}
+			jGen, err := strconv.Atoi(generations[j].Gen)
+			if err != nil {
+				return false
+			}
+			return iGen < jGen
+		})
 
 		result = append(result, WorldBackup{
 			WorldName:   world.GetName(),

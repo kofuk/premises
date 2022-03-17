@@ -79,8 +79,8 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
         this.setState({worldName: worldName});
     };
 
-    setBackupGeneration = (generation: string) => {
-        this.setState({backupGeneration: generation});
+    setBackupGeneration = (generationId: string) => {
+        this.setState({backupGeneration: generationId});
     };
 
     setUseCachedWorld = (useCachedWorld: boolean) => {
