@@ -10,14 +10,14 @@ enum Modes {
     Reconfigure,
     Snapshot,
     SystemInfo
-};
-
-type Prop = {
-    showError: (message: string) => void
 }
 
+type Prop = {
+    showError: (message: string) => void;
+};
+
 type State = {
-    mode: Modes
+    mode: Modes;
 };
 
 export default class ServerControlPane extends React.Component<Prop, State> {
@@ -30,42 +30,46 @@ export default class ServerControlPane extends React.Component<Prop, State> {
     };
 
     render = () => {
-        const controlItems: React.ReactElement[] = []
+        const controlItems: React.ReactElement[] = [];
 
         if (this.state.mode === Modes.MainMenu) {
             controlItems.push(
                 <div className="list-group" key="mainMenu">
-                    <button type="button" className="list-group-item list-group-item-action"
-                            onClick={() => {this.setState({mode: Modes.Reconfigure})}}>
+                    <button
+                        type="button"
+                        className="list-group-item list-group-item-action"
+                        onClick={() => {
+                            this.setState({mode: Modes.Reconfigure});
+                        }}
+                    >
                         Reconfigure Server
                     </button>
-                    <button type="button" className="list-group-item list-group-item-action"
-                            onClick={() => {this.setState({mode: Modes.Snapshot})}}>
+                    <button
+                        type="button"
+                        className="list-group-item list-group-item-action"
+                        onClick={() => {
+                            this.setState({mode: Modes.Snapshot});
+                        }}
+                    >
                         Snapshot
                     </button>
-                    <button type="button" className="list-group-item list-group-item-action"
-                            onClick={() => {this.setState({mode: Modes.SystemInfo})}}>
+                    <button
+                        type="button"
+                        className="list-group-item list-group-item-action"
+                        onClick={() => {
+                            this.setState({mode: Modes.SystemInfo});
+                        }}
+                    >
                         System Information
                     </button>
                 </div>
-            )
+            );
         } else if (this.state.mode === Modes.Reconfigure) {
-            controlItems.push(
-                <ReconfigureMenu backToMenu={this.handleBackToMenu}
-                                 showError={this.props.showError}
-                                 key="reconfigure" />
-            );
+            controlItems.push(<ReconfigureMenu backToMenu={this.handleBackToMenu} showError={this.props.showError} key="reconfigure" />);
         } else if (this.state.mode === Modes.Snapshot) {
-            controlItems.push(
-                <Snapshot backToMenu={this.handleBackToMenu}
-                          showError={this.props.showError}
-                          key="snapshot" />
-            );
+            controlItems.push(<Snapshot backToMenu={this.handleBackToMenu} showError={this.props.showError} key="snapshot" />);
         } else if (this.state.mode === Modes.SystemInfo) {
-            controlItems.push(
-                <SystemInfo backToMenu={this.handleBackToMenu}
-                            key="systemInfo" />
-            );
+            controlItems.push(<SystemInfo backToMenu={this.handleBackToMenu} key="systemInfo" />);
         }
 
         return (
@@ -74,9 +78,14 @@ export default class ServerControlPane extends React.Component<Prop, State> {
                     <form>
                         {controlItems}
                         <div className="d-md-block mt-3 text-end">
-                            <button className="btn btn-danger bg-gradient"
-                                    type="button"
-                                    onClick={(e: React.MouseEvent) => {e.preventDefault(); fetch('/control/api/stop', {method: 'post'});}}>
+                            <button
+                                className="btn btn-danger bg-gradient"
+                                type="button"
+                                onClick={(e: React.MouseEvent) => {
+                                    e.preventDefault();
+                                    fetch('/control/api/stop', {method: 'post'});
+                                }}
+                            >
                                 <FaStop /> Stop
                             </button>
                         </div>
@@ -85,4 +94,4 @@ export default class ServerControlPane extends React.Component<Prop, State> {
             </div>
         );
     };
-};
+}

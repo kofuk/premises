@@ -31,10 +31,12 @@ export abstract class ConfigItem<Prop extends ItemProp, State> extends React.Com
                     </svg>
                 </div>
                 <div className="mx-2 p-2 flex-fill border rounded">
-                    <h3 className="step-title user-select-none" onClick={this.props.requestFocus}>{this.title}</h3>
+                    <h3 className="step-title user-select-none" onClick={this.props.requestFocus}>
+                        {this.title}
+                    </h3>
                     {mainContent}
                 </div>
             </div>
         );
     };
-};
+}

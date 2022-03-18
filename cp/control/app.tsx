@@ -5,9 +5,9 @@ import ServerControlPane from './server-control-pane';
 import ServerConfigPane from './server-config-pane';
 
 type AppState = {
-    isServerShutdown: boolean,
-    isError: boolean,
-    message: string,
+    isServerShutdown: boolean;
+    isError: boolean;
+    message: string;
 };
 
 export default class App extends React.Component<{}, AppState> {
@@ -16,7 +16,7 @@ export default class App extends React.Component<{}, AppState> {
     state: AppState = {
         isServerShutdown: true,
         isError: false,
-        message: '',
+        message: ''
     };
 
     constructor(props: {}) {
@@ -59,20 +59,21 @@ export default class App extends React.Component<{}, AppState> {
         }, Math.random() * 5);
     };
 
-
     handleWsMessage = (ev: MessageEvent) => {
         const event = JSON.parse(ev.data);
-        this.setState({isServerShutdown: event.shutdown, isError: event.hasError, message: event.status})
+        this.setState({isServerShutdown: event.shutdown, isError: event.hasError, message: event.status});
     };
 
-    showError =  (message: string) => {
-        this.setState({isError: true, message: message})
-    }
+    showError = (message: string) => {
+        this.setState({isError: true, message: message});
+    };
 
     render = () => {
-        const mainPane: React.ReactElement = this.state.isServerShutdown
-            ? <ServerConfigPane showError={this.showError} />
-            : <ServerControlPane showError={this.showError} />;
+        const mainPane: React.ReactElement = this.state.isServerShutdown ? (
+            <ServerConfigPane showError={this.showError} />
+        ) : (
+            <ServerControlPane showError={this.showError} />
+        );
         return (
             <div className="container">
                 <StatusBar isError={this.state.isError} message={this.state.message} />
@@ -80,4 +81,4 @@ export default class App extends React.Component<{}, AppState> {
             </div>
         );
     };
-};
+}

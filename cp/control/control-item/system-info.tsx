@@ -2,16 +2,16 @@ import * as React from 'react';
 import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
 
 type Prop = {
-    backToMenu: () => void
+    backToMenu: () => void;
 };
 
 type SystemInfoData = {
-    premisesVersion: string,
-    hostOS: string
+    premisesVersion: string;
+    hostOS: string;
 } | null;
 
 type State = {
-    systemInfo: SystemInfoData
+    systemInfo: SystemInfoData;
 };
 
 export default class SystemInfo extends React.Component<Prop, State> {
@@ -21,8 +21,8 @@ export default class SystemInfo extends React.Component<Prop, State> {
 
     componentDidMount = () => {
         fetch('/control/api/systeminfo')
-            .then(resp => resp.json())
-            .then(resp => {
+            .then((resp) => resp.json())
+            .then((resp) => {
                 this.setState({systemInfo: resp});
             });
     };
@@ -51,10 +51,8 @@ export default class SystemInfo extends React.Component<Prop, State> {
                 <button className="btn btn-outline-primary" onClick={this.props.backToMenu}>
                     <IoIosArrowBack /> Back
                 </button>
-                <div className="m-2">
-                    {mainContents}
-                </div>
+                <div className="m-2">{mainContents}</div>
             </div>
         );
     };
-};
+}

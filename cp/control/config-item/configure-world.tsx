@@ -5,18 +5,18 @@ import {ConfigItem} from './config-item';
 import {WorldBackup} from './world-backup';
 
 type Prop = ItemProp & {
-    levelType: LevelType,
-    seed: string,
-    setLevelType: (val: LevelType) => void,
-    setSeed: (val: string) => void
+    levelType: LevelType;
+    seed: string;
+    setLevelType: (val: LevelType) => void;
+    setSeed: (val: string) => void;
 };
 
 export enum LevelType {
     Default = 'default',
     Superflat = 'superflat',
     LargeBiomes = 'largeBiomes',
-    Amplified  = 'amplified'
-};
+    Amplified = 'amplified'
+}
 
 class LevelTypeInfo {
     levelType: LevelType;
@@ -30,7 +30,7 @@ class LevelTypeInfo {
     createReactElement = (): React.ReactElement => {
         return <option value={this.levelType}>{this.label}</option>;
     };
-};
+}
 
 const levelTypes: LevelTypeInfo[] = [
     new LevelTypeInfo(LevelType.Default, 'Default'),
@@ -48,23 +48,32 @@ export default class ConfigureWorldConfigItem extends ConfigItem<Prop, {}> {
         return (
             <>
                 <div className="m-2">
-                    <label className="form-label" htmlFor="seed">Seed</label>
-                    <input className="form-control" value={this.props.seed} id="seed"
-                           onChange={(e) => this.props.setSeed(e.target.value)} />
+                    <label className="form-label" htmlFor="seed">
+                        Seed
+                    </label>
+                    <input className="form-control" value={this.props.seed} id="seed" onChange={(e) => this.props.setSeed(e.target.value)} />
                 </div>
 
                 <div className="m-2">
-                    <label className="form-label" htmlFor="selectLevelType">World Type</label>
-                    <select className="form-select" value={this.props.levelType} id="selectLeveltype"
-                            onChange={(e) => this.props.setLevelType(e.target.value as LevelType)}>
-                        {levelTypes.map(e => e.createReactElement())}
+                    <label className="form-label" htmlFor="selectLevelType">
+                        World Type
+                    </label>
+                    <select
+                        className="form-select"
+                        value={this.props.levelType}
+                        id="selectLeveltype"
+                        onChange={(e) => this.props.setLevelType(e.target.value as LevelType)}
+                    >
+                        {levelTypes.map((e) => e.createReactElement())}
                     </select>
                 </div>
 
                 <div className="m-1 text-end">
-                    <button type="button" className="btn btn-primary" onClick={this.props.nextStep}>Next</button>
+                    <button type="button" className="btn btn-primary" onClick={this.props.nextStep}>
+                        Next
+                    </button>
                 </div>
             </>
         );
     };
-};
+}

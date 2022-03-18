@@ -31,7 +31,7 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
     stepCount: number = 0;
 
     handleStart = () => {
-        const data = new URLSearchParams;
+        const data = new URLSearchParams();
         data.append('machine-type', this.state.machineType);
         data.append('server-version', this.state.serverVersion);
         data.append('world-source', this.state.worldSource);
@@ -52,8 +52,8 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
             },
             body: data.toString()
         })
-            .then(resp => resp.json())
-            .then(resp => {
+            .then((resp) => resp.json())
+            .then((resp) => {
                 if (!resp['success']) {
                     this.props.showError(resp['message']);
                 }
@@ -108,41 +108,47 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
     };
 
     render = () => {
-        const configItems = []
+        const configItems = [];
         {
             const stepIndex = configItems.length;
             configItems.push(
-                <MachineType key="machineType"
-                             isFocused={this.state.currentStep === stepIndex}
-                             nextStep={this.handleNextStep}
-                             requestFocus={() => this.handleRequestFocus(stepIndex)}
-                             stepNum={stepIndex + 1}
-                             machineType={this.state.machineType}
-                             setMachineType={this.setMachineType} />
+                <MachineType
+                    key="machineType"
+                    isFocused={this.state.currentStep === stepIndex}
+                    nextStep={this.handleNextStep}
+                    requestFocus={() => this.handleRequestFocus(stepIndex)}
+                    stepNum={stepIndex + 1}
+                    machineType={this.state.machineType}
+                    setMachineType={this.setMachineType}
+                />
             );
         }
         {
             const stepIndex = configItems.length;
             configItems.push(
-                <ServerVersion key="serverVersion"
-                               isFocused={this.state.currentStep === stepIndex}
-                               nextStep={this.handleNextStep}
-                               requestFocus={() => this.handleRequestFocus(stepIndex)}
-                               stepNum={stepIndex + 1}
-                               serverVersion={this.state.serverVersion}
-                               setServerVersion={this.setServerVersion} />
+                <ServerVersion
+                    key="serverVersion"
+                    isFocused={this.state.currentStep === stepIndex}
+                    nextStep={this.handleNextStep}
+                    requestFocus={() => this.handleRequestFocus(stepIndex)}
+                    stepNum={stepIndex + 1}
+                    serverVersion={this.state.serverVersion}
+                    setServerVersion={this.setServerVersion}
+                />
             );
         }
         {
             const stepIndex = configItems.length;
             configItems.push(
-                <WorldSource key="worldSource"
-                             isFocused={this.state.currentStep === stepIndex}
-                             nextStep={this.handleNextStep}
-                             requestFocus={() => this.handleRequestFocus(stepIndex)}
-                             stepNum={stepIndex + 1}
-                             worldSource={this.state.worldSource}
-                             setWorldSource={this.setWorldSource} />
+                <WorldSource
+                    key="worldSource"
+                    isFocused={this.state.currentStep === stepIndex}
+                    nextStep={this.handleNextStep}
+                    requestFocus={() => this.handleRequestFocus(stepIndex)}
+                    stepNum={stepIndex + 1}
+                    worldSource={this.state.worldSource}
+                    setWorldSource={this.setWorldSource}
+                />
             );
         }
 
@@ -150,44 +156,50 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
             {
                 const stepIndex = configItems.length;
                 configItems.push(
-                    <ChooseBackup key="chooseBackup"
-                                  isFocused={this.state.currentStep === stepIndex}
-                                  nextStep={this.handleNextStep}
-                                  requestFocus={() => this.handleRequestFocus(stepIndex)}
-                                  stepNum={stepIndex + 1}
-                                  worldName={this.state.worldName}
-                                  backupGeneration={this.state.backupGeneration}
-                                  useCachedWorld={this.state.useCachedWorld}
-                                  setWorldName={this.setWorldName}
-                                  setBackupGeneration={this.setBackupGeneration}
-                                  setUseCachedWorld={this.setUseCachedWorld} />
+                    <ChooseBackup
+                        key="chooseBackup"
+                        isFocused={this.state.currentStep === stepIndex}
+                        nextStep={this.handleNextStep}
+                        requestFocus={() => this.handleRequestFocus(stepIndex)}
+                        stepNum={stepIndex + 1}
+                        worldName={this.state.worldName}
+                        backupGeneration={this.state.backupGeneration}
+                        useCachedWorld={this.state.useCachedWorld}
+                        setWorldName={this.setWorldName}
+                        setBackupGeneration={this.setBackupGeneration}
+                        setUseCachedWorld={this.setUseCachedWorld}
+                    />
                 );
             }
         } else {
             {
                 const stepIndex = configItems.length;
                 configItems.push(
-                    <WorldName key="worldName"
-                               isFocused={this.state.currentStep === stepIndex}
-                               nextStep={this.handleNextStep}
-                               requestFocus={() => this.handleRequestFocus(stepIndex)}
-                               stepNum={stepIndex + 1}
-                               worldName={this.state.worldName}
-                               setWorldName={this.setWorldName} />
+                    <WorldName
+                        key="worldName"
+                        isFocused={this.state.currentStep === stepIndex}
+                        nextStep={this.handleNextStep}
+                        requestFocus={() => this.handleRequestFocus(stepIndex)}
+                        stepNum={stepIndex + 1}
+                        worldName={this.state.worldName}
+                        setWorldName={this.setWorldName}
+                    />
                 );
             }
             {
                 const stepIndex = configItems.length;
                 configItems.push(
-                    <ConfigureWorld key="configureWorld"
-                                    isFocused={this.state.currentStep === stepIndex}
-                                    nextStep={this.handleNextStep}
-                                    requestFocus={() => this.handleRequestFocus(stepIndex)}
-                                    stepNum={stepIndex + 1}
-                                    levelType={this.state.levelType}
-                                    seed={this.state.seed}
-                                    setLevelType={this.setLevelType}
-                                    setSeed={this.setSeed}/>
+                    <ConfigureWorld
+                        key="configureWorld"
+                        isFocused={this.state.currentStep === stepIndex}
+                        nextStep={this.handleNextStep}
+                        requestFocus={() => this.handleRequestFocus(stepIndex)}
+                        stepNum={stepIndex + 1}
+                        levelType={this.state.levelType}
+                        seed={this.state.seed}
+                        setLevelType={this.setLevelType}
+                        setSeed={this.setSeed}
+                    />
                 );
             }
         }
@@ -200,10 +212,12 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
                     <form>
                         {configItems}
                         <div className="d-md-block mt-3 text-end">
-                            <button className="btn btn-primary bg-gradient"
-                                    type="button"
-                                    onClick={this.handleStart}
-                                    disabled={this.state.currentStep !== this.stepCount}>
+                            <button
+                                className="btn btn-primary bg-gradient"
+                                type="button"
+                                onClick={this.handleStart}
+                                disabled={this.state.currentStep !== this.stepCount}
+                            >
                                 <VscDebugStart /> Start
                             </button>
                         </div>
@@ -212,4 +226,4 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
             </div>
         );
     };
-};
+}

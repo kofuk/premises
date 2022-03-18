@@ -1,4 +1,4 @@
-import "./control.scss";
+import './control.scss';
 
 import * as ReactDOM from 'react-dom';
 

@@ -5,24 +5,24 @@ import {ItemProp} from './prop';
 import {ConfigItem} from './config-item';
 
 type Prop = ItemProp & {
-    serverVersion: string,
-    setServerVersion: (val: string) => void
+    serverVersion: string;
+    setServerVersion: (val: string) => void;
 };
 
 type McVersion = {
-    name: string,
-    isStable: boolean,
-    channel: string,
-    releaseDate: string
+    name: string;
+    isStable: boolean;
+    channel: string;
+    releaseDate: string;
 };
 
 type State = {
-    mcVersions: McVersion[],
-    showStable: boolean,
-    showSnapshot: boolean,
-    showBeta: boolean,
-    showAlpha: boolean,
-    refreshing: boolean
+    mcVersions: McVersion[];
+    showStable: boolean;
+    showSnapshot: boolean;
+    showBeta: boolean;
+    showAlpha: boolean;
+    refreshing: boolean;
 };
 
 export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
@@ -41,8 +41,8 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
 
     componentDidMount = () => {
         fetch('/control/api/mcversions')
-            .then(resp => resp.json())
-            .then(resp => {
+            .then((resp) => resp.json())
+            .then((resp) => {
                 this.setState({mcVersions: resp});
                 this.postUpdateCondition();
             });
@@ -51,8 +51,8 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
     handleRefresh = () => {
         this.setState({refreshing: true});
         fetch('/control/api/mcversions?reload')
-            .then(resp => resp.json())
-            .then(resp => {
+            .then((resp) => resp.json())
+            .then((resp) => {
                 this.setState({mcVersions: resp});
                 this.postUpdateCondition();
                 this.setState({refreshing: false});
@@ -65,11 +65,11 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
 
     postUpdateCondition = () => {
         const versions = this.state.mcVersions
-            .filter(e => this.state.showStable || (e.channel !== 'stable'))
-            .filter(e => this.state.showSnapshot || (e.channel !== 'snapshot'))
-            .filter(e => this.state.showBeta || (e.channel !== 'beta'))
-            .filter(e => this.state.showAlpha || (e.channel !== 'alpha'));
-        if (!versions.find(e => e.name === this.props.serverVersion)) {
+            .filter((e) => this.state.showStable || e.channel !== 'stable')
+            .filter((e) => this.state.showSnapshot || e.channel !== 'snapshot')
+            .filter((e) => this.state.showBeta || e.channel !== 'beta')
+            .filter((e) => this.state.showAlpha || e.channel !== 'alpha');
+        if (!versions.find((e) => e.name === this.props.serverVersion)) {
             if (versions.length > 0) {
                 this.props.setServerVersion(versions[0].name);
             } else if (this.state.mcVersions.length > 0) {
@@ -80,50 +80,97 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
 
     createContent = (): React.ReactElement => {
         const versions = this.state.mcVersions
-            .filter(e => this.state.showStable || (e.channel !== 'stable'))
-            .filter(e => this.state.showSnapshot || (e.channel !== 'snapshot'))
-            .filter(e => this.state.showBeta || (e.channel !== 'beta'))
-            .filter(e => this.state.showAlpha || (e.channel !== 'alpha'))
-            .map(e => <option value={e.name} key={e.name}>{e.name}</option>);
+            .filter((e) => this.state.showStable || e.channel !== 'stable')
+            .filter((e) => this.state.showSnapshot || e.channel !== 'snapshot')
+            .filter((e) => this.state.showBeta || e.channel !== 'beta')
+            .filter((e) => this.state.showAlpha || e.channel !== 'alpha')
+            .map((e) => (
+                <option value={e.name} key={e.name}>
+                    {e.name}
+                </option>
+            ));
         return (
             <>
-                <select className="form-select" area-label="Choose A Version" value={this.props.serverVersion}
-                        onChange={(e) => this.handleChange(e.target.value)}>
+                <select
+                    className="form-select"
+                    area-label="Choose A Version"
+                    value={this.props.serverVersion}
+                    onChange={(e) => this.handleChange(e.target.value)}
+                >
                     {versions}
                 </select>
                 <div className="m-1 text-end">
-                    <button type="button" className="btn btn-sm btn-outline-secondary"
-                            onClick={this.handleRefresh} disabled={this.state.refreshing}>
-                        {this.state.refreshing
-                             ? <div className="spinner-border spinner-border-sm me-1" role="status"></div>
-                             : <IoIosRefresh />}
+                    <button type="button" className="btn btn-sm btn-outline-secondary" onClick={this.handleRefresh} disabled={this.state.refreshing}>
+                        {this.state.refreshing ? <div className="spinner-border spinner-border-sm me-1" role="status"></div> : <IoIosRefresh />}
                         Refresh
                     </button>
                 </div>
                 <div className="m-1 form-check form-switch">
-                    <input className="form-check-input" type="checkbox" id="showStable" checked={this.state.showStable}
-                           onChange={() => {this.setState({showStable: !this.state.showStable}); this.postUpdateCondition();}} />
-                    <label className="form-check-label" htmlFor="showStable">Show Stable</label>
+                    <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="showStable"
+                        checked={this.state.showStable}
+                        onChange={() => {
+                            this.setState({showStable: !this.state.showStable});
+                            this.postUpdateCondition();
+                        }}
+                    />
+                    <label className="form-check-label" htmlFor="showStable">
+                        Show Stable
+                    </label>
                 </div>
                 <div className="m-1 form-check form-switch">
-                    <input className="form-check-input" type="checkbox" id="showSnapshot" checked={this.state.showSnapshot}
-                           onChange={() => {this.setState({showSnapshot: !this.state.showSnapshot}); this.postUpdateCondition();}} />
-                    <label className="form-check-label" htmlFor="showSnapshot">Show Snapshot</label>
+                    <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="showSnapshot"
+                        checked={this.state.showSnapshot}
+                        onChange={() => {
+                            this.setState({showSnapshot: !this.state.showSnapshot});
+                            this.postUpdateCondition();
+                        }}
+                    />
+                    <label className="form-check-label" htmlFor="showSnapshot">
+                        Show Snapshot
+                    </label>
                 </div>
                 <div className="m-1 form-check form-switch">
-                    <input className="form-check-input" type="checkbox" id="showSnapshot" checked={this.state.showBeta}
-                           onChange={() => {this.setState({showBeta: !this.state.showBeta}); this.postUpdateCondition();}} />
-                    <label className="form-check-label" htmlFor="showBeta">Show Beta</label>
+                    <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="showSnapshot"
+                        checked={this.state.showBeta}
+                        onChange={() => {
+                            this.setState({showBeta: !this.state.showBeta});
+                            this.postUpdateCondition();
+                        }}
+                    />
+                    <label className="form-check-label" htmlFor="showBeta">
+                        Show Beta
+                    </label>
                 </div>
                 <div className="m-1 form-check form-switch">
-                    <input className="form-check-input" type="checkbox" id="showSnapshot" checked={this.state.showAlpha}
-                           onChange={() => {this.setState({showAlpha: !this.state.showAlpha}); this.postUpdateCondition();}} />
-                    <label className="form-check-label" htmlFor="showAlpha">Show Alpha</label>
+                    <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="showSnapshot"
+                        checked={this.state.showAlpha}
+                        onChange={() => {
+                            this.setState({showAlpha: !this.state.showAlpha});
+                            this.postUpdateCondition();
+                        }}
+                    />
+                    <label className="form-check-label" htmlFor="showAlpha">
+                        Show Alpha
+                    </label>
                 </div>
                 <div className="m-1 text-end">
-                    <button type="button" className="btn btn-primary" onClick={this.props.nextStep}>Next</button>
+                    <button type="button" className="btn btn-primary" onClick={this.props.nextStep}>
+                        Next
+                    </button>
                 </div>
             </>
         );
     };
-};
+}
