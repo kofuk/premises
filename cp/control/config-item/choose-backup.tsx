@@ -81,7 +81,14 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                 <label className="form-label" htmlFor="backupGenerationSelect">Backup Generation</label>
                 <select className="form-select" value={this.props.backupGeneration} id="backupGenerationSelect"
                         onChange={(e) => this.handleChangeGeneration(e.target.value)}>
-                    {worldData.generations.map(e => <option value={e.id} key={e.gen}>{e.gen == 'latest' ? 'Latest' : `${e.gen} gen ago`}</option>)}
+                    {worldData.generations.map(e => {
+                        const dateTime = new Date(e.timestamp);
+                        return (
+                            <option value={e.id} key={e.gen}>
+                                {(e.gen == 'latest' ? 'Latest' : `${e.gen} gen ago`) + ` (${dateTime.toLocaleString()})`}
+                            </option>
+                        );
+                    })}
                 </select>
             </div>
         ) : <></>;

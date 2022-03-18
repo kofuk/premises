@@ -1,6 +1,7 @@
 export type GenerationInfo = {
     gen: string,
-    id: string
+    id: string,
+    timestamp: number
 };
 
 export type WorldBackup = {

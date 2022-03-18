@@ -12,8 +12,9 @@ import (
 )
 
 type GenerationInfo struct {
-	Gen string `json:"gen"`
-	ID  string `json:"id"`
+	Gen       string `json:"gen"`
+	ID        string `json:"id"`
+	Timestamp int    `json:"timestamp"`
 }
 
 type WorldBackup struct {
@@ -101,12 +102,13 @@ func GetBackupList(cfg *config.Config) ([]WorldBackup, error) {
 		for _, backup := range backups {
 			name := backup.GetName()
 			hash := backup.GetHash()
+			timestamp := int(backup.GetTimeStamp().UnixMilli())
 			if name[len(name)-7:] == ".tar.xz" {
 				name = name[:len(name)-7]
 			}
 
 			if name != "5" {
-				generations = append(generations, GenerationInfo{Gen: name, ID: hash})
+				generations = append(generations, GenerationInfo{Gen: name, ID: hash, Timestamp: timestamp})
 			}
 		}
 
