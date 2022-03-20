@@ -36,7 +36,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                 this.setState({backups: resp});
                 if (resp.length > 0) {
                     this.props.setWorldName(resp[0].worldName);
-                    this.props.setBackupGeneration(resp[0].generations[0]);
+                    this.props.setBackupGeneration(resp[0].generations[0].id);
                 }
             });
     };
@@ -49,7 +49,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                 this.setState({backups: resp});
                 if (resp.length > 0) {
                     this.props.setWorldName(resp[0].worldName);
-                    this.props.setBackupGeneration(resp[0].generations[0].genertion);
+                    this.props.setBackupGeneration(resp[0].generations[0].id);
                 }
                 this.setState({refreshing: false});
             });
