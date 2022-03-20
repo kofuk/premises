@@ -37,7 +37,7 @@ export default class WorldNameConfigItem extends ConfigItem<Prop, State> {
     handleChange = (val: string) => {
         this.props.setWorldName(val);
 
-        if (!val.match(/^[a-zA-Z0-9]+$/)) {
+        if (!val.match(/^[- _a-zA-Z0-9()]+$/)) {
             this.setState({invalidName: true});
             return;
         }
