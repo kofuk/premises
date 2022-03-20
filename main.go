@@ -49,6 +49,7 @@ const (
 	CacheKeyBackups          = "backups"
 	CacheKeyMCVersions       = "mcversions"
 	CacheKeySystemInfoPrefix = "system-info"
+	CacheKeyWorldInfo        = "world-info"
 )
 
 func (s *serverState) addMonitorClient(ch chan *monitor.StatusData) {
@@ -313,7 +314,7 @@ func main() {
 	}
 
 	if cfg.Debug.Env {
-		if err := os.Mkdir("/tmp/premises", 0755); err != nil {
+		if err := os.MkdirAll("/tmp/premises/gamedata", 0755); err != nil {
 			log.WithError(err).Info("Cannot create directory for debug environment")
 		}
 	}
@@ -657,6 +658,44 @@ func main() {
 
 				if _, err := rdb.Set(context.Background(), cacheKey, data, 24*time.Hour).Result(); err != nil {
 					log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Failed to cache mcversions")
+				}
+
+				c.Header("Content-Type", "application/json")
+				c.Writer.Write(data)
+			})
+
+			api.GET("/worldinfo", func(c *gin.Context) {
+				if cfg.ServerAddr == "" {
+					c.Status(http.StatusTooEarly)
+					return
+				}
+
+				cacheKey := CacheKeyWorldInfo
+
+				if _, ok := c.GetQuery("reload"); ok {
+					if _, err := rdb.Del(context.Background(), cacheKey).Result(); err != nil {
+						log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Failed to delete world info cache")
+					}
+				}
+
+				if val, err := rdb.Get(context.Background(), cacheKey).Result(); err == nil {
+					c.Header("Content-Type", "application/json")
+					c.Writer.Write([]byte(val))
+					return
+				} else if err != redis.Nil {
+					log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Error retriving world info cache")
+				}
+
+				log.WithField("cache_key", cacheKey).Info("cache miss")
+
+				data, err := monitor.GetWorldInfoData(cfg, cfg.ServerAddr)
+				if err != nil {
+					c.Status(http.StatusInternalServerError)
+					return
+				}
+
+				if _, err := rdb.Set(context.Background(), cacheKey, data, 24*time.Hour).Result(); err != nil {
+					log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Failed to cache world info")
 				}
 
 				c.Header("Content-Type", "application/json")

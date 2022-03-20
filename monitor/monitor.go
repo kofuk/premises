@@ -71,7 +71,7 @@ func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData) error
 				goto err
 			}
 
-			time.Sleep(10 * time.Second)
+			time.Sleep(5 * time.Second)
 			goto newConn
 		}
 		defer conn.Close()
@@ -182,6 +182,33 @@ func GetSystemInfoData(cfg *config.Config, addr string) ([]byte, error) {
 	}
 
 	req, err := http.NewRequest("POST", "https://"+addr+":8521/systeminfo", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("X-Auth-Key", cfg.MonitorKey)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func GetWorldInfoData(cfg *config.Config, addr string) ([]byte, error) {
+	tlsConfig, err := makeTLSConfig(cfg)
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+
+	req, err := http.NewRequest("POST", "https://"+addr+":8521/worldinfo", nil)
 	if err != nil {
 		return nil, err
 	}

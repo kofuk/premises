@@ -4,12 +4,14 @@ import {FaStop} from '@react-icons/all-files/fa/FaStop';
 import ReconfigureMenu from './reconfigure-menu';
 import Snapshot from './control-item/snapshot';
 import SystemInfo from './control-item/system-info';
+import WorldInfo from './control-item/world-info';
 
 enum Modes {
     MainMenu,
     Reconfigure,
     Snapshot,
-    SystemInfo
+    SystemInfo,
+    WorldInfo
 }
 
 type Prop = {
@@ -35,6 +37,15 @@ export default class ServerControlPane extends React.Component<Prop, State> {
         if (this.state.mode === Modes.MainMenu) {
             controlItems.push(
                 <div className="list-group" key="mainMenu">
+                    <button
+                        type="button"
+                        className="list-group-item list-group-item-action"
+                        onClick={() => {
+                            this.setState({mode: Modes.WorldInfo});
+                        }}
+                    >
+                        World Information
+                    </button>
                     <button
                         type="button"
                         className="list-group-item list-group-item-action"
@@ -70,6 +81,8 @@ export default class ServerControlPane extends React.Component<Prop, State> {
             controlItems.push(<Snapshot backToMenu={this.handleBackToMenu} showError={this.props.showError} key="snapshot" />);
         } else if (this.state.mode === Modes.SystemInfo) {
             controlItems.push(<SystemInfo backToMenu={this.handleBackToMenu} key="systemInfo" />);
+        } else if (this.state.mode === Modes.WorldInfo) {
+            controlItems.push(<WorldInfo backToMenu={this.handleBackToMenu} key="worldInfo" />);
         }
 
         return (
