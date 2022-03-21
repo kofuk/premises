@@ -2,6 +2,8 @@ import * as React from 'react';
 import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
 import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
 
+import CopyableListItem from '../../components/copyable-list-item';
+
 type Prop = {
     backToMenu: () => void;
 };
@@ -51,18 +53,9 @@ export default class WorldInfo extends React.Component<Prop, State> {
         } else {
             mainContents = (
                 <div className="list-group">
-                    <div className="list-group-item">
-                        <h5 className="mb-1">Game Version</h5>
-                        <p className="mb-1">{this.state.worldInfo.serverVersion}</p>
-                    </div>
-                    <div className="list-group-item">
-                        <h5 className="mb-1">World</h5>
-                        <p className="mb-1">{this.state.worldInfo.world.name}</p>
-                    </div>
-                    <div className="list-group-item">
-                        <h5 className="mb-1">Seed</h5>
-                        <p className="mb-1">{this.state.worldInfo.world.seed}</p>
-                    </div>
+                    <CopyableListItem title="Game Version" content={this.state.worldInfo.serverVersion} />
+                    <CopyableListItem title="World" content={this.state.worldInfo.world.name} />
+                    <CopyableListItem title="Seed" content={this.state.worldInfo.world.seed} />
                 </div>
             );
         }

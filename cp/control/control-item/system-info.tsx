@@ -1,6 +1,8 @@
 import * as React from 'react';
 import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
 
+import CopyableListItem from '../../components/copyable-list-item';
+
 type Prop = {
     backToMenu: () => void;
 };
@@ -34,14 +36,8 @@ export default class SystemInfo extends React.Component<Prop, State> {
         } else {
             mainContents = (
                 <div className="list-group">
-                    <div className="list-group-item">
-                        <h5 className="mb-1">Server Version</h5>
-                        <p className="mb-1">{this.state.systemInfo.premisesVersion}</p>
-                    </div>
-                    <div className="list-group-item">
-                        <h5 className="mb-1">Host OS</h5>
-                        <p className="mb-1">{this.state.systemInfo.hostOS}</p>
-                    </div>
+                    <CopyableListItem title="Server Version" content={this.state.systemInfo.premisesVersion} />
+                    <CopyableListItem title="Host OS" content={this.state.systemInfo.hostOS} />
                 </div>
             );
         }
