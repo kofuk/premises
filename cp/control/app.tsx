@@ -43,16 +43,20 @@ export default class App extends React.Component<{}, AppState> {
     };
 
     handleWsOpen = () => {
-        this.setState({isError: false, message: 'Connected.'});
+        this.setState({isError: false, message: t('connected')});
         this.retryCount = 0;
     };
 
-    handleWsClose = () => {
+    handleWsClose = (e: any) => {
+        if (e.wasClean) {
+            return;
+        }
+
         if (this.retryCount === 20) {
-            this.setState({isError: true, message: 'Connection has lost; Please reload the page.'});
+            this.setState({isError: true, message: t('disconnected')});
             return;
         } else {
-            this.setState({isError: true, message: 'Connection has lost; Reconnecting...'});
+            this.setState({isError: true, message: t('reconnecting')});
             this.retryCount++;
         }
 

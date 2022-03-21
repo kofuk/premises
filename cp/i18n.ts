@@ -51,7 +51,10 @@ const i18nData = {
             take_snapshot: 'Take Snapshot',
             world_info_game_version: 'Game Version',
             world_info_world_name: 'World',
-            world_info_seed: 'Seed'
+            world_info_seed: 'Seed',
+            connected: 'Connected',
+            disconnected: 'Connection has lost\nPlease reload the page',
+            reconnecting: 'Connection has lost\nReconnecting...'
         }
     },
     ja: {
@@ -104,7 +107,10 @@ const i18nData = {
             take_snapshot: 'スナップショットを作成',
             world_info_game_version: 'ゲームのバージョン',
             world_info_world_name: 'ワールド',
-            world_info_seed: 'シード値'
+            world_info_seed: 'シード値',
+            connected: '接続済み',
+            disconnected: '切断されました\nページをリロードして再接続してください',
+            reconnecting: '切断されました\n再接続しています...'
         }
     }
 };
