@@ -23,8 +23,10 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/text/language"
 
 	"github.com/kofuk/premises/backup"
 	"github.com/kofuk/premises/config"
@@ -32,6 +34,47 @@ import (
 	"github.com/kofuk/premises/mcversions"
 	"github.com/kofuk/premises/monitor"
 )
+
+//go:embed i18n/*.json
+var i18nData embed.FS
+
+var localizeBundle *i18n.Bundle
+
+func L(locale, msgId string) string {
+	if localizeBundle == nil {
+		return msgId
+	}
+
+	localizer := i18n.NewLocalizer(localizeBundle, locale)
+	msg, err := localizer.Localize(&i18n.LocalizeConfig{MessageID: msgId})
+	if err != nil {
+		log.WithError(err).Error("Error loading localized message. Fallback to \"en\"")
+		localizer := i18n.NewLocalizer(localizeBundle, "en")
+		msg, err := localizer.Localize(&i18n.LocalizeConfig{MessageID: msgId})
+		if err != nil {
+			log.WithError(err).Error("Error loading localized message (fallback)")
+			return msgId
+		}
+		return msg
+	}
+	return msg
+}
+
+func loadI18nData() error {
+	bundle := i18n.NewBundle(language.English)
+	bundle.RegisterUnmarshalFunc("json", json.Unmarshal)
+	ents, err := i18nData.ReadDir("i18n")
+	if err != nil {
+		return err
+	}
+	for _, ent := range ents {
+		if _, err := bundle.LoadMessageFileFS(i18nData, "i18n/"+ent.Name()); err != nil {
+			return err
+		}
+	}
+	localizeBundle = bundle
+	return nil
+}
 
 type serverState struct {
 	statusMu         sync.Mutex
@@ -103,17 +146,19 @@ func (s *serverState) dispatchMonitorEvent(rdb *redis.Client) {
 	}
 }
 
-func notifyNonRecoverableFailure() {
+func notifyNonRecoverableFailure(locale string) {
 	server.monitorChan <- &monitor.StatusData{
-		Status:   "Operation failed. Manual operation required!",
+		Status:   L(locale, "monitor.unrecoverable"),
 		HasError: true,
 		Shutdown: true,
 	}
 }
 
 func monitorServer(cfg *config.Config, gameServer GameServer) {
+	locale := cfg.ControlPanel.Locale
+
 	server.monitorChan <- &monitor.StatusData{
-		Status: "Connecting to the server...",
+		Status: L(locale, "monitor.connecting"),
 	}
 
 	if err := monitor.MonitorServer(cfg, cfg.ServerAddr, server.monitorChan); err != nil {
@@ -121,15 +166,15 @@ func monitorServer(cfg *config.Config, gameServer GameServer) {
 	}
 
 	if !gameServer.StopVM() {
-		notifyNonRecoverableFailure()
+		notifyNonRecoverableFailure(locale)
 		return
 	}
 	if !gameServer.SaveImage() {
-		notifyNonRecoverableFailure()
+		notifyNonRecoverableFailure(locale)
 		return
 	}
 	if !gameServer.DeleteVM() {
-		notifyNonRecoverableFailure()
+		notifyNonRecoverableFailure(locale)
 		return
 	}
 
@@ -138,16 +183,18 @@ func monitorServer(cfg *config.Config, gameServer GameServer) {
 	gameServer.RevertDNS()
 
 	server.monitorChan <- &monitor.StatusData{
-		Status:   "Server stopped",
+		Status:   L(locale, "monitor.stopped"),
 		Shutdown: true,
 	}
 }
 
 func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer, memSizeGB int) {
+	locale := cfg.ControlPanel.Locale
+
 	if err := monitor.GenerateTLSKey(cfg); err != nil {
 		log.WithError(err).Error("Failed to generate TLS key")
 		server.monitorChan <- &monitor.StatusData{
-			Status:   "Failed to generate TLS key",
+			Status:   L(locale, "monitor.tls_keygen.error"),
 			HasError: true,
 			Shutdown: true,
 		}
@@ -158,14 +205,14 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameSer
 	os.WriteFile(cfg.Locate("monitor_key"), []byte(gameConfig.AuthKey), 0600)
 
 	server.monitorChan <- &monitor.StatusData{
-		Status:   "Waiting for the server to start up...",
+		Status:   L(locale, "monitor.waiting"),
 		HasError: false,
 		Shutdown: false,
 	}
 
 	if !gameServer.SetUp(gameConfig, memSizeGB) {
 		server.monitorChan <- &monitor.StatusData{
-			Status:   "Failed to start VM",
+			Status:   L(locale, "vm.start.error"),
 			HasError: true,
 			Shutdown: false,
 		}
@@ -174,7 +221,7 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameSer
 
 	if !gameServer.UpdateDNS() {
 		server.monitorChan <- &monitor.StatusData{
-			Status:   "Failed to update DNS",
+			Status:   L(locale, "vm.dns.error"),
 			HasError: true,
 			Shutdown: false,
 		}
@@ -183,7 +230,7 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameSer
 
 	if !gameServer.DeleteImage() {
 		server.monitorChan <- &monitor.StatusData{
-			Status:   "Failed to delete outdated image",
+			Status:   L(locale, "vm.image.delete.error"),
 			HasError: true,
 			Shutdown: false,
 		}
@@ -270,6 +317,8 @@ var upgrader = websocket.Upgrader{
 }
 
 func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
+	locale := cfg.ControlPanel.Locale
+
 	if gameServer.VMExists() {
 		if gameServer.VMRunning() {
 			monitorKey, err := os.ReadFile(cfg.Locate("monitor_key"))
@@ -290,11 +339,11 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 			go monitorServer(cfg, gameServer)
 		} else {
 			if !gameServer.ImageExists() && !gameServer.SaveImage() {
-				notifyNonRecoverableFailure()
+				notifyNonRecoverableFailure(locale)
 				return
 			}
 			if !gameServer.DeleteVM() {
-				notifyNonRecoverableFailure()
+				notifyNonRecoverableFailure(locale)
 				return
 			}
 		}
@@ -303,6 +352,9 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 
 func main() {
 	log.SetReportCaller(true)
+	if err := loadI18nData(); err != nil {
+		log.Fatal(err)
+	}
 
 	if err := godotenv.Load(); err != nil {
 		log.WithError(err).Info("Failed to load .env file. If you want to use real envvars, you can ignore this diag safely.")
@@ -337,7 +389,7 @@ func main() {
 		gameServer = NewConohaServer(cfg)
 	}
 
-	server.status.Status = "Server stopped"
+	server.status.Status = L(cfg.ControlPanel.Locale, "monitor.stopped")
 	server.status.Shutdown = true
 
 	monitorChan := make(chan *monitor.StatusData)

@@ -154,8 +154,10 @@ func (s *ConohaServer) getToken() (string, error) {
 }
 
 func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB int) bool {
+	locale := s.cfg.ControlPanel.Locale
+
 	server.monitorChan <- &monitor.StatusData{
-		Status: "Gathering information...",
+		Status: L(locale, "vm.gathering_info"),
 	}
 
 	token, err := s.getToken()
@@ -200,7 +202,7 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB int) b
 
 	log.Info("Creating VM...")
 	server.monitorChan <- &monitor.StatusData{
-		Status: "Creating VM...",
+		Status: L(locale, "vm.creating"),
 	}
 	if _, err := conoha.CreateVM(s.cfg, token, imageID, flavorID, startupScript); err != nil {
 		log.WithError(err).Error("Failed to create VM")
@@ -254,6 +256,8 @@ func (s *ConohaServer) VMRunning() bool {
 }
 
 func (s *ConohaServer) StopVM() bool {
+	locale := s.cfg.ControlPanel.Locale
+
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
@@ -261,7 +265,7 @@ func (s *ConohaServer) StopVM() bool {
 	}
 
 	server.monitorChan <- &monitor.StatusData{
-		Status: "Stopping VM...",
+		Status: L(locale, "vm.stopping"),
 	}
 
 	log.Info("Getting VM information...")
@@ -346,6 +350,8 @@ func (s *ConohaServer) ImageExists() bool {
 }
 
 func (s *ConohaServer) SaveImage() bool {
+	locale := s.cfg.ControlPanel.Locale
+
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
@@ -353,7 +359,7 @@ func (s *ConohaServer) SaveImage() bool {
 	}
 
 	server.monitorChan <- &monitor.StatusData{
-		Status: "Saving VM image...",
+		Status: L(locale, "vm.image.saving"),
 	}
 
 	log.Info("Getting VM information...")
@@ -388,6 +394,8 @@ func (s *ConohaServer) SaveImage() bool {
 }
 
 func (s *ConohaServer) DeleteImage() bool {
+	locale := s.cfg.ControlPanel.Locale
+
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
@@ -395,7 +403,7 @@ func (s *ConohaServer) DeleteImage() bool {
 	}
 
 	server.monitorChan <- &monitor.StatusData{
-		Status: "Cleaning up...",
+		Status: L(locale, "vm.cleaning_up"),
 	}
 
 	log.Info("Getting image information...")
@@ -421,7 +429,7 @@ func (s *ConohaServer) DeleteImage() bool {
 		}
 
 		server.monitorChan <- &monitor.StatusData{
-			Status:   "Failed to delete outdated image",
+			Status:   L(locale, "vm.image.delete.error"),
 			HasError: true,
 		}
 		return false
@@ -433,6 +441,8 @@ success:
 }
 
 func (s *ConohaServer) UpdateDNS() bool {
+	locale := s.cfg.ControlPanel.Locale
+
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
@@ -440,7 +450,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 	}
 
 	server.monitorChan <- &monitor.StatusData{
-		Status: "Waiting for an IP address to be assigned to the VM...",
+		Status: L(locale, "vm.ip.waiting"),
 	}
 
 	log.Info("Getting VM information...")
@@ -461,7 +471,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 			log.Error("Building VM didn't completed")
 		}
 		server.monitorChan <- &monitor.StatusData{
-			Status:   "Failed to get information on created VM",
+			Status:   L(locale, "vm.get_detail.error"),
 			HasError: true,
 		}
 		return false
@@ -469,7 +479,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 	log.WithField("vm_status", vms.Status).Info("Getting VM information...Done")
 
 	server.monitorChan <- &monitor.StatusData{
-		Status: "Updating DNS records...",
+		Status: L(locale, "vm.dns.updating"),
 	}
 
 	ip4Addr := vms.GetIPAddress(4)
@@ -483,7 +493,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 	if err != nil {
 		log.WithError(err).Error("Failed to get zone ID")
 		server.monitorChan <- &monitor.StatusData{
-			Status:   "Failed to update DNS records",
+			Status:   L(locale, "vm.dns.error"),
 			HasError: true,
 		}
 		return false
@@ -494,7 +504,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 	if err := cloudflare.UpdateDNS(s.cfg, zoneID, ip4Addr, 4); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v4)")
 		server.monitorChan <- &monitor.StatusData{
-			Status:   "Failed to update DNS records",
+			Status:   L(locale, "vm.dns.error"),
 			HasError: true,
 		}
 		return false
@@ -505,7 +515,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 	if err := cloudflare.UpdateDNS(s.cfg, zoneID, ip6Addr, 6); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v6)")
 		server.monitorChan <- &monitor.StatusData{
-			Status:   "Failed to update DNS records",
+			Status:   L(locale, "vm.dns.error"),
 			HasError: true,
 		}
 		return false
@@ -516,8 +526,10 @@ func (s *ConohaServer) UpdateDNS() bool {
 }
 
 func (s *ConohaServer) RevertDNS() bool {
+	locale := s.cfg.ControlPanel.Locale
+
 	server.monitorChan <- &monitor.StatusData{
-		Status: "Reverting DNS records...",
+		Status: L(locale, "vm.dns.reverting"),
 	}
 
 	log.Info("Getting Cloudflare zone ID...")
@@ -525,7 +537,7 @@ func (s *ConohaServer) RevertDNS() bool {
 	if err != nil {
 		log.WithError(err).Error("Failed to get zone ID")
 		server.monitorChan <- &monitor.StatusData{
-			Status:   "Failed to update DNS records",
+			Status:   L(locale, "vm.dns.error"),
 			HasError: true,
 		}
 		return true
@@ -536,7 +548,7 @@ func (s *ConohaServer) RevertDNS() bool {
 	if err := cloudflare.UpdateDNS(s.cfg, zoneID, "127.0.0.1", 4); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v4)")
 		server.monitorChan <- &monitor.StatusData{
-			Status:   "Failed to update DNS records",
+			Status:   L(locale, "vm.dns.error"),
 			HasError: true,
 		}
 		return true
@@ -547,7 +559,7 @@ func (s *ConohaServer) RevertDNS() bool {
 	if err := cloudflare.UpdateDNS(s.cfg, zoneID, "::1", 6); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v6)")
 		server.monitorChan <- &monitor.StatusData{
-			Status:   "Failed to update DNS records",
+			Status:   L(locale, "vm.dns.error"),
 			HasError: true,
 		}
 		return true
