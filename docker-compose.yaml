@@ -25,6 +25,7 @@ services:
       - 'premises_controlPanel_redis_address=redis:6379'
       - 'premises_controlPanel_redis_password='
       - 'premises_controlPanel_users'
+      - 'premises_controlPanel_locale'
     depends_on:
       redis:
         condition: service_healthy
