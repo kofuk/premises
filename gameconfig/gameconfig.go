@@ -13,6 +13,7 @@ type GameConfig struct {
 	RemoveMe  bool   `json:"removeMe"`
 	AllocSize int    `json:"allocSize"`
 	AuthKey   string `json:"authKey"`
+	Locale    string `json:"locale"`
 	Server    struct {
 		Version     string `json:"name"`
 		DownloadUrl string `json:"downloadUrl"`
@@ -145,4 +146,8 @@ func (gc *GameConfig) SetWhitelist(wlist []string) {
 func (gc *GameConfig) SetMegaCredential(email, password string) {
 	gc.Mega.Email = email
 	gc.Mega.Password = password
+}
+
+func (gc *GameConfig) SetLocale(locale string) {
+	gc.Locale = locale
 }

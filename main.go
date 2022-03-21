@@ -254,6 +254,7 @@ func createConfigFromPostData(values url.Values, cfg *config.Config) (*gameconfi
 	result.SetWhitelist(cfg.Game.Whitelist)
 	result.SetMegaCredential(cfg.Mega.Email, cfg.Mega.Password)
 	result.SetMotd(cfg.Game.Motd)
+	result.SetLocale(cfg.ControlPanel.Locale)
 
 	return result, nil
 }
