@@ -1,0 +1,14 @@
+[Unit]
+Description=Premises Privileged Helper Process
+Documentation=https://github.com/kofuk/premises-mcmanager
+
+[Service]
+Type=exec
+ExecStart=/opt/premises/bin/premises-mcmanager --privileged-helper
+ExecStop=/bin/kill $MAINPID
+Restart=always
+User=root
+Group=root
+
+[Install]
+WantedBy=multi-user.target
