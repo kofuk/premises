@@ -1,5 +1,8 @@
 import * as React from 'react';
 
+import '../../i18n';
+import {t} from 'i18next';
+
 import {ItemProp} from './prop';
 import {ConfigItem} from './config-item';
 import {WorldBackup} from './world-backup';
@@ -23,7 +26,7 @@ export default class WorldNameConfigItem extends ConfigItem<Prop, State> {
     };
 
     constructor(prop: Prop) {
-        super(prop, 'World Name');
+        super(prop, t('config_world_name'));
     }
 
     componentDidMount = () => {
@@ -68,7 +71,7 @@ export default class WorldNameConfigItem extends ConfigItem<Prop, State> {
         return (
             <>
                 <label className="form-label" htmlFor="newWorldName">
-                    World Name
+                    {t('world_name')}
                 </label>
                 <input
                     type="text"
@@ -87,7 +90,7 @@ export default class WorldNameConfigItem extends ConfigItem<Prop, State> {
                         onClick={this.props.nextStep}
                         disabled={this.props.worldName.length === 0 || this.state.duplicateName || this.state.invalidName}
                     >
-                        Next
+                        {t('next')}
                     </button>
                 </div>
             </>

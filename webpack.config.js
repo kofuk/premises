@@ -7,7 +7,7 @@ const config = {
     mode: env,
     devtool: env === 'development' ? 'inline-source-map' : false,
     entry: {
-        login: './cp/login.ts',
+        login: './cp/login.tsx',
         control: './cp/control.tsx'
     },
     resolve: {

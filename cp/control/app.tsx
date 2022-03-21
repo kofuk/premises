@@ -1,5 +1,8 @@
 import * as React from 'react';
 
+import '../i18n';
+import {t} from 'i18next';
+
 import StatusBar from './statusbar';
 import ServerControlPane from './server-control-pane';
 import ServerConfigPane from './server-config-pane';
@@ -29,6 +32,8 @@ export default class App extends React.Component<{}, AppState> {
 
     componentDidMount = () => {
         this.wsWatch();
+
+        document.title = t('app_name');
     };
 
     wsWatch = () => {
@@ -75,9 +80,23 @@ export default class App extends React.Component<{}, AppState> {
             <ServerControlPane showError={this.showError} />
         );
         return (
-            <div className="container">
-                <StatusBar isError={this.state.isError} message={this.state.message} />
-                {mainPane}
+            <div>
+                <nav className="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
+                    <div className="container-fluid">
+                        <span className="navbar-brand">{t('app_name')}</span>
+                        <div className="collapse navbar-collapse">
+                            <div className="navbar-nav me-auto"></div>
+                            <a href="/logout" className="btn btn-primary bg-gradient">
+                                {t('logout')}
+                            </a>
+                        </div>
+                    </div>
+                </nav>
+
+                <div className="container">
+                    <StatusBar isError={this.state.isError} message={this.state.message} />
+                    {mainPane}
+                </div>
             </div>
         );
     };

@@ -1,6 +1,9 @@
 import * as React from 'react';
 import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
 
+import '../i18n';
+import {t} from 'i18next';
+
 import ServerVersion from './config-item/server-version';
 import WorldSource from './config-item/world-source';
 import {WorldLocation} from './config-item/world-source';
@@ -192,7 +195,7 @@ export default class ReconfigureMenu extends React.Component<Prop, ServerConfig>
         return (
             <div className="m-2">
                 <button className="btn btn-outline-primary" onClick={this.props.backToMenu}>
-                    <IoIosArrowBack /> Back
+                    <IoIosArrowBack /> {t('back')}
                 </button>
                 <div className="m-2">
                     {configItems}
@@ -203,7 +206,7 @@ export default class ReconfigureMenu extends React.Component<Prop, ServerConfig>
                             onClick={this.handleStart}
                             disabled={this.state.currentStep !== this.stepCount}
                         >
-                            Restart
+                            {t('relaunch_server')}
                         </button>
                     </div>
                 </div>

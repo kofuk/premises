@@ -1,5 +1,8 @@
 import * as React from 'react';
 
+import '../../i18n';
+import {t} from 'i18next';
+
 import {ItemProp} from './prop';
 import {ConfigItem} from './config-item';
 
@@ -39,7 +42,7 @@ class Machine {
                     onChange={() => clickHandler(this.name)}
                 />
                 <label className="btn btn-outline-primary" htmlFor={`machineType_${this.name}`} title={this.getLabel()}>
-                    {this.memSize}GB
+                    {this.memSize} GB
                 </label>
             </React.Fragment>
         );
@@ -57,7 +60,7 @@ const machines: Machine[] = [
 
 export default class MachineTypeConfigItem extends ConfigItem<Prop, {}> {
     constructor(prop: Prop) {
-        super(prop, 'Machine Type');
+        super(prop, t('config_machine_type'));
     }
 
     handleClick = (val: string) => {
@@ -72,7 +75,7 @@ export default class MachineTypeConfigItem extends ConfigItem<Prop, {}> {
                 </div>
                 <div className="m-1 text-end">
                     <button type="button" className="btn btn-primary" onClick={this.props.nextStep}>
-                        Next
+                        {t('next')}
                     </button>
                 </div>
             </>

@@ -1,6 +1,9 @@
 import * as React from 'react';
 import {VscDebugStart} from '@react-icons/all-files/vsc/VscDebugStart';
 
+import '../i18n';
+import {t} from 'i18next';
+
 import MachineType from './config-item/machine-type';
 import ServerVersion from './config-item/server-version';
 import WorldSource from './config-item/world-source';
@@ -218,7 +221,7 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
                                 onClick={this.handleStart}
                                 disabled={this.state.currentStep !== this.stepCount}
                             >
-                                <VscDebugStart /> Start
+                                <VscDebugStart /> {t('launch_server')}
                             </button>
                         </div>
                     </form>

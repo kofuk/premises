@@ -1,5 +1,8 @@
 import * as React from 'react';
 
+import '../../i18n';
+import {t} from 'i18next';
+
 import {ItemProp} from './prop';
 import {ConfigItem} from './config-item';
 
@@ -15,7 +18,7 @@ type Prop = ItemProp & {
 
 export default class WorldSourceConfigItem extends ConfigItem<Prop, {}> {
     constructor(prop: Prop) {
-        super(prop, 'World Source');
+        super(prop, t('config_world_source'));
     }
 
     handleChange = (val: string) => {
@@ -36,7 +39,7 @@ export default class WorldSourceConfigItem extends ConfigItem<Prop, {}> {
                         onChange={(e) => this.handleChange(e.target.value)}
                     />
                     <label className="form-check-label" htmlFor="worldSourceBackups">
-                        Use Backups
+                        {t('use_backups')}
                     </label>
                 </div>
                 <div className="form-check">
@@ -50,13 +53,13 @@ export default class WorldSourceConfigItem extends ConfigItem<Prop, {}> {
                         onChange={(e) => this.handleChange(e.target.value)}
                     />
                     <label className="form-check-label" htmlFor="worldSourceNewWorld">
-                        Generate a New World
+                        {t('generate_world')}
                     </label>
                 </div>
 
                 <div className="m-1 text-end">
                     <button type="button" className="btn btn-primary" onClick={this.props.nextStep}>
-                        Next
+                        {t('next')}
                     </button>
                 </div>
             </>

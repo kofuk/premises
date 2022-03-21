@@ -1,6 +1,9 @@
 import * as React from 'react';
 import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
 
+import '../../i18n';
+import {t} from 'i18next';
+
 import {ItemProp} from './prop';
 import {ConfigItem} from './config-item';
 
@@ -36,7 +39,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
     };
 
     constructor(prop: Prop) {
-        super(prop, 'Game Version');
+        super(prop, t('config_server_version'));
     }
 
     componentDidMount = () => {
@@ -93,7 +96,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
             <>
                 <select
                     className="form-select"
-                    area-label="Choose A Version"
+                    area-label={t('config_server_version')}
                     value={this.props.serverVersion}
                     onChange={(e) => this.handleChange(e.target.value)}
                 >
@@ -102,7 +105,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
                 <div className="m-1 text-end">
                     <button type="button" className="btn btn-sm btn-outline-secondary" onClick={this.handleRefresh} disabled={this.state.refreshing}>
                         {this.state.refreshing ? <div className="spinner-border spinner-border-sm me-1" role="status"></div> : <IoIosRefresh />}
-                        Refresh
+                        {t('refresh')}
                     </button>
                 </div>
                 <div className="m-1 form-check form-switch">
@@ -117,7 +120,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
                         }}
                     />
                     <label className="form-check-label" htmlFor="showStable">
-                        Show Stable
+                        {t('version_show_stable')}
                     </label>
                 </div>
                 <div className="m-1 form-check form-switch">
@@ -132,7 +135,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
                         }}
                     />
                     <label className="form-check-label" htmlFor="showSnapshot">
-                        Show Snapshot
+                        {t('version_show_snapshot')}
                     </label>
                 </div>
                 <div className="m-1 form-check form-switch">
@@ -147,7 +150,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
                         }}
                     />
                     <label className="form-check-label" htmlFor="showBeta">
-                        Show Beta
+                        {t('version_show_beta')}
                     </label>
                 </div>
                 <div className="m-1 form-check form-switch">
@@ -162,12 +165,12 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
                         }}
                     />
                     <label className="form-check-label" htmlFor="showAlpha">
-                        Show Alpha
+                        {t('version_show_alpha')}
                     </label>
                 </div>
                 <div className="m-1 text-end">
                     <button type="button" className="btn btn-primary" onClick={this.props.nextStep}>
-                        Next
+                        {t('next')}
                     </button>
                 </div>
             </>

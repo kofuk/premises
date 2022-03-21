@@ -1,6 +1,9 @@
 import * as React from 'react';
 import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
 
+import '../../i18n';
+import {t} from 'i18next';
+
 import CopyableListItem from '../../components/copyable-list-item';
 
 type Prop = {
@@ -36,8 +39,8 @@ export default class SystemInfo extends React.Component<Prop, State> {
         } else {
             mainContents = (
                 <div className="list-group">
-                    <CopyableListItem title="Server Version" content={this.state.systemInfo.premisesVersion} />
-                    <CopyableListItem title="Host OS" content={this.state.systemInfo.hostOS} />
+                    <CopyableListItem title={t('system_info_server_version')} content={this.state.systemInfo.premisesVersion} />
+                    <CopyableListItem title={t('system_info_host_os')} content={this.state.systemInfo.hostOS} />
                 </div>
             );
         }
@@ -45,7 +48,7 @@ export default class SystemInfo extends React.Component<Prop, State> {
         return (
             <div className="m-2">
                 <button className="btn btn-outline-primary" onClick={this.props.backToMenu}>
-                    <IoIosArrowBack /> Back
+                    <IoIosArrowBack /> {t('back')}
                 </button>
                 <div className="m-2">{mainContents}</div>
             </div>

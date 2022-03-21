@@ -1,6 +1,9 @@
 import * as React from 'react';
 import {FaStop} from '@react-icons/all-files/fa/FaStop';
 
+import '../i18n';
+import {t} from 'i18next';
+
 import ReconfigureMenu from './reconfigure-menu';
 import Snapshot from './control-item/snapshot';
 import SystemInfo from './control-item/system-info';
@@ -44,7 +47,7 @@ export default class ServerControlPane extends React.Component<Prop, State> {
                             this.setState({mode: Modes.WorldInfo});
                         }}
                     >
-                        World Information
+                        {t('menu_world_info')}
                     </button>
                     <button
                         type="button"
@@ -53,7 +56,7 @@ export default class ServerControlPane extends React.Component<Prop, State> {
                             this.setState({mode: Modes.Reconfigure});
                         }}
                     >
-                        Reconfigure Server
+                        {t('menu_reconfigure')}
                     </button>
                     <button
                         type="button"
@@ -62,7 +65,7 @@ export default class ServerControlPane extends React.Component<Prop, State> {
                             this.setState({mode: Modes.Snapshot});
                         }}
                     >
-                        Snapshot
+                        {t('menu_snapshot')}
                     </button>
                     <button
                         type="button"
@@ -71,7 +74,7 @@ export default class ServerControlPane extends React.Component<Prop, State> {
                             this.setState({mode: Modes.SystemInfo});
                         }}
                     >
-                        System Information
+                        {t('menu_system_info')}
                     </button>
                 </div>
             );
@@ -99,7 +102,7 @@ export default class ServerControlPane extends React.Component<Prop, State> {
                                     fetch('/control/api/stop', {method: 'post'});
                                 }}
                             >
-                                <FaStop /> Stop
+                                <FaStop /> {t('stop_server')}
                             </button>
                         </div>
                     </form>

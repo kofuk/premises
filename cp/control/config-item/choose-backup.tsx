@@ -1,6 +1,9 @@
 import * as React from 'react';
 import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
 
+import '../../i18n';
+import {t} from 'i18next';
+
 import {ItemProp} from './prop';
 import {ConfigItem} from './config-item';
 import {WorldBackup} from './world-backup';
@@ -26,7 +29,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
     };
 
     constructor(prop: Prop) {
-        super(prop, 'World');
+        super(prop, t('config_choose_backup'));
     }
 
     componentDidMount = () => {
@@ -69,7 +72,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
         const worlds = (
             <div className="m-2">
                 <label className="form-label" htmlFor="worldSelect">
-                    World
+                    {t('select_world')}
                 </label>
                 <select
                     className="form-select"
@@ -89,7 +92,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
         const generations = worldData ? (
             <div className="m-2">
                 <label className="form-label" htmlFor="backupGenerationSelect">
-                    Backup Generation
+                    {t('backup_generation')}
                 </label>
                 <select
                     className="form-select"
@@ -124,13 +127,13 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                         onChange={(e) => this.props.setUseCachedWorld(e.target.checked)}
                     />
                     <label className="form-check-label" htmlFor="useCachedWorld">
-                        Use Cached World Data If Possible
+                        {t('use_cached_world')}
                     </label>
                 </div>
                 <div className="m-1">
                     <button type="button" className="btn btn-sm btn-outline-secondary" onClick={this.handleRefresh} disabled={this.state.refreshing}>
                         {this.state.refreshing ? <div className="spinner-border spinner-border-sm me-1" role="status"></div> : <IoIosRefresh />}
-                        Refresh
+                        {t('refresh')}
                     </button>
                 </div>
             </>
@@ -140,7 +143,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
     createEmptyMessage = (): React.ReactElement => {
         return (
             <div className="alert alert-warning" role="alert">
-                No world backups found. Please generate a new world.
+                {t('no_backups')}
             </div>
         );
     };
@@ -152,7 +155,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                 {content}
                 <div className="m-1 text-end">
                     <button type="button" className="btn btn-primary" onClick={this.props.nextStep} disabled={this.state.backups.length === 0}>
-                        Next
+                        {t('next')}
                     </button>
                 </div>
             </>

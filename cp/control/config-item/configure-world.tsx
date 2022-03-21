@@ -1,8 +1,10 @@
 import * as React from 'react';
 
+import '../../i18n';
+import {t} from 'i18next';
+
 import {ItemProp} from './prop';
 import {ConfigItem} from './config-item';
-import {WorldBackup} from './world-backup';
 
 type Prop = ItemProp & {
     levelType: LevelType;
@@ -33,15 +35,15 @@ class LevelTypeInfo {
 }
 
 const levelTypes: LevelTypeInfo[] = [
-    new LevelTypeInfo(LevelType.Default, 'Default'),
-    new LevelTypeInfo(LevelType.Superflat, 'Superflat'),
-    new LevelTypeInfo(LevelType.LargeBiomes, 'Large Biomes'),
-    new LevelTypeInfo(LevelType.Amplified, 'Amplified')
+    new LevelTypeInfo(LevelType.Default, t('world_type_default')),
+    new LevelTypeInfo(LevelType.Superflat, t('world_type_superflat')),
+    new LevelTypeInfo(LevelType.LargeBiomes, t('world_type_large_biomes')),
+    new LevelTypeInfo(LevelType.Amplified, t('world_type_amplified'))
 ];
 
 export default class ConfigureWorldConfigItem extends ConfigItem<Prop, {}> {
     constructor(prop: Prop) {
-        super(prop, 'Configure World');
+        super(prop, t('config_configure_world'));
     }
 
     createContent = (): React.ReactElement => {
@@ -49,14 +51,14 @@ export default class ConfigureWorldConfigItem extends ConfigItem<Prop, {}> {
             <>
                 <div className="m-2">
                     <label className="form-label" htmlFor="seed">
-                        Seed
+                        {t('seed')}
                     </label>
                     <input className="form-control" value={this.props.seed} id="seed" onChange={(e) => this.props.setSeed(e.target.value)} />
                 </div>
 
                 <div className="m-2">
                     <label className="form-label" htmlFor="selectLevelType">
-                        World Type
+                        {t('world_type')}
                     </label>
                     <select
                         className="form-select"
@@ -70,7 +72,7 @@ export default class ConfigureWorldConfigItem extends ConfigItem<Prop, {}> {
 
                 <div className="m-1 text-end">
                     <button type="button" className="btn btn-primary" onClick={this.props.nextStep}>
-                        Next
+                        {t('next')}
                     </button>
                 </div>
             </>
