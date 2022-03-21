@@ -26,20 +26,20 @@ type State = {
 export default class WorldInfo extends React.Component<Prop, State> {
     state: State = {
         worldInfo: null,
-        refreshing: false
+        refreshing: true
     };
 
     componentDidMount = () => {
         fetch('/control/api/worldinfo')
             .then((resp) => resp.json())
             .then((resp) => {
-                this.setState({worldInfo: resp});
+                this.setState({worldInfo: resp, refreshing: false});
             });
     };
 
     handleRefresh = () => {
         this.setState({refreshing: true});
-        fetch('/control/api/worldinfo?reload')
+        fetch('/control/api/worldinfo')
             .then((resp) => resp.json())
             .then((resp) => {
                 this.setState({worldInfo: resp, refreshing: false});
