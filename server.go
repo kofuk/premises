@@ -52,7 +52,7 @@ func (s *LocalDebugServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB in
 	}
 
 	cmd := exec.Command("go", "run", ".")
-	cmd.Dir = filepath.Join(os.Getenv("HOME"), "source/premises-mcmanager")
+	cmd.Dir = filepath.Join(os.Getenv("HOME"), "source/premises/mcmanager")
 	cmd.Env = append(os.Environ(), "PREMISES_RUNNER_DEBUG=true")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
