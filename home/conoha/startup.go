@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kofuk/premises/config"
+	"github.com/kofuk/premises/home/config"
 )
 
 //go:embed startup.sh

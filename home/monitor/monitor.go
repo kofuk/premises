@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/kofuk/premises/config"
-	"github.com/kofuk/premises/gameconfig"
+	"github.com/kofuk/premises/home/config"
+	"github.com/kofuk/premises/home/gameconfig"
 	log "github.com/sirupsen/logrus"
 )
 

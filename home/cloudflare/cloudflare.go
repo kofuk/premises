@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/kofuk/premises/config"
+	"github.com/kofuk/premises/home/config"
 )
 
 const (

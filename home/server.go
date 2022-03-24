@@ -8,11 +8,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kofuk/premises/cloudflare"
-	"github.com/kofuk/premises/config"
-	"github.com/kofuk/premises/conoha"
-	"github.com/kofuk/premises/gameconfig"
-	"github.com/kofuk/premises/monitor"
+	"github.com/kofuk/premises/home/cloudflare"
+	"github.com/kofuk/premises/home/config"
+	"github.com/kofuk/premises/home/conoha"
+	"github.com/kofuk/premises/home/gameconfig"
+	"github.com/kofuk/premises/home/monitor"
 	log "github.com/sirupsen/logrus"
 )
 

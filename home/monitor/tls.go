@@ -3,7 +3,7 @@ package monitor
 import (
 	"os/exec"
 
-	"github.com/kofuk/premises/config"
+	"github.com/kofuk/premises/home/config"
 )
 
 func GenerateTLSKey(cfg *config.Config) error {

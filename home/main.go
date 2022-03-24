@@ -28,11 +28,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/text/language"
 
-	"github.com/kofuk/premises/backup"
-	"github.com/kofuk/premises/config"
-	"github.com/kofuk/premises/gameconfig"
-	"github.com/kofuk/premises/mcversions"
-	"github.com/kofuk/premises/monitor"
+	"github.com/kofuk/premises/home/backup"
+	"github.com/kofuk/premises/home/config"
+	"github.com/kofuk/premises/home/gameconfig"
+	"github.com/kofuk/premises/home/mcversions"
+	"github.com/kofuk/premises/home/monitor"
 )
 
 //go:embed i18n/*.json

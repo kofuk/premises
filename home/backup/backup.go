@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/kofuk/go-mega"
-	"github.com/kofuk/premises/config"
+	"github.com/kofuk/premises/home/config"
 	log "github.com/sirupsen/logrus"
 )
 
