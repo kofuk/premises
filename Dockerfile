@@ -1,15 +1,15 @@
 FROM golang:latest
 WORKDIR /build
 COPY . .
-RUN make
+RUN cd /build/home && make
 
 FROM node:latest
 WORKDIR /build
-COPY . .
+COPY /home .
 RUN npm ci && npm run prod
 
 FROM alpine:latest
-COPY --from=0 /build/premises /premises
+COPY --from=0 /build/home/premises /premises
 COPY --from=1 /build/gen /gen
 RUN apk --no-cache add openssl
 ENTRYPOINT ["/premises"]
