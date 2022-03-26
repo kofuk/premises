@@ -28,7 +28,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/text/language"
 
-	"github.com/kofuk/premises/home/backup"
+	"github.com/kofuk/premises/backup"
 	"github.com/kofuk/premises/home/config"
 	"github.com/kofuk/premises/home/gameconfig"
 	"github.com/kofuk/premises/home/mcversions"
@@ -617,7 +617,7 @@ func main() {
 
 				log.WithField("cache_key", CacheKeyBackups).Info("cache miss")
 
-				backups, err := backup.GetBackupList(cfg)
+				backups, err := backup.GetBackupList(&cfg.Mega, cfg.Debug.Runner)
 				if err != nil {
 					log.WithError(err).Error("Failed to retrive backup list")
 					c.Status(http.StatusInternalServerError)

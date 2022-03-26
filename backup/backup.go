@@ -2,14 +2,17 @@ package backup
 
 import (
 	"errors"
-	"regexp"
 	"sort"
 	"strconv"
 
 	"github.com/kofuk/go-mega"
-	"github.com/kofuk/premises/home/config"
 	log "github.com/sirupsen/logrus"
 )
+
+type MegaCredentialInfo struct {
+	Email    string `json:"email",env:"email"`
+	Password string `json:"password",env:"password"`
+}
 
 type GenerationInfo struct {
 	Gen       string `json:"gen"`
@@ -35,14 +38,14 @@ func getFolderRef(m *mega.Mega, parent *mega.Node, name string) (*mega.Node, err
 	return nil, errors.New("No such folder")
 }
 
-func getCloudWorldsFolder(cfg *config.Config, m *mega.Mega) (*mega.Node, error) {
+func getCloudWorldsFolder(m *mega.Mega, useDevFolder bool) (*mega.Node, error) {
 	dataRoot, err := getFolderRef(m, m.FS.GetRoot(), "premises")
 	if err != nil {
 		return nil, err
 	}
 
 	var worldFolderName string
-	if cfg.Debug.Runner {
+	if useDevFolder {
 		worldFolderName = "worlds.dev"
 	} else {
 		worldFolderName = "worlds"
@@ -55,15 +58,13 @@ func getCloudWorldsFolder(cfg *config.Config, m *mega.Mega) (*mega.Node, error) 
 	return worldsFolder, nil
 }
 
-var archiveExtensionRegexp = regexp.MustCompile("\\.tar\\.xz$")
-
-func GetBackupList(cfg *config.Config) ([]WorldBackup, error) {
-	if cfg.Mega.Email == "" {
+func GetBackupList(cred *MegaCredentialInfo, useDevFolder bool) ([]WorldBackup, error) {
+	if cred.Email == "" {
 		return nil, errors.New("Mega credential is not set")
 	}
 
 	m := mega.New()
-	if err := m.Login(cfg.Mega.Email, cfg.Mega.Password); err != nil {
+	if err := m.Login(cred.Email, cred.Password); err != nil {
 		return nil, err
 	}
 	defer func() {
@@ -72,7 +73,7 @@ func GetBackupList(cfg *config.Config) ([]WorldBackup, error) {
 		}
 	}()
 
-	worldsFolder, err := getCloudWorldsFolder(cfg, m)
+	worldsFolder, err := getCloudWorldsFolder(m, useDevFolder)
 	if err != nil {
 		return nil, err
 	}

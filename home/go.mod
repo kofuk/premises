@@ -2,7 +2,10 @@ module github.com/kofuk/premises/home
 
 go 1.17
 
+replace github.com/kofuk/premises/backup => ../backup
+
 require (
+	github.com/kofuk/premises/backup v0.0.0
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/gin-contrib/sessions v0.0.4
 	github.com/gin-contrib/static v0.0.1

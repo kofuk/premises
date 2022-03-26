@@ -2,6 +2,8 @@ package config
 
 import (
 	"path/filepath"
+
+	"github.com/kofuk/premises/backup"
 )
 
 type Config struct {
@@ -25,10 +27,7 @@ type Config struct {
 		DomainName     string `env:"domain"`
 		GameDomainName string `env:"gameDomain"`
 	} `env:"cloudflare"`
-	Mega struct {
-		Email    string `env:"email"`
-		Password string `env:"password"`
-	} `env:"mega"`
+	Mega backup.MegaCredentialInfo `env:"mega"`
 	Game struct {
 		Motd      string   `env:"motd"`
 		Operators []string `env:"operators"`
