@@ -1,5 +1,6 @@
 const webpack = require('webpack');
 const path = require('path');
+const CopyPlugin = require('copy-webpack-plugin');
 
 const env = process.env.NODE_ENV || 'development';
 
@@ -32,7 +33,13 @@ const config = {
             }
         ]
     },
-    plugins: []
+    plugins: [
+        new CopyPlugin({
+            patterns: [
+                {from: 'cp/favicon.ico', to: path.resolve(__dirname, 'gen')}
+            ]
+        })
+    ]
 };
 
 if (process.env.USE_BUNDLE_ANALYZER) {
