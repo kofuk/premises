@@ -54,7 +54,8 @@ const i18nData = {
             world_info_seed: 'Seed',
             connected: 'Connected',
             disconnected: 'Connection has lost\nPlease reload the page',
-            reconnecting: 'Connection has lost\nReconnecting...'
+            reconnecting: 'Connection has lost\nReconnecting...',
+            connecting: 'Connecting...'
         }
     },
     ja: {
@@ -110,7 +111,8 @@ const i18nData = {
             world_info_seed: 'シード値',
             connected: '接続済み',
             disconnected: '切断されました\nページをリロードして再接続してください',
-            reconnecting: '切断されました\n再接続しています...'
+            reconnecting: '切断されました\n再接続しています...',
+            connecting: '接続しています...'
         }
     }
 };

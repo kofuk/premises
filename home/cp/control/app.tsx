@@ -37,6 +37,8 @@ export default class App extends React.Component<{}, AppState> {
     };
 
     wsWatch = () => {
+        this.setState({isError: false, message: t('connecting')});
+
         const ws: WebSocket = new WebSocket(this.socketUrl);
         ws.addEventListener('close', this.handleWsClose);
         ws.addEventListener('message', this.handleWsMessage);
