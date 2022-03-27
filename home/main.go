@@ -431,9 +431,9 @@ func main() {
 			c.HTML(200, "login.html", nil)
 		}
 	})
-	r.POST("/", func(c *gin.Context) {
+	r.POST("/login", func(c *gin.Context) {
 		if c.GetHeader("Origin") != cfg.ControlPanel.AllowedOrigin {
-			c.Redirect(http.StatusFound, "/")
+			c.Status(http.StatusBadGateway)
 			return
 		}
 
@@ -453,7 +453,7 @@ func main() {
 			}
 		}
 		if hashPassword == "" {
-			c.Redirect(http.StatusFound, "/")
+			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
 			return
 		}
 
@@ -461,8 +461,9 @@ func main() {
 		if bcrypt.CompareHashAndPassword([]byte(hashPassword), []byte(password)) == nil {
 			session.Set("username", username)
 			session.Save()
-			c.Redirect(http.StatusFound, "/control")
-			return
+			c.JSON(http.StatusOK, gin.H{"success": true})
+		} else {
+			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
 		}
 	})
 	r.GET("/logout", func(c *gin.Context) {

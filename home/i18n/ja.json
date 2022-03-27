@@ -1,4 +1,5 @@
 {
+    "login.error": "ユーザー名またはパスワードが違います",
     "monitor.connecting": "サーバに接続しています…",
     "monitor.stopped": "サーバが停止しています",
     "monitor.tls_keygen.error": "暗号化キーの生成に失敗しました",
