@@ -47,15 +47,15 @@ const i18nData = {
             system_info_server_version: 'Server Version',
             system_info_host_os: 'Host OS',
             snapshot_description: 'This saves snapshot of playing world. After snapshot saved, you can reconfigure the server using saved data.',
-            requesting: 'Requesting...',
+            requesting: 'Requesting…',
             take_snapshot: 'Take Snapshot',
             world_info_game_version: 'Game Version',
             world_info_world_name: 'World',
             world_info_seed: 'Seed',
             connected: 'Connected',
             disconnected: 'Connection has lost\nPlease reload the page',
-            reconnecting: 'Connection has lost\nReconnecting...',
-            connecting: 'Connecting...'
+            reconnecting: 'Connection has lost\nReconnecting…',
+            connecting: 'Connecting…'
         }
     },
     ja: {
@@ -104,15 +104,15 @@ const i18nData = {
             system_info_host_os: 'ホストのOS',
             snapshot_description:
                 'これによりワールドのスナップショットが保存されます。スナップショット保存の終了後、”サーバの再設定”メニューからスナップショットのデータを使用してサーバを再構築できます。',
-            requesting: 'リクエストを送信しています...',
+            requesting: 'リクエストを送信しています…',
             take_snapshot: 'スナップショットを作成',
             world_info_game_version: 'ゲームのバージョン',
             world_info_world_name: 'ワールド',
             world_info_seed: 'シード値',
             connected: '接続済み',
             disconnected: '切断されました\nページをリロードして再接続してください',
-            reconnecting: '切断されました\n再接続しています...',
-            connecting: '接続しています...'
+            reconnecting: '切断されました\n再接続しています…',
+            connecting: '接続しています…'
         }
     }
 };
