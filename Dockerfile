@@ -11,5 +11,5 @@ RUN npm ci && npm run prod
 FROM alpine:latest
 COPY --from=0 /build/home/premises /premises
 COPY --from=1 /build/gen /gen
-RUN apk --no-cache add openssl
+RUN apk --no-cache add openssl && mkdir -p /opt/premises
 ENTRYPOINT ["/premises"]
