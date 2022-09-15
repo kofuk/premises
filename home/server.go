@@ -488,20 +488,8 @@ func (s *ConohaServer) UpdateDNS() bool {
 
 	s.cfg.ServerAddr = ip4Addr
 
-	log.Info("Getting Cloudflare zone ID...")
-	zoneID, err := cloudflare.GetZoneID(s.cfg)
-	if err != nil {
-		log.WithError(err).Error("Failed to get zone ID")
-		server.monitorChan <- &monitor.StatusData{
-			Status:   L(locale, "vm.dns.error"),
-			HasError: true,
-		}
-		return false
-	}
-	log.WithField("zoen_id", zoneID).Info("Getting Cloudflare zone ID...Done")
-
 	log.Info("Updating DNS record (v4)...")
-	if err := cloudflare.UpdateDNS(s.cfg, zoneID, ip4Addr, 4); err != nil {
+	if err := cloudflare.UpdateDNS(s.cfg, ip4Addr, 4); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v4)")
 		server.monitorChan <- &monitor.StatusData{
 			Status:   L(locale, "vm.dns.error"),
@@ -512,7 +500,7 @@ func (s *ConohaServer) UpdateDNS() bool {
 	log.Info("Updating DNS record (v4)...Done")
 
 	log.Info("Updating DNS record (v6)...")
-	if err := cloudflare.UpdateDNS(s.cfg, zoneID, ip6Addr, 6); err != nil {
+	if err := cloudflare.UpdateDNS(s.cfg, ip6Addr, 6); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v6)")
 		server.monitorChan <- &monitor.StatusData{
 			Status:   L(locale, "vm.dns.error"),

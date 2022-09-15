@@ -24,7 +24,7 @@ type Config struct {
 	} `env:"conoha"`
 	Cloudflare struct {
 		Token          string `env:"token"`
-		DomainName     string `env:"domain"`
+		ZoneID string `env:"zoneId"`
 		GameDomainName string `env:"gameDomain"`
 	} `env:"cloudflare"`
 	Mega backup.MegaCredentialInfo `env:"mega"`
