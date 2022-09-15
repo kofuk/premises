@@ -62,8 +62,8 @@ EOF
         curl -O 'https://prmssupd.000webhostapp.com/files/meta'
         curl -O 'https://prmssupd.000webhostapp.com/files/meta.asc'
         if gpg --verify 'meta.asc'; then
-            remote_version="$(cat -d\  -f1 'meta')"
-            meta_hash="$(cat -d\ -f2 'meta')"
+            remote_version="$(cut -d\  -f1 'meta')"
+            meta_hash="$(cut -d\  -f2 'meta')"
 
             current_version="$("${PREMISES_BASEDIR}/bin/premises-mcmanager" --version)"
 
