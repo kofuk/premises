@@ -104,14 +104,7 @@ func getCloudWorldFolder(ctx *config.PMCMContext, m *mega.Mega, name string) (*m
 		return nil, err
 	}
 
-	var worldFolderName string
-	if ctx.Debug {
-		worldFolderName = "worlds.dev"
-	} else {
-		worldFolderName = "worlds"
-	}
-
-	worldsFolder, err := makeSureCloudFolderExists(m, dataRoot, worldFolderName)
+	worldsFolder, err := makeSureCloudFolderExists(m, dataRoot, ctx.Cfg.Mega.FolderName)
 	if err != nil {
 		return nil, err
 	}

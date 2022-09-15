@@ -520,20 +520,8 @@ func (s *ConohaServer) RevertDNS() bool {
 		Status: L(locale, "vm.dns.reverting"),
 	}
 
-	log.Info("Getting Cloudflare zone ID...")
-	zoneID, err := cloudflare.GetZoneID(s.cfg)
-	if err != nil {
-		log.WithError(err).Error("Failed to get zone ID")
-		server.monitorChan <- &monitor.StatusData{
-			Status:   L(locale, "vm.dns.error"),
-			HasError: true,
-		}
-		return true
-	}
-	log.WithField("zoen_id", zoneID).Info("Getting Cloudflare zone ID...Done")
-
 	log.Info("Updating DNS record (v4)...")
-	if err := cloudflare.UpdateDNS(s.cfg, zoneID, "127.0.0.1", 4); err != nil {
+	if err := cloudflare.UpdateDNS(s.cfg, "127.0.0.1", 4); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v4)")
 		server.monitorChan <- &monitor.StatusData{
 			Status:   L(locale, "vm.dns.error"),
@@ -544,7 +532,7 @@ func (s *ConohaServer) RevertDNS() bool {
 	log.Info("Updating DNS record (v4)...Done")
 
 	log.Info("Updating DNS record (v6)...")
-	if err := cloudflare.UpdateDNS(s.cfg, zoneID, "::1", 6); err != nil {
+	if err := cloudflare.UpdateDNS(s.cfg, "::1", 6); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v6)")
 		server.monitorChan <- &monitor.StatusData{
 			Status:   L(locale, "vm.dns.error"),

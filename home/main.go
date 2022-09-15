@@ -302,6 +302,7 @@ func createConfigFromPostData(values url.Values, cfg *config.Config) (*gameconfi
 	result.SetMegaCredential(cfg.Mega.Email, cfg.Mega.Password)
 	result.SetMotd(cfg.Game.Motd)
 	result.SetLocale(cfg.ControlPanel.Locale)
+	result.SetFolderName(cfg.Mega.FolderName)
 
 	return result, nil
 }
@@ -618,7 +619,7 @@ func main() {
 
 				log.WithField("cache_key", CacheKeyBackups).Info("cache miss")
 
-				backups, err := backup.GetBackupList(&cfg.Mega, cfg.Debug.Runner)
+				backups, err := backup.GetBackupList(&cfg.Mega, cfg.Mega.FolderName)
 				if err != nil {
 					log.WithError(err).Error("Failed to retrive backup list")
 					c.Status(http.StatusInternalServerError)

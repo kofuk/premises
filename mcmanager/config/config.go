@@ -32,8 +32,9 @@ type Config struct {
 	Operators []string `json:"operators"`
 	Whitelist []string `json:"whitelist"`
 	Mega      struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email      string `json:"email"`
+		Password   string `json:"password"`
+		FolderName string `json:"folderName"`
 	} `json:"mega"`
 }
 

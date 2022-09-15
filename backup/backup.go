@@ -10,8 +10,9 @@ import (
 )
 
 type MegaCredentialInfo struct {
-	Email    string `json:"email",env:"email"`
-	Password string `json:"password",env:"password"`
+	Email    string `json:"email" env:"email"`
+	Password string `json:"password" env:"password"`
+	FolderName string `json:"folderName" env:"folderName"`
 }
 
 type GenerationInfo struct {
@@ -38,27 +39,20 @@ func getFolderRef(m *mega.Mega, parent *mega.Node, name string) (*mega.Node, err
 	return nil, errors.New("No such folder")
 }
 
-func getCloudWorldsFolder(m *mega.Mega, useDevFolder bool) (*mega.Node, error) {
+func getCloudWorldsFolder(m *mega.Mega, folderName string) (*mega.Node, error) {
 	dataRoot, err := getFolderRef(m, m.FS.GetRoot(), "premises")
 	if err != nil {
 		return nil, err
 	}
 
-	var worldFolderName string
-	if useDevFolder {
-		worldFolderName = "worlds.dev"
-	} else {
-		worldFolderName = "worlds"
-	}
-
-	worldsFolder, err := getFolderRef(m, dataRoot, worldFolderName)
+	worldsFolder, err := getFolderRef(m, dataRoot, folderName)
 	if err != nil {
 		return nil, err
 	}
 	return worldsFolder, nil
 }
 
-func GetBackupList(cred *MegaCredentialInfo, useDevFolder bool) ([]WorldBackup, error) {
+func GetBackupList(cred *MegaCredentialInfo, folderName string) ([]WorldBackup, error) {
 	if cred.Email == "" {
 		return nil, errors.New("Mega credential is not set")
 	}
@@ -73,7 +67,7 @@ func GetBackupList(cred *MegaCredentialInfo, useDevFolder bool) ([]WorldBackup, 
 		}
 	}()
 
-	worldsFolder, err := getCloudWorldsFolder(m, useDevFolder)
+	worldsFolder, err := getCloudWorldsFolder(m, folderName)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +77,7 @@ func GetBackupList(cred *MegaCredentialInfo, useDevFolder bool) ([]WorldBackup, 
 		return nil, err
 	}
 
-	var result []WorldBackup
+	result := make([]WorldBackup, 0)
 	for _, world := range worlds {
 		if world.GetType() != mega.TypeFolder {
 			continue

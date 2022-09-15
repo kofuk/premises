@@ -33,6 +33,7 @@ type GameConfig struct {
 	Mega      struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
+		FolderName string `json:"folderName"`
 	} `json:"mega"`
 }
 
@@ -150,4 +151,8 @@ func (gc *GameConfig) SetMegaCredential(email, password string) {
 
 func (gc *GameConfig) SetLocale(locale string) {
 	gc.Locale = locale
+}
+
+func (gc *GameConfig) SetFolderName(name string) {
+	gc.Mega.FolderName = name
 }
