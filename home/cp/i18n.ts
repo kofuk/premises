@@ -56,7 +56,12 @@ const i18nData = {
             connected: 'Connected',
             disconnected: 'Connection has lost\nPlease reload the page',
             reconnecting: 'Connection has lost\nReconnecting…',
-            connecting: 'Connecting…'
+            connecting: 'Connecting…',
+            notification_toast_title: 'Want to receive notification?',
+            notification_toast_description: 'You can receive notification when the server is ready.',
+            notification_allow: 'Allow notification',
+            notification_title: 'Minecraft server is launched!',
+            notification_body: 'You can login to the game.'
         }
     },
     ja: {
@@ -114,7 +119,12 @@ const i18nData = {
             connected: '接続済み',
             disconnected: '切断されました\nページをリロードして再接続してください',
             reconnecting: '切断されました\n再接続しています…',
-            connecting: '接続しています…'
+            connecting: '接続しています…',
+            notification_toast_title: '通知を受け取りますか？',
+            notification_toast_description: '通知を許可するとサーバが起動したときに通知を受け取れます。',
+            notification_allow: '通知を許可',
+            notification_title: 'Minecraft サーバが起動しました！',
+            notification_body: 'ゲームにログインできます'
         }
     }
 };

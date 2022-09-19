@@ -11,16 +11,21 @@ type AppState = {
     isServerShutdown: boolean;
     isError: boolean;
     message: string;
+    showNotificationToast: boolean;
 };
 
 export default class App extends React.Component<{}, AppState> {
     retryCount: number;
     socketUrl: string;
+    useNotification: boolean = false;
     state: AppState = {
         isServerShutdown: true,
         isError: false,
-        message: ''
+        message: '',
+        showNotificationToast: true
     };
+
+    prevStatus: string = '';
 
     constructor(props: {}) {
         super(props);
@@ -28,6 +33,11 @@ export default class App extends React.Component<{}, AppState> {
         const proto: string = location.protocol == 'https:' ? 'wss://' : 'ws://';
         this.socketUrl = proto + location.host + '/control/api/status';
         this.retryCount = 0;
+
+        if (Notification.permission === 'granted') {
+            this.state.showNotificationToast = false;
+            this.useNotification = true;
+        }
     }
 
     componentDidMount = () => {
@@ -73,10 +83,28 @@ export default class App extends React.Component<{}, AppState> {
     handleWsMessage = (ev: MessageEvent) => {
         const event = JSON.parse(ev.data);
         this.setState({isServerShutdown: event.shutdown, isError: event.hasError, message: event.status});
+
+        //TODO: temporary implementation
+        if (event.status !== this.prevStatus && this.prevStatus !== '' && (event.status === '実行中' || event.status === 'Running')) {
+            new Notification(t('notification_title'), {body: t('notification_body')});
+        }
+
+        this.prevStatus = event.status;
     };
 
     showError = (message: string) => {
         this.setState({isError: true, message: message});
+    };
+
+    closeNotificationToast = () => {
+        this.setState({showNotificationToast: false});
+    };
+
+    requestNotification = () => {
+        Notification.requestPermission().then((result) => {
+            this.useNotification = result === 'granted';
+        });
+        this.closeNotificationToast();
     };
 
     render = () => {
@@ -102,6 +130,29 @@ export default class App extends React.Component<{}, AppState> {
                 <div className="container">
                     <StatusBar isError={this.state.isError} message={this.state.message} />
                     {mainPane}
+                </div>
+
+                <div className="toast-container position-absolute top-0 end-0 pe-1 pt-5">
+                    <div className={`toast ${this.state.showNotificationToast ? 'show' : ''}`}>
+                        <div className="toast-header">
+                            <strong className="me-auto">{t('notification_toast_title')}</strong>
+                            <button
+                                type="button"
+                                className="btn-close"
+                                data-bs-dismiss="toast"
+                                aria-label="Close"
+                                onClick={this.closeNotificationToast}
+                            ></button>
+                        </div>
+                        <div className="toast-body">
+                            {t('notification_toast_description')}
+                            <div className="text-end">
+                                <button type="button" className="btn btn-primary btn-sm" onClick={this.requestNotification}>
+                                    {t('notification_allow')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
