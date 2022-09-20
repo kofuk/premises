@@ -37,6 +37,8 @@ import (
 
 //go:embed i18n/*.json
 var i18nData embed.FS
+//go:embed etc/robots.txt
+var robotsTxt []byte
 
 var localizeBundle *i18n.Bundle
 
@@ -472,6 +474,10 @@ func main() {
 		session.Delete("username")
 		session.Save()
 		c.Redirect(http.StatusFound, "/")
+	})
+
+	r.GET("/robots.txt", func(c *gin.Context) {
+		c.Writer.Write(robotsTxt)
 	})
 
 	api := r.Group("api")
