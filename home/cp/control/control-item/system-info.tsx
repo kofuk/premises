@@ -25,7 +25,7 @@ export default class SystemInfo extends React.Component<Prop, State> {
     };
 
     componentDidMount = () => {
-        fetch('/control/api/systeminfo')
+        fetch('/api/systeminfo')
             .then((resp) => resp.json())
             .then((resp) => {
                 this.setState({systemInfo: resp});

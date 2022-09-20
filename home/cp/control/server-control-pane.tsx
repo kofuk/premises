@@ -99,7 +99,7 @@ export default class ServerControlPane extends React.Component<Prop, State> {
                                 type="button"
                                 onClick={(e: React.MouseEvent) => {
                                     e.preventDefault();
-                                    fetch('/control/api/stop', {method: 'post'});
+                                    fetch('/api/stop', {method: 'post'});
                                 }}
                             >
                                 <FaStop /> {t('stop_server')}

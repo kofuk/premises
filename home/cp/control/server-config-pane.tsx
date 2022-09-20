@@ -48,7 +48,7 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
             data.append('level-type', this.state.levelType);
         }
 
-        fetch('/control/api/launch', {
+        fetch('/api/launch', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'

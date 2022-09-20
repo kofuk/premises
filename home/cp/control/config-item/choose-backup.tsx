@@ -33,7 +33,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
     }
 
     componentDidMount = () => {
-        fetch('/control/api/backups')
+        fetch('/api/backups')
             .then((resp) => resp.json())
             .then((resp) => {
                 this.setState({backups: resp});
@@ -46,7 +46,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
 
     handleRefresh = () => {
         this.setState({refreshing: true});
-        fetch('/control/api/backups?reload')
+        fetch('/api/backups?reload')
             .then((resp) => resp.json())
             .then((resp) => {
                 this.setState({backups: resp});

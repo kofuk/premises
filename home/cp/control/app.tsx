@@ -31,7 +31,7 @@ export default class App extends React.Component<{}, AppState> {
         super(props);
 
         const proto: string = location.protocol == 'https:' ? 'wss://' : 'ws://';
-        this.socketUrl = proto + location.host + '/control/api/status';
+        this.socketUrl = proto + location.host + '/api/status';
         this.retryCount = 0;
 
         if (Notification.permission === 'granted') {

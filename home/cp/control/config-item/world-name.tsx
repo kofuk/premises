@@ -30,7 +30,7 @@ export default class WorldNameConfigItem extends ConfigItem<Prop, State> {
     }
 
     componentDidMount = () => {
-        fetch('/control/api/backups')
+        fetch('/api/backups')
             .then((resp) => resp.json())
             .then((resp) => {
                 this.setState({backups: resp});

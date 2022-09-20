@@ -43,7 +43,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
     }
 
     componentDidMount = () => {
-        fetch('/control/api/mcversions')
+        fetch('/api/mcversions')
             .then((resp) => resp.json())
             .then((resp) => {
                 this.setState({mcVersions: resp});
@@ -53,7 +53,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
 
     handleRefresh = () => {
         this.setState({refreshing: true});
-        fetch('/control/api/mcversions?reload')
+        fetch('/api/mcversions?reload')
             .then((resp) => resp.json())
             .then((resp) => {
                 this.setState({mcVersions: resp});

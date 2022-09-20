@@ -47,7 +47,7 @@ export default class ReconfigureMenu extends React.Component<Prop, ServerConfig>
             data.append('level-type', this.state.levelType);
         }
 
-        fetch('/control/api/reconfigure', {
+        fetch('/api/reconfigure', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'

@@ -427,7 +427,7 @@ func main() {
 	r.GET("/", func(c *gin.Context) {
 		session := sessions.Default(c)
 		if session.Get("username") != nil {
-			c.Redirect(http.StatusFound, "/control")
+			c.HTML(200, "control.html", nil)
 		} else {
 			c.HTML(200, "login.html", nil)
 		}
@@ -474,280 +474,273 @@ func main() {
 		c.Redirect(http.StatusFound, "/")
 	})
 
-	controlPanel := r.Group("control")
-	controlPanel.Use(func(c *gin.Context) {
-		session := sessions.Default(c)
-		if session.Get("username") == nil {
-			c.Redirect(http.StatusFound, "/")
+	api := r.Group("api")
+	api.Use(func(c *gin.Context) {
+		// 1. Verify that request is sent from allowed origin.
+		if c.Request.Method == http.MethodPost || (c.Request.Method == http.MethodGet && c.GetHeader("Upgrade") == "WebSocket") {
+			if c.GetHeader("Origin") == cfg.ControlPanel.AllowedOrigin {
+				// 2. Verify that client is logged in.
+				session := sessions.Default(c)
+				if session.Get("username") == nil {
+					c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Not logged in"})
+					c.Abort()
+				}
+				return
+			}
+			c.JSON(400, gin.H{"success": false, "message": "Invalid request (origin not allowed)"})
 			c.Abort()
 		}
 	})
 	{
-		controlPanel.GET("/", func(c *gin.Context) {
-			c.HTML(200, "control.html", nil)
-		})
-
-		api := controlPanel.Group("api")
-		api.Use(func(c *gin.Context) {
-			if c.Request.Method == http.MethodPost || (c.Request.Method == http.MethodGet && c.GetHeader("Upgrade") == "WebSocket") {
-				if c.GetHeader("Origin") == cfg.ControlPanel.AllowedOrigin {
-					return
-				}
-				c.JSON(400, gin.H{"success": false, "message": "Invalid request (origin not allowed)"})
-				c.Abort()
+		api.GET("/status", func(c *gin.Context) {
+			conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+			if err != nil {
+				log.WithError(err).Error("Failed to upgrade protocol to WebSocket")
+				return
 			}
-		})
-		{
-			api.GET("/status", func(c *gin.Context) {
-				conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-				if err != nil {
-					log.WithError(err).Error("Failed to upgrade protocol to WebSocket")
-					return
-				}
-				defer conn.Close()
+			defer conn.Close()
 
-				ch := make(chan *monitor.StatusData)
-				server.addMonitorClient(ch)
-				defer close(ch)
-				defer server.removeMonitorClient(ch)
+			ch := make(chan *monitor.StatusData)
+			server.addMonitorClient(ch)
+			defer close(ch)
+			defer server.removeMonitorClient(ch)
 
-				server.statusMu.Lock()
-				if err := conn.WriteJSON(server.status); err != nil {
-					log.WithError(err).Error("Failed to write data")
-					return
-				}
-				server.statusMu.Unlock()
+			server.statusMu.Lock()
+			if err := conn.WriteJSON(server.status); err != nil {
+				log.WithError(err).Error("Failed to write data")
+				return
+			}
+			server.statusMu.Unlock()
 
-				closeChan := make(chan struct{})
+			closeChan := make(chan struct{})
 
-				go func() {
-					for {
-						var v struct{}
-						if err := conn.ReadJSON(&v); err != nil {
-							log.Info("Connection closed")
-							close(closeChan)
-							break
-						}
-					}
-				}()
-
+			go func() {
 				for {
-					select {
-					case status := <-ch:
-						if err := conn.WriteJSON(status); err != nil {
-							log.WithError(err).Error("Failed to write data")
-							break
-						}
-					case <-closeChan:
-						goto end
+					var v struct{}
+					if err := conn.ReadJSON(&v); err != nil {
+						log.Info("Connection closed")
+						close(closeChan)
+						break
 					}
 				}
-			end:
-			})
+			}()
 
-			api.POST("/launch", func(c *gin.Context) {
-				server.statusMu.Lock()
-				defer server.statusMu.Unlock()
-
-				if err := c.Request.ParseForm(); err != nil {
-					log.WithError(err).Error("Failed to parse form")
-					c.JSON(400, gin.H{"success": false, "message": "Form parse error"})
-					return
-				}
-
-				gameConfig, err := createConfigFromPostData(c.Request.Form, cfg)
-				if err != nil {
-					c.JSON(400, gin.H{"success": false, "message": err.Error()})
-					return
-				}
-
-				machineType := c.PostForm("machine-type")
-				server.machineType = machineType
-				memSizeGB, _ := strconv.Atoi(strings.Replace(machineType, "g", "", 1))
-
-				go LaunchServer(gameConfig, cfg, gameServer, memSizeGB)
-
-				c.JSON(200, gin.H{"success": true})
-			})
-
-			api.POST("/reconfigure", func(c *gin.Context) {
-				if err := c.Request.ParseForm(); err != nil {
-					log.WithError(err).Error("Failed to parse form")
-					c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Form parse error"})
-					return
-				}
-
-				formValues := c.Request.Form
-				formValues.Set("machine-type", server.machineType)
-
-				gameConfig, err := createConfigFromPostData(formValues, cfg)
-				if err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
-					return
-				}
-				// Use previously generated key.
-				gameConfig.AuthKey = cfg.MonitorKey
-
-				go ReconfigureServer(gameConfig, cfg, gameServer)
-
-				c.JSON(http.StatusOK, gin.H{"success": true})
-			})
-
-			api.POST("/stop", func(c *gin.Context) {
-				server.statusMu.Lock()
-				defer server.statusMu.Unlock()
-
-				go StopServer(cfg, gameServer)
-
-				c.JSON(200, gin.H{"success": true})
-			})
-
-			api.GET("/backups", func(c *gin.Context) {
-				if _, ok := c.GetQuery("reload"); ok {
-					if _, err := rdb.Del(context.Background(), CacheKeyBackups).Result(); err != nil {
-						log.WithError(err).Error("Failed to delete backup list cache")
+			for {
+				select {
+				case status := <-ch:
+					if err := conn.WriteJSON(status); err != nil {
+						log.WithError(err).Error("Failed to write data")
+						break
 					}
+				case <-closeChan:
+					goto end
 				}
+			}
+		end:
+		})
 
-				if val, err := rdb.Get(context.Background(), CacheKeyBackups).Result(); err == nil {
-					c.Header("Content-Type", "application/json")
-					c.Writer.Write([]byte(val))
-					return
-				} else if err != redis.Nil {
-					log.WithError(err).Error("Error retriving mcversions cache")
+		api.POST("/launch", func(c *gin.Context) {
+			server.statusMu.Lock()
+			defer server.statusMu.Unlock()
+
+			if err := c.Request.ParseForm(); err != nil {
+				log.WithError(err).Error("Failed to parse form")
+				c.JSON(400, gin.H{"success": false, "message": "Form parse error"})
+				return
+			}
+
+			gameConfig, err := createConfigFromPostData(c.Request.Form, cfg)
+			if err != nil {
+				c.JSON(400, gin.H{"success": false, "message": err.Error()})
+				return
+			}
+
+			machineType := c.PostForm("machine-type")
+			server.machineType = machineType
+			memSizeGB, _ := strconv.Atoi(strings.Replace(machineType, "g", "", 1))
+
+			go LaunchServer(gameConfig, cfg, gameServer, memSizeGB)
+
+			c.JSON(200, gin.H{"success": true})
+		})
+
+		api.POST("/reconfigure", func(c *gin.Context) {
+			if err := c.Request.ParseForm(); err != nil {
+				log.WithError(err).Error("Failed to parse form")
+				c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Form parse error"})
+				return
+			}
+
+			formValues := c.Request.Form
+			formValues.Set("machine-type", server.machineType)
+
+			gameConfig, err := createConfigFromPostData(formValues, cfg)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+				return
+			}
+			// Use previously generated key.
+			gameConfig.AuthKey = cfg.MonitorKey
+
+			go ReconfigureServer(gameConfig, cfg, gameServer)
+
+			c.JSON(http.StatusOK, gin.H{"success": true})
+		})
+
+		api.POST("/stop", func(c *gin.Context) {
+			server.statusMu.Lock()
+			defer server.statusMu.Unlock()
+
+			go StopServer(cfg, gameServer)
+
+			c.JSON(200, gin.H{"success": true})
+		})
+
+		api.GET("/backups", func(c *gin.Context) {
+			if _, ok := c.GetQuery("reload"); ok {
+				if _, err := rdb.Del(context.Background(), CacheKeyBackups).Result(); err != nil {
+					log.WithError(err).Error("Failed to delete backup list cache")
 				}
+			}
 
-				log.WithField("cache_key", CacheKeyBackups).Info("cache miss")
-
-				backups, err := backup.GetBackupList(&cfg.Mega, cfg.Mega.FolderName)
-				if err != nil {
-					log.WithError(err).Error("Failed to retrive backup list")
-					c.Status(http.StatusInternalServerError)
-					return
-				}
-
-				jsonData, err := json.Marshal(backups)
-				if err != nil {
-					log.WithError(err).Error("Failed to marshal backpu list")
-					c.Status(http.StatusInternalServerError)
-					return
-				}
-
-				if _, err := rdb.Set(context.Background(), CacheKeyBackups, jsonData, 24*time.Hour).Result(); err != nil {
-					log.WithError(err).Error("Failed to store backup list")
-				}
-
+			if val, err := rdb.Get(context.Background(), CacheKeyBackups).Result(); err == nil {
 				c.Header("Content-Type", "application/json")
-				c.Writer.Write(jsonData)
-			})
+				c.Writer.Write([]byte(val))
+				return
+			} else if err != redis.Nil {
+				log.WithError(err).Error("Error retriving mcversions cache")
+			}
 
-			api.GET("/mcversions", func(c *gin.Context) {
-				if _, ok := c.GetQuery("reload"); ok {
-					if _, err := rdb.Del(context.Background(), CacheKeyMCVersions).Result(); err != nil {
-						log.WithError(err).Error("Failed to delete mcversions cache")
-					}
+			log.WithField("cache_key", CacheKeyBackups).Info("cache miss")
+
+			backups, err := backup.GetBackupList(&cfg.Mega, cfg.Mega.FolderName)
+			if err != nil {
+				log.WithError(err).Error("Failed to retrive backup list")
+				c.Status(http.StatusInternalServerError)
+				return
+			}
+
+			jsonData, err := json.Marshal(backups)
+			if err != nil {
+				log.WithError(err).Error("Failed to marshal backpu list")
+				c.Status(http.StatusInternalServerError)
+				return
+			}
+
+			if _, err := rdb.Set(context.Background(), CacheKeyBackups, jsonData, 24*time.Hour).Result(); err != nil {
+				log.WithError(err).Error("Failed to store backup list")
+			}
+
+			c.Header("Content-Type", "application/json")
+			c.Writer.Write(jsonData)
+		})
+
+		api.GET("/mcversions", func(c *gin.Context) {
+			if _, ok := c.GetQuery("reload"); ok {
+				if _, err := rdb.Del(context.Background(), CacheKeyMCVersions).Result(); err != nil {
+					log.WithError(err).Error("Failed to delete mcversions cache")
 				}
+			}
 
-				if val, err := rdb.Get(context.Background(), CacheKeyMCVersions).Result(); err == nil {
-					c.Header("Content-Type", "application/json")
-					c.Writer.Write([]byte(val))
-					return
-				} else if err != redis.Nil {
-					log.WithError(err).Error("Error retriving mcversions cache")
-				}
-
-				log.WithField("cache_key", CacheKeyMCVersions).Info("cache miss")
-
-				versions, err := mcversions.GetVersions()
-				if err != nil {
-					log.WithError(err).Error("Failed to retrive Minecraft versions")
-					c.Status(http.StatusInternalServerError)
-					return
-				}
-
-				jsonData, err := json.Marshal(versions)
-				if err != nil {
-					log.WithError(err).Error("Failed to marshal mcversions")
-					c.Status(http.StatusInternalServerError)
-					return
-				}
-
-				if _, err := rdb.Set(context.Background(), CacheKeyMCVersions, jsonData, 7*24*time.Hour).Result(); err != nil {
-					log.WithError(err).Error("Failed to cache mcversions")
-				}
-
+			if val, err := rdb.Get(context.Background(), CacheKeyMCVersions).Result(); err == nil {
 				c.Header("Content-Type", "application/json")
-				c.Writer.Write(jsonData)
-			})
+				c.Writer.Write([]byte(val))
+				return
+			} else if err != redis.Nil {
+				log.WithError(err).Error("Error retriving mcversions cache")
+			}
 
-			api.GET("/systeminfo", func(c *gin.Context) {
-				if cfg.ServerAddr == "" {
-					c.Status(http.StatusTooEarly)
-					return
+			log.WithField("cache_key", CacheKeyMCVersions).Info("cache miss")
+
+			versions, err := mcversions.GetVersions()
+			if err != nil {
+				log.WithError(err).Error("Failed to retrive Minecraft versions")
+				c.Status(http.StatusInternalServerError)
+				return
+			}
+
+			jsonData, err := json.Marshal(versions)
+			if err != nil {
+				log.WithError(err).Error("Failed to marshal mcversions")
+				c.Status(http.StatusInternalServerError)
+				return
+			}
+
+			if _, err := rdb.Set(context.Background(), CacheKeyMCVersions, jsonData, 7*24*time.Hour).Result(); err != nil {
+				log.WithError(err).Error("Failed to cache mcversions")
+			}
+
+			c.Header("Content-Type", "application/json")
+			c.Writer.Write(jsonData)
+		})
+
+		api.GET("/systeminfo", func(c *gin.Context) {
+			if cfg.ServerAddr == "" {
+				c.Status(http.StatusTooEarly)
+				return
+			}
+
+			cacheKey := fmt.Sprintf("%s:%s", CacheKeySystemInfoPrefix, cfg.ServerAddr)
+
+			if _, ok := c.GetQuery("reload"); ok {
+				if _, err := rdb.Del(context.Background(), cacheKey).Result(); err != nil {
+					log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Failed to delete system info cache")
 				}
+			}
 
-				cacheKey := fmt.Sprintf("%s:%s", CacheKeySystemInfoPrefix, cfg.ServerAddr)
-
-				if _, ok := c.GetQuery("reload"); ok {
-					if _, err := rdb.Del(context.Background(), cacheKey).Result(); err != nil {
-						log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Failed to delete system info cache")
-					}
-				}
-
-				if val, err := rdb.Get(context.Background(), cacheKey).Result(); err == nil {
-					c.Header("Content-Type", "application/json")
-					c.Writer.Write([]byte(val))
-					return
-				} else if err != redis.Nil {
-					log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Error retriving system info cache")
-				}
-
-				log.WithField("cache_key", cacheKey).Info("cache miss")
-
-				data, err := monitor.GetSystemInfoData(cfg, cfg.ServerAddr)
-				if err != nil {
-					c.Status(http.StatusInternalServerError)
-					return
-				}
-
-				if _, err := rdb.Set(context.Background(), cacheKey, data, 24*time.Hour).Result(); err != nil {
-					log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Failed to cache mcversions")
-				}
-
+			if val, err := rdb.Get(context.Background(), cacheKey).Result(); err == nil {
 				c.Header("Content-Type", "application/json")
-				c.Writer.Write(data)
-			})
+				c.Writer.Write([]byte(val))
+				return
+			} else if err != redis.Nil {
+				log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Error retriving system info cache")
+			}
 
-			api.GET("/worldinfo", func(c *gin.Context) {
-				if cfg.ServerAddr == "" {
-					c.Status(http.StatusTooEarly)
-					return
-				}
+			log.WithField("cache_key", cacheKey).Info("cache miss")
 
-				data, err := monitor.GetWorldInfoData(cfg, cfg.ServerAddr)
-				if err != nil {
-					c.Status(http.StatusInternalServerError)
-					return
-				}
+			data, err := monitor.GetSystemInfoData(cfg, cfg.ServerAddr)
+			if err != nil {
+				c.Status(http.StatusInternalServerError)
+				return
+			}
 
-				c.Header("Content-Type", "application/json")
-				c.Writer.Write(data)
-			})
+			if _, err := rdb.Set(context.Background(), cacheKey, data, 24*time.Hour).Result(); err != nil {
+				log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Failed to cache mcversions")
+			}
 
-			api.POST("/snapshot", func(c *gin.Context) {
-				if cfg.ServerAddr == "" {
-					c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
-					return
-				}
+			c.Header("Content-Type", "application/json")
+			c.Writer.Write(data)
+		})
 
-				if err := monitor.TakeSnapshot(cfg, cfg.ServerAddr); err != nil {
-					c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
-					return
-				}
+		api.GET("/worldinfo", func(c *gin.Context) {
+			if cfg.ServerAddr == "" {
+				c.Status(http.StatusTooEarly)
+				return
+			}
 
-				c.JSON(http.StatusOK, gin.H{"success": true})
-			})
-		}
+			data, err := monitor.GetWorldInfoData(cfg, cfg.ServerAddr)
+			if err != nil {
+				c.Status(http.StatusInternalServerError)
+				return
+			}
+
+			c.Header("Content-Type", "application/json")
+			c.Writer.Write(data)
+		})
+
+		api.POST("/snapshot", func(c *gin.Context) {
+			if cfg.ServerAddr == "" {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+				return
+			}
+
+			if err := monitor.TakeSnapshot(cfg, cfg.ServerAddr); err != nil {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{"success": true})
+		})
 	}
 
 	go func() {

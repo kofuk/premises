@@ -40,7 +40,7 @@ export default class LoginApp extends React.Component<{}, State> {
             .then((resp) => resp.json())
             .then((resp) => {
                 if (resp['success']) {
-                    location.replace('/control/');
+                    location.reload();
                     return;
                 }
                 this.setState({isLoggingIn: false, feedback: resp['reason']});

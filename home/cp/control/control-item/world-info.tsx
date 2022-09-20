@@ -33,7 +33,7 @@ export default class WorldInfo extends React.Component<Prop, State> {
     };
 
     componentDidMount = () => {
-        fetch('/control/api/worldinfo')
+        fetch('/api/worldinfo')
             .then((resp) => resp.json())
             .then((resp) => {
                 this.setState({worldInfo: resp, refreshing: false});
@@ -42,7 +42,7 @@ export default class WorldInfo extends React.Component<Prop, State> {
 
     handleRefresh = () => {
         this.setState({refreshing: true});
-        fetch('/control/api/worldinfo')
+        fetch('/api/worldinfo')
             .then((resp) => resp.json())
             .then((resp) => {
                 this.setState({worldInfo: resp, refreshing: false});

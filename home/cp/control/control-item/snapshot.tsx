@@ -20,7 +20,7 @@ export default class Snapshot extends React.Component<Prop, State> {
 
     handleSnapshot = () => {
         this.setState({isRequesting: true});
-        fetch('/control/api/snapshot', {method: 'POST'})
+        fetch('/api/snapshot', {method: 'POST'})
             .then((resp) => resp.json())
             .then((resp) => {
                 this.setState({isRequesting: false});
