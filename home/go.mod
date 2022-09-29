@@ -5,7 +5,6 @@ go 1.17
 replace github.com/kofuk/premises/backup => ../backup
 
 require (
-	github.com/kofuk/premises/backup v0.0.0
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/gin-contrib/sessions v0.0.4
 	github.com/gin-contrib/static v0.0.1
@@ -13,7 +12,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/gorilla/websocket v1.5.0
 	github.com/joho/godotenv v1.4.0
-	github.com/kofuk/go-mega v0.0.0-20220314143053-5929f3eeeac4
+	github.com/kofuk/premises/backup v0.0.0
 	github.com/nicksnyder/go-i18n/v2 v2.2.0
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/crypto v0.0.0-20220313003712-b769efc7c000
@@ -35,6 +34,7 @@ require (
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/kofuk/go-mega v0.0.0-20220314143053-5929f3eeeac4 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

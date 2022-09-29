@@ -8,8 +8,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/kofuk/go-mega"
 	"github.com/kofuk/premises/mcmanager/config"
 	log "github.com/sirupsen/logrus"
@@ -19,12 +21,20 @@ const (
 	preserveHistoryCount = 5
 )
 
-func MakeBackupName(archiveVersion int) string {
+func makeBackupName(archiveVersion int) string {
 	verStr := "latest"
 	if archiveVersion != 0 {
 		verStr = strconv.Itoa(archiveVersion)
 	}
-	return fmt.Sprintf("%s.tar.xz", verStr)
+	return fmt.Sprintf("%s.tar.zst", verStr)
+}
+
+func makeBackupGanerationName(ver int) string {
+	if ver == 0 {
+		return "latest"
+	} else {
+		return strconv.Itoa(ver)
+	}
 }
 
 func makeSureCloudFolderExists(m *mega.Mega, parent *mega.Node, name string) (*mega.Node, error) {
@@ -53,6 +63,28 @@ func getNodeByName(nodes []*mega.Node, name string) *mega.Node {
 	return nil
 }
 
+func getNodeByBackupGeneration(nodes []*mega.Node, gen int) *mega.Node {
+	genName := makeBackupGanerationName(gen)
+	zstName := genName + ".tar.zst"
+	xzName := genName + ".tar.xz"
+
+	for _, node := range nodes {
+		name := node.GetName()
+		if name == zstName || name == xzName {
+			return node
+		}
+	}
+	return nil
+}
+
+func getFileExtension(name string) string {
+	index := strings.IndexRune(name, '.')
+	if index < 0 {
+		return ""
+	}
+	return name[index:]
+}
+
 func getNodeByHash(nodes []*mega.Node, hash string) *mega.Node {
 	for _, node := range nodes {
 		if node.GetHash() == hash {
@@ -71,14 +103,14 @@ func rotateWorldArchives(ctx *config.PMCMContext, m *mega.Mega, parent *mega.Nod
 	// Find the first empty slot.
 	emptySlot := -1
 	for i := 0; i < preserveHistoryCount; i++ {
-		if getNodeByName(nodes, MakeBackupName(i)) == nil {
+		if getNodeByBackupGeneration(nodes, i) == nil {
 			emptySlot = i
 			break
 		}
 	}
 
 	if emptySlot == -1 {
-		if oldest := getNodeByName(nodes, MakeBackupName(preserveHistoryCount)); oldest != nil {
+		if oldest := getNodeByBackupGeneration(nodes, preserveHistoryCount); oldest != nil {
 			if err := m.Delete(oldest, true); err != nil {
 				return err
 			}
@@ -87,10 +119,10 @@ func rotateWorldArchives(ctx *config.PMCMContext, m *mega.Mega, parent *mega.Nod
 	}
 
 	for i := emptySlot - 1; i >= 0; i-- {
-		oldName := MakeBackupName(i)
-		newName := MakeBackupName(i + 1)
-		if targetNode := getNodeByName(nodes, oldName); targetNode != nil {
-			if err := m.Rename(targetNode, newName); err != nil {
+		if targetNode := getNodeByBackupGeneration(nodes, i); targetNode != nil {
+			newName := makeBackupGanerationName(i + 1)
+			ext := getFileExtension(targetNode.GetName())
+			if err := m.Rename(targetNode, newName + ext); err != nil {
 				return err
 			}
 		}
@@ -186,7 +218,7 @@ func doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
 	}()
 
 	log.Info("Uploading world archive...")
-	node, err := m.UploadFile(archivePath, worldsFolder, MakeBackupName(0), &progress)
+	node, err := m.UploadFile(archivePath, worldsFolder, makeBackupName(0), &progress)
 	if err != nil {
 		return err
 	}
@@ -208,7 +240,7 @@ func UploadWorldData(ctx *config.PMCMContext, options UploadOptions) error {
 		options.SourceDir = ctx.LocateWorldData("")
 	}
 	if options.TmpFileName == "" {
-		options.TmpFileName = "world.tar.xz"
+		options.TmpFileName = "world.tar.zst"
 	}
 
 	return doUploadWorldData(ctx, &options)
@@ -312,7 +344,8 @@ func DownloadWorldData(ctx *config.PMCMContext) error {
 	}()
 
 	log.Info("Downloading world archive...")
-	if err := m.DownloadFile(archive, ctx.LocateDataFile("world.tar.xz"), &progress); err != nil {
+	ext := getFileExtension(archive.GetName())
+	if err := m.DownloadFile(archive, ctx.LocateDataFile("world" + ext), &progress); err != nil {
 		return err
 	}
 	log.Info("Downloading world archive...Done")
@@ -320,35 +353,34 @@ func DownloadWorldData(ctx *config.PMCMContext) error {
 	return nil
 }
 
-func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
-	if _, err := os.Stat(ctx.LocateDataFile("world.tar.xz")); os.IsNotExist(err) {
-		log.Info("No world archive exists; continue...")
-		return nil
-	} else if err != nil {
-		return err
-	}
+func extractZstWorldArchive(inFile io.Reader, outDir string) error {
+	log.Println("Extracting Zstandard...");
 
-	if err := os.RemoveAll(ctx.LocateWorldData("world")); err != nil {
-		return err
-	}
-	if _, err := os.Stat(ctx.LocateWorldData("world_nether")); err == nil {
-		if err := os.RemoveAll(ctx.LocateWorldData("world_nether")); err != nil {
-			return err
-		}
-	}
-	if _, err := os.Stat(ctx.LocateWorldData("world_the_end")); err == nil {
-		if err := os.RemoveAll(ctx.LocateWorldData("world_the_end")); err != nil {
-			return err
-		}
-	}
-
-	log.Info("Extracting world archive...")
-
-	inFile, err := os.Open(ctx.LocateDataFile("world.tar.xz"))
+	zstReader, err := zstd.NewReader(inFile, zstd.WithDecoderConcurrency(runtime.NumCPU()))
 	if err != nil {
 		return err
 	}
-	defer inFile.Close()
+	defer zstReader.Close()
+
+	tarCmd := exec.Command("tar", "-x")
+	tarCmd.Dir = outDir
+	tarCmd.Stdin = zstReader
+	tarCmd.Stderr = os.Stderr
+	tarCmd.Stdout = os.Stdout
+
+	if err := tarCmd.Start(); err != nil {
+		return err
+	}
+
+	tarCmd.Wait()
+
+	log.Println("Extracting Zstandard...Done");
+
+	return nil
+}
+
+func extractXzWorldArchive(inFile io.Reader, outDir string) error {
+	log.Println("Extracting XZ...");
 
 	numThreads := runtime.NumCPU() - 1
 	if numThreads < 1 {
@@ -373,7 +405,7 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 	xzCmd.Stderr = os.Stderr
 
 	tarCmd := exec.Command("tar", "-x")
-	tarCmd.Dir = ctx.LocateWorldData("")
+	tarCmd.Dir = outDir
 	tarCmd.Stdin = xzStdout
 	tarCmd.Stderr = os.Stderr
 	tarCmd.Stdout = os.Stdout
@@ -394,11 +426,68 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 	xzCmd.Wait()
 	tarCmd.Wait()
 
-	log.Info("Extracting world archive...Done")
+	log.Println("Extracting XZ...Done");
 
-	if err := os.Remove(ctx.LocateDataFile("world.tar.xz")); err != nil {
+	return nil
+}
+
+func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
+	if _, err := os.Stat(ctx.LocateDataFile("world.tar.zst")); os.IsNotExist(err) {
+		if _, err := os.Stat(ctx.LocateDataFile("world.tar.xz")); os.IsNotExist(err) {
+			log.Info("No world archive exists; continue...")
+			return nil
+		}
+	} else if err != nil {
 		return err
 	}
+
+	if err := os.RemoveAll(ctx.LocateWorldData("world")); err != nil {
+		return err
+	}
+	if _, err := os.Stat(ctx.LocateWorldData("world_nether")); err == nil {
+		if err := os.RemoveAll(ctx.LocateWorldData("world_nether")); err != nil {
+			return err
+		}
+	}
+	if _, err := os.Stat(ctx.LocateWorldData("world_the_end")); err == nil {
+		if err := os.RemoveAll(ctx.LocateWorldData("world_the_end")); err != nil {
+			return err
+		}
+	}
+
+	log.Info("Extracting world archive...")
+
+	inFile, err := os.Open(ctx.LocateDataFile("world.tar.zst"))
+	if err != nil {
+		inFile, err := os.Open(ctx.LocateDataFile("world.tar.xz"))
+		if err != nil {
+			return err
+		}
+		defer inFile.Close()
+
+		if err := extractXzWorldArchive(inFile, ctx.LocateWorldData("")); err != nil {
+			return err;
+		}
+
+		log.Info("Extracting world archive...Done")
+
+		if err := os.Remove(ctx.LocateDataFile("world.tar.xz")); err != nil {
+			return err
+		}
+	} else {
+		defer inFile.Close()
+
+		if err := extractZstWorldArchive(inFile, ctx.LocateWorldData("")); err != nil {
+			return err
+		}
+
+		log.Info("Extracting world archive...Done")
+
+		if err := os.Remove(ctx.LocateDataFile("world.tar.zst")); err != nil {
+			return err
+		}
+	}
+
 
 	return nil
 }
@@ -424,18 +513,6 @@ func doPrepareUploadData(ctx *config.PMCMContext, options *UploadOptions) error 
 	}
 	defer tarStdout.Close()
 
-	numThreads := runtime.NumCPU() - 1
-	if numThreads < 1 {
-		numThreads = 1
-	}
-	xzCmd := exec.Command("xz", "--compress", "--threads", strconv.Itoa(numThreads))
-	xzCmd.Stdin = tarStdout
-	xzStdout, err := xzCmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	defer xzStdout.Close()
-
 	outFile, err := os.Create(ctx.LocateDataFile(options.TmpFileName))
 	if err != nil {
 		return err
@@ -445,16 +522,18 @@ func doPrepareUploadData(ctx *config.PMCMContext, options *UploadOptions) error 
 	if err := tarCmd.Start(); err != nil {
 		return err
 	}
-	if err := xzCmd.Start(); err != nil {
+
+	zstWriter, err := zstd.NewWriter(outFile, zstd.WithEncoderConcurrency(runtime.NumCPU()), zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	if err != nil {
 		return err
 	}
+	defer zstWriter.Close()
 
-	if _, err := io.Copy(outFile, xzStdout); err != nil {
+	if _, err := io.Copy(zstWriter, tarStdout); err != nil {
 		return err
 	}
 
 	tarCmd.Wait()
-	xzCmd.Wait()
 
 	log.Info("Creating world archive...Done")
 	return nil
@@ -465,7 +544,7 @@ func PrepareUploadData(ctx *config.PMCMContext, options UploadOptions) error {
 		options.SourceDir = ctx.LocateWorldData("")
 	}
 	if options.TmpFileName == "" {
-		options.TmpFileName = "world.tar.xz"
+		options.TmpFileName = "world.tar.zst"
 	}
 	return doPrepareUploadData(ctx, &options);
 }

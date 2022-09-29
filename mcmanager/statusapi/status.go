@@ -39,7 +39,7 @@ type createSnapshotResp struct {
 
 func uploadSnapshot(ctx *config.PMCMContext, ssi *privileged.SnapshotInfo) {
 	options := backup.UploadOptions{
-		TmpFileName: "ss@" + ssi.ID + ".tar.xz",
+		TmpFileName: "ss@" + ssi.ID + ".tar.zst",
 		SourceDir:   ssi.Path,
 	}
 

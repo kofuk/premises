@@ -98,7 +98,9 @@ func GetBackupList(cred *MegaCredentialInfo, folderName string) ([]WorldBackup, 
 			name := backup.GetName()
 			hash := backup.GetHash()
 			timestamp := int(backup.GetTimeStamp().UnixMilli())
-			if name[len(name)-7:] == ".tar.xz" {
+			if name[len(name)-8:] == ".tar.zst" {
+				name = name[:len(name)-8]
+			} else if name[len(name)-7:] == ".tar.xz" {
 				name = name[:len(name)-7]
 			}
 
