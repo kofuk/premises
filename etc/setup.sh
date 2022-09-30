@@ -10,6 +10,7 @@ PACKAGES=(
     openjdk-17-jre-headless
     ufw
     xz-utils
+    unzip
 )
 
 useradd -Us/bin/bash -u1000 premises

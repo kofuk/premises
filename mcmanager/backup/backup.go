@@ -67,10 +67,11 @@ func getNodeByBackupGeneration(nodes []*mega.Node, gen int) *mega.Node {
 	genName := makeBackupGanerationName(gen)
 	zstName := genName + ".tar.zst"
 	xzName := genName + ".tar.xz"
+	zipName := genName + ".zip"
 
 	for _, node := range nodes {
 		name := node.GetName()
-		if name == zstName || name == xzName {
+		if name == zstName || name == xzName || name == zipName {
 			return node
 		}
 	}
@@ -431,11 +432,29 @@ func extractXzWorldArchive(inFile io.Reader, outDir string) error {
 	return nil
 }
 
+func extractZipWorldArchive(inFile, outDir string) error {
+	log.Println("Extracting Zip...");
+
+	unzipCmd := exec.Command("unzip", inFile)
+	unzipCmd.Dir = outDir
+	unzipCmd.Stdout = os.Stdout
+	unzipCmd.Stderr = os.Stderr
+	if err := unzipCmd.Run(); err != nil {
+		return err
+	}
+
+	log.Println("Extracting Zip...Done");
+
+	return nil
+}
+
 func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 	if _, err := os.Stat(ctx.LocateDataFile("world.tar.zst")); os.IsNotExist(err) {
 		if _, err := os.Stat(ctx.LocateDataFile("world.tar.xz")); os.IsNotExist(err) {
-			log.Info("No world archive exists; continue...")
-			return nil
+			if _, err := os.Stat(ctx.LocateDataFile("world.zip")); os.IsNotExist(err) {
+				log.Info("No world archive exists; continue...")
+				return nil
+			}
 		}
 	} else if err != nil {
 		return err
@@ -461,18 +480,32 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 	if err != nil {
 		inFile, err := os.Open(ctx.LocateDataFile("world.tar.xz"))
 		if err != nil {
-			return err
-		}
-		defer inFile.Close()
+			_, err := os.Stat(ctx.LocateDataFile("world.zip"))
+			if err != nil {
+				return err
+			}
 
-		if err := extractXzWorldArchive(inFile, ctx.LocateWorldData("")); err != nil {
-			return err;
-		}
+			if err := extractZipWorldArchive(ctx.LocateDataFile("world.zip"), ctx.LocateWorldData("")); err != nil {
+				return err;
+			}
 
-		log.Info("Extracting world archive...Done")
+			log.Info("Extracting world archive...Done")
 
-		if err := os.Remove(ctx.LocateDataFile("world.tar.xz")); err != nil {
-			return err
+			if err := os.Remove(ctx.LocateDataFile("world.zip")); err != nil {
+				return err
+			}
+		} else {
+			defer inFile.Close()
+
+			if err := extractXzWorldArchive(inFile, ctx.LocateWorldData("")); err != nil {
+				return err;
+			}
+
+			log.Info("Extracting world archive...Done")
+
+			if err := os.Remove(ctx.LocateDataFile("world.tar.xz")); err != nil {
+				return err
+			}
 		}
 	} else {
 		defer inFile.Close()

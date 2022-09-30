@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/kofuk/go-mega"
 	log "github.com/sirupsen/logrus"
@@ -98,10 +99,12 @@ func GetBackupList(cred *MegaCredentialInfo, folderName string) ([]WorldBackup, 
 			name := backup.GetName()
 			hash := backup.GetHash()
 			timestamp := int(backup.GetTimeStamp().UnixMilli())
-			if name[len(name)-8:] == ".tar.zst" {
+			if strings.HasSuffix(name, ".tar.zst") {
 				name = name[:len(name)-8]
-			} else if name[len(name)-7:] == ".tar.xz" {
+			} else if strings.HasSuffix(name, ".tar.xz") {
 				name = name[:len(name)-7]
+			} else if strings.HasSuffix(name, ".zip") {
+				name = name[:len(name)-4]
 			}
 
 			if name != "5" {
