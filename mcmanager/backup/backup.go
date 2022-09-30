@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ulikunitz/xz"
 	"github.com/klauspost/compress/zstd"
 	"github.com/kofuk/go-mega"
 	"github.com/kofuk/premises/mcmanager/config"
@@ -387,44 +388,31 @@ func extractXzWorldArchive(inFile io.Reader, outDir string) error {
 	if numThreads < 1 {
 		numThreads = 1
 	}
-	xzCmd := exec.Command("xz", "--decompress", "--threads", strconv.Itoa(numThreads))
-	xzStdout, err := xzCmd.StdoutPipe()
+
+	xzReader, err := xz.NewReader(inFile)
 	if err != nil {
 		return err
 	}
-	defer xzStdout.Close()
-	xzStdin, err := xzCmd.StdinPipe()
-	if err != nil {
-		return err
-	}
-	// We should close this explicitly after input file written.
-	defer func() {
-		if xzStdin != nil {
-			xzStdin.Close()
-		}
-	}()
-	xzCmd.Stderr = os.Stderr
 
 	tarCmd := exec.Command("tar", "-x")
 	tarCmd.Dir = outDir
-	tarCmd.Stdin = xzStdout
 	tarCmd.Stderr = os.Stderr
 	tarCmd.Stdout = os.Stdout
 
-	if err := xzCmd.Start(); err != nil {
+	tarStdin, err := tarCmd.StdinPipe()
+	if err != nil {
 		return err
 	}
+	defer tarStdin.Close()
+
 	if err := tarCmd.Start(); err != nil {
 		return err
 	}
 
-	if _, err := io.Copy(xzStdin, inFile); err != nil {
+	if _, err := io.Copy(tarStdin, xzReader); err != nil {
 		return err
 	}
-	xzStdin.Close()
-	xzStdin = nil
 
-	xzCmd.Wait()
 	tarCmd.Wait()
 
 	log.Println("Extracting XZ...Done");

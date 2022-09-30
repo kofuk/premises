@@ -9,7 +9,6 @@ PACKAGES=(
     gnupg2
     openjdk-17-jre-headless
     ufw
-    xz-utils
     unzip
 )
 
