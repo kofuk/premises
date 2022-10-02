@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ulikunitz/xz"
 	"github.com/klauspost/compress/zstd"
 	"github.com/kofuk/go-mega"
 	"github.com/kofuk/premises/mcmanager/config"
 	log "github.com/sirupsen/logrus"
+	"github.com/ulikunitz/xz"
 )
 
 const (
@@ -124,7 +124,7 @@ func rotateWorldArchives(ctx *config.PMCMContext, m *mega.Mega, parent *mega.Nod
 		if targetNode := getNodeByBackupGeneration(nodes, i); targetNode != nil {
 			newName := makeBackupGanerationName(i + 1)
 			ext := getFileExtension(targetNode.GetName())
-			if err := m.Rename(targetNode, newName + ext); err != nil {
+			if err := m.Rename(targetNode, newName+ext); err != nil {
 				return err
 			}
 		}
@@ -150,8 +150,8 @@ func getCloudWorldFolder(ctx *config.PMCMContext, m *mega.Mega, name string) (*m
 }
 
 type UploadOptions struct {
-	TmpFileName   string
-	SourceDir string
+	TmpFileName string
+	SourceDir   string
 }
 
 func doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
@@ -347,7 +347,7 @@ func DownloadWorldData(ctx *config.PMCMContext) error {
 
 	log.Info("Downloading world archive...")
 	ext := getFileExtension(archive.GetName())
-	if err := m.DownloadFile(archive, ctx.LocateDataFile("world" + ext), &progress); err != nil {
+	if err := m.DownloadFile(archive, ctx.LocateDataFile("world"+ext), &progress); err != nil {
 		return err
 	}
 	log.Info("Downloading world archive...Done")
@@ -356,7 +356,7 @@ func DownloadWorldData(ctx *config.PMCMContext) error {
 }
 
 func extractZstWorldArchive(inFile io.Reader, outDir string) error {
-	log.Println("Extracting Zstandard...");
+	log.Println("Extracting Zstandard...")
 
 	zstReader, err := zstd.NewReader(inFile, zstd.WithDecoderConcurrency(runtime.NumCPU()))
 	if err != nil {
@@ -376,13 +376,13 @@ func extractZstWorldArchive(inFile io.Reader, outDir string) error {
 
 	tarCmd.Wait()
 
-	log.Println("Extracting Zstandard...Done");
+	log.Println("Extracting Zstandard...Done")
 
 	return nil
 }
 
 func extractXzWorldArchive(inFile io.Reader, outDir string) error {
-	log.Println("Extracting XZ...");
+	log.Println("Extracting XZ...")
 
 	numThreads := runtime.NumCPU() - 1
 	if numThreads < 1 {
@@ -415,13 +415,13 @@ func extractXzWorldArchive(inFile io.Reader, outDir string) error {
 
 	tarCmd.Wait()
 
-	log.Println("Extracting XZ...Done");
+	log.Println("Extracting XZ...Done")
 
 	return nil
 }
 
 func extractZipWorldArchive(inFile, outDir string) error {
-	log.Println("Extracting Zip...");
+	log.Println("Extracting Zip...")
 
 	unzipCmd := exec.Command("unzip", inFile)
 	unzipCmd.Dir = outDir
@@ -431,7 +431,7 @@ func extractZipWorldArchive(inFile, outDir string) error {
 		return err
 	}
 
-	log.Println("Extracting Zip...Done");
+	log.Println("Extracting Zip...Done")
 
 	return nil
 }
@@ -474,7 +474,7 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 			}
 
 			if err := extractZipWorldArchive(ctx.LocateDataFile("world.zip"), ctx.LocateWorldData("")); err != nil {
-				return err;
+				return err
 			}
 
 			log.Info("Extracting world archive...Done")
@@ -486,7 +486,7 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 			defer inFile.Close()
 
 			if err := extractXzWorldArchive(inFile, ctx.LocateWorldData("")); err != nil {
-				return err;
+				return err
 			}
 
 			log.Info("Extracting world archive...Done")
@@ -508,7 +508,6 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 			return err
 		}
 	}
-
 
 	return nil
 }
@@ -567,5 +566,5 @@ func PrepareUploadData(ctx *config.PMCMContext, options UploadOptions) error {
 	if options.TmpFileName == "" {
 		options.TmpFileName = "world.tar.zst"
 	}
-	return doPrepareUploadData(ctx, &options);
+	return doPrepareUploadData(ctx, &options)
 }

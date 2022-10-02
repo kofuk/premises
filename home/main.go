@@ -37,6 +37,7 @@ import (
 
 //go:embed i18n/*.json
 var i18nData embed.FS
+
 //go:embed etc/robots.txt
 var robotsTxt []byte
 
@@ -180,7 +181,7 @@ func monitorServer(cfg *config.Config, gameServer GameServer) {
 		return
 	}
 
-	os.Remove(cfg.Locate("monitor_key"))
+	os.Remove(cfg.LocatePersist("monitor_key"))
 
 	gameServer.RevertDNS()
 
@@ -204,7 +205,7 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameSer
 	}
 
 	cfg.MonitorKey = gameConfig.AuthKey
-	os.WriteFile(cfg.Locate("monitor_key"), []byte(gameConfig.AuthKey), 0600)
+	os.WriteFile(cfg.LocatePersist("monitor_key"), []byte(gameConfig.AuthKey), 0600)
 
 	server.monitorChan <- &monitor.StatusData{
 		Status:   L(locale, "monitor.waiting"),
@@ -324,7 +325,7 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 
 	if gameServer.VMExists() {
 		if gameServer.VMRunning() {
-			monitorKey, err := os.ReadFile(cfg.Locate("monitor_key"))
+			monitorKey, err := os.ReadFile(cfg.LocatePersist("monitor_key"))
 			if err != nil {
 				log.WithError(err).Info("Failed to read previous monitor key")
 				return
@@ -369,7 +370,7 @@ func main() {
 	}
 
 	if cfg.Debug.Env {
-		if err := os.MkdirAll("/tmp/premises/gamedata", 0755); err != nil {
+		if err := os.MkdirAll("/tmp/premises/gamedata/../data", 0755); err != nil {
 			log.WithError(err).Info("Cannot create directory for debug environment")
 		}
 	}

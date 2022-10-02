@@ -26,7 +26,7 @@ type StatusData struct {
 
 func makeTLSConfig(config *config.Config) (*tls.Config, error) {
 	rootCAs := x509.NewCertPool()
-	certFile, err := os.ReadFile(config.Locate("server.crt"))
+	certFile, err := os.ReadFile(config.LocatePersist("server.crt"))
 	if err != nil {
 		return nil, err
 	}

@@ -11,8 +11,8 @@ import (
 )
 
 type MegaCredentialInfo struct {
-	Email    string `json:"email" env:"email"`
-	Password string `json:"password" env:"password"`
+	Email      string `json:"email" env:"email"`
+	Password   string `json:"password" env:"password"`
 	FolderName string `json:"folderName" env:"folderName"`
 }
 

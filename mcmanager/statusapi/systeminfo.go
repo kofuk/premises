@@ -46,6 +46,6 @@ func GetHostOS() string {
 func GetSystemInfo() *SystemInfo {
 	return &SystemInfo{
 		PremisesVersion: metadata.Revision,
-		HostOS: GetHostOS(),
+		HostOS:          GetHostOS(),
 	}
 }

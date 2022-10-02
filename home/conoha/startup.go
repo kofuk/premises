@@ -13,11 +13,11 @@ import (
 var startupScriptTemplate string
 
 func GenerateStartupScript(gameConfig []byte, cfg *config.Config) (string, error) {
-	serverCrt, err := os.ReadFile(cfg.Locate("server.crt"))
+	serverCrt, err := os.ReadFile(cfg.LocatePersist("server.crt"))
 	if err != nil {
 		return "", err
 	}
-	serverKey, err := os.ReadFile(cfg.Locate("server.key"))
+	serverKey, err := os.ReadFile(cfg.LocatePersist("server.key"))
 	if err != nil {
 		return "", err
 	}

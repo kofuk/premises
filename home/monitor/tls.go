@@ -7,8 +7,8 @@ import (
 )
 
 func GenerateTLSKey(cfg *config.Config) error {
-	keyout := cfg.Locate("server.key")
-	out := cfg.Locate("server.crt")
+	keyout := cfg.LocatePersist("server.key")
+	out := cfg.LocatePersist("server.crt")
 	cmd := exec.Command("openssl", "req", "-x509", "-nodes", "-subj", "/C=US", "-addext", "subjectAltName = DNS:*", "-newkey", "rsa:4096", "-keyout", keyout, "-out", out)
 	if err := cmd.Run(); err != nil {
 		return err

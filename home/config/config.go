@@ -24,7 +24,7 @@ type Config struct {
 	} `env:"conoha"`
 	Cloudflare struct {
 		Token          string `env:"token"`
-		ZoneID string `env:"zoneId"`
+		ZoneID         string `env:"zoneId"`
 		GameDomainName string `env:"gameDomain"`
 	} `env:"cloudflare"`
 	Mega backup.MegaCredentialInfo `env:"mega"`
@@ -57,6 +57,10 @@ func (cfg *Config) Locate(path string) string {
 		return filepath.Join("/tmp/premises", path)
 	}
 	return filepath.Join("/opt/premises", path)
+}
+
+func (cfg *Config) LocatePersist(path string) string {
+	return cfg.Locate(filepath.Join("data", path))
 }
 
 func LoadConfig() (*Config, error) {

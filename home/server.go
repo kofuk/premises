@@ -50,6 +50,14 @@ func (s *LocalDebugServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB in
 		log.WithError(err).Error("Failed to write config")
 		return false
 	}
+	if err := os.Link(s.cfg.LocatePersist("server.crt"), s.cfg.Locate("server.crt")); err != nil {
+		log.WithError(err).Error("Failed to link server.crt")
+		return false
+	}
+	if err := os.Link(s.cfg.LocatePersist("server.key"), s.cfg.Locate("server.key")); err != nil {
+		log.WithError(err).Error("Failed to link server.key")
+		return false
+	}
 
 	cmd := exec.Command("go", "run", ".")
 	cmd.Dir = filepath.Join(os.Getenv("HOME"), "source/premises/mcmanager")
