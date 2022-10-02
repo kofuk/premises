@@ -436,7 +436,7 @@ func main() {
 		}
 	})
 	r.POST("/login", func(c *gin.Context) {
-		if c.GetHeader("Origin") != cfg.ControlPanel.AllowedOrigin {
+		if c.GetHeader("Origin") != cfg.ControlPanel.Origin {
 			c.Status(http.StatusBadGateway)
 			return
 		}
@@ -485,7 +485,7 @@ func main() {
 	api.Use(func(c *gin.Context) {
 		// 1. Verify that request is sent from allowed origin.
 		if c.Request.Method == http.MethodPost || (c.Request.Method == http.MethodGet && c.GetHeader("Upgrade") == "WebSocket") {
-			if c.GetHeader("Origin") == cfg.ControlPanel.AllowedOrigin {
+			if c.GetHeader("Origin") == cfg.ControlPanel.Origin {
 				// 2. Verify that client is logged in.
 				session := sessions.Default(c)
 				if session.Get("username") == nil {

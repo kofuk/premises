@@ -22,7 +22,7 @@ services:
       - 'premises_game_operators'
       - 'premises_game_whitelist'
       - 'premises_controlPanel_secret'
-      - 'premises_controlPanel_allowedOrigin'
+      - 'premises_controlPanel_origin'
       - 'premises_controlPanel_redis_address=redis:6379'
       - 'premises_controlPanel_redis_password='
       - 'premises_controlPanel_users'

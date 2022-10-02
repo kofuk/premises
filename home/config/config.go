@@ -34,9 +34,9 @@ type Config struct {
 		Whitelist []string `env:"whitelist"`
 	} `env:"game"`
 	ControlPanel struct {
-		Secret        string `env:"secret"`
-		AllowedOrigin string `env:"allowedOrigin"`
-		Redis         struct {
+		Secret string `env:"secret"`
+		Origin string `env:"origin"`
+		Redis  struct {
 			Address  string `env:"address"`
 			Password string `env:"password"`
 		} `env:"redis"`
