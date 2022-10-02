@@ -9,7 +9,8 @@ const config = {
     devtool: env === 'development' ? 'inline-source-map' : false,
     entry: {
         login: './cp/login.tsx',
-        control: './cp/control.tsx'
+        control: './cp/control.tsx',
+        setup: './cp/setup.tsx'
     },
     resolve: {
         modules: ['node_modules'],

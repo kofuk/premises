@@ -27,6 +27,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/text/language"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 
 	"github.com/kofuk/premises/backup"
 	"github.com/kofuk/premises/home/config"
@@ -42,6 +44,14 @@ var i18nData embed.FS
 var robotsTxt []byte
 
 var localizeBundle *i18n.Bundle
+
+var isServerSetUp bool
+
+type User struct {
+	gorm.Model
+	Name     string `gorm:"uniqueIndex"`
+	Password string
+}
 
 func L(locale, msgId string) string {
 	if localizeBundle == nil {
@@ -354,6 +364,19 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 	}
 }
 
+func isAllowedPassword(password string) bool {
+	if len(password) < 8 {
+		return false
+	}
+	if strings.IndexAny(password, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz") < 0 {
+		return false
+	}
+	if strings.IndexAny(password, "0123456789") < 0 {
+		return false
+	}
+	return true
+}
+
 func main() {
 	log.SetReportCaller(true)
 	if err := loadI18nData(); err != nil {
@@ -375,11 +398,20 @@ func main() {
 		}
 	}
 
+	_, err = os.Stat(cfg.LocatePersist("data.db"))
+	isServerSetUp = !os.IsNotExist(err)
+
 	if cfg.Debug.Web {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	db, err := gorm.Open(sqlite.Open(cfg.LocatePersist("data.db")), &gorm.Config{})
+	if err != nil {
+		log.WithError(err).Fatal("Error opening database")
+	}
+	db.AutoMigrate(&User{})
 
 	bindAddr := ":8000"
 	if len(os.Args) > 1 {
@@ -428,6 +460,11 @@ func main() {
 	r.NoRoute(static.Serve("/", static.LocalFile("gen", false)))
 
 	r.GET("/", func(c *gin.Context) {
+		if !isServerSetUp {
+			c.HTML(200, "setup.html", nil)
+			return
+		}
+
 		session := sessions.Default(c)
 		if session.Get("username") != nil {
 			c.HTML(200, "control.html", nil)
@@ -435,6 +472,61 @@ func main() {
 			c.HTML(200, "login.html", nil)
 		}
 	})
+	if !isServerSetUp {
+		r.POST("/setup", func(c *gin.Context) {
+			if isServerSetUp {
+				c.Status(http.StatusNotFound)
+				return
+			}
+			if c.GetHeader("Origin") != cfg.ControlPanel.Origin {
+				log.WithField("cfg", cfg.ControlPanel.Origin).Println("Access from disallowed origin")
+				c.Status(http.StatusBadRequest)
+				return
+			}
+
+			if err := c.Request.ParseForm(); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "Invalid form data"})
+				return
+			}
+
+			username := c.Request.Form.Get("username")
+			password := c.Request.Form.Get("password")
+
+			if len(username) == 0 && len(password) == 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "username or password is empty"})
+				return
+			}
+			if !isAllowedPassword(password) {
+				c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "account.password.disallowed")})
+				return
+			}
+
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			if err != nil {
+				log.WithError(err).Error("error registering user")
+				c.JSON(http.StatusOK, gin.H{"success": false, "reason": "Error registering user"})
+				return
+			}
+
+			user := &User{
+				Name:     username,
+				Password: string(hashedPassword),
+			}
+
+			if err := db.Create(user).Error; err != nil {
+				log.WithError(err).Error("error registering user")
+				c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "account.user.exists")})
+			}
+
+			isServerSetUp = true
+
+			session := sessions.Default(c)
+			session.Set("username", username)
+			session.Save()
+
+			c.JSON(http.StatusOK, gin.H{"success": true})
+		})
+	}
 	r.POST("/login", func(c *gin.Context) {
 		if c.GetHeader("Origin") != cfg.ControlPanel.Origin {
 			c.Status(http.StatusBadGateway)
@@ -444,25 +536,13 @@ func main() {
 		username := c.PostForm("username")
 		password := c.PostForm("password")
 
-		hashPassword := ""
-		for _, usr := range cfg.ControlPanel.Users {
-			fields := strings.Split(usr, ":")
-			if len(fields) != 2 {
-				log.Error("Unexpected field count of controlPanel.users")
-				continue
-			}
-			if fields[0] == username {
-				hashPassword = fields[1]
-				break
-			}
-		}
-		if hashPassword == "" {
+		user := User{}
+		if err := db.Where("name = ?", username).First(&user).Error; err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
-			return
 		}
 
 		session := sessions.Default(c)
-		if bcrypt.CompareHashAndPassword([]byte(hashPassword), []byte(password)) == nil {
+		if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) == nil {
 			session.Set("username", username)
 			session.Save()
 			c.JSON(http.StatusOK, gin.H{"success": true})

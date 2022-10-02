@@ -61,7 +61,11 @@ const i18nData = {
             notification_toast_description: 'You can receive notification when the server is ready.',
             notification_allow: 'Allow notification',
             notification_title: 'Minecraft server is launched!',
-            notification_body: 'You can login to the game.'
+            notification_body: 'You can login to the game.',
+            title_setup: 'Set up',
+            setup_new_user_description: "Let's create first user!",
+            setup_continue: 'Continue',
+            setup_password_confirm: 'Confirm password'
         }
     },
     ja: {
@@ -124,7 +128,11 @@ const i18nData = {
             notification_toast_description: '通知を許可するとサーバが起動したときに通知を受け取れます。',
             notification_allow: '通知を許可',
             notification_title: 'Minecraft サーバが起動しました！',
-            notification_body: 'ゲームにログインできます'
+            notification_body: 'ゲームにログインできます',
+            title_setup: 'セットアップ',
+            setup_new_user_description: '最初のユーザを作成しましょう！',
+            setup_continue: '続行',
+            setup_password_confirm: 'パスワードを確認'
         }
     }
 };
