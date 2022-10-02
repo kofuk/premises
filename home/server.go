@@ -50,6 +50,8 @@ func (s *LocalDebugServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB in
 		log.WithError(err).Error("Failed to write config")
 		return false
 	}
+	os.Remove(s.cfg.Locate("server.crt"))
+	os.Remove(s.cfg.Locate("server.key"))
 	if err := os.Link(s.cfg.LocatePersist("server.crt"), s.cfg.Locate("server.crt")); err != nil {
 		log.WithError(err).Error("Failed to link server.crt")
 		return false
