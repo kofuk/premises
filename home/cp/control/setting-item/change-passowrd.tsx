@@ -145,7 +145,7 @@ export default class ChangePassword extends React.Component<Props, State> {
                     </div>
                 </div>
                 <div className="text-end">
-                    {this.state.passwordSuccess ? <span className="text-success">✓ Password changed</span> : ''}
+                    {this.state.passwordSuccess ? <span className="text-success">✓ {t('change_password_success')}</span> : ''}
                     <button type="submit" className="btn btn-primary bg-gradient ms-3" disabled={!this.state.canChangePassword}>
                         {t('change_password_submit')}
                     </button>

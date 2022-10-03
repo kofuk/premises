@@ -71,8 +71,10 @@ const i18nData = {
             change_password_current: 'Current Password',
             change_password_new: 'New Password',
             change_password_confirm: 'Confirm New Password',
+            change_password_success: 'Password changed',
             change_password_submit: 'Change',
             add_user_header: 'Add User',
+            add_user_success: 'User added',
             add_user_submit: 'Add',
             set_password_title: 'Set Password',
             set_password_submit: 'Set password'
@@ -148,8 +150,10 @@ const i18nData = {
             change_password_current: '現在のパスワード',
             change_password_new: '新しいパスワード',
             change_password_confirm: '新しいパスワードを確認',
+            change_password_success: 'パスワードを変更しました',
             change_password_submit: '変更',
             add_user_header: 'ユーザを追加',
+            add_user_success: 'ユーザを追加しました',
             add_user_submit: '追加',
             set_password_title: 'パスワードを設定',
             set_password_submit: 'パスワードを設定'

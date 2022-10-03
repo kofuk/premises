@@ -124,7 +124,7 @@ export default class AddUser extends React.Component<Props, State> {
                     </div>
                 </div>
                 <div className="text-end">
-                    {this.state.success ? <span className="text-success">✓ User added</span> : ''}
+                    {this.state.success ? <span className="text-success">✓ {t('add_user_success')}</span> : ''}
                     <button type="submit" className="btn btn-primary bg-gradient ms-3" disabled={!this.state.canContinue}>
                         {t('add_user_submit')}
                     </button>
