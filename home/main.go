@@ -544,6 +544,7 @@ func main() {
 		user := User{}
 		if err := db.Where("name = ?", username).First(&user).Error; err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
+			return
 		}
 
 		session := sessions.Default(c)
