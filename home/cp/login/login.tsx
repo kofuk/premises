@@ -86,7 +86,6 @@ export default class LoginApp extends React.Component<{}, State> {
         this.setState({canChangePassword: false});
 
         const params = new URLSearchParams();
-        params.append('username', this.state.userName);
         params.append('password', this.state.password);
         params.append('new-password', this.state.newPassword);
 
