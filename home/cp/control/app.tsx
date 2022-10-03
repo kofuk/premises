@@ -6,6 +6,7 @@ import {t} from 'i18next';
 import StatusBar from './statusbar';
 import ServerControlPane from './server-control-pane';
 import ServerConfigPane from './server-config-pane';
+import Settings from './settings';
 
 type AppState = {
     isServerShutdown: boolean;
@@ -114,18 +115,39 @@ export default class App extends React.Component<{}, AppState> {
             <ServerControlPane showError={this.showError} />
         );
         return (
-            <div>
+            <>
                 <nav className="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
                     <div className="container-fluid">
                         <span className="navbar-brand">{t('app_name')}</span>
                         <div className="collapse navbar-collapse">
                             <div className="navbar-nav me-auto"></div>
+                            <a
+                                className="btn btn-link me-1"
+                                data-bs-toggle="offcanvas"
+                                href="#settingsPane"
+                                role="button"
+                                aria-controls="settingsPane"
+                            >
+                                Settings
+                            </a>
                             <a href="/logout" className="btn btn-primary bg-gradient">
                                 {t('logout')}
                             </a>
                         </div>
                     </div>
                 </nav>
+
+                <div className="offcanvas offcanvas-start" tabIndex={-1} id="settingsPane" aria-labelledby="SettingsLabel">
+                    <div className="offcanvas-header">
+                        <h5 className="offcanvas-title" id="settingsLabel">
+                            Settings
+                        </h5>
+                        <button type="button" className="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                    </div>
+                    <div className="offcanvas-body">
+                        <Settings />
+                    </div>
+                </div>
 
                 <div className="container">
                     <StatusBar isError={this.state.isError} message={this.state.message} />
@@ -154,7 +176,7 @@ export default class App extends React.Component<{}, AppState> {
                         </div>
                     </div>
                 </div>
-            </div>
+            </>
         );
     };
 }

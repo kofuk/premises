@@ -828,6 +828,50 @@ func main() {
 
 			c.JSON(http.StatusOK, gin.H{"success": true})
 		})
+
+		api.POST("/settings/change-password", func(c *gin.Context) {
+			session := sessions.Default(c)
+			username := session.Get("username")
+
+			if err := c.Request.ParseForm(); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "Invalid form data"})
+				return
+			}
+
+			password := c.Request.Form.Get("password")
+			newPassword := c.Request.Form.Get("new-password")
+
+			if !isAllowedPassword(newPassword) {
+				c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "account.password.disallowed")})
+				return
+			}
+
+			user := User{}
+			if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+				log.WithError(err).Error("User not found")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+			if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+				c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
+				return
+			}
+
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+			if err != nil {
+				log.WithError(err).Error("error registering user")
+				c.JSON(http.StatusOK, gin.H{"success": false, "reason": "Error registering user"})
+				return
+			}
+			user.Password = string(hashedPassword)
+
+			if err := db.Save(user).Error; err != nil {
+				log.WithError(err).Error("error updating password")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+			}
+
+			c.JSON(http.StatusOK, gin.H{"success": true})
+		})
 	}
 
 	go func() {
