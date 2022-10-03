@@ -42,7 +42,7 @@ export default class Settings extends React.Component<{}, State> {
                     <div className="accordion-item">
                         <h2 className="accordion-header" id="settings_heading_changePassword">
                             <button
-                                className="accordion-button"
+                                className="accordion-button collapsed"
                                 type="button"
                                 data-bs-toggle="collapse"
                                 data-bs-target="#settings_changePassword"
