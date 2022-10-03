@@ -185,9 +185,12 @@ export default class LoginApp extends React.Component<{}, State> {
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h5 className="modal-title" id="changePasswordLabel">
-                                    Set Password
+                                    {t('set_password_title')}
                                 </h5>
                             </div>
+                            {this.state.changePasswordFeedback === '' ? null : (
+                                <div className="alert alert-danger m-3">{this.state.changePasswordFeedback}</div>
+                            )}
                             <form
                                 onSubmit={(e) => {
                                     e.preventDefault();
@@ -226,7 +229,7 @@ export default class LoginApp extends React.Component<{}, State> {
                                 </div>
                                 <div className="modal-footer">
                                     <button type="submit" className="btn btn-primary" disabled={!this.state.canChangePassword}>
-                                        Set password
+                                        {t('set_password_submit')}
                                     </button>
                                 </div>
                             </form>

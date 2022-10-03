@@ -65,7 +65,17 @@ const i18nData = {
             title_setup: 'Set up',
             setup_new_user_description: "Let's create first user!",
             setup_continue: 'Continue',
-            password_confirm: 'Confirm password'
+            password_confirm: 'Confirm password',
+            settings: 'Settings',
+            change_password_header: 'Change Password',
+            change_password_current: 'Current Password',
+            change_password_new: 'New Password',
+            change_password_confirm: 'Confirm New Password',
+            change_password_submit: 'Change',
+            add_user_header: 'Add User',
+            add_user_submit: 'Add',
+            set_password_title: 'Set Password',
+            set_password_submit: 'Set password'
         }
     },
     ja: {
@@ -132,7 +142,17 @@ const i18nData = {
             title_setup: 'セットアップ',
             setup_new_user_description: '最初のユーザを作成しましょう！',
             setup_continue: '続行',
-            password_confirm: 'パスワードを確認'
+            password_confirm: 'パスワードを確認',
+            settings: '設定',
+            change_password_header: 'パスワードを変更',
+            change_password_current: '現在のパスワード',
+            change_password_new: '新しいパスワード',
+            change_password_confirm: '新しいパスワードを確認',
+            change_password_submit: '変更',
+            add_user_header: 'ユーザを追加',
+            add_user_submit: '追加',
+            set_password_title: 'パスワードを設定',
+            set_password_submit: 'パスワードを設定'
         }
     }
 };

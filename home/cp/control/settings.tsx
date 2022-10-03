@@ -49,7 +49,7 @@ export default class Settings extends React.Component<{}, State> {
                                 aria-expanded="false"
                                 aria-controls="settings_changePassword"
                             >
-                                Change Password
+                                {t('change_password_header')}
                             </button>
                         </h2>
                         <div
@@ -73,7 +73,7 @@ export default class Settings extends React.Component<{}, State> {
                                 aria-expanded="false"
                                 aria-controls="settings_addUser"
                             >
-                                Add User
+                                {t('add_user_header')}
                             </button>
                         </h2>
                         <div

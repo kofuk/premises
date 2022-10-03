@@ -128,7 +128,7 @@ export default class App extends React.Component<{}, AppState> {
                                 role="button"
                                 aria-controls="settingsPane"
                             >
-                                Settings
+                                {t('settings')}
                             </a>
                             <a href="/logout" className="btn btn-primary bg-gradient">
                                 {t('logout')}
@@ -140,7 +140,7 @@ export default class App extends React.Component<{}, AppState> {
                 <div className="offcanvas offcanvas-start" tabIndex={-1} id="settingsPane" aria-labelledby="SettingsLabel">
                     <div className="offcanvas-header">
                         <h5 className="offcanvas-title" id="settingsLabel">
-                            Settings
+                            {t('settings')}
                         </h5>
                         <button type="button" className="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
                     </div>

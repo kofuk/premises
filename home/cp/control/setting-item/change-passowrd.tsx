@@ -1,5 +1,8 @@
 import * as React from 'react';
 
+import '../../i18n';
+import {t} from 'i18next';
+
 type State = {
     canChangePassword: boolean;
     currentPassword: string;
@@ -111,7 +114,7 @@ export default class ChangePassword extends React.Component<Props, State> {
                         value={this.state.currentPassword}
                         required={true}
                     />
-                    <label htmlFor="username">Current Password</label>
+                    <label htmlFor="username">{t('change_password_current')}</label>
                 </div>
                 <div>
                     <div className="mb-3 form-floating">
@@ -124,7 +127,7 @@ export default class ChangePassword extends React.Component<Props, State> {
                             value={this.state.newPassword}
                             required={true}
                         />
-                        <label htmlFor="password">New Password</label>
+                        <label htmlFor="password">{t('change_password_new')}</label>
                     </div>
                 </div>
                 <div>
@@ -138,13 +141,13 @@ export default class ChangePassword extends React.Component<Props, State> {
                             value={this.state.newPasswordConfirm}
                             required={true}
                         />
-                        <label htmlFor="password_confirm">Confirm New Password</label>
+                        <label htmlFor="password_confirm">{t('change_password_confirm')}</label>
                     </div>
                 </div>
                 <div className="text-end">
                     {this.state.passwordSuccess ? <span className="text-success">✓ Password changed</span> : ''}
                     <button type="submit" className="btn btn-primary bg-gradient ms-3" disabled={!this.state.canChangePassword}>
-                        Change
+                        {t('change_password_submit')}
                     </button>
                 </div>
             </form>
