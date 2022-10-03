@@ -208,7 +208,7 @@ export default class LoginApp extends React.Component<{}, State> {
                                                 value={this.state.newPassword}
                                                 required={true}
                                             />
-                                            <label htmlFor="newPassword">{t('password')}</label>
+                                            <label htmlFor="newPassword">{t('change_password_new')}</label>
                                         </div>
                                     </div>
                                     <div>
@@ -222,7 +222,7 @@ export default class LoginApp extends React.Component<{}, State> {
                                                 value={this.state.newPasswordConfirm}
                                                 required={true}
                                             />
-                                            <label htmlFor="password_confirm">{t('password_confirm')}</label>
+                                            <label htmlFor="password_confirm">{t('change_password_confirm')}</label>
                                         </div>
                                     </div>
                                 </div>
