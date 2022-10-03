@@ -65,7 +65,7 @@ const i18nData = {
             title_setup: 'Set up',
             setup_new_user_description: "Let's create first user!",
             setup_continue: 'Continue',
-            setup_password_confirm: 'Confirm password'
+            password_confirm: 'Confirm password'
         }
     },
     ja: {
@@ -132,7 +132,7 @@ const i18nData = {
             title_setup: 'セットアップ',
             setup_new_user_description: '最初のユーザを作成しましょう！',
             setup_continue: '続行',
-            setup_password_confirm: 'パスワードを確認'
+            password_confirm: 'パスワードを確認'
         }
     }
 };

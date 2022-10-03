@@ -516,6 +516,7 @@ func main() {
 			if err := db.Create(user).Error; err != nil {
 				log.WithError(err).Error("error registering user")
 				c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "account.user.exists")})
+				return
 			}
 
 			isServerSetUp = true
@@ -869,6 +870,51 @@ func main() {
 				log.WithError(err).Error("error updating password")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 			}
+
+			c.JSON(http.StatusOK, gin.H{"success": true})
+		})
+
+		api.POST("/settings/add-user", func(c *gin.Context) {
+			if err := c.Request.ParseForm(); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "Invalid form data"})
+				return
+			}
+
+			username := c.Request.Form.Get("username")
+			password := c.Request.Form.Get("password")
+
+			if len(username) == 0 && len(password) == 0 {
+				c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "username or password is empty"})
+				return
+			}
+			if !isAllowedPassword(password) {
+				c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "account.password.disallowed")})
+				return
+			}
+
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			if err != nil {
+				log.WithError(err).Error("error registering user")
+				c.JSON(http.StatusOK, gin.H{"success": false, "reason": "Error registering user"})
+				return
+			}
+
+			user := &User{
+				Name:     username,
+				Password: string(hashedPassword),
+			}
+
+			if err := db.Create(user).Error; err != nil {
+				log.WithError(err).Error("error registering user")
+				c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "account.user.exists")})
+				return
+			}
+
+			isServerSetUp = true
+
+			session := sessions.Default(c)
+			session.Set("username", username)
+			session.Save()
 
 			c.JSON(http.StatusOK, gin.H{"success": true})
 		})

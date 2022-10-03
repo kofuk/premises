@@ -124,7 +124,7 @@ export default class SetupApp extends React.Component<{}, State> {
                                         onChange={(e) => this.handleInputPasswordConfirm(e.target.value)}
                                         required={true}
                                     />
-                                    <label htmlFor="password_confirm">{t('setup_password_confirm')}</label>
+                                    <label htmlFor="password_confirm">{t('password_confirm')}</label>
                                 </div>
                             </div>
                             <div className="text-end">

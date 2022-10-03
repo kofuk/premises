@@ -4,6 +4,7 @@ import '../i18n';
 import {t} from 'i18next';
 
 import ChangePassword from './setting-item/change-passowrd';
+import AddUser from './setting-item/add-user';
 
 type State = {
     canChangePassword: boolean;
@@ -81,7 +82,9 @@ export default class Settings extends React.Component<{}, State> {
                             aria-labelledby="settings_heading_addUser"
                             data-bs-parent="#accordionSettings"
                         >
-                            <div className="accordion-body">Comming soon</div>
+                            <div className="accordion-body">
+                                <AddUser updateFeedback={this.updateFeedback} />
+                            </div>
                         </div>
                     </div>
                 </div>
