@@ -1,5 +1,5 @@
 premises:
-	CGO_ENABLED=0 go build -o $@ .
+	go build -a -ldflags '-linkmode external -extldflags "-static"' -o $@ .
 
 .PHONY: clean
 clean:
