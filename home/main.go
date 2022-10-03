@@ -49,8 +49,10 @@ var isServerSetUp bool
 
 type User struct {
 	gorm.Model
-	Name     string `gorm:"uniqueIndex"`
-	Password string
+	Name        string `gorm:"uniqueIndex"`
+	Password    string
+	AddedBy     string
+	Initialized bool
 }
 
 func L(locale, msgId string) string {
@@ -511,6 +513,8 @@ func main() {
 			user := &User{
 				Name:     username,
 				Password: string(hashedPassword),
+				AddedBy: "",
+				Initialized: true,
 			}
 
 			if err := db.Create(user).Error; err != nil {
@@ -546,7 +550,7 @@ func main() {
 		if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) == nil {
 			session.Set("username", username)
 			session.Save()
-			c.JSON(http.StatusOK, gin.H{"success": true})
+			c.JSON(http.StatusOK, gin.H{"success": true, "needsChangePassword": !user.Initialized})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
 		}
@@ -865,6 +869,7 @@ func main() {
 				return
 			}
 			user.Password = string(hashedPassword)
+			user.Initialized = true
 
 			if err := db.Save(user).Error; err != nil {
 				log.WithError(err).Error("error updating password")
@@ -875,15 +880,18 @@ func main() {
 		})
 
 		api.POST("/settings/add-user", func(c *gin.Context) {
+			session := sessions.Default(c)
+			username := session.Get("username")
+
 			if err := c.Request.ParseForm(); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "Invalid form data"})
 				return
 			}
 
-			username := c.Request.Form.Get("username")
+			newUsername := c.Request.Form.Get("username")
 			password := c.Request.Form.Get("password")
 
-			if len(username) == 0 && len(password) == 0 {
+			if len(newUsername) == 0 && len(password) == 0 {
 				c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "username or password is empty"})
 				return
 			}
@@ -900,8 +908,10 @@ func main() {
 			}
 
 			user := &User{
-				Name:     username,
+				Name:     newUsername,
 				Password: string(hashedPassword),
+				AddedBy: username.(string),
+				Initialized: false,
 			}
 
 			if err := db.Create(user).Error; err != nil {
@@ -909,12 +919,6 @@ func main() {
 				c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "account.user.exists")})
 				return
 			}
-
-			isServerSetUp = true
-
-			session := sessions.Default(c)
-			session.Set("username", username)
-			session.Save()
 
 			c.JSON(http.StatusOK, gin.H{"success": true})
 		})

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {FiAlertTriangle} from '@react-icons/all-files/fi/FiAlertTriangle';
+import Modal from 'bootstrap/js/dist/modal';
 
 import '../i18n';
 import {t} from 'i18next';
@@ -9,6 +10,10 @@ type State = {
     userName: string;
     password: string;
     feedback: string;
+    newPassword: string;
+    newPasswordConfirm: string;
+    canChangePassword: boolean;
+    changePasswordFeedback: string;
 };
 
 export default class LoginApp extends React.Component<{}, State> {
@@ -16,7 +21,11 @@ export default class LoginApp extends React.Component<{}, State> {
         isLoggingIn: false,
         userName: '',
         password: '',
-        feedback: ''
+        feedback: '',
+        newPassword: '',
+        newPasswordConfirm: '',
+        canChangePassword: false,
+        changePasswordFeedback: ''
     };
 
     componentDidMount = () => {
@@ -40,7 +49,11 @@ export default class LoginApp extends React.Component<{}, State> {
             .then((resp) => resp.json())
             .then((resp) => {
                 if (resp['success']) {
-                    location.reload();
+                    if (resp['needsChangePassword']) {
+                        new Modal('#changePassword', {}).show();
+                    } else {
+                        location.reload();
+                    }
                     return;
                 }
                 this.setState({isLoggingIn: false, feedback: resp['reason']});
@@ -53,6 +66,47 @@ export default class LoginApp extends React.Component<{}, State> {
 
     handleInputPassword = (val: string) => {
         this.setState({password: val});
+    };
+
+    handleInputNewPassword = (val: string) => {
+        this.setState({
+            newPassword: val,
+            canChangePassword: val.length >= 8 && val === this.state.newPasswordConfirm
+        });
+    };
+
+    handleInputPasswordConfirm = (val: string) => {
+        this.setState({
+            newPasswordConfirm: val,
+            canChangePassword: this.state.newPassword.length >= 8 && this.state.newPassword === val
+        });
+    };
+
+    handleChangePassword = () => {
+        this.setState({canChangePassword: false});
+
+        const params = new URLSearchParams();
+        params.append('username', this.state.userName);
+        params.append('password', this.state.password);
+        params.append('new-password', this.state.newPassword);
+
+        fetch('/api/settings/change-password', {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params.toString()
+        })
+            .then((resp) => resp.json())
+            .then((resp) => {
+                if (resp['success']) {
+                    location.reload();
+                    return;
+                }
+                this.setState({
+                    changePasswordFeedback: resp['reason']
+                });
+            });
     };
 
     render = () => {
@@ -116,6 +170,67 @@ export default class LoginApp extends React.Component<{}, State> {
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+                <div
+                    className="modal fade"
+                    id="changePassword"
+                    data-bs-backdrop="static"
+                    data-bs-keyboard="false"
+                    tabIndex={-1}
+                    aria-labelledby="changePasswordLabel"
+                    aria-hidden="true"
+                >
+                    <div className="modal-dialog">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title" id="changePasswordLabel">
+                                    Set Password
+                                </h5>
+                            </div>
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    this.handleChangePassword();
+                                }}
+                            >
+                                <div className="modal-body">
+                                    <div>
+                                        <div className="mb-3 form-floating">
+                                            <input
+                                                type="password"
+                                                id="newPassword"
+                                                className="form-control"
+                                                placeholder="Password"
+                                                onChange={(e) => this.handleInputNewPassword(e.target.value)}
+                                                value={this.state.newPassword}
+                                                required={true}
+                                            />
+                                            <label htmlFor="newPassword">{t('password')}</label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="mb-3 form-floating">
+                                            <input
+                                                type="password"
+                                                id="password_confirm"
+                                                className="form-control"
+                                                placeholder="Confirm password"
+                                                onChange={(e) => this.handleInputPasswordConfirm(e.target.value)}
+                                                value={this.state.newPasswordConfirm}
+                                                required={true}
+                                            />
+                                            <label htmlFor="password_confirm">{t('password_confirm')}</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="modal-footer">
+                                    <button type="submit" className="btn btn-primary" disabled={!this.state.canChangePassword}>
+                                        Set password
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
