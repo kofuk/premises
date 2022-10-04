@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +17,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/duo-labs/webauthn/protocol"
+	"github.com/duo-labs/webauthn/webauthn"
 	"github.com/gin-contrib/sessions"
 	redisSess "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-contrib/static"
@@ -53,6 +56,67 @@ type User struct {
 	Password    string
 	AddedBy     string
 	Initialized bool
+}
+
+type Credential struct {
+	gorm.Model
+	Owner                  uint
+	KeyName                string
+	CredentialID           []byte
+	PublicKey              []byte
+	AttestationType        string
+	AuthenticatorAAGUID    []byte
+	AuthenticatorSignCount uint32
+}
+
+type webAuthnUser struct {
+	user        User
+	credentials []webauthn.Credential
+}
+
+func (u *webAuthnUser) WebAuthnID() []byte {
+	result := make([]byte, 8)
+	binary.BigEndian.PutUint64(result, uint64(u.user.ID))
+	return result
+}
+
+func (u *webAuthnUser) WebAuthnName() string {
+	return u.user.Name
+}
+
+func (u *webAuthnUser) WebAuthnDisplayName() string {
+	return u.user.Name
+}
+
+func (u *webAuthnUser) WebAuthnIcon() string {
+	return ""
+}
+
+func (u *webAuthnUser) WebAuthnCredentials() []webauthn.Credential {
+	return u.credentials
+}
+
+func (u *webAuthnUser) registerCredential(cred Credential) {
+	u.credentials = append(u.credentials, webauthn.Credential{
+		ID:              cred.CredentialID,
+		PublicKey:       cred.PublicKey,
+		AttestationType: cred.AttestationType,
+		Authenticator: webauthn.Authenticator{
+			AAGUID:    cred.AuthenticatorAAGUID,
+			SignCount: cred.AuthenticatorSignCount,
+		},
+	})
+}
+
+func (u *webAuthnUser) getCredentialExcludeList() []protocol.CredentialDescriptor {
+	var result []protocol.CredentialDescriptor
+	for _, c := range u.credentials {
+		result = append(result, protocol.CredentialDescriptor{
+			Type:         protocol.PublicKeyCredentialType,
+			CredentialID: c.ID,
+		})
+	}
+	return result
 }
 
 func L(locale, msgId string) string {
@@ -409,11 +473,22 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	origin, err := url.Parse(cfg.ControlPanel.Origin)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to parse origin URL")
+	}
+	wauthn, err := webauthn.New(&webauthn.Config{
+		RPDisplayName: "Premises",
+		RPID:          origin.Hostname(),
+		RPOrigin:      cfg.ControlPanel.Origin,
+	})
+
 	db, err := gorm.Open(sqlite.Open(cfg.LocatePersist("data.db")), &gorm.Config{})
 	if err != nil {
 		log.WithError(err).Fatal("Error opening database")
 	}
 	db.AutoMigrate(&User{})
+	db.AutoMigrate(&Credential{})
 
 	bindAddr := ":8000"
 	if len(os.Args) > 1 {
@@ -511,9 +586,9 @@ func main() {
 			}
 
 			user := &User{
-				Name:     username,
-				Password: string(hashedPassword),
-				AddedBy: "",
+				Name:        username,
+				Password:    string(hashedPassword),
+				AddedBy:     "",
 				Initialized: true,
 			}
 
@@ -909,9 +984,9 @@ func main() {
 			}
 
 			user := &User{
-				Name:     newUsername,
-				Password: string(hashedPassword),
-				AddedBy: username.(string),
+				Name:        newUsername,
+				Password:    string(hashedPassword),
+				AddedBy:     username.(string),
 				Initialized: false,
 			}
 
@@ -923,6 +998,134 @@ func main() {
 
 			c.JSON(http.StatusOK, gin.H{"success": true})
 		})
+
+		api.POST("/settings/hardwarekey/begin", func(c *gin.Context) {
+			session := sessions.Default(c)
+			username := session.Get("username")
+
+			user := User{}
+			if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+				log.WithError(err).Error("User expected to be found, but didn't")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+
+			waUser := webAuthnUser{
+				user: user,
+			}
+
+			var credentials []Credential
+			if err := db.Where("owner = ?", user.ID).Find(&credentials).Error; err != nil {
+				log.WithError(err).Error("Error fetching credentials")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+			for _, c := range credentials {
+				waUser.registerCredential(c)
+			}
+
+			registerOptions := func(credCreationOpts *protocol.PublicKeyCredentialCreationOptions) {
+				credCreationOpts.CredentialExcludeList = waUser.getCredentialExcludeList()
+			}
+
+			options, sessionData, err := wauthn.BeginRegistration(&waUser, registerOptions)
+			if err != nil {
+				log.WithError(err).Error("Error registration")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+
+			marshaled, err := json.Marshal(sessionData)
+			if err != nil {
+				log.WithError(err).Error("")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+
+			session.Set("hwkey-registration", string(marshaled))
+			session.Save()
+
+			c.JSON(http.StatusOK, gin.H{"success": true, "options": options})
+		})
+
+		api.POST("/settings/hardwarekey/finish", func(c *gin.Context) {
+			session := sessions.Default(c)
+			username := session.Get("username")
+			sessionDataMarshaled := session.Get("hwkey-registration")
+			session.Delete("hwkey-registration")
+			session.Save()
+
+			keyName := c.Query("name")
+			if keyName == "" {
+				keyName = "Key"
+			}
+
+			sessionData := webauthn.SessionData{}
+			if err := json.Unmarshal([]byte(sessionDataMarshaled.(string)), &sessionData); err != nil {
+				log.WithError(err).Error("Can't unmarshal session data")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+
+			user := User{}
+			if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+				log.WithError(err).Error("User expected to be found, but didn't")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+
+			waUser := webAuthnUser{
+				user: user,
+			}
+
+			var credentials []Credential
+			if err := db.Where("owner = ?", user.ID).Find(&credentials).Error; err != nil {
+				log.WithError(err).Error("Error fetching credentials")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+			for _, c := range credentials {
+				waUser.registerCredential(c)
+			}
+
+			credData, err := wauthn.FinishRegistration(&waUser, sessionData, c.Request)
+			if err != nil {
+				log.WithError(err).WithField("info", err.(*protocol.Error).DevInfo).Error("Error registration")
+				c.JSON(http.StatusOK, gin.H{"success": false, "reason": "Failed to register key"})
+				return
+			}
+
+			credential := Credential{
+				Owner:                  user.ID,
+				KeyName:                keyName,
+				CredentialID:           credData.ID,
+				PublicKey:              credData.PublicKey,
+				AttestationType:        credData.AttestationType,
+				AuthenticatorAAGUID:    credData.Authenticator.AAGUID,
+				AuthenticatorSignCount: credData.Authenticator.SignCount,
+			}
+
+			var exists bool
+			if err := db.Model(credential).Select("count(*) > 0").Where("owner = ? AND credential_id = ?", user.ID, credential.CredentialID).Find(&exists).Error; err != nil {
+				log.WithError(err).Error("Error fetching public key count")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+
+			if exists {
+				c.JSON(http.StatusOK, gin.H{"success": false, "reason": "The key has already registered"})
+				return
+			}
+
+			if err := db.Create(&credential).Error; err != nil {
+				log.WithError(err).Error("Error saving credential")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{"success": true})
+		})
+
 	}
 
 	go func() {

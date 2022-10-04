@@ -3,6 +3,7 @@ import * as React from 'react';
 import '../i18n';
 import {t} from 'i18next';
 
+import PasswordlessLogin from './setting-item/passwordless-login';
 import ChangePassword from './setting-item/change-passowrd';
 import AddUser from './setting-item/add-user';
 
@@ -39,6 +40,30 @@ export default class Settings extends React.Component<{}, State> {
             <>
                 {this.state.feedback === '' ? null : <div className="alert alert-danger">{this.state.feedback}</div>}
                 <div className="accordion" id="accordionSettings">
+                    <div className="accordion-item">
+                        <h2 className="accordion-header" id="settings_heading_passwordlessLogin">
+                            <button
+                                className="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#settings_passwordlessLogin"
+                                aria-expanded="false"
+                                aria-controls="settings_passwordlessLogin"
+                            >
+                                Passwordless Login
+                            </button>
+                        </h2>
+                        <div
+                            id="settings_passwordlessLogin"
+                            className="accordion-collapse collapse"
+                            aria-labelledby="settings_heading_passwordlessLogin"
+                            data-bs-parent="#accordionSettings"
+                        >
+                            <div className="accordion-body">
+                                <PasswordlessLogin updateFeedback={this.updateFeedback} />
+                            </div>
+                        </div>
+                    </div>
                     <div className="accordion-item">
                         <h2 className="accordion-header" id="settings_heading_changePassword">
                             <button
