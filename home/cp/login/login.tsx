@@ -4,6 +4,7 @@ import Modal from 'bootstrap/js/dist/modal';
 
 import '../i18n';
 import {t} from 'i18next';
+import {encodeBuffer, decodeBuffer} from '../base64url';
 
 type State = {
     isLoggingIn: boolean;
@@ -14,6 +15,7 @@ type State = {
     newPasswordConfirm: string;
     canChangePassword: boolean;
     changePasswordFeedback: string;
+    useHardwareKey: boolean;
 };
 
 export default class LoginApp extends React.Component<{}, State> {
@@ -25,16 +27,15 @@ export default class LoginApp extends React.Component<{}, State> {
         newPassword: '',
         newPasswordConfirm: '',
         canChangePassword: false,
-        changePasswordFeedback: ''
+        changePasswordFeedback: '',
+        useHardwareKey: false
     };
 
     componentDidMount = () => {
         document.title = t('title_login');
     };
 
-    handleLogin = () => {
-        this.setState({isLoggingIn: true});
-
+    handleNormalLogin = () => {
         const params = new URLSearchParams();
         params.append('username', this.state.userName);
         params.append('password', this.state.password);
@@ -58,6 +59,84 @@ export default class LoginApp extends React.Component<{}, State> {
                 }
                 this.setState({isLoggingIn: false, feedback: resp['reason']});
             });
+    };
+
+    handlePasswordlessLogin = () => {
+        const params = new URLSearchParams();
+        params.append('username', this.state.userName);
+
+        fetch('/login/hardwarekey/begin', {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params.toString()
+        })
+            .then((resp) => resp.json())
+            .then((resp) => {
+                if (!resp['success']) {
+                    this.setState({isLoggingIn: false, feedback: resp['reason']});
+                }
+
+                const options = resp.options;
+
+                options.publicKey.challenge = decodeBuffer(options.publicKey.challenge);
+                if (options.publicKey.allowCredentials) {
+                    for (let i = 0; i < options.publicKey.allowCredentials.length; i++) {
+                        options.publicKey.allowCredentials[i].id = decodeBuffer(options.publicKey.allowCredentials[i].id);
+                    }
+                }
+
+                return navigator.credentials.get(options);
+            })
+            .then((assertion) => {
+                let publicKeyCred = assertion as PublicKeyCredential;
+                let authenticatorResp = publicKeyCred.response as AuthenticatorAssertionResponse;
+                let authData = authenticatorResp.authenticatorData;
+                let clientDataJson = publicKeyCred.response.clientDataJSON;
+                let rawId = publicKeyCred.rawId;
+                let sig = authenticatorResp.signature;
+                let userHandle = authenticatorResp.userHandle!!;
+
+                fetch('/login/hardwarekey/finish', {
+                    method: 'post',
+                    body: JSON.stringify({
+                        id: assertion!!.id,
+                        rawId: encodeBuffer(rawId),
+                        type: publicKeyCred.type,
+                        response: {
+                            authenticatorData: encodeBuffer(authData),
+                            clientDataJSON: encodeBuffer(clientDataJson),
+                            signature: encodeBuffer(sig),
+                            userHandle: encodeBuffer(userHandle)
+                        }
+                    })
+                })
+                    .then((resp) => resp.json())
+                    .then((resp) => {
+                        if (!resp['success']) {
+                            this.setState({isLoggingIn: false, feedback: resp['reason']});
+                            return;
+                        }
+                        location.reload();
+                    })
+                    .catch((e) => {
+                        this.setState({isLoggingIn: false, feedback: 'Operation was timed out or not allowed'});
+                    });
+            })
+            .catch((e) => {
+                this.setState({isLoggingIn: false, feedback: 'Operation was timed out or not allowed'});
+            });
+    };
+
+    handleLogin = () => {
+        this.setState({isLoggingIn: true});
+
+        if (this.state.useHardwareKey) {
+            this.handlePasswordlessLogin();
+        } else {
+            this.handleNormalLogin();
+        }
     };
 
     handleInputUserName = (val: string) => {
@@ -138,25 +217,43 @@ export default class LoginApp extends React.Component<{}, State> {
                                 />
                                 <label htmlFor="username">{t('username')}</label>
                             </div>
-                            <div>
-                                <div className="mb-3 form-floating">
-                                    <input
-                                        type="password"
-                                        id="password"
-                                        className="form-control"
-                                        placeholder="Password"
-                                        onChange={(e) => this.handleInputPassword(e.target.value)}
-                                        value={this.state.password}
-                                        required={true}
-                                    />
-                                    <label htmlFor="password">{t('password')}</label>
+                            {this.state.useHardwareKey ? null : (
+                                <div>
+                                    <div className="mb-3 form-floating">
+                                        <input
+                                            type="password"
+                                            id="password"
+                                            className="form-control"
+                                            placeholder="Password"
+                                            onChange={(e) => this.handleInputPassword(e.target.value)}
+                                            value={this.state.password}
+                                            required={true}
+                                        />
+                                        <label htmlFor="password">{t('password')}</label>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
                             <div className="text-end">
+                                {this.state.isLoggingIn ? null : (
+                                    <button
+                                        type="button"
+                                        className="btn btn-link"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            this.setState({useHardwareKey: !this.state.useHardwareKey});
+                                        }}
+                                    >
+                                        {this.state.useHardwareKey ? "Don't Have a hardware key?" : 'Have a hardware key?'}
+                                    </button>
+                                )}
                                 <button
                                     type="submit"
                                     className="btn btn-primary bg-gradient"
-                                    disabled={this.state.isLoggingIn || this.state.userName === '' || this.state.password === ''}
+                                    disabled={
+                                        this.state.isLoggingIn ||
+                                        this.state.userName === '' ||
+                                        (!this.state.useHardwareKey && this.state.password === '')
+                                    }
                                 >
                                     {this.state.isLoggingIn ? (
                                         <>

@@ -2,6 +2,7 @@ import * as React from 'react';
 
 import '../../i18n';
 import {t} from 'i18next';
+import {encodeBuffer, decodeBuffer} from '../../base64url';
 
 type State = {
     keyName: string;
@@ -10,17 +11,6 @@ type State = {
 
 type Props = {
     updateFeedback: (message: string, negative: boolean) => void;
-};
-
-const decodeBuffer = (value: string): Uint8Array => {
-    return Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
-};
-
-const encodeBuffer = (value: ArrayBuffer): string => {
-    return btoa(String.fromCharCode.apply(null, new Uint8Array(value) as unknown as number[]))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+/g, '');
 };
 
 export default class PasswordlessLogin extends React.Component<Props, State> {
@@ -93,8 +83,6 @@ export default class PasswordlessLogin extends React.Component<Props, State> {
                     });
             })
             .catch((e) => {
-                console.error(e);
-
                 this.props.updateFeedback('Operation was timed out or not allowed', true);
 
                 this.setState({canContinue: true});

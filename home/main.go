@@ -631,6 +631,125 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
 		}
 	})
+
+	r.POST("/login/hardwarekey/begin", func(c *gin.Context) {
+		if c.GetHeader("Origin") != cfg.ControlPanel.Origin {
+			c.Status(http.StatusBadGateway)
+			return
+		}
+
+		username := c.PostForm("username")
+
+		user := User{}
+		if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
+			return
+		}
+
+		waUser := webAuthnUser{
+			user: user,
+		}
+		var credentials []Credential
+		if err := db.Where("owner = ?", user.ID).Find(&credentials).Error; err != nil {
+			log.WithError(err).Error("Error fetching credentials")
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+			return
+		}
+		for _, c := range credentials {
+			waUser.registerCredential(c)
+		}
+
+		options, sessionData, err := wauthn.BeginLogin(&waUser)
+		if err != nil {
+			log.WithError(err).Error("error beginning login")
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+			return
+		}
+
+		marshaled, err := json.Marshal(sessionData)
+		if err != nil {
+			log.WithError(err).Error("error beginning login")
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+			return
+		}
+
+		session := sessions.Default(c)
+		session.Set("hwkey-auth-username", username)
+		session.Set("hwkey-authentication", string(marshaled))
+		session.Save()
+
+		c.JSON(http.StatusOK, gin.H{"success": true, "options": options})
+	})
+
+	r.POST("/login/hardwarekey/finish", func(c *gin.Context) {
+		if c.GetHeader("Origin") != cfg.ControlPanel.Origin {
+			c.Status(http.StatusBadGateway)
+			return
+		}
+
+		session := sessions.Default(c)
+		username := session.Get("hwkey-auth-username")
+		marshaledData := session.Get("hwkey-authentication")
+		session.Delete("hwkey-authentication")
+		session.Delete("hwkey-auth-username")
+		defer session.Save()
+
+		var sessionData webauthn.SessionData
+		if err := json.Unmarshal([]byte(marshaledData.(string)), &sessionData); err != nil {
+			log.WithError(err).Error("Failed to unmarshal session data")
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+			return
+		}
+
+		user := User{}
+		if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
+			return
+		}
+
+		waUser := webAuthnUser{
+			user: user,
+		}
+		var credentials []Credential
+		if err := db.Where("owner = ?", user.ID).Find(&credentials).Error; err != nil {
+			log.WithError(err).Error("Error fetching credentials")
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+			return
+		}
+		for _, c := range credentials {
+			waUser.registerCredential(c)
+		}
+
+		cred, err := wauthn.FinishLogin(&waUser, sessionData, c.Request)
+		if err != nil {
+			log.WithError(err).Error("error finishing login")
+			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
+			return
+		}
+
+		if cred.Authenticator.CloneWarning {
+			log.Error("maybe a cloned authenticator used")
+			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
+			return
+		}
+
+		var credData Credential
+		if err := db.Where("owner = ? AND credential_id = ?", user.ID, cred.ID).First(&credData).Error; err != nil {
+			log.WithError(err).Error("credential to update did not found")
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+			return
+		}
+
+		credData.AuthenticatorSignCount = cred.Authenticator.SignCount
+		if err := db.Save(credData).Error; err != nil {
+			log.WithError(err).Warn("failed to save credential")
+		}
+
+		session.Set("username", username)
+
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	})
+
 	r.GET("/logout", func(c *gin.Context) {
 		session := sessions.Default(c)
 		session.Delete("username")
