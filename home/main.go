@@ -655,6 +655,10 @@ func main() {
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 			return
 		}
+		if len(credentials) == 0 {
+			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
+			return
+		}
 		for _, c := range credentials {
 			waUser.registerCredential(c)
 		}

@@ -65,6 +65,7 @@ export default class LoginApp extends React.Component<{}, State> {
         const params = new URLSearchParams();
         params.append('username', this.state.userName);
 
+        let lastError: string = '';
         fetch('/login/hardwarekey/begin', {
             method: 'post',
             headers: {
@@ -75,7 +76,7 @@ export default class LoginApp extends React.Component<{}, State> {
             .then((resp) => resp.json())
             .then((resp) => {
                 if (!resp['success']) {
-                    this.setState({isLoggingIn: false, feedback: resp['reason']});
+                    lastError = resp['reason'];
                     return;
                 }
 
@@ -126,7 +127,11 @@ export default class LoginApp extends React.Component<{}, State> {
                     });
             })
             .catch((e) => {
-                this.setState({isLoggingIn: false, feedback: t('passwordless_login_error')});
+                if (lastError === '') {
+                    this.setState({isLoggingIn: false, feedback: t('passwordless_login_error')});
+                } else {
+                    this.setState({isLoggingIn: false, feedback: lastError});
+                }
             });
     };
 
