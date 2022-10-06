@@ -68,7 +68,7 @@ export default class ChangePassword extends React.Component<Props, State> {
         params.append('password', this.state.currentPassword);
         params.append('new-password', this.state.newPassword);
 
-        fetch('/api/settings/change-password', {
+        fetch('/api/users/change-password', {
             method: 'post',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'

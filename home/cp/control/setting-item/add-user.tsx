@@ -31,7 +31,7 @@ export default class AddUser extends React.Component<Props, State> {
         params.append('username', this.state.userName);
         params.append('password', this.state.password);
 
-        fetch('/api/settings/add-user', {
+        fetch('/api/users/add', {
             method: 'post',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'

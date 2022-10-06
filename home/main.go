@@ -1029,7 +1029,7 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"success": true})
 		})
 
-		api.POST("/settings/change-password", func(c *gin.Context) {
+		api.POST("/users/change-password", func(c *gin.Context) {
 			session := sessions.Default(c)
 			username := session.Get("username")
 
@@ -1074,7 +1074,7 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"success": true})
 		})
 
-		api.POST("/settings/add-user", func(c *gin.Context) {
+		api.POST("/users/add", func(c *gin.Context) {
 			session := sessions.Default(c)
 			username := session.Get("username")
 
@@ -1118,7 +1118,7 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"success": true})
 		})
 
-		api.POST("/settings/hardwarekey/begin", func(c *gin.Context) {
+		api.POST("/hardwarekey/begin", func(c *gin.Context) {
 			session := sessions.Default(c)
 			username := session.Get("username")
 
@@ -1167,7 +1167,7 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"success": true, "options": options})
 		})
 
-		api.POST("/settings/hardwarekey/finish", func(c *gin.Context) {
+		api.POST("/hardwarekey/finish", func(c *gin.Context) {
 			session := sessions.Default(c)
 			username := session.Get("username")
 			sessionDataMarshaled := session.Get("hwkey-registration")

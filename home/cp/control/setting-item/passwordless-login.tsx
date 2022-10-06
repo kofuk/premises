@@ -22,7 +22,7 @@ export default class PasswordlessLogin extends React.Component<Props, State> {
     handleAddKey = () => {
         this.setState({canContinue: false});
 
-        fetch('/api/settings/hardwarekey/begin', {
+        fetch('/api/hardwarekey/begin', {
             method: 'post'
         })
             .then((resp) => resp.json())
@@ -55,7 +55,7 @@ export default class PasswordlessLogin extends React.Component<Props, State> {
                 let clientDataJson = publicKeyCred.response.clientDataJSON;
                 let rawId = publicKeyCred.rawId;
 
-                return fetch('/api/settings/hardwarekey/finish?name=' + encodeURI(this.state.keyName), {
+                return fetch('/api/hardwarekey/finish?name=' + encodeURI(this.state.keyName), {
                     method: 'post',
                     body: JSON.stringify({
                         id: cred.id,

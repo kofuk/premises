@@ -168,7 +168,7 @@ export default class LoginApp extends React.Component<{}, State> {
         params.append('password', this.state.password);
         params.append('new-password', this.state.newPassword);
 
-        fetch('/api/settings/change-password', {
+        fetch('/api/users/change-password', {
             method: 'post',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
@@ -214,6 +214,7 @@ export default class LoginApp extends React.Component<{}, State> {
                                     onChange={(e) => this.handleInputUserName(e.target.value)}
                                     value={this.state.userName}
                                     required={true}
+                                    disabled={this.state.isLoggingIn}
                                 />
                                 <label htmlFor="username">{t('username')}</label>
                             </div>
@@ -228,6 +229,7 @@ export default class LoginApp extends React.Component<{}, State> {
                                             onChange={(e) => this.handleInputPassword(e.target.value)}
                                             value={this.state.password}
                                             required={true}
+                                            disabled={this.state.isLoggingIn}
                                         />
                                         <label htmlFor="password">{t('password')}</label>
                                     </div>
