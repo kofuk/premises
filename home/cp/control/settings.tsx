@@ -50,7 +50,7 @@ export default class Settings extends React.Component<{}, State> {
                                 aria-expanded="false"
                                 aria-controls="settings_passwordlessLogin"
                             >
-                                Passwordless Login
+                                {t('passwordless_login')}
                             </button>
                         </h2>
                         <div

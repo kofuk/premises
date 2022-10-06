@@ -76,6 +76,7 @@ export default class LoginApp extends React.Component<{}, State> {
             .then((resp) => {
                 if (!resp['success']) {
                     this.setState({isLoggingIn: false, feedback: resp['reason']});
+                    return;
                 }
 
                 const options = resp.options;
@@ -121,11 +122,11 @@ export default class LoginApp extends React.Component<{}, State> {
                         location.reload();
                     })
                     .catch((e) => {
-                        this.setState({isLoggingIn: false, feedback: 'Operation was timed out or not allowed'});
+                        this.setState({isLoggingIn: false, feedback: t('passwordless_login_error')});
                     });
             })
             .catch((e) => {
-                this.setState({isLoggingIn: false, feedback: 'Operation was timed out or not allowed'});
+                this.setState({isLoggingIn: false, feedback: t('passwordless_login_error')});
             });
     };
 
@@ -239,13 +240,13 @@ export default class LoginApp extends React.Component<{}, State> {
                                 {this.state.isLoggingIn ? null : (
                                     <button
                                         type="button"
-                                        className="btn btn-link"
+                                        className="btn btn-link me-1"
                                         onClick={(e) => {
                                             e.preventDefault();
                                             this.setState({useHardwareKey: !this.state.useHardwareKey});
                                         }}
                                     >
-                                        {this.state.useHardwareKey ? "Don't Have a hardware key?" : 'Have a hardware key?'}
+                                        {this.state.useHardwareKey ? t('login_dont_use_hardware_key') : t('login_use_hardware_key')}
                                     </button>
                                 )}
                                 <button

@@ -1210,7 +1210,7 @@ func main() {
 			credData, err := wauthn.FinishRegistration(&waUser, sessionData, c.Request)
 			if err != nil {
 				log.WithError(err).WithField("info", err.(*protocol.Error).DevInfo).Error("Error registration")
-				c.JSON(http.StatusOK, gin.H{"success": false, "reason": "Failed to register key"})
+				c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "hardwarekey.verify.error")})
 				return
 			}
 
@@ -1232,7 +1232,7 @@ func main() {
 			}
 
 			if exists {
-				c.JSON(http.StatusOK, gin.H{"success": false, "reason": "The key has already registered"})
+				c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "hardwarekey.already_registered")})
 				return
 			}
 

@@ -18,5 +18,7 @@
   "vm.image.saving": "サーバのイメージを保存しています…",
   "vm.cleaning_up": "クリーンアップ中…",
   "vm.ip.waiting": "サーバにIPアドレスが割り当てられるのを待っています…",
-  "vm.get_detail.error": "サーバの情報を取得できません"
+  "vm.get_detail.error": "サーバの情報を取得できません",
+  "hardwarekey.verify.error": "物理キーの確認に失敗しました",
+  "hardwarekey.already_registered": "このキーは既に登録されています"
 }

@@ -77,13 +77,13 @@ export default class PasswordlessLogin extends React.Component<Props, State> {
                         this.setState({canContinue: true});
                     })
                     .catch((e) => {
-                        this.props.updateFeedback('Operation was timed out or not allowed', true);
+                        this.props.updateFeedback(t('passwordless_login_error'), true);
 
                         this.setState({canContinue: true});
                     });
             })
             .catch((e) => {
-                this.props.updateFeedback('Operation was timed out or not allowed', true);
+                this.props.updateFeedback(t('passwordless_login_error'), true);
 
                 this.setState({canContinue: true});
             });
@@ -102,17 +102,18 @@ export default class PasswordlessLogin extends React.Component<Props, State> {
                         this.handleAddKey();
                     }}
                 >
-                    <div className="mb-3">You can login to Control Panel without password, using hardware security key.</div>
+                    <div className="mb-3">{t('passwordless_login_description')}</div>
                     <div className="input-group">
                         <input
                             type="text"
                             className="form-control"
-                            placeholder="Key name"
+                            placeholder={t('passwordless_login_key_name')}
                             onChange={(e) => this.handleInputKeyName(e.target.value)}
                             value={this.state.keyName}
+                            disabled={!this.state.canContinue}
                         />
                         <button type="submit" className="btn btn-primary bg-gradient" disabled={!this.state.canContinue}>
-                            Add
+                            {t('passwordless_login_add')}
                         </button>
                     </div>
                 </form>
