@@ -91,6 +91,7 @@ export default class SetupApp extends React.Component<{}, State> {
                             <div className="mb-3 form-floating">
                                 <input
                                     type="text"
+                                    autoComplete="username"
                                     id="username"
                                     className="form-control"
                                     placeholder="User"
@@ -104,6 +105,7 @@ export default class SetupApp extends React.Component<{}, State> {
                                 <div className="mb-3 form-floating">
                                     <input
                                         type="password"
+                                        autoComplete="new-password"
                                         id="password"
                                         className="form-control"
                                         placeholder="Password"
@@ -118,6 +120,7 @@ export default class SetupApp extends React.Component<{}, State> {
                                 <div className="mb-3 form-floating">
                                     <input
                                         type="password"
+                                        autoComplete="new-password"
                                         id="password_confirm"
                                         className="form-control"
                                         placeholder="Confirm password"

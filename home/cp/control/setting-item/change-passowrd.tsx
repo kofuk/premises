@@ -107,41 +107,44 @@ export default class ChangePassword extends React.Component<Props, State> {
                 <div className="mb-3 form-floating">
                     <input
                         type="password"
-                        id="username"
+                        autoComplete="current-password"
+                        id="changePassword_username"
                         className="form-control"
-                        placeholder="User"
+                        placeholder={t('change_password_current')}
                         onChange={(e) => this.handleInputCurrentPassword(e.target.value)}
                         value={this.state.currentPassword}
                         required={true}
                     />
-                    <label htmlFor="username">{t('change_password_current')}</label>
+                    <label htmlFor="changePassword_username">{t('change_password_current')}</label>
                 </div>
                 <div>
                     <div className="mb-3 form-floating">
                         <input
                             type="password"
-                            id="password"
+                            autoComplete="new-password"
+                            id="changePassword_password"
                             className="form-control"
-                            placeholder="Password"
+                            placeholder={t('change_password_new')}
                             onChange={(e) => this.handleInputNewPassword(e.target.value)}
                             value={this.state.newPassword}
                             required={true}
                         />
-                        <label htmlFor="password">{t('change_password_new')}</label>
+                        <label htmlFor="changePassword_password">{t('change_password_new')}</label>
                     </div>
                 </div>
                 <div>
                     <div className="mb-3 form-floating">
                         <input
                             type="password"
-                            id="password_confirm"
+                            autoComplete="new-password"
+                            id="changePassword_password_confirm"
                             className="form-control"
-                            placeholder="Confirm password"
+                            placeholder={t('change_password_confirm')}
                             onChange={(e) => this.handleInputPasswordConfirm(e.target.value)}
                             value={this.state.newPasswordConfirm}
                             required={true}
                         />
-                        <label htmlFor="password_confirm">{t('change_password_confirm')}</label>
+                        <label htmlFor="changePassword_password_confirm">{t('change_password_confirm')}</label>
                     </div>
                 </div>
                 <div className="text-end">

@@ -86,41 +86,44 @@ export default class AddUser extends React.Component<Props, State> {
                 <div className="mb-3 form-floating">
                     <input
                         type="text"
-                        id="username"
+                        autoComplete="username"
+                        id="newUser_username"
                         className="form-control"
-                        placeholder="User"
+                        placeholder={t('username')}
                         onChange={(e) => this.handleInputUserName(e.target.value)}
                         value={this.state.userName}
                         required={true}
                     />
-                    <label htmlFor="username">{t('username')}</label>
+                    <label htmlFor="newUser_username">{t('username')}</label>
                 </div>
                 <div>
                     <div className="mb-3 form-floating">
                         <input
                             type="password"
-                            id="password"
+                            id="newUser_password"
+                            autoComplete="new-password"
                             className="form-control"
-                            placeholder="Password"
+                            placeholder={t('password')}
                             onChange={(e) => this.handleInputPassword(e.target.value)}
                             value={this.state.password}
                             required={true}
                         />
-                        <label htmlFor="password">{t('password')}</label>
+                        <label htmlFor="newUser_password">{t('password')}</label>
                     </div>
                 </div>
                 <div>
                     <div className="mb-3 form-floating">
                         <input
                             type="password"
-                            id="password_confirm"
+                            autoComplete="new-password"
+                            id="newUser_password_confirm"
                             className="form-control"
-                            placeholder="Confirm password"
+                            placeholder={t('password_confirm')}
                             onChange={(e) => this.handleInputPasswordConfirm(e.target.value)}
                             value={this.state.passwordConfirm}
                             required={true}
                         />
-                        <label htmlFor="password_confirm">{t('password_confirm')}</label>
+                        <label htmlFor="newUser_password_confirm">{t('password_confirm')}</label>
                     </div>
                 </div>
                 <div className="text-end">

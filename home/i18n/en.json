@@ -19,5 +19,6 @@
   "vm.cleaning_up": "Cleaning up…",
   "vm.ip.waiting": "Waiting for an IP address to be assigned to the VM…",
   "vm.get_detail.error": "Failed to get information on created VM",
-  "hardwarekey.verify.error": "Can't verify hardware key"
+  "hardwarekey.verify.error": "Can't verify hardware key",
+  "hardwarekey.already_registered": "The key has already been registered."
 }
