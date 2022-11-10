@@ -1142,8 +1142,8 @@ func main() {
 				return
 			}
 			type credentialRespItem struct {
-				ID   string
-				Name string
+				ID   string `json:"id"`
+				Name string `json:"name"`
 			}
 			credentialResp := make([]credentialRespItem, 0)
 			for _, c := range credentials {

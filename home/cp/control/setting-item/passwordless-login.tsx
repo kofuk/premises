@@ -3,10 +3,17 @@ import * as React from 'react';
 import '../../i18n';
 import {t} from 'i18next';
 import {encodeBuffer, decodeBuffer} from '../../base64url';
+import {FaTrash} from '@react-icons/all-files/fa/FaTrash';
+
+interface HardwareKey {
+    id: string;
+    name: string;
+}
 
 type State = {
     keyName: string;
     canContinue: boolean;
+    hardwareKeys: HardwareKey[];
 };
 
 type Props = {
@@ -16,7 +23,24 @@ type Props = {
 export default class PasswordlessLogin extends React.Component<Props, State> {
     state = {
         keyName: '',
-        canContinue: true
+        canContinue: true,
+        hardwareKeys: [] as HardwareKey[]
+    };
+
+    refreshHardwareKeys = () => {
+        fetch('/api/hardwarekey')
+            .then((resp) => resp.json())
+            .then((resp) => {
+                if (!resp['success']) {
+                    this.props.updateFeedback(resp['reason'], true);
+                    return;
+                }
+                this.setState({hardwareKeys: resp['data']});
+            });
+    };
+
+    componentDidMount = () => {
+        this.refreshHardwareKeys();
     };
 
     handleAddKey = () => {
@@ -75,6 +99,7 @@ export default class PasswordlessLogin extends React.Component<Props, State> {
                             return;
                         }
                         this.setState({canContinue: true, keyName: ''});
+                        this.refreshHardwareKeys();
                     })
                     .catch((e) => {
                         this.props.updateFeedback(t('passwordless_login_error'), true);
@@ -93,16 +118,54 @@ export default class PasswordlessLogin extends React.Component<Props, State> {
         this.setState({keyName: val});
     };
 
+    deleteKey = (id: string) => {
+        fetch('/api/hardwarekey/' + id, {
+            method: 'delete'
+        }).then((resp) => {
+            if (resp.status === 204) {
+                this.refreshHardwareKeys();
+            }
+        });
+    };
+
     render = () => {
         return (
             <>
+                <div className="mb-3">{t('passwordless_login_description')}</div>
+                {this.state.hardwareKeys.length === 0 ? null : (
+                    <>
+                        <table className="table">
+                        <thead>
+                        <tr><td></td><td>{t('passwordless_login_key_name')}</td></tr>
+                        </thead>
+                            <tbody>
+                                {this.state.hardwareKeys.map((e) => (
+                                    <tr key={e.id}>
+                                        <td>
+                                            <button
+                                                type="button"
+                                                className="btn btn-danger bg-gradient"
+                                                onClick={(ev) => {
+                                                    ev.preventDefault();
+                                                    this.deleteKey(e.id);
+                                                }}
+                                            >
+                                                <FaTrash />
+                                            </button>
+                                        </td>
+                                        <td className="align-middle">{e.name}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </>
+                )}
                 <form
                     onSubmit={(e) => {
                         e.preventDefault();
                         this.handleAddKey();
                     }}
                 >
-                    <div className="mb-3">{t('passwordless_login_description')}</div>
                     <div className="input-group">
                         <input
                             type="text"
