@@ -24,6 +24,7 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"github.com/joho/godotenv"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -61,6 +62,7 @@ type User struct {
 type Credential struct {
 	gorm.Model
 	Owner                  uint
+	UUID                   string
 	KeyName                string
 	CredentialID           []byte
 	PublicKey              []byte
@@ -1122,6 +1124,66 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"success": true})
 		})
 
+		api.GET("/hardwarekey", func(c *gin.Context) {
+			session := sessions.Default(c)
+			username := session.Get("username")
+
+			user := User{}
+			if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+				log.WithError(err).Error("User expected to be found, but didn't")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+
+			var credentials []Credential
+			if err := db.Where("owner = ?", user.ID).Find(&credentials).Error; err != nil {
+				log.WithError(err).Error("Error fetching credentials")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+			type credentialRespItem struct {
+				ID   string
+				Name string
+			}
+			credentialResp := make([]credentialRespItem, 0)
+			for _, c := range credentials {
+				credentialResp = append(credentialResp, credentialRespItem{
+					ID:   c.UUID,
+					Name: c.KeyName,
+				})
+			}
+
+			c.JSON(http.StatusOK, gin.H{"success": true, "data": credentialResp})
+		})
+
+		api.DELETE("/hardwarekey/:uuid", func(c *gin.Context) {
+			session := sessions.Default(c)
+			username := session.Get("username")
+			keyUuid := c.Param("uuid")
+
+			user := User{}
+			if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+				log.WithError(err).Error("User expected to be found, but didn't")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+
+			var credential Credential
+			if err := db.Where("owner = ? AND uuid = ?", user.ID, keyUuid).First(&credential).Error; err != nil {
+				log.WithError(err).Error("Error fetching credentials")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+
+			if err := db.Delete(&credential).Error; err != nil {
+				log.WithError(err).Error("Error fetching credentials")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+				return
+			}
+
+			c.JSON(http.StatusNoContent, gin.H{"success": true})
+		})
+
 		api.POST("/hardwarekey/begin", func(c *gin.Context) {
 			session := sessions.Default(c)
 			username := session.Get("username")
@@ -1218,8 +1280,10 @@ func main() {
 				return
 			}
 
+			keyUuid := uuid.New().String()
 			credential := Credential{
 				Owner:                  user.ID,
+				UUID:                   keyUuid,
 				KeyName:                keyName,
 				CredentialID:           credData.ID,
 				PublicKey:              credData.PublicKey,

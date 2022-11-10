@@ -74,7 +74,7 @@ export default class PasswordlessLogin extends React.Component<Props, State> {
                             this.setState({canContinue: true});
                             return;
                         }
-                        this.setState({canContinue: true});
+                        this.setState({canContinue: true, keyName: ''});
                     })
                     .catch((e) => {
                         this.props.updateFeedback(t('passwordless_login_error'), true);
