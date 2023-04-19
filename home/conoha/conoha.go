@@ -107,10 +107,11 @@ func DeleteImage(cfg *config.Config, token, imageID string) error {
 		var resp *http.Response
 		resp, err = http.DefaultClient.Do(req)
 		if err != nil {
+			log.WithError(err).Error("Failed to send request")
 			return err
 		}
 
-		log.WithField("status_code", resp.StatusCode).Error("Requested deleting image")
+		log.WithField("status_code", resp.StatusCode).Info("Requested deleting image")
 
 		if resp.StatusCode == 409 {
 			time.Sleep(time.Duration(rand.Intn(10)))
@@ -119,6 +120,8 @@ func DeleteImage(cfg *config.Config, token, imageID string) error {
 		if resp.StatusCode != 204 {
 			return errors.New(fmt.Sprintf("Failed to delete the image: %d", resp.StatusCode))
 		}
+
+		break
 	}
 	log.Info("Deleting image...Done")
 

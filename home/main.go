@@ -780,6 +780,7 @@ func main() {
 				}
 				return
 			}
+			log.WithField("origin", c.GetHeader("Origin")).Error("origin not allowed")
 			c.JSON(400, gin.H{"success": false, "message": "Invalid request (origin not allowed)"})
 			c.Abort()
 		}
