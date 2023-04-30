@@ -16,8 +16,6 @@ type AppState = {
 };
 
 export default class App extends React.Component<{}, AppState> {
-    retryCount: number;
-    socketUrl: string;
     useNotification: boolean = false;
     state: AppState = {
         isServerShutdown: true,
@@ -31,10 +29,6 @@ export default class App extends React.Component<{}, AppState> {
     constructor(props: {}) {
         super(props);
 
-        const proto: string = location.protocol == 'https:' ? 'wss://' : 'ws://';
-        this.socketUrl = proto + location.host + '/api/status';
-        this.retryCount = 0;
-
         if (Notification.permission === 'granted') {
             this.state.showNotificationToast = false;
             this.useNotification = true;
@@ -42,12 +36,12 @@ export default class App extends React.Component<{}, AppState> {
     }
 
     componentDidMount = () => {
-        this.wsWatch();
+        this.connectStatus();
 
         document.title = t('app_name');
     };
 
-    wsWatch = () => {
+    connectStatus = () => {
         this.setState({isError: false, message: t('connecting')});
 
         const eventSource = new EventSource('/api/status');
@@ -56,19 +50,7 @@ export default class App extends React.Component<{}, AppState> {
     };
 
     handleEventClose = (e: any) => {
-        if (this.retryCount === 20) {
-            this.setState({isError: true, message: t('disconnected')});
-            return;
-        } else {
-            this.setState({isError: true, message: t('reconnecting')});
-            this.retryCount++;
-        }
-
-        setTimeout(() => {
-            const eventSource = new EventSource('/api/status');
-            eventSource.addEventListener('close', this.handleEventClose);
-            eventSource.addEventListener('statuschanged', this.handleServerEvent);
-        }, Math.random() * 5);
+        this.setState({isError: true, message: t('reconnecting')});
     };
 
     handleServerEvent = (ev: MessageEvent) => {
