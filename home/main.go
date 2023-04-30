@@ -787,47 +787,60 @@ func main() {
 	})
 	{
 		api.GET("/status", func(c *gin.Context) {
-			conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-			if err != nil {
-				log.WithError(err).Error("Failed to upgrade protocol to WebSocket")
-				return
-			}
-			defer conn.Close()
-
 			ch := make(chan *monitor.StatusData)
 			server.addMonitorClient(ch)
 			defer close(ch)
 			defer server.removeMonitorClient(ch)
 
+			ticker := time.NewTicker(5 * time.Second)
+			defer ticker.Stop()
+
+			c.Writer.Header().Set("Content-Type", "text/event-stream")
+			c.Writer.Header().Set("Cache-Control", "no-store")
+
+			writeEvent := func(status *monitor.StatusData) error {
+					if _, err := c.Writer.WriteString("event: statuschanged\n"); err != nil {
+						return err
+					}
+					if _, err := c.Writer.WriteString("data: "); err != nil {
+						return err
+					}
+
+					if data, err := json.Marshal(status); err != nil {
+						return err
+					} else {
+						if _, err := c.Writer.Write(data); err != nil {
+							return err
+						}
+					}
+					if _, err := c.Writer.WriteString("\n\n"); err != nil {
+						return err
+					}
+					c.Writer.Flush()
+				return nil
+			}
+
 			server.statusMu.Lock()
-			if err := conn.WriteJSON(server.status); err != nil {
+			if err := writeEvent(&server.status); err != nil {
 				log.WithError(err).Error("Failed to write data")
 				return
 			}
 			server.statusMu.Unlock()
 
-			closeChan := make(chan struct{})
-
-			go func() {
-				for {
-					var v struct{}
-					if err := conn.ReadJSON(&v); err != nil {
-						log.Info("Connection closed")
-						close(closeChan)
-						break
-					}
-				}
-			}()
-
 			for {
 				select {
 				case status := <-ch:
-					if err := conn.WriteJSON(status); err != nil {
-						log.WithError(err).Error("Failed to write data")
-						break
+					if err := writeEvent(status); err != nil {
+						log.WithError(err).Error("Failed to write server-sent event")
+						goto end
 					}
-				case <-closeChan:
-					goto end
+
+				case <- ticker.C:
+					if _, err := c.Writer.WriteString(": uhaha\n"); err != nil {
+						log.WithError(err).Error("Failed to marshal status data")
+						goto end
+					}
+					c.Writer.Flush()
 				}
 			}
 		end:

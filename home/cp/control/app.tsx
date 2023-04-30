@@ -50,21 +50,12 @@ export default class App extends React.Component<{}, AppState> {
     wsWatch = () => {
         this.setState({isError: false, message: t('connecting')});
 
-        const ws: WebSocket = new WebSocket(this.socketUrl);
-        ws.addEventListener('close', this.handleWsClose);
-        ws.addEventListener('message', this.handleWsMessage);
+        const eventSource = new EventSource('/api/status');
+        eventSource.addEventListener('error', this.handleEventClose);
+        eventSource.addEventListener('statuschanged', this.handleServerEvent);
     };
 
-    handleWsOpen = () => {
-        this.setState({isError: false, message: t('connected')});
-        this.retryCount = 0;
-    };
-
-    handleWsClose = (e: any) => {
-        if (e.wasClean) {
-            return;
-        }
-
+    handleEventClose = (e: any) => {
         if (this.retryCount === 20) {
             this.setState({isError: true, message: t('disconnected')});
             return;
@@ -74,14 +65,13 @@ export default class App extends React.Component<{}, AppState> {
         }
 
         setTimeout(() => {
-            const ws = new WebSocket(this.socketUrl);
-            ws.addEventListener('open', this.handleWsOpen);
-            ws.addEventListener('close', this.handleWsClose);
-            ws.addEventListener('message', this.handleWsMessage);
+            const eventSource = new EventSource('/api/status');
+            eventSource.addEventListener('close', this.handleEventClose);
+            eventSource.addEventListener('statuschanged', this.handleServerEvent);
         }, Math.random() * 5);
     };
 
-    handleWsMessage = (ev: MessageEvent) => {
+    handleServerEvent = (ev: MessageEvent) => {
         const event = JSON.parse(ev.data);
         this.setState({isServerShutdown: event.shutdown, isError: event.hasError, message: event.status});
 
