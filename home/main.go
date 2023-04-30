@@ -797,6 +797,7 @@ func main() {
 
 			c.Writer.Header().Set("Content-Type", "text/event-stream")
 			c.Writer.Header().Set("Cache-Control", "no-store")
+			c.Writer.Header().Set("X-Accel-Buffering", "no")
 
 			writeEvent := func(status *monitor.StatusData) error {
 					if _, err := c.Writer.WriteString("event: statuschanged\n"); err != nil {
