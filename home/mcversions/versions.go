@@ -1,14 +1,14 @@
 package mcversions
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
-
-	"github.com/PuerkitoBio/goquery"
 )
 
 const (
-	mcVersionsUrl = "https://mcversions.net/"
+	versionManifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest.json"
 )
 
 var (
@@ -23,8 +23,17 @@ type MCVersion struct {
 	ReleaseDate string `json:"releaseDate"`
 }
 
-func GetVersions() ([]MCVersion, error) {
-	resp, err := http.Get(mcVersionsUrl)
+type launcherMeta struct {
+	Versions []struct {
+		ID          string `json:"id"`
+		Type        string `json:"type"`
+		URL         string `json:"url"`
+		ReleaseTime string `json:"releaseTime"`
+	} `json:"versions"`
+}
+
+func fetchVersionManifest() (*launcherMeta, error) {
+	resp, err := http.Get(versionManifestUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -33,48 +42,79 @@ func GetVersions() ([]MCVersion, error) {
 		return nil, ErrHttpFailure
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, ErrHttpFailure
+	}
+
+	var meta launcherMeta
+	if err := json.Unmarshal(data, &meta); err != nil {
+		return nil, ErrHttpFailure
+	}
+
+	return &meta, nil
+}
+
+func GetVersions() ([]MCVersion, error) {
+	versionData, err := fetchVersionManifest()
 	if err != nil {
 		return nil, err
 	}
 
 	var result []MCVersion
 
-	doc.Find("h5").Each(func(_ int, s *goquery.Selection) {
-		var channel string
-		if text := s.Text(); text == "Stable Releases" {
+	for _, ver := range versionData.Versions {
+		channel := ""
+		if ver.Type == "release" {
 			channel = "stable"
-		} else if text == "Snapshot Preview" {
+		} else if ver.Type == "snapshot" {
 			channel = "snapshot"
-		} else if text == "Beta" {
+		} else if ver.Type == "old_beta" {
 			channel = "beta"
-		} else if text == "Alpha" {
+		} else if ver.Type == "old_alpha" {
 			channel = "alpha"
+		} else {
+			channel = "unknown"
 		}
-		isStable := channel == "stable"
 
-		s.Siblings().Children().Each(func(_ int, s *goquery.Selection) {
-			name, ok := s.Attr("id")
-			if !ok {
-				return
-			}
-
-			releaseDate := s.Find("time").Text()
-
-			result = append(result, MCVersion{
-				Name:        name,
-				IsStable:    isStable,
-				Channel:     channel,
-				ReleaseDate: releaseDate,
-			})
+		result = append(result, MCVersion{
+			Name:        ver.ID,
+			IsStable:    ver.Type == "release",
+			Channel:     channel,
+			ReleaseDate: ver.ReleaseTime,
 		})
-	})
+	}
 
 	return result, nil
 }
 
-func GetDownloadUrl(version string) (url string, err error) {
-	resp, err := http.Get(mcVersionsUrl + "download/" + version)
+type versionMeta struct {
+	Downloads struct {
+		Server struct {
+			URL string `json:"url"`
+		} `json:"server"`
+	} `json:"downloads"`
+}
+
+func GetDownloadUrl(version string) (string, error) {
+	// TODO: Use cached launcherMeta
+
+	versionData, err := fetchVersionManifest()
+	if err != nil {
+		return "", err
+	}
+
+	versionMetaUrl := ""
+	for _, ver := range versionData.Versions {
+		if version == ver.ID {
+			versionMetaUrl = ver.URL
+		}
+	}
+	if versionMetaUrl == "" {
+		return "", ErrNotFound
+	}
+
+	resp, err := http.Get(versionMetaUrl)
 	if err != nil {
 		return "", err
 	}
@@ -83,28 +123,20 @@ func GetDownloadUrl(version string) (url string, err error) {
 		return "", ErrHttpFailure
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", err
+		return "", ErrHttpFailure
 	}
 
-	defer func() {
-		recover()
-	}()
-	doc.Find("a[download]").Each(func(_ int, s *goquery.Selection) {
-		if s.Text() == "Download Server Jar" {
-			dlUrl, ok := s.Attr("href")
-			if !ok {
-				return
-			}
-			url = dlUrl
-			// Can we do non-local-return without panic'ing here?
-			panic(nil)
-		}
-	})
+	var versinfo versionMeta
+	if err := json.Unmarshal(data, &versinfo); err != nil {
+		return "", ErrNotFound
+	}
 
+	url := versinfo.Downloads.Server.URL
 	if url == "" {
 		return "", ErrNotFound
 	}
-	return
+
+	return url, nil
 }
