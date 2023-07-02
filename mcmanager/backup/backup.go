@@ -464,6 +464,11 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 
 	log.Info("Extracting world archive...")
 
+	tempDir, err := os.MkdirTemp("/tmp", "premises-temp")
+	if err != nil {
+		return err
+	}
+
 	inFile, err := os.Open(ctx.LocateDataFile("world.tar.zst"))
 	if err != nil {
 		inFile, err := os.Open(ctx.LocateDataFile("world.tar.xz"))
@@ -473,7 +478,7 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 				return err
 			}
 
-			if err := extractZipWorldArchive(ctx.LocateDataFile("world.zip"), ctx.LocateWorldData("")); err != nil {
+			if err := extractZipWorldArchive(ctx.LocateDataFile("world.zip"), tempDir); err != nil {
 				return err
 			}
 
@@ -485,7 +490,7 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 		} else {
 			defer inFile.Close()
 
-			if err := extractXzWorldArchive(inFile, ctx.LocateWorldData("")); err != nil {
+			if err := extractXzWorldArchive(inFile, tempDir); err != nil {
 				return err
 			}
 
@@ -498,7 +503,7 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 	} else {
 		defer inFile.Close()
 
-		if err := extractZstWorldArchive(inFile, ctx.LocateWorldData("")); err != nil {
+		if err := extractZstWorldArchive(inFile, tempDir); err != nil {
 			return err
 		}
 
@@ -508,6 +513,14 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 			return err
 		}
 	}
+
+	log.Info("Detecting and renaming world data...")
+	if err := moveWorldDataToGameDir(ctx, tempDir); err != nil {
+		log.WithError(err).Error("Failed to prepare world data from archive")
+	}
+	log.Info("Detecting and renaming world data...Done")
+
+	os.RemoveAll(tempDir)
 
 	return nil
 }
