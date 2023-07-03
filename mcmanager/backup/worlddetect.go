@@ -2,12 +2,12 @@ package backup
 
 import (
 	"errors"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/kofuk/premises/mcmanager/config"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -177,7 +177,7 @@ func moveWorldDataToGameDir(ctx *config.PMCMContext, tmpDir string) error {
 		}
 	}
 
-	log.Println("mv", "--", dirs.defWorld, worldDir)
+	log.WithField("from", dirs.defWorld).WithField("to", worldDir).Info("Copying overworld data")
 	cmd := exec.Command("mv", "--", dirs.defWorld, worldDir)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
@@ -186,7 +186,7 @@ func moveWorldDataToGameDir(ctx *config.PMCMContext, tmpDir string) error {
 	}
 
 	if dirs.nether != "" {
-		log.Println("mv", "--", dirs.nether, netherDir)
+		log.WithField("from", dirs.nether).WithField("to", netherDir).Info("Copying nether data")
 		cmd := exec.Command("mv", "--", dirs.nether, netherDir)
 		cmd.Stdout = os.Stderr
 		cmd.Stderr = os.Stderr
@@ -194,7 +194,7 @@ func moveWorldDataToGameDir(ctx *config.PMCMContext, tmpDir string) error {
 			return err
 		}
 
-		log.Println("mv", "--", dirs.theEnd, endDir)
+		log.WithField("from", dirs.theEnd).WithField("to", endDir).Info("Copying the end data")
 		cmd = exec.Command("mv", "--", dirs.theEnd, endDir)
 		cmd.Stdout = os.Stderr
 		cmd.Stderr = os.Stderr
