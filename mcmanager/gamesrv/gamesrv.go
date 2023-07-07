@@ -29,10 +29,41 @@ type ServerInstance struct {
 	IsGameFinished      bool
 	RestartRequested    bool
 	Crashed             bool
+	lastActive          time.Time
+}
+
+func (src *ServerInstance) isServerActive() bool {
+	// TODO: determine if server is active (using "list" command)
+	return true
 }
 
 func (srv *ServerInstance) Wait() {
+	done := make(chan interface{})
+
+	go func() {
+		ticker := time.NewTicker(time.Minute)
+
+		for {
+			select {
+			case <-ticker.C:
+				if srv.isServerActive() {
+					srv.lastActive = time.Now()
+				} else {
+					if srv.lastActive.Add(30 * time.Minute).Before(time.Now()) {
+						srv.Stop()
+					}
+				}
+			case <-done:
+				goto end
+			}
+		}
+
+	end:
+		ticker.Stop()
+	}()
+
 	srv.FinishWG.Wait()
+	close(done)
 }
 
 func connectToRcon(srv *ServerInstance) (*rcon.Conn, error) {
