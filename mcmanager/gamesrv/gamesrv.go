@@ -32,14 +32,39 @@ type ServerInstance struct {
 	lastActive          time.Time
 }
 
-func (src *ServerInstance) isServerActive() bool {
-	// TODO: determine if server is active (using "list" command)
+var (
+	activePlayerListRegexp = regexp.MustCompile("^There are ([0-9]+) of a max of [0-9]+ players online")
+)
+
+func (srv *ServerInstance) isServerActive() bool {
+	srv.rconMu.Lock()
+	defer srv.rconMu.Unlock()
+	conn, err := connectToRcon(srv)
+	if err != nil {
+		log.WithError(err).Error("Failed to connect rcon")
+		return false
+	}
+	defer conn.Close()
+
+	resp, err := conn.Execute("list")
+	if err != nil {
+		log.WithError(err).Error("Failed to send list command to server")
+	}
+
+	if match := activePlayerListRegexp.FindStringSubmatch(resp); match != nil {
+		if match[1] == "0" {
+			log.Println("Server is detected to be inactive")
+			return false
+		}
+	}
+
 	return true
 }
 
 func (srv *ServerInstance) Wait() {
 	done := make(chan interface{})
 
+	srv.lastActive = time.Now()
 	go func() {
 		ticker := time.NewTicker(time.Minute)
 
