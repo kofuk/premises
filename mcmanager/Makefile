@@ -8,3 +8,23 @@ all:
 .PHONY: clean
 clean:
 	$(RM) premises-mcmanager
+
+.PHONY: setup-gamedatafs
+setup-gamedatafs:
+	mkdir -p /tmp/premises/gamedata
+	fallocate -l 1GiB /tmp/premises/gamedata.img
+	mkfs.btrfs -f /tmp/premises/gamedata.img
+	sudo mount /tmp/premises/gamedata.img /tmp/premises/gamedata
+	sudo chown -R '1000:1000' /tmp/premises/gamedata
+
+.PHONY: run-debug-privilaged-proc
+run-debug-privilaged-proc:
+	tmpname="/tmp/$$(uuidgen)";                                                 \
+	$(GO) build -o "$${tmpname}";                                               \
+	(                                                                           \
+		sleep 30;                                                               \
+		$(RM) "$${tmpname}"                                                     \
+	) &                                                                         \
+	pid=$$!;                                                                    \
+	sudo -E PREMISES_RUNNER_DEBUG=true "$${tmpname}" --privileged-helper;       \
+	wait "$${pid}"
