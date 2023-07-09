@@ -28,6 +28,10 @@ mkdir -p "${PREMISES_BASEDIR}/servers.d/../gamedata/"
 dd if='/dev/zero' of="${PREMISES_BASEDIR}/gamedata.img" bs=1G count=8
 mkfs.btrfs "${PREMISES_BASEDIR}/gamedata.img"
 
+mount "${PREMISES_BASEDIR}/gamedata.img" "/mnt"
+chown -R premises:premises "/mnt"
+umount /mnt
+
 # Install following service
 # * premises-mcmanager.service
 # * premises-privileged.service

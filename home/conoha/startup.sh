@@ -87,7 +87,6 @@ EOF
     )
 
     mount "${PREMISES_BASEDIR}/gamedata.img" "${PREMISES_BASEDIR}/gamedata"
-    chown -R premises:premises "${PREMISES_BASEDIR}/gamedata"
 
     cat <<'EOF' >"${PREMISES_BASEDIR}/server.crt"
 #__SERVER_CRT__
