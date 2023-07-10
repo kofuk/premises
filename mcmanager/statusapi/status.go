@@ -308,7 +308,7 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 
 		worldInfo, err := GetWorldInfo(ctx, srv)
 		if err != nil {
-			log.WithError(err).WithField("endpoint", "/worldinfo").Error("Failed to retrive world info")
+			log.WithError(err).WithField("endpoint", "/worldinfo").Error("Failed to retrieve world info")
 			return
 		}
 		data, err := json.Marshal(worldInfo)

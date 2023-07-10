@@ -12,7 +12,7 @@ const (
 )
 
 var (
-	ErrHttpFailure = errors.New("Failed to retrive versions")
+	ErrHttpFailure = errors.New("Failed to retrieve versions")
 	ErrNotFound    = errors.New("Specified version not found")
 )
 

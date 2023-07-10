@@ -258,7 +258,7 @@ func GetVMDetail(cfg *config.Config, token, name string) (*VMDetail, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("Failed to retrive VM details: %d", resp.StatusCode))
+		return nil, errors.New(fmt.Sprintf("Failed to retrieve VM details: %d", resp.StatusCode))
 	}
 
 	respData, err := io.ReadAll(resp.Body)
@@ -320,7 +320,7 @@ func GetImageID(cfg *config.Config, token, tag string) (string, string, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return "", "", errors.New(fmt.Sprintf("Failed to retrive image list: %d", resp.StatusCode))
+		return "", "", errors.New(fmt.Sprintf("Failed to retrieve image list: %d", resp.StatusCode))
 	}
 
 	respData, err := io.ReadAll(resp.Body)
@@ -365,7 +365,7 @@ func GetFlavors(cfg *config.Config, token string) (*FlavorsResp, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("Failed to retrive flavor list: %d", resp.StatusCode))
+		return nil, errors.New(fmt.Sprintf("Failed to retrieve flavor list: %d", resp.StatusCode))
 	}
 
 	respData, err := io.ReadAll(resp.Body)

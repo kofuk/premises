@@ -800,24 +800,24 @@ func main() {
 			c.Writer.Header().Set("X-Accel-Buffering", "no")
 
 			writeEvent := func(status *monitor.StatusData) error {
-					if _, err := c.Writer.WriteString("event: statuschanged\n"); err != nil {
-						return err
-					}
-					if _, err := c.Writer.WriteString("data: "); err != nil {
-						return err
-					}
+				if _, err := c.Writer.WriteString("event: statuschanged\n"); err != nil {
+					return err
+				}
+				if _, err := c.Writer.WriteString("data: "); err != nil {
+					return err
+				}
 
-					if data, err := json.Marshal(status); err != nil {
-						return err
-					} else {
-						if _, err := c.Writer.Write(data); err != nil {
-							return err
-						}
-					}
-					if _, err := c.Writer.WriteString("\n\n"); err != nil {
+				if data, err := json.Marshal(status); err != nil {
+					return err
+				} else {
+					if _, err := c.Writer.Write(data); err != nil {
 						return err
 					}
-					c.Writer.Flush()
+				}
+				if _, err := c.Writer.WriteString("\n\n"); err != nil {
+					return err
+				}
+				c.Writer.Flush()
 				return nil
 			}
 
@@ -836,7 +836,7 @@ func main() {
 						goto end
 					}
 
-				case <- ticker.C:
+				case <-ticker.C:
 					if _, err := c.Writer.WriteString(": uhaha\n"); err != nil {
 						log.WithError(err).Error("Failed to marshal status data")
 						goto end
@@ -916,14 +916,14 @@ func main() {
 				c.Writer.Write([]byte(val))
 				return
 			} else if err != redis.Nil {
-				log.WithError(err).Error("Error retriving mcversions cache")
+				log.WithError(err).Error("Error retrieving mcversions cache")
 			}
 
 			log.WithField("cache_key", CacheKeyBackups).Info("cache miss")
 
 			backups, err := backup.GetBackupList(&cfg.Mega, cfg.Mega.FolderName)
 			if err != nil {
-				log.WithError(err).Error("Failed to retrive backup list")
+				log.WithError(err).Error("Failed to retrieve backup list")
 				c.Status(http.StatusInternalServerError)
 				return
 			}
@@ -955,14 +955,14 @@ func main() {
 				c.Writer.Write([]byte(val))
 				return
 			} else if err != redis.Nil {
-				log.WithError(err).Error("Error retriving mcversions cache")
+				log.WithError(err).Error("Error retrieving mcversions cache")
 			}
 
 			log.WithField("cache_key", CacheKeyMCVersions).Info("cache miss")
 
 			versions, err := mcversions.GetVersions()
 			if err != nil {
-				log.WithError(err).Error("Failed to retrive Minecraft versions")
+				log.WithError(err).Error("Failed to retrieve Minecraft versions")
 				c.Status(http.StatusInternalServerError)
 				return
 			}
@@ -1001,7 +1001,7 @@ func main() {
 				c.Writer.Write([]byte(val))
 				return
 			} else if err != redis.Nil {
-				log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Error retriving system info cache")
+				log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Error retrieving system info cache")
 			}
 
 			log.WithField("cache_key", cacheKey).Info("cache miss")

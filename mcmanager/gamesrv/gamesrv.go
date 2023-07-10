@@ -203,7 +203,7 @@ func (srv *ServerInstance) GetSeed() (string, error) {
 	}
 
 	if len(seed) < 8 || seed[:7] != "Seed: [" || seed[len(seed)-1] != ']' {
-		return "", errors.New("Failed to retrive seed")
+		return "", errors.New("Failed to retrieve seed")
 	}
 
 	return seed[7 : len(seed)-1], nil
