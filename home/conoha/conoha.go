@@ -138,22 +138,32 @@ func DeleteVM(cfg *config.Config, token, vmID string) error {
 	}
 	url.Path = path.Join(url.Path, "servers", vmID)
 
-	req, err := http.NewRequest("DELETE", url.String(), nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Add(HeaderKeyAuthToken, token)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+	var finalErr error = nil
 
-	if resp.StatusCode != 204 {
-		return errors.New(fmt.Sprintf("Failed to delete the VM: %d", resp.StatusCode))
+	for i := 0; i < 10; i++ {
+		req, err := http.NewRequest("DELETE", url.String(), nil)
+		if err != nil {
+			return err
+		}
+		req.Header.Add(HeaderKeyAuthToken, token)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		log.WithField("status_code", resp.StatusCode).Info("Requested deleting VM")
+
+		if resp.StatusCode == 204 {
+			finalErr = nil
+			break
+		} else {
+			finalErr = errors.New(fmt.Sprintf("Failed to delete the VM: %d", resp.StatusCode))
+			time.Sleep(time.Duration(rand.Intn(10)))
+		}
 	}
 
-	return nil
+	return finalErr
 }
 
 type CreateVMReq struct {
