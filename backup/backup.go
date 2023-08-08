@@ -140,5 +140,9 @@ func GetBackupList(cred *MegaCredentialInfo, folderName string) ([]WorldBackup, 
 		})
 	}
 
+	sort.Slice(result, func(i, j int) bool {
+		return strings.Compare(result[i].WorldName, result[j].WorldName) < 0
+	})
+
 	return result, nil
 }
