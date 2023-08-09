@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"encoding/binary"
@@ -8,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -227,11 +229,36 @@ func (s *serverState) dispatchMonitorEvent(rdb *redis.Client) {
 	}
 }
 
-func notifyNonRecoverableFailure(locale string) {
+func notifyNonRecoverableFailure(cfg *config.Config, detail string) {
 	server.monitorChan <- &monitor.StatusData{
-		Status:   L(locale, "monitor.unrecoverable"),
+		Status:   L(cfg.ControlPanel.Locale, "monitor.unrecoverable"),
 		HasError: true,
 		Shutdown: true,
+	}
+
+	if cfg.ControlPanel.AlertWebhookUrl != "" {
+		payload := struct {
+			Text     string `json:"text"`
+			Markdown bool   `json:"mrkdwn"`
+		}{
+			Text:     "Unrecoverable error occurred: " + detail,
+			Markdown: false,
+		}
+		body, _ := json.Marshal(payload)
+
+		req, err := http.NewRequest(http.MethodPost, cfg.ControlPanel.AlertWebhookUrl, bytes.NewBuffer(body))
+		if err != nil {
+			log.WithError(err).Error("Failed to create new request")
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			log.WithError(err).Error("Failed to send request")
+			return
+		}
+		d, _ := io.ReadAll(resp.Body)
+		log.Println(string(d))
 	}
 }
 
@@ -247,15 +274,15 @@ func monitorServer(cfg *config.Config, gameServer GameServer) {
 	}
 
 	if !gameServer.StopVM() {
-		notifyNonRecoverableFailure(locale)
+		notifyNonRecoverableFailure(cfg, "Failed to stop VM")
 		return
 	}
 	if !gameServer.SaveImage() {
-		notifyNonRecoverableFailure(locale)
+		notifyNonRecoverableFailure(cfg, "Failed to save image")
 		return
 	}
 	if !gameServer.DeleteVM() {
-		notifyNonRecoverableFailure(locale)
+		notifyNonRecoverableFailure(cfg, "Failed to delete VM")
 		return
 	}
 
@@ -399,8 +426,6 @@ var upgrader = websocket.Upgrader{
 }
 
 func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
-	locale := cfg.ControlPanel.Locale
-
 	if gameServer.VMExists() {
 		if gameServer.VMRunning() {
 			monitorKey, err := os.ReadFile(cfg.LocatePersist("monitor_key"))
@@ -421,11 +446,11 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 			go monitorServer(cfg, gameServer)
 		} else {
 			if !gameServer.ImageExists() && !gameServer.SaveImage() {
-				notifyNonRecoverableFailure(locale)
+				notifyNonRecoverableFailure(cfg, "Invalid state")
 				return
 			}
 			if !gameServer.DeleteVM() {
-				notifyNonRecoverableFailure(locale)
+				notifyNonRecoverableFailure(cfg, "Failed to delete VM")
 				return
 			}
 		}

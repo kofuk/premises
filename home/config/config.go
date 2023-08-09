@@ -40,7 +40,8 @@ type Config struct {
 			Address  string `env:"address"`
 			Password string `env:"password"`
 		} `env:"redis"`
-		Locale string `env:"locale"`
+		Locale          string `env:"locale"`
+		AlertWebhookUrl string `env:"alertWebhook"`
 	} `env:"controlPanel"`
 	MonitorKey string `env:"_ignore"`
 	ServerAddr string `env:"_ignore"`
