@@ -33,7 +33,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/text/language"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"github.com/kofuk/premises/backup"
@@ -493,6 +493,13 @@ func main() {
 
 	_, err = os.Stat(cfg.LocatePersist("data.db"))
 	isServerSetUp = !os.IsNotExist(err)
+	{
+		file, err := os.Create(cfg.LocatePersist("data.db"))
+		if err != nil {
+			log.WithError(err).Error("Failed to create data.db")
+		}
+		file.Close()
+	}
 
 	if cfg.Debug.Web {
 		gin.SetMode(gin.DebugMode)
@@ -510,7 +517,8 @@ func main() {
 		RPOrigin:      cfg.ControlPanel.Origin,
 	})
 
-	db, err := gorm.Open(sqlite.Open(cfg.LocatePersist("data.db")), &gorm.Config{})
+	sqlDB := postgres.Open(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable TimeZone=Etc/UTC", cfg.ControlPanel.Postgres.Address, cfg.ControlPanel.Postgres.Port, cfg.ControlPanel.Postgres.User, cfg.ControlPanel.Postgres.Password, cfg.ControlPanel.Postgres.DBName))
+	db, err := gorm.Open(sqlDB, &gorm.Config{})
 	if err != nil {
 		log.WithError(err).Fatal("Error opening database")
 	}
