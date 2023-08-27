@@ -55,22 +55,24 @@ var isServerSetUp bool
 
 type User struct {
 	gorm.Model
-	Name        string `gorm:"uniqueIndex"`
-	Password    string
-	AddedBy     string
-	Initialized bool
+	Name          string `gorm:"type:varchar(32);not null;uniqueIndex"`
+	Password      string `gorm:"type:varchar(64);not null"`
+	AddedByUserID *uint
+	AddedBy       *User        `gorm:"foreignKey:AddedByUserID"`
+	Credentials   []Credential `gorm:"foreignKey:OwnerID"`
+	Initialized   bool         `gorm:"not null"`
 }
 
 type Credential struct {
 	gorm.Model
-	Owner                  uint
-	UUID                   string
-	KeyName                string
-	CredentialID           []byte
-	PublicKey              []byte
-	AttestationType        string
-	AuthenticatorAAGUID    []byte
-	AuthenticatorSignCount uint32
+	OwnerID                uint   `gorm:"not null"`
+	UUID                   string `gorm:"type:varchar(36);not null;unique"`
+	KeyName                string `gorm:"type:varchar(128);not null"`
+	CredentialID           []byte `gorm:"type:bytea;not null"`
+	PublicKey              []byte `gorm:"type:bytea;not null"`
+	AttestationType        string `gorm:"type:varchar(16);not null"`
+	AuthenticatorAAGUID    []byte `gorm:"type:bytea;not null"`
+	AuthenticatorSignCount uint32 `gorm:"not null"`
 }
 
 type webAuthnUser struct {
@@ -491,16 +493,6 @@ func main() {
 		}
 	}
 
-	_, err = os.Stat(cfg.LocatePersist("data.db"))
-	isServerSetUp = !os.IsNotExist(err)
-	{
-		file, err := os.Create(cfg.LocatePersist("data.db"))
-		if err != nil {
-			log.WithError(err).Error("Failed to create data.db")
-		}
-		file.Close()
-	}
-
 	if cfg.Debug.Web {
 		gin.SetMode(gin.DebugMode)
 	} else {
@@ -524,6 +516,10 @@ func main() {
 	}
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Credential{})
+
+	if err := db.Model(&User{}).Select("COUNT(id) > 0").Find(&isServerSetUp).Error; err != nil {
+		log.WithError(err).Fatal("Failed to read from db")
+	}
 
 	bindAddr := ":8000"
 	if len(os.Args) > 1 {
@@ -578,7 +574,7 @@ func main() {
 		}
 
 		session := sessions.Default(c)
-		if session.Get("username") != nil {
+		if session.Get("user_id") != nil {
 			c.HTML(200, "control.html", nil)
 		} else {
 			c.HTML(200, "login.html", nil)
@@ -621,10 +617,10 @@ func main() {
 			}
 
 			user := &User{
-				Name:        username,
-				Password:    string(hashedPassword),
-				AddedBy:     "",
-				Initialized: true,
+				Name:          username,
+				Password:      string(hashedPassword),
+				AddedByUserID: nil,
+				Initialized:   true,
 			}
 
 			if err := db.Create(user).Error; err != nil {
@@ -636,7 +632,7 @@ func main() {
 			isServerSetUp = true
 
 			session := sessions.Default(c)
-			session.Set("username", username)
+			session.Set("user_id", user.ID)
 			session.Save()
 
 			c.JSON(http.StatusOK, gin.H{"success": true})
@@ -659,7 +655,7 @@ func main() {
 
 		session := sessions.Default(c)
 		if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) == nil {
-			session.Set("username", username)
+			session.Set("user_id", user.ID)
 			session.Save()
 			c.JSON(http.StatusOK, gin.H{"success": true, "needsChangePassword": !user.Initialized})
 		} else {
@@ -676,7 +672,7 @@ func main() {
 		username := c.PostForm("username")
 
 		user := User{}
-		if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+		if err := db.Where("name = ?", username).Preload("Credentials").First(&user).Error; err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
 			return
 		}
@@ -684,17 +680,11 @@ func main() {
 		waUser := webAuthnUser{
 			user: user,
 		}
-		var credentials []Credential
-		if err := db.Where("owner = ?", user.ID).Find(&credentials).Error; err != nil {
-			log.WithError(err).Error("Error fetching credentials")
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
-			return
-		}
-		if len(credentials) == 0 {
+		if len(user.Credentials) == 0 {
 			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
 			return
 		}
-		for _, c := range credentials {
+		for _, c := range user.Credentials {
 			waUser.registerCredential(c)
 		}
 
@@ -713,8 +703,8 @@ func main() {
 		}
 
 		session := sessions.Default(c)
-		session.Set("hwkey-auth-username", username)
-		session.Set("hwkey-authentication", string(marshaled))
+		session.Set("hwkey_auth_user_id", user.ID)
+		session.Set("hwkey_authentication", string(marshaled))
 		session.Save()
 
 		c.JSON(http.StatusOK, gin.H{"success": true, "options": options})
@@ -727,10 +717,10 @@ func main() {
 		}
 
 		session := sessions.Default(c)
-		username := session.Get("hwkey-auth-username")
-		marshaledData := session.Get("hwkey-authentication")
-		session.Delete("hwkey-authentication")
-		session.Delete("hwkey-auth-username")
+		userID := session.Get("hwkey_auth_user_id")
+		marshaledData := session.Get("hwkey_authentication")
+		session.Delete("hwkey_authentication")
+		session.Delete("hwkey_auth_user_id")
 		defer session.Save()
 
 		var sessionData webauthn.SessionData
@@ -741,7 +731,7 @@ func main() {
 		}
 
 		user := User{}
-		if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+		if err := db.Preload("Credentials").Find(&user, userID).Error; err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
 			return
 		}
@@ -749,13 +739,7 @@ func main() {
 		waUser := webAuthnUser{
 			user: user,
 		}
-		var credentials []Credential
-		if err := db.Where("owner = ?", user.ID).Find(&credentials).Error; err != nil {
-			log.WithError(err).Error("Error fetching credentials")
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
-			return
-		}
-		for _, c := range credentials {
+		for _, c := range user.Credentials {
 			waUser.registerCredential(c)
 		}
 
@@ -772,26 +756,32 @@ func main() {
 			return
 		}
 
-		var credData Credential
-		if err := db.Where("owner = ? AND credential_id = ?", user.ID, cred.ID).First(&credData).Error; err != nil {
+		var usedCred *Credential
+		for _, c := range user.Credentials {
+			if bytes.Equal(c.CredentialID, cred.ID) {
+				usedCred = &c
+				break
+			}
+		}
+		if usedCred == nil {
 			log.WithError(err).Error("credential to update did not found")
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 			return
 		}
 
-		credData.AuthenticatorSignCount = cred.Authenticator.SignCount
-		if err := db.Save(credData).Error; err != nil {
+		usedCred.AuthenticatorSignCount = cred.Authenticator.SignCount
+		if err := db.Save(usedCred).Error; err != nil {
 			log.WithError(err).Warn("failed to save credential")
 		}
 
-		session.Set("username", username)
+		session.Set("user_id", userID)
 
 		c.JSON(http.StatusOK, gin.H{"success": true})
 	})
 
 	r.GET("/logout", func(c *gin.Context) {
 		session := sessions.Default(c)
-		session.Delete("username")
+		session.Delete("user_id")
 		session.Save()
 		c.Redirect(http.StatusFound, "/")
 	})
@@ -807,7 +797,7 @@ func main() {
 			if c.GetHeader("Origin") == cfg.ControlPanel.Origin {
 				// 2. Verify that client is logged in.
 				session := sessions.Default(c)
-				if session.Get("username") == nil {
+				if session.Get("user_id") == nil {
 					c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Not logged in"})
 					c.Abort()
 				}
@@ -1085,7 +1075,7 @@ func main() {
 
 		api.POST("/users/change-password", func(c *gin.Context) {
 			session := sessions.Default(c)
-			username := session.Get("username")
+			userID := session.Get("user_id")
 
 			if err := c.Request.ParseForm(); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "Invalid form data"})
@@ -1101,7 +1091,7 @@ func main() {
 			}
 
 			user := User{}
-			if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+			if err := db.Find(&user, userID).Error; err != nil {
 				log.WithError(err).Error("User not found")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1130,7 +1120,7 @@ func main() {
 
 		api.POST("/users/add", func(c *gin.Context) {
 			session := sessions.Default(c)
-			username := session.Get("username")
+			userID := session.Get("user_id").(uint)
 
 			if err := c.Request.ParseForm(); err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "Invalid form data"})
@@ -1157,10 +1147,10 @@ func main() {
 			}
 
 			user := &User{
-				Name:        newUsername,
-				Password:    string(hashedPassword),
-				AddedBy:     username.(string),
-				Initialized: false,
+				Name:          newUsername,
+				Password:      string(hashedPassword),
+				AddedByUserID: &userID,
+				Initialized:   false,
 			}
 
 			if err := db.Create(user).Error; err != nil {
@@ -1174,17 +1164,10 @@ func main() {
 
 		api.GET("/hardwarekey", func(c *gin.Context) {
 			session := sessions.Default(c)
-			username := session.Get("username")
-
-			user := User{}
-			if err := db.Where("name = ?", username).First(&user).Error; err != nil {
-				log.WithError(err).Error("User expected to be found, but didn't")
-				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
-				return
-			}
+			userID := session.Get("user_id")
 
 			var credentials []Credential
-			if err := db.Where("owner = ?", user.ID).Find(&credentials).Error; err != nil {
+			if err := db.Where("owner_id = ?", userID).Find(&credentials).Error; err != nil {
 				log.WithError(err).Error("Error fetching credentials")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1206,18 +1189,11 @@ func main() {
 
 		api.DELETE("/hardwarekey/:uuid", func(c *gin.Context) {
 			session := sessions.Default(c)
-			username := session.Get("username")
+			userID := session.Get("user_id")
 			keyUuid := c.Param("uuid")
 
-			user := User{}
-			if err := db.Where("name = ?", username).First(&user).Error; err != nil {
-				log.WithError(err).Error("User expected to be found, but didn't")
-				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
-				return
-			}
-
 			var credential Credential
-			if err := db.Where("owner = ? AND uuid = ?", user.ID, keyUuid).First(&credential).Error; err != nil {
+			if err := db.Where("owner_id = ? AND uuid = ?", userID, keyUuid).First(&credential).Error; err != nil {
 				log.WithError(err).Error("Error fetching credentials")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1234,10 +1210,10 @@ func main() {
 
 		api.POST("/hardwarekey/begin", func(c *gin.Context) {
 			session := sessions.Default(c)
-			username := session.Get("username")
+			userID := session.Get("user_id")
 
 			user := User{}
-			if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+			if err := db.Find(&user, userID).Error; err != nil {
 				log.WithError(err).Error("User expected to be found, but didn't")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1248,7 +1224,7 @@ func main() {
 			}
 
 			var credentials []Credential
-			if err := db.Where("owner = ?", user.ID).Find(&credentials).Error; err != nil {
+			if err := db.Where("owner_id = ?", userID).Find(&credentials).Error; err != nil {
 				log.WithError(err).Error("Error fetching credentials")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1275,7 +1251,7 @@ func main() {
 				return
 			}
 
-			session.Set("hwkey-registration", string(marshaled))
+			session.Set("hwkey_registration", string(marshaled))
 			session.Save()
 
 			c.JSON(http.StatusOK, gin.H{"success": true, "options": options})
@@ -1283,9 +1259,9 @@ func main() {
 
 		api.POST("/hardwarekey/finish", func(c *gin.Context) {
 			session := sessions.Default(c)
-			username := session.Get("username")
-			sessionDataMarshaled := session.Get("hwkey-registration")
-			session.Delete("hwkey-registration")
+			userID := session.Get("user_id")
+			sessionDataMarshaled := session.Get("hwkey_registration")
+			session.Delete("hwkey_registration")
 			session.Save()
 
 			keyName := c.Query("name")
@@ -1301,7 +1277,7 @@ func main() {
 			}
 
 			user := User{}
-			if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+			if err := db.Find(&user, userID).Error; err != nil {
 				log.WithError(err).Error("User expected to be found, but didn't")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1312,7 +1288,7 @@ func main() {
 			}
 
 			var credentials []Credential
-			if err := db.Where("owner = ?", user.ID).Find(&credentials).Error; err != nil {
+			if err := db.Where("owner_id = ?", userID).Find(&credentials).Error; err != nil {
 				log.WithError(err).Error("Error fetching credentials")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1330,7 +1306,7 @@ func main() {
 
 			keyUuid := uuid.New().String()
 			credential := Credential{
-				Owner:                  user.ID,
+				OwnerID:                user.ID,
 				UUID:                   keyUuid,
 				KeyName:                keyName,
 				CredentialID:           credData.ID,
@@ -1341,7 +1317,7 @@ func main() {
 			}
 
 			var exists bool
-			if err := db.Model(credential).Select("count(*) > 0").Where("owner = ? AND credential_id = ?", user.ID, credential.CredentialID).Find(&exists).Error; err != nil {
+			if err := db.Model(credential).Select("count(*) > 0").Where("owner_id = ? AND credential_id = ?", userID, credential.CredentialID).Find(&exists).Error; err != nil {
 				log.WithError(err).Error("Error fetching public key count")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
