@@ -135,9 +135,12 @@ export default class PasswordlessLogin extends React.Component<Props, State> {
                 {this.state.hardwareKeys.length === 0 ? null : (
                     <>
                         <table className="table">
-                        <thead>
-                        <tr><td></td><td>{t('passwordless_login_key_name')}</td></tr>
-                        </thead>
+                            <thead>
+                                <tr>
+                                    <td></td>
+                                    <td>{t('passwordless_login_key_name')}</td>
+                                </tr>
+                            </thead>
                             <tbody>
                                 {this.state.hardwareKeys.map((e) => (
                                     <tr key={e.id}>

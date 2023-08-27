@@ -8,7 +8,7 @@
     "dev": "webpack --mode=development",
     "watch": "webpack --mode=development --watch",
     "start": "webpack --mode=development && go run .",
-    "fmt": "prettier --write  'cp/**/*.{ts,tsx}'"
+    "fmt": "prettier --write  'frontend/**/*.{ts,tsx}'"
   },
   "repository": {
     "type": "git",
@@ -21,6 +21,13 @@
   },
   "homepage": "https://github.com/kofuk/premises#readme",
   "devDependencies": {
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@fontsource/roboto": "^5.0.8",
+    "@mui/icons-material": "^5.14.6",
+    "@mui/lab": "^5.0.0-alpha.141",
+    "@mui/material": "^5.14.6",
+    "@mui/styled-engine-sc": "^5.14.6",
     "@react-icons/all-files": "^4.1.0",
     "@types/bootstrap": "^5.2.4",
     "@types/react": "^17.0.40",
