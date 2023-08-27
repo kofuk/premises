@@ -82,7 +82,7 @@ export default class ChooseBackupConfigItem extends ConfigItem<Prop, {}> {
                 >
                     {this.state.backups.map((e) => (
                         <option value={e.worldName} key={e.worldName}>
-                            {e.worldName}
+                            {e.worldName.replace(/^[0-9]+-/, '')}
                         </option>
                     ))}
                 </select>

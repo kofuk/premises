@@ -57,7 +57,7 @@ export default class WorldInfo extends React.Component<Prop, State> {
             mainContents = (
                 <div className="list-group">
                     <CopyableListItem title={t('world_info_game_version')} content={this.state.worldInfo.serverVersion} />
-                    <CopyableListItem title={t('world_info_world_name')} content={this.state.worldInfo.world.name} />
+                    <CopyableListItem title={t('world_info_world_name')} content={this.state.worldInfo.world.name.replace(/^[0-9]+-/, '')} />
                     <CopyableListItem title={t('world_info_seed')} content={this.state.worldInfo.world.seed} />
                 </div>
             );
