@@ -1,23 +1,23 @@
 package conoha
 
 import (
+	"context"
 	_ "embed"
 	"encoding/base64"
-	"os"
 	"strings"
 
-	"github.com/kofuk/premises/home/config"
+	"github.com/go-redis/redis/v8"
 )
 
 //go:embed startup.sh
 var startupScriptTemplate string
 
-func GenerateStartupScript(gameConfig []byte, cfg *config.Config) (string, error) {
-	serverCrt, err := os.ReadFile(cfg.LocatePersist("server.crt"))
+func GenerateStartupScript(gameConfig []byte, rdb *redis.Client) (string, error) {
+	serverCrt, err := rdb.Get(context.Background(), "server-crt").Result()
 	if err != nil {
 		return "", err
 	}
-	serverKey, err := os.ReadFile(cfg.LocatePersist("server.key"))
+	serverKey, err := rdb.Get(context.Background(), "server-key").Result()
 	if err != nil {
 		return "", err
 	}
@@ -31,10 +31,10 @@ func GenerateStartupScript(gameConfig []byte, cfg *config.Config) (string, error
 			encoder.Write(gameConfig)
 			break
 		case "#__SERVER_CRT__":
-			encoder.Write(serverCrt)
+			encoder.Write([]byte(serverCrt))
 			break
 		case "#__SERVER_KEY__":
-			encoder.Write(serverKey)
+			encoder.Write([]byte(serverKey))
 			break
 		default:
 			encoder.Write([]byte(line))

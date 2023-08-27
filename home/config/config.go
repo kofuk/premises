@@ -38,7 +38,7 @@ type Config struct {
 		Origin   string `env:"origin"`
 		Postgres struct {
 			Address  string `env:"address"`
-			Port     int   `env:"port"`
+			Port     int    `env:"port"`
 			User     string `env:"user"`
 			Password string `env:"password"`
 			DBName   string `env:"dbName"`
@@ -64,10 +64,6 @@ func (cfg *Config) Locate(path string) string {
 		return filepath.Join("/tmp/premises", path)
 	}
 	return filepath.Join("/opt/premises", path)
-}
-
-func (cfg *Config) LocatePersist(path string) string {
-	return cfg.Locate(filepath.Join("data", path))
 }
 
 func LoadConfig() (*Config, error) {

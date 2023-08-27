@@ -264,14 +264,14 @@ func notifyNonRecoverableFailure(cfg *config.Config, detail string) {
 	}
 }
 
-func monitorServer(cfg *config.Config, gameServer GameServer) {
+func monitorServer(cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
 	locale := cfg.ControlPanel.Locale
 
 	server.monitorChan <- &monitor.StatusData{
 		Status: L(locale, "monitor.connecting"),
 	}
 
-	if err := monitor.MonitorServer(cfg, cfg.ServerAddr, server.monitorChan); err != nil {
+	if err := monitor.MonitorServer(cfg, cfg.ServerAddr, server.monitorChan, rdb); err != nil {
 		log.WithError(err).Error("Failed to monitor server")
 	}
 
@@ -288,7 +288,7 @@ func monitorServer(cfg *config.Config, gameServer GameServer) {
 		return
 	}
 
-	os.Remove(cfg.LocatePersist("monitor_key"))
+	rdb.Del(context.Background(), "monitor-key").Result()
 
 	gameServer.RevertDNS()
 
@@ -298,10 +298,10 @@ func monitorServer(cfg *config.Config, gameServer GameServer) {
 	}
 }
 
-func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer, memSizeGB int) {
+func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer, memSizeGB int, rdb *redis.Client) {
 	locale := cfg.ControlPanel.Locale
 
-	if err := monitor.GenerateTLSKey(cfg); err != nil {
+	if err := monitor.GenerateTLSKey(cfg, rdb); err != nil {
 		log.WithError(err).Error("Failed to generate TLS key")
 		server.monitorChan <- &monitor.StatusData{
 			Status:   L(locale, "monitor.tls_keygen.error"),
@@ -312,7 +312,7 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameSer
 	}
 
 	cfg.MonitorKey = gameConfig.AuthKey
-	os.WriteFile(cfg.LocatePersist("monitor_key"), []byte(gameConfig.AuthKey), 0600)
+	rdb.Set(context.Background(), "monitor-key", gameConfig.AuthKey, 0).Result()
 
 	server.monitorChan <- &monitor.StatusData{
 		Status:   L(locale, "monitor.waiting"),
@@ -320,7 +320,7 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameSer
 		Shutdown: false,
 	}
 
-	if !gameServer.SetUp(gameConfig, memSizeGB) {
+	if !gameServer.SetUp(gameConfig, rdb, memSizeGB) {
 		server.monitorChan <- &monitor.StatusData{
 			Status:   L(locale, "vm.start.error"),
 			HasError: true,
@@ -348,17 +348,17 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameSer
 		return
 	}
 
-	go monitorServer(cfg, gameServer)
+	go monitorServer(cfg, gameServer, rdb)
 }
 
-func StopServer(cfg *config.Config, gameServer GameServer) {
-	if err := monitor.StopServer(cfg, cfg.ServerAddr); err != nil {
+func StopServer(cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
+	if err := monitor.StopServer(cfg, cfg.ServerAddr, rdb); err != nil {
 		log.WithError(err).Error("Failed to request stopping server")
 	}
 }
 
-func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer) {
-	if err := monitor.ReconfigureServer(gameConfig, cfg, cfg.ServerAddr); err != nil {
+func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
+	if err := monitor.ReconfigureServer(gameConfig, cfg, cfg.ServerAddr, rdb); err != nil {
 		log.WithError(err).Error("Failed to reconfigure server")
 	}
 }
@@ -427,10 +427,10 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin: func(*http.Request) bool { return true },
 }
 
-func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
+func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
 	if gameServer.VMExists() {
 		if gameServer.VMRunning() {
-			monitorKey, err := os.ReadFile(cfg.LocatePersist("monitor_key"))
+			monitorKey, err := rdb.Get(context.Background(), "monitor-key").Result()
 			if err != nil {
 				log.WithError(err).Info("Failed to read previous monitor key")
 				return
@@ -445,7 +445,7 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer) {
 			gameServer.UpdateDNS()
 
 			log.Info("Start monitoring server")
-			go monitorServer(cfg, gameServer)
+			go monitorServer(cfg, gameServer, rdb)
 		} else {
 			if !gameServer.ImageExists() && !gameServer.SaveImage() {
 				notifyNonRecoverableFailure(cfg, "Invalid state")
@@ -488,7 +488,7 @@ func main() {
 	}
 
 	if cfg.Debug.Env {
-		if err := os.MkdirAll("/tmp/premises/gamedata/../data", 0755); err != nil {
+		if err := os.MkdirAll("/tmp/premises/gamedata", 0755); err != nil {
 			log.WithError(err).Info("Cannot create directory for debug environment")
 		}
 	}
@@ -526,13 +526,6 @@ func main() {
 		bindAddr = os.Args[1]
 	}
 
-	var gameServer GameServer
-	if cfg.Debug.Runner {
-		gameServer = NewLocalDebugServer(cfg)
-	} else {
-		gameServer = NewConohaServer(cfg)
-	}
-
 	server.status.Status = L(cfg.ControlPanel.Locale, "monitor.stopped")
 	server.status.Shutdown = true
 
@@ -543,6 +536,13 @@ func main() {
 		Addr:     cfg.ControlPanel.Redis.Address,
 		Password: cfg.ControlPanel.Redis.Password,
 	})
+
+	var gameServer GameServer
+	if cfg.Debug.Runner {
+		gameServer = NewLocalDebugServer(cfg)
+	} else {
+		gameServer = NewConohaServer(cfg)
+	}
 
 	r := gin.Default()
 	r.SetTrustedProxies([]string{"127.0.0.1"})
@@ -890,7 +890,7 @@ func main() {
 			server.machineType = machineType
 			memSizeGB, _ := strconv.Atoi(strings.Replace(machineType, "g", "", 1))
 
-			go LaunchServer(gameConfig, cfg, gameServer, memSizeGB)
+			go LaunchServer(gameConfig, cfg, gameServer, memSizeGB, rdb)
 
 			c.JSON(200, gin.H{"success": true})
 		})
@@ -913,7 +913,7 @@ func main() {
 			// Use previously generated key.
 			gameConfig.AuthKey = cfg.MonitorKey
 
-			go ReconfigureServer(gameConfig, cfg, gameServer)
+			go ReconfigureServer(gameConfig, cfg, gameServer, rdb)
 
 			c.JSON(http.StatusOK, gin.H{"success": true})
 		})
@@ -922,7 +922,7 @@ func main() {
 			server.statusMu.Lock()
 			defer server.statusMu.Unlock()
 
-			go StopServer(cfg, gameServer)
+			go StopServer(cfg, gameServer, rdb)
 
 			c.JSON(200, gin.H{"success": true})
 		})
@@ -1029,7 +1029,7 @@ func main() {
 
 			log.WithField("cache_key", cacheKey).Info("cache miss")
 
-			data, err := monitor.GetSystemInfoData(cfg, cfg.ServerAddr)
+			data, err := monitor.GetSystemInfoData(cfg, cfg.ServerAddr, rdb)
 			if err != nil {
 				c.Status(http.StatusInternalServerError)
 				return
@@ -1049,7 +1049,7 @@ func main() {
 				return
 			}
 
-			data, err := monitor.GetWorldInfoData(cfg, cfg.ServerAddr)
+			data, err := monitor.GetWorldInfoData(cfg, cfg.ServerAddr, rdb)
 			if err != nil {
 				c.Status(http.StatusInternalServerError)
 				return
@@ -1065,7 +1065,7 @@ func main() {
 				return
 			}
 
-			if err := monitor.TakeSnapshot(cfg, cfg.ServerAddr); err != nil {
+			if err := monitor.TakeSnapshot(cfg, cfg.ServerAddr, rdb); err != nil {
 				c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
 				return
 			}
@@ -1343,7 +1343,7 @@ func main() {
 		server.dispatchMonitorEvent(rdb)
 	}()
 
-	guessAndHandleCurrentVMState(cfg, gameServer)
+	guessAndHandleCurrentVMState(cfg, gameServer, rdb)
 
 	log.Fatal(r.Run(bindAddr))
 }

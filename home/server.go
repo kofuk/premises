@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -8,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/kofuk/premises/home/cloudflare"
 	"github.com/kofuk/premises/home/config"
 	"github.com/kofuk/premises/home/conoha"
@@ -17,7 +19,7 @@ import (
 )
 
 type GameServer interface {
-	SetUp(gameConfig *gameconfig.GameConfig, memSizeGB int) bool
+	SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Client, memSizeGB int) bool
 	VMExists() bool
 	VMRunning() bool
 	StopVM() bool
@@ -40,7 +42,7 @@ func NewLocalDebugServer(cfg *config.Config) *LocalDebugServer {
 	}
 }
 
-func (s *LocalDebugServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB int) bool {
+func (s *LocalDebugServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Client, memSizeGB int) bool {
 	configData, err := json.Marshal(gameConfig)
 	if err != nil {
 		log.WithError(err).Error("Failed to marshal config")
@@ -50,14 +52,24 @@ func (s *LocalDebugServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB in
 		log.WithError(err).Error("Failed to write config")
 		return false
 	}
-	os.Remove(s.cfg.Locate("server.crt"))
-	os.Remove(s.cfg.Locate("server.key"))
-	if err := os.Link(s.cfg.LocatePersist("server.crt"), s.cfg.Locate("server.crt")); err != nil {
-		log.WithError(err).Error("Failed to link server.crt")
+
+	serverCrt, err := rdb.Get(context.Background(), "server-crt").Result()
+	if err != nil {
+		log.WithError(err).Error("Failed to read server-crt")
 		return false
 	}
-	if err := os.Link(s.cfg.LocatePersist("server.key"), s.cfg.Locate("server.key")); err != nil {
-		log.WithError(err).Error("Failed to link server.key")
+	if err := os.WriteFile(s.cfg.Locate("server.crt"), []byte(serverCrt), 0644); err != nil {
+		log.WithError(err).Error("Failed to write server.crt")
+		return false
+	}
+
+	serverKey, err := rdb.Get(context.Background(), "server-key").Result()
+	if err != nil {
+		log.WithError(err).Error("Failed to read server-key")
+		return false
+	}
+	if err := os.WriteFile(s.cfg.Locate("server.key"), []byte(serverKey), 0644); err != nil {
+		log.WithError(err).Error("Failed to write server.key")
 		return false
 	}
 
@@ -163,7 +175,7 @@ func (s *ConohaServer) getToken() (string, error) {
 	return s.token, nil
 }
 
-func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB int) bool {
+func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Client, memSizeGB int) bool {
 	locale := s.cfg.ControlPanel.Locale
 
 	server.monitorChan <- &monitor.StatusData{
@@ -203,7 +215,7 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, memSizeGB int) b
 		return false
 	}
 
-	startupScript, err := conoha.GenerateStartupScript(gameConfigData, s.cfg)
+	startupScript, err := conoha.GenerateStartupScript(gameConfigData, rdb)
 	if err != nil {
 		log.WithError(err).Error("Failed to generate startup script")
 		return false

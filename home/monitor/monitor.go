@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -9,9 +10,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
 	"github.com/kofuk/premises/home/config"
 	"github.com/kofuk/premises/home/gameconfig"
@@ -24,13 +25,13 @@ type StatusData struct {
 	HasError bool   `json:"hasError"`
 }
 
-func makeTLSConfig(config *config.Config) (*tls.Config, error) {
+func makeTLSConfig(config *config.Config, rdb *redis.Client) (*tls.Config, error) {
 	rootCAs := x509.NewCertPool()
-	certFile, err := os.ReadFile(config.LocatePersist("server.crt"))
+	certFile, err := rdb.Get(context.Background(), "server-crt").Result()
 	if err != nil {
 		return nil, err
 	}
-	rootCAs.AppendCertsFromPEM(certFile)
+	rootCAs.AppendCertsFromPEM([]byte(certFile))
 
 	return &tls.Config{
 		RootCAs: rootCAs,
@@ -40,8 +41,8 @@ func makeTLSConfig(config *config.Config) (*tls.Config, error) {
 
 }
 
-func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData) error {
-	tlsConfig, err := makeTLSConfig(cfg)
+func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData, rdb *redis.Client) error {
+	tlsConfig, err := makeTLSConfig(cfg, rdb)
 	if err != nil {
 		return err
 	}
@@ -114,8 +115,8 @@ err:
 	return nil
 }
 
-func StopServer(cfg *config.Config, addr string) error {
-	tlsConfig, err := makeTLSConfig(cfg)
+func StopServer(cfg *config.Config, addr string, rdb *redis.Client) error {
+	tlsConfig, err := makeTLSConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
@@ -140,8 +141,8 @@ func StopServer(cfg *config.Config, addr string) error {
 	return nil
 }
 
-func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, addr string) error {
-	tlsConfig, err := makeTLSConfig(cfg)
+func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, addr string, rdb *redis.Client) error {
+	tlsConfig, err := makeTLSConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
@@ -173,8 +174,8 @@ func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, ad
 	return nil
 }
 
-func GetSystemInfoData(cfg *config.Config, addr string) ([]byte, error) {
-	tlsConfig, err := makeTLSConfig(cfg)
+func GetSystemInfoData(cfg *config.Config, addr string, rdb *redis.Client) ([]byte, error) {
+	tlsConfig, err := makeTLSConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
@@ -200,8 +201,8 @@ func GetSystemInfoData(cfg *config.Config, addr string) ([]byte, error) {
 	return data, nil
 }
 
-func GetWorldInfoData(cfg *config.Config, addr string) ([]byte, error) {
-	tlsConfig, err := makeTLSConfig(cfg)
+func GetWorldInfoData(cfg *config.Config, addr string, rdb *redis.Client) ([]byte, error) {
+	tlsConfig, err := makeTLSConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
@@ -227,8 +228,8 @@ func GetWorldInfoData(cfg *config.Config, addr string) ([]byte, error) {
 	return data, nil
 }
 
-func TakeSnapshot(cfg *config.Config, addr string) error {
-	tlsConfig, err := makeTLSConfig(cfg)
+func TakeSnapshot(cfg *config.Config, addr string, rdb *redis.Client) error {
+	tlsConfig, err := makeTLSConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
