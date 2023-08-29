@@ -151,11 +151,19 @@ const PasswordLogin: React.FC<PasswordLoginProps> = (props: PasswordLoginProps) 
         })
             .then((resp) => resp.json())
             .then((resp) => {
+                setLoggingIn(false);
                 if (resp['success']) {
+                    if (resp['needsChangePassword']) {
+                        let url = new URL(location.href);
+                        url.searchParams.set('use', 'bs');
+                        console.log(url.toString());
+                        location.href = url.toString();
+                        return;
+                    }
+
                     location.reload();
                     return;
                 }
-                setLoggingIn(false);
                 setFeedback(resp['reason']);
             });
     };

@@ -655,9 +655,15 @@ func main() {
 
 		session := sessions.Default(c)
 		if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) == nil {
-			session.Set("user_id", user.ID)
-			session.Save()
-			c.JSON(http.StatusOK, gin.H{"success": true, "needsChangePassword": !user.Initialized})
+			if !user.Initialized {
+				session.Set("change_password_user_id", user.ID)
+				session.Save()
+				c.JSON(http.StatusOK, gin.H{"success": true, "needsChangePassword": true})
+			} else {
+				session.Set("user_id", user.ID)
+				session.Save()
+				c.JSON(http.StatusOK, gin.H{"success": true, "needsChangePassword": false})
+			}
 		} else {
 			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
 		}
