@@ -669,6 +669,55 @@ func main() {
 		}
 	})
 
+	r.POST("/login/reset-password", func(c *gin.Context) {
+		if c.GetHeader("Origin") != cfg.ControlPanel.Origin {
+			c.Status(http.StatusBadGateway)
+			return
+		}
+
+		session := sessions.Default(c)
+		user_id := session.Get("change_password_user_id")
+
+		username := c.PostForm("username")
+		password := c.PostForm("password")
+
+		user := User{}
+		if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
+			return
+		}
+
+		if user.ID != user_id {
+			c.JSON(http.StatusOK, gin.H{"success": false})
+			return
+		}
+
+		if !isAllowedPassword(password) {
+			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "account.password.disallowed")})
+			return
+		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			log.WithError(err).Error("error registering user")
+			c.JSON(http.StatusOK, gin.H{"success": false, "reason": "Error registering user"})
+			return
+		}
+		user.Password = string(hashedPassword)
+		user.Initialized = true
+
+		if err := db.Save(user).Error; err != nil {
+			log.WithError(err).Error("error updating password")
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		}
+
+		session.Set("user_id", user.ID)
+		session.Delete("change_password_user_id")
+		session.Save()
+
+		c.JSON(http.StatusOK, gin.H{"success": true})
+	})
+
 	r.POST("/login/hardwarekey/begin", func(c *gin.Context) {
 		if c.GetHeader("Origin") != cfg.ControlPanel.Origin {
 			c.Status(http.StatusBadGateway)

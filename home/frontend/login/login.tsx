@@ -4,7 +4,23 @@ import Modal from 'bootstrap/js/dist/modal';
 import KeyIcon from '@mui/icons-material/Key';
 import CloseIcon from '@mui/icons-material/Close';
 import PasswordIcon from '@mui/icons-material/Password';
-import {IconButton, ButtonGroup, Tooltip, Box, Stack, Button, Card, Typography, CardContent, TextField, Snackbar} from '@mui/material';
+import {
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Dialog,
+    IconButton,
+    ButtonGroup,
+    Tooltip,
+    Box,
+    Stack,
+    Button,
+    Card,
+    Typography,
+    CardContent,
+    TextField,
+    Snackbar
+} from '@mui/material';
 import {LoadingButton} from '@mui/lab';
 
 import '../i18n';
@@ -135,6 +151,8 @@ const PasswordLogin: React.FC<PasswordLoginProps> = (props: PasswordLoginProps) 
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
+    const [openResetPasswordDialog, setOpenResetPasswordDialog] = useState(false);
+
     const login = () => {
         setLoggingIn(true);
 
@@ -151,16 +169,39 @@ const PasswordLogin: React.FC<PasswordLoginProps> = (props: PasswordLoginProps) 
         })
             .then((resp) => resp.json())
             .then((resp) => {
-                setLoggingIn(false);
                 if (resp['success']) {
                     if (resp['needsChangePassword']) {
-                        let url = new URL(location.href);
-                        url.searchParams.set('use', 'bs');
-                        console.log(url.toString());
-                        location.href = url.toString();
+                        setOpenResetPasswordDialog(true);
                         return;
                     }
 
+                    setLoggingIn(false);
+                    location.reload();
+                    return;
+                }
+                setLoggingIn(false);
+                setFeedback(resp['reason']);
+            });
+    };
+
+    const [newPassword, setNewPassword] = useState('');
+    const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
+
+    const changePassword = () => {
+        const params = new URLSearchParams();
+        params.append('username', username);
+        params.append('password', newPassword);
+
+        fetch('/login/reset-password', {
+            method: 'post',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params.toString()
+        })
+            .then((resp) => resp.json())
+            .then((resp) => {
+                if (resp['success']) {
                     location.reload();
                     return;
                 }
@@ -169,43 +210,80 @@ const PasswordLogin: React.FC<PasswordLoginProps> = (props: PasswordLoginProps) 
     };
 
     return (
-        <form
-            onSubmit={(e) => {
-                e.preventDefault();
-                login();
-            }}
-        >
-            <Stack spacing={2}>
-                <TextField
-                    variant="outlined"
-                    label={t('username')}
-                    autoComplete="username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    fullWidth
-                />
-                <TextField
-                    variant="outlined"
-                    label={t('password')}
-                    autoComplete="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    fullWidth
-                />
-                <Stack direction="row" justifyContent="end" sx={{mt: 1}}>
-                    <ButtonGroup disabled={loggingIn} variant="contained" aria-label="outlined primary button group">
-                        <Tooltip title="Use security key">
-                            <Button aria-label="security key" startIcon={<KeyIcon />} type="button" onClick={() => switchToSecurityKey()} />
-                        </Tooltip>
-                        <LoadingButton loading={loggingIn} variant="contained" type="submit">
-                            {t('login')}
-                        </LoadingButton>
-                    </ButtonGroup>
+        <>
+            <form
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    login();
+                }}
+            >
+                <Stack spacing={2}>
+                    <TextField
+                        variant="outlined"
+                        label={t('username')}
+                        autoComplete="username"
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        fullWidth
+                    />
+                    <TextField
+                        variant="outlined"
+                        label={t('password')}
+                        autoComplete="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        fullWidth
+                    />
+                    <Stack direction="row" justifyContent="end" sx={{mt: 1}}>
+                        <ButtonGroup disabled={loggingIn} variant="contained" aria-label="outlined primary button group">
+                            <Tooltip title="Use security key">
+                                <Button aria-label="security key" startIcon={<KeyIcon />} type="button" onClick={() => switchToSecurityKey()} />
+                            </Tooltip>
+                            <LoadingButton loading={loggingIn} variant="contained" type="submit">
+                                {t('login')}
+                            </LoadingButton>
+                        </ButtonGroup>
+                    </Stack>
                 </Stack>
-            </Stack>
-        </form>
+            </form>
+            <Dialog open={openResetPasswordDialog}>
+                <DialogTitle>{t('set_password_title')}</DialogTitle>
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        changePassword();
+                    }}
+                >
+                    <DialogContent>
+                        <Stack spacing={2}>
+                            <TextField
+                                label={t('change_password_new')}
+                                type="password"
+                                autoComplete="new-password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                fullWidth
+                            />
+                            <TextField
+                                label={t('change_password_confirm')}
+                                type="password"
+                                autoComplete="new-password"
+                                value={newPasswordConfirm}
+                                onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                                fullWidth
+                            />
+                        </Stack>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button disabled={!(newPassword.length != 0 && newPassword == newPasswordConfirm)} type="submit">
+                            {t('set_password_submit')}
+                        </Button>
+                    </DialogActions>
+                </form>
+            </Dialog>
+        </>
     );
 };
 
