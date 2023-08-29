@@ -66,12 +66,8 @@ const WebAuthnLogin: React.FC<WebAuthnLoginProps> = (props: WebAuthnLoginProps) 
         }
 
         const publicKeyCred = (await navigator.credentials.get(options)) as PublicKeyCredential;
-        const authenticatorResp = publicKeyCred.response as AuthenticatorAssertionResponse;
-        const authData = authenticatorResp.authenticatorData;
-        const clientDataJson = publicKeyCred.response.clientDataJSON;
         const rawId = publicKeyCred.rawId;
-        const sig = authenticatorResp.signature;
-        const userHandle = authenticatorResp.userHandle!!;
+        const {authenticatorData, clientDataJSON, signature, userHandle} = publicKeyCred.response as AuthenticatorAssertionResponse;
 
         const finishResp: any = await fetch('/login/hardwarekey/finish', {
             method: 'post',
@@ -80,10 +76,10 @@ const WebAuthnLogin: React.FC<WebAuthnLoginProps> = (props: WebAuthnLoginProps) 
                 rawId: encodeBuffer(rawId),
                 type: publicKeyCred.type,
                 response: {
-                    authenticatorData: encodeBuffer(authData),
-                    clientDataJSON: encodeBuffer(clientDataJson),
-                    signature: encodeBuffer(sig),
-                    userHandle: encodeBuffer(userHandle)
+                    authenticatorData: encodeBuffer(authenticatorData),
+                    clientDataJSON: encodeBuffer(clientDataJSON),
+                    signature: encodeBuffer(signature),
+                    userHandle: encodeBuffer(userHandle!!)
                 }
             })
         }).then((resp) => resp.json());
