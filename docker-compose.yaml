@@ -25,14 +25,15 @@ services:
       - 'premises_controlPanel_origin'
       - 'premises_controlPanel_redis_address=redis:6379'
       - 'premises_controlPanel_redis_password='
+      - 'premises_controlPanel_postgres_user=premises'
+      - 'premises_controlPanel_postgres_password=password'
+      - 'premises_controlPanel_postgres_dbName=premises'
       - 'premises_controlPanel_users'
       - 'premises_controlPanel_locale'
     depends_on:
       redis:
         condition: service_healthy
     restart: always
-    volumes:
-      - ./data:/opt/premises/data
     ports:
       - '8000:8000'
   redis:
@@ -45,3 +46,19 @@ services:
     restart: always
     ports:
       - '6379'
+  postgres:
+    image: 'postgres:alpine'
+    environment:
+      - POSTGRES_USER=premises
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=premises
+    restart: always
+    healthcheck:
+      test: ["CMD", "pg_isready", "-Upremises", "||", "exit", "1"]
+      interval: 1s
+      timeout: 30s
+      retries: 30
+    volumes:
+      - ./data:/var/lib/postgresql/data
+    ports:
+      - '5432'
