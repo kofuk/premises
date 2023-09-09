@@ -6,6 +6,7 @@ import {t} from 'i18next';
 
 import ReconfigureMenu from './reconfigure-menu';
 import Snapshot from './control-item/snapshot';
+import QuickUndo from './control-item/quickundo';
 import SystemInfo from './control-item/system-info';
 import WorldInfo from './control-item/world-info';
 
@@ -13,6 +14,7 @@ enum Modes {
     MainMenu,
     Reconfigure,
     Snapshot,
+    QuickUndo,
     SystemInfo,
     WorldInfo
 }
@@ -71,6 +73,15 @@ export default class ServerControlPane extends React.Component<Prop, State> {
                         type="button"
                         className="list-group-item list-group-item-action"
                         onClick={() => {
+                            this.setState({mode: Modes.QuickUndo});
+                        }}
+                    >
+                        QuickUndo
+                    </button>
+                    <button
+                        type="button"
+                        className="list-group-item list-group-item-action"
+                        onClick={() => {
                             this.setState({mode: Modes.SystemInfo});
                         }}
                     >
@@ -82,6 +93,8 @@ export default class ServerControlPane extends React.Component<Prop, State> {
             controlItems.push(<ReconfigureMenu backToMenu={this.handleBackToMenu} showError={this.props.showError} key="reconfigure" />);
         } else if (this.state.mode === Modes.Snapshot) {
             controlItems.push(<Snapshot backToMenu={this.handleBackToMenu} showError={this.props.showError} key="snapshot" />);
+        } else if (this.state.mode === Modes.QuickUndo) {
+            controlItems.push(<QuickUndo backToMenu={this.handleBackToMenu} showError={this.props.showError} key="quickundo" />);
         } else if (this.state.mode === Modes.SystemInfo) {
             controlItems.push(<SystemInfo backToMenu={this.handleBackToMenu} key="systemInfo" />);
         } else if (this.state.mode === Modes.WorldInfo) {
