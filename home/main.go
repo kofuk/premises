@@ -778,20 +778,27 @@ func main() {
 
 	api := r.Group("api")
 	api.Use(func(c *gin.Context) {
-		// 1. Verify that request is sent from allowed origin.
+		// 1. Verify that the client is logged in.
+		session := sessions.Default(c)
+		if session.Get("user_id") == nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Not logged in"})
+			c.Abort()
+			return
+		}
+
+		SaveSessionV2(rdb, session.ID(), SessionV2{
+			State:  SessionStateLoggedIn,
+			UserID: session.Get("user_id").(uint),
+		})
+
+		// 2. Verify that the request is sent from allowed origin (if needed).
 		if c.Request.Method == http.MethodPost || (c.Request.Method == http.MethodGet && c.GetHeader("Upgrade") == "WebSocket") {
-			if c.GetHeader("Origin") == cfg.ControlPanel.Origin {
-				// 2. Verify that client is logged in.
-				session := sessions.Default(c)
-				if session.Get("user_id") == nil {
-					c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Not logged in"})
-					c.Abort()
-				}
+			if c.GetHeader("Origin") != cfg.ControlPanel.Origin {
+				log.WithField("origin", c.GetHeader("Origin")).Error("origin not allowed")
+				c.JSON(400, gin.H{"success": false, "message": "Invalid request (origin not allowed)"})
+				c.Abort()
 				return
 			}
-			log.WithField("origin", c.GetHeader("Origin")).Error("origin not allowed")
-			c.JSON(400, gin.H{"success": false, "message": "Invalid request (origin not allowed)"})
-			c.Abort()
 		}
 	})
 	{
