@@ -33,12 +33,14 @@ type SnapshotInfo struct {
 	Path string `json:"path"`
 }
 
-func takeFsSnapshot(debugEnv bool) (*SnapshotInfo, error) {
-	id, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
+func takeFsSnapshot(debugEnv bool, snapshotId string) (*SnapshotInfo, error) {
+	if snapshotId == "" {
+		id, err := uuid.NewUUID()
+		if err != nil {
+			return nil, err
+		}
+		snapshotId = id.String()
 	}
-	snapshotId := id.String()
 
 	var gameDir string
 	if debugEnv {
@@ -50,6 +52,12 @@ func takeFsSnapshot(debugEnv bool) (*SnapshotInfo, error) {
 	var snapshotInfo SnapshotInfo
 	snapshotInfo.ID = snapshotId
 	snapshotInfo.Path = filepath.Join(gameDir, "ss@"+snapshotId)
+
+	if snapshotId != "" {
+		if err := deleteFsSnapshot(debugEnv, snapshotId); err != nil {
+			log.WithError(err).Info("Failed to remove old snapshot (doesn't the snapshot exist?)")
+		}
+	}
 
 	// Create read-only snapshot
 	cmd := exec.Command("btrfs", "subvolume", "snapshot", "-r", ".", snapshotInfo.Path)
@@ -154,7 +162,7 @@ func Run() {
 		}
 
 		if req.Func == "snapshots/create" {
-			ssi, err := takeFsSnapshot(debugEnv)
+			ssi, err := takeFsSnapshot(debugEnv, "")
 			if err != nil {
 				log.WithError(err).Error("Failed to take snapshot")
 
@@ -212,6 +220,32 @@ func Run() {
 			err = sendMessage(w, &ResponseMsg{
 				Version: 1,
 				Success: true,
+			})
+			if err != nil {
+				log.WithError(err).Error("Failed to write body")
+				return
+			}
+		} else if req.Func == "quicksnapshots/create" {
+			ssi, err := takeFsSnapshot(debugEnv, "quick0")
+			if err != nil {
+				log.WithError(err).Error("Failed to take snapshot")
+
+				err := sendMessage(w, &ResponseMsg{
+					Version: 1,
+					Success: false,
+					Message: "Failed to take snapshot",
+				})
+				if err != nil {
+					log.WithError(err).Error("Failed to write body")
+					return
+				}
+				return
+			}
+
+			err = sendMessage(w, &ResponseMsg{
+				Version: 1,
+				Success: true,
+				Result:  ssi,
 			})
 			if err != nil {
 				log.WithError(err).Error("Failed to write body")

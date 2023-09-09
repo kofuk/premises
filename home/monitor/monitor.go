@@ -253,3 +253,55 @@ func TakeSnapshot(cfg *config.Config, addr string, rdb *redis.Client) error {
 
 	return nil
 }
+
+func QuickSnapshot(cfg *config.Config, addr string, rdb *redis.Client) error {
+	tlsConfig, err := makeTLSConfig(cfg, rdb)
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+
+	req, err := http.NewRequest("POST", "https://"+addr+":8521/quickss", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("X-Auth-Key", cfg.MonitorKey)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return errors.New("Error creating quick snapshot")
+	}
+
+	return nil
+}
+
+func QuickUndo(cfg *config.Config, addr string, rdb *redis.Client) error {
+	tlsConfig, err := makeTLSConfig(cfg, rdb)
+	client := http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsConfig,
+		},
+	}
+
+	req, err := http.NewRequest("POST", "https://"+addr+":8521/quickundo", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Add("X-Auth-Key", cfg.MonitorKey)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return errors.New("Error processing quick undo")
+	}
+
+	return nil
+}

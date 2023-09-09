@@ -19,17 +19,19 @@ import (
 )
 
 type ServerInstance struct {
-	Name                string
-	FinishWG            sync.WaitGroup
-	ShouldStop          bool
-	IsServerFinished    bool
-	StartupFailed       bool
-	rconMu              sync.Mutex
-	IsServerInitialized bool
-	IsGameFinished      bool
-	RestartRequested    bool
-	Crashed             bool
-	lastActive          time.Time
+	Name                   string
+	FinishWG               sync.WaitGroup
+	ShouldStop             bool
+	IsServerFinished       bool
+	StartupFailed          bool
+	rconMu                 sync.Mutex
+	IsServerInitialized    bool
+	IsGameFinished         bool
+	RestartRequested       bool
+	Crashed                bool
+	lastActive             time.Time
+	quickUndoBeforeRestart bool
+	ServerPid              int
 }
 
 var (
@@ -209,6 +211,21 @@ func (srv *ServerInstance) GetSeed() (string, error) {
 	return seed[7 : len(seed)-1], nil
 }
 
+func (srv *ServerInstance) QuickUndo() error {
+	srv.quickUndoBeforeRestart = true
+
+	proc, err := os.FindProcess(srv.ServerPid)
+	if err != nil {
+		return err
+	}
+	// go go go!!!
+	if err := proc.Kill(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func LaunchInteractiveRcon() {
 	conn, err := connectToRcon(nil)
 	if err != nil {
@@ -265,13 +282,28 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 	}
 }
 
-func signEulaForServer(ctx *config.PMCMContext, serverName string) error {
+func signEulaForServer(ctx *config.PMCMContext) error {
 	eulaFile, err := os.Create(ctx.LocateWorldData("eula.txt"))
 	if err != nil {
 		return err
 	}
 	defer eulaFile.Close()
 	eulaFile.WriteString("eula=true")
+	return nil
+}
+
+func processQuickUndo(ctx *config.PMCMContext) error {
+	if err := os.RemoveAll(ctx.LocateWorldData("world")); err != nil {
+		return err
+	}
+	cmd := exec.Command("cp", "-R", "--", "ss@quick0", "world")
+	cmd.Dir = ctx.LocateWorldData("")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -333,7 +365,7 @@ func LaunchServer(ctx *config.PMCMContext, srv *ServerInstance) error {
 		return err
 	}
 
-	if err := signEulaForServer(ctx, ctx.Cfg.Server.Version); err != nil {
+	if err := signEulaForServer(ctx); err != nil {
 		return err
 	}
 
@@ -349,6 +381,13 @@ func LaunchServer(ctx *config.PMCMContext, srv *ServerInstance) error {
 		launchCount := 0
 		prevLaunch := time.Now()
 		for !srv.ShouldStop && !srv.RestartRequested {
+			if srv.quickUndoBeforeRestart {
+				processQuickUndo(ctx)
+
+				launchCount = 0
+				srv.quickUndoBeforeRestart = false
+			}
+
 			if launchCount == 5 {
 				if time.Now().Sub(prevLaunch) < 3*time.Minute {
 					srv.Crashed = true
@@ -360,6 +399,7 @@ func LaunchServer(ctx *config.PMCMContext, srv *ServerInstance) error {
 			cmdStdout, _ := cmd.StdoutPipe()
 			cmd.Stderr = os.Stderr
 			cmd.Start()
+			srv.ServerPid = cmd.Process.Pid
 			MonitorServer(ctx, cmdStdout)
 			cmd.Wait()
 			cmdStdout.Close()

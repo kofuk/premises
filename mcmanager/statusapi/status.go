@@ -104,6 +104,45 @@ func requestSnapshot() (*privileged.SnapshotInfo, error) {
 	return &respMsg.Result, nil
 }
 
+func requestQuickSnapshot() (*privileged.SnapshotInfo, error) {
+	reqMsg := &privileged.RequestMsg{
+		Version: 1,
+		Func:    "quicksnapshots/create",
+	}
+	reqData, err := json.Marshal(reqMsg)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, "http://localhost:8522", bytes.NewBuffer(reqData))
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	respData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var respMsg createSnapshotResp
+	if err := json.Unmarshal(respData, &respMsg); err != nil {
+		return nil, err
+	}
+
+	if respMsg.Version != 1 {
+		return nil, errors.New("Unsupported version")
+	}
+
+	if !respMsg.Success {
+		return nil, errors.New(respMsg.Message)
+	}
+
+	return &respMsg.Result, nil
+}
+
 func requestDeleteSnapshot(ssi *privileged.SnapshotInfo) error {
 	reqMsg := &privileged.RequestMsg{
 		Version: 1,
@@ -259,6 +298,43 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 		w.WriteHeader(http.StatusCreated)
 
 		go uploadSnapshot(ctx, ssi)
+	})
+
+	http.HandleFunc("/quickss", func(w http.ResponseWriter, r *http.Request) {
+		authKey := r.Header.Get("X-Auth-Key")
+		if subtle.ConstantTimeCompare([]byte(authKey), []byte(ctx.Cfg.AuthKey)) == 0 {
+			log.WithField("endpoint", "/quickss").Error("Invalid auth key")
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		if err := srv.SaveAll(); err != nil {
+			log.WithError(err).Error("Failed to run save-all")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		_, err := requestQuickSnapshot()
+		if err != nil {
+			log.WithError(err).Error("Failed to create snapshot")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusCreated)
+	})
+
+	http.HandleFunc("/quickundo", func(w http.ResponseWriter, r *http.Request) {
+		authKey := r.Header.Get("X-Auth-Key")
+		if subtle.ConstantTimeCompare([]byte(authKey), []byte(ctx.Cfg.AuthKey)) == 0 {
+			log.WithField("endpoint", "/quickss").Error("Invalid auth key")
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		srv.QuickUndo()
+
+		w.WriteHeader(http.StatusCreated)
 	})
 
 	http.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {

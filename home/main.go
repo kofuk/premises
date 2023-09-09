@@ -911,6 +911,34 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"success": true})
 		})
 
+		api.POST("/quickundo/snapshot", func(c *gin.Context) {
+			if cfg.ServerAddr == "" {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+				return
+			}
+
+			if err := monitor.QuickSnapshot(cfg, cfg.ServerAddr, rdb); err != nil {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{"success": true})
+		})
+
+		api.POST("/quickundo/undo", func(c *gin.Context) {
+			if cfg.ServerAddr == "" {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+				return
+			}
+
+			if err := monitor.QuickUndo(cfg, cfg.ServerAddr, rdb); err != nil {
+				c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+				return
+			}
+
+			c.JSON(http.StatusOK, gin.H{"success": true})
+		})
+
 		api.POST("/stop", func(c *gin.Context) {
 			server.statusMu.Lock()
 			defer server.statusMu.Unlock()
