@@ -51,4 +51,32 @@ impl Database {
             Err(err) => Err(err.as_db_error().unwrap().message().to_string()),
         }
     }
+
+    pub fn reinitialize_user(
+        mut self,
+        username: String,
+        encrypted_password: String,
+    ) -> Result<(), String> {
+        match self.connection.execute(
+            "UPDATE users SET updated_at = NOW(), password = $2, initialized = 'f' WHERE name = $1",
+            &[&username, &encrypted_password],
+        ) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err.as_db_error().unwrap().message().to_string()),
+        }
+    }
+
+    pub fn rename_user(
+        mut self,
+        username: String,
+        encrypted_password: String,
+    ) -> Result<(), String> {
+        match self.connection.execute(
+            "UPDATE users SET updated_at = NOW(), name = $2 WHERE name = $1",
+            &[&username, &encrypted_password],
+        ) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err.as_db_error().unwrap().message().to_string()),
+        }
+    }
 }

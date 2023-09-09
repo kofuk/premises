@@ -7,6 +7,7 @@ use std::process::exit;
 
 #[derive(Subcommand)]
 enum UserCommand {
+    #[clap(name = "add", about = "Add a new user")]
     Add {
         #[clap(short = 'u', long = "username", required = true, help = "Username")]
         user: String,
@@ -15,6 +16,22 @@ enum UserCommand {
         #[clap(long = "password-stdin", help = "Read password from stdin")]
         password_stdin: bool,
     },
+    #[clap(name = "reset-password", about = "Reset password for an existing user")]
+    ResetPassword {
+        #[clap(short = 'u', long = "username", required = true, help = "Username")]
+        user: String,
+        #[clap(short = 'p', long = "password", help = "New password")]
+        password: Option<String>,
+        #[clap(long = "password-stdin", help = "Read password from stdin")]
+        password_stdin: bool,
+    },
+    #[clap(name = "rename", about = "Rename an existing user")]
+    Rename {
+        #[clap(short = 'u', long = "username", required = true, help = "Username")]
+        user: String,
+        #[clap(short = 't', long = "new-name", required = true, help = "New username")]
+        new_name: String,
+    }
 }
 
 #[derive(Subcommand)]
@@ -51,16 +68,33 @@ fn main() {
     );
 
     match options.command {
-        RootCommand::User(UserCommand::Add {
-            user,
-            password,
-            password_stdin,
-        }) => match (password, password_stdin) {
-            (_, true) => user::register(database, user, user::PasswordStdin),
-            (Some(password), false) => user::register(database, user, password),
-            (None, false) => {
-                eprintln!("Neither --password=... nor --password-stdin is provided");
-                exit(1);
+        RootCommand::User(user_command) => match user_command {
+            UserCommand::Add {
+                user,
+                password,
+                password_stdin,
+            } => match (password, password_stdin) {
+                (_, true) => user::register(database, user, user::PasswordStdin),
+                (Some(password), false) => user::register(database, user, password),
+                (None, false) => {
+                    eprintln!("Neither --password=... nor --password-stdin is provided");
+                    exit(1);
+                }
+            },
+            UserCommand::ResetPassword {
+                user,
+                password,
+                password_stdin,
+            } => match (password, password_stdin) {
+                (_, true) => user::reset_password(database, user, user::PasswordStdin),
+                (Some(password), false) => user::reset_password(database, user, password),
+                (None, false) => {
+                    eprintln!("Neither --password=... nor --password-stdin is provided");
+                    exit(1);
+                }
+            },
+            UserCommand::Rename { user, new_name } => {
+                user::rename(database, user, new_name)
             }
         },
     }

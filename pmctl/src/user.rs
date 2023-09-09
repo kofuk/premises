@@ -34,3 +34,23 @@ where
         exit(1);
     }
 }
+
+pub fn reset_password<P>(db: Database, user: String, password: P)
+where
+    P: Password,
+{
+    let password = password.get();
+    let encrypted_password = bcrypt::hash(password, bcrypt::DEFAULT_COST).unwrap();
+    if let Err(msg) = db.reinitialize_user(user, encrypted_password) {
+        println!("{msg}");
+        exit(1);
+    }
+}
+
+pub fn rename(db: Database, user: String, new_name: String)
+{
+    if let Err(msg) = db.rename_user(user, new_name) {
+        println!("{msg}");
+        exit(1);
+    }
+}
