@@ -17,6 +17,6 @@ RUN cargo build --release
 FROM alpine:latest
 COPY --from=0 /build/home/premises /premises
 COPY --from=1 /build/gen /gen
-COPY --from=2 /build/target/release/cli /bin/pmctl
+COPY --from=2 /build/target/release/pmctl /bin/pmctl
 RUN apk --no-cache add openssl && mkdir -p /opt/premises
 ENTRYPOINT ["/premises"]
