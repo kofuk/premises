@@ -44,7 +44,7 @@ impl Database {
 impl Database {
     pub fn add_user(mut self, username: String, encrypted_password: String) -> Result<(), String> {
         match self.connection.execute(
-            "INSERT INTO users (name, password, initialized) VALUES ($1, $2, 't')",
+            "INSERT INTO users (created_at, updated_at, name, password, initialized) VALUES (NOW(), NOW(), $1, $2, 't')",
             &[&username, &encrypted_password],
         ) {
             Ok(_) => Ok(()),
