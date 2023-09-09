@@ -8,9 +8,10 @@ const config = {
     mode: env,
     devtool: env === 'development' ? 'inline-source-map' : false,
     entry: {
-        login: './frontend/login.tsx',
-        control: './frontend/control.tsx',
-        setup: './frontend/setup.tsx'
+        'login': './frontend/login.tsx',
+        'login-bs': './frontend/login-bs.tsx',
+        'control': './frontend/control.tsx',
+        'setup': './frontend/setup.tsx'
     },
     resolve: {
         modules: ['node_modules'],
