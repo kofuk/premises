@@ -1,4 +1,4 @@
-# Premises (Control Server)
+# Premises
 
 "Premises" is a software to build on-demand Minecraft cloud server.
 
