@@ -51,8 +51,6 @@ var robotsTxt []byte
 
 var localizeBundle *i18n.Bundle
 
-var isServerSetUp bool
-
 type User struct {
 	gorm.Model
 	Name          string `gorm:"type:varchar(32);not null;uniqueIndex"`
@@ -517,10 +515,6 @@ func main() {
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&Credential{})
 
-	if err := db.Model(&User{}).Select("COUNT(id) > 0").Find(&isServerSetUp).Error; err != nil {
-		log.WithError(err).Fatal("Failed to read from db")
-	}
-
 	bindAddr := ":8000"
 	if len(os.Args) > 1 {
 		bindAddr = os.Args[1]
@@ -568,11 +562,6 @@ func main() {
 	r.NoRoute(static.Serve("/", static.LocalFile("gen", false)))
 
 	r.GET("/", func(c *gin.Context) {
-		if !isServerSetUp {
-			c.HTML(200, "setup.html", nil)
-			return
-		}
-
 		session := sessions.Default(c)
 		if session.Get("user_id") != nil {
 			c.HTML(200, "control.html", nil)
@@ -580,64 +569,6 @@ func main() {
 			c.HTML(200, "login.html", nil)
 		}
 	})
-	if !isServerSetUp {
-		r.POST("/setup", func(c *gin.Context) {
-			if isServerSetUp {
-				c.Status(http.StatusNotFound)
-				return
-			}
-			if c.GetHeader("Origin") != cfg.ControlPanel.Origin {
-				log.WithField("cfg", cfg.ControlPanel.Origin).Println("Access from disallowed origin")
-				c.Status(http.StatusBadRequest)
-				return
-			}
-
-			if err := c.Request.ParseForm(); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "Invalid form data"})
-				return
-			}
-
-			username := c.Request.Form.Get("username")
-			password := c.Request.Form.Get("password")
-
-			if len(username) == 0 && len(password) == 0 {
-				c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "username or password is empty"})
-				return
-			}
-			if !isAllowedPassword(password) {
-				c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "account.password.disallowed")})
-				return
-			}
-
-			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-			if err != nil {
-				log.WithError(err).Error("error registering user")
-				c.JSON(http.StatusOK, gin.H{"success": false, "reason": "Error registering user"})
-				return
-			}
-
-			user := &User{
-				Name:          username,
-				Password:      string(hashedPassword),
-				AddedByUserID: nil,
-				Initialized:   true,
-			}
-
-			if err := db.Create(user).Error; err != nil {
-				log.WithError(err).Error("error registering user")
-				c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "account.user.exists")})
-				return
-			}
-
-			isServerSetUp = true
-
-			session := sessions.Default(c)
-			session.Set("user_id", user.ID)
-			session.Save()
-
-			c.JSON(http.StatusOK, gin.H{"success": true})
-		})
-	}
 	r.POST("/login", func(c *gin.Context) {
 		if c.GetHeader("Origin") != cfg.ControlPanel.Origin {
 			c.Status(http.StatusBadGateway)
