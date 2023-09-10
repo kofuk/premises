@@ -296,12 +296,13 @@ func processQuickUndo(ctx *config.PMCMContext) error {
 	if err := os.RemoveAll(ctx.LocateWorldData("world")); err != nil {
 		return err
 	}
-	cmd := exec.Command("cp", "-R", "--", "ss@quick0", "world")
+
+	cmd := exec.Command("cp", "-R", "--", "ss@quick0/world", "ss@quick0/world_nether", "ss@quick0/world_the_end", ".")
 	cmd.Dir = ctx.LocateWorldData("")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return err
+		log.WithError(err).Info("cp command returned an error (this is no problem in the most cases)")
 	}
 
 	return nil
@@ -382,7 +383,9 @@ func LaunchServer(ctx *config.PMCMContext, srv *ServerInstance) error {
 		prevLaunch := time.Now()
 		for !srv.ShouldStop && !srv.RestartRequested {
 			if srv.quickUndoBeforeRestart {
-				processQuickUndo(ctx)
+				if err := processQuickUndo(ctx); err != nil {
+					log.WithError(err).Error("Error processing quick undo")
+				}
 
 				launchCount = 0
 				srv.quickUndoBeforeRestart = false
