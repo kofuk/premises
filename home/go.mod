@@ -2,8 +2,6 @@ module github.com/kofuk/premises/home
 
 go 1.17
 
-replace github.com/kofuk/premises/backup => ../backup
-
 require (
 	github.com/duo-labs/webauthn v0.0.0-20220815211337-00c9fb5711f5
 	github.com/gin-contrib/sessions v0.0.4
@@ -13,7 +11,6 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/joho/godotenv v1.4.0
-	github.com/kofuk/premises/backup v0.0.0
 	github.com/nicksnyder/go-i18n/v2 v2.2.0
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/crypto v0.8.0

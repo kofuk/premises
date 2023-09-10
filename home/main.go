@@ -35,7 +35,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/kofuk/premises/backup"
+	"github.com/kofuk/premises/home/backup"
 	"github.com/kofuk/premises/home/config"
 	"github.com/kofuk/premises/home/gameconfig"
 	"github.com/kofuk/premises/home/mcversions"
