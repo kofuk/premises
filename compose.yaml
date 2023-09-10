@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   web:
     image: 'ghcr.io/kofuk/premises:latest'
@@ -25,13 +24,16 @@ services:
       - 'premises_controlPanel_origin'
       - 'premises_controlPanel_redis_address=redis:6379'
       - 'premises_controlPanel_redis_password='
+      - 'premises_controlPanel_postgres_address=postgres'
+      - 'premises_controlPanel_postgres_port=5432'
       - 'premises_controlPanel_postgres_user=premises'
       - 'premises_controlPanel_postgres_password=password'
       - 'premises_controlPanel_postgres_dbName=premises'
-      - 'premises_controlPanel_users'
       - 'premises_controlPanel_locale'
     depends_on:
       redis:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
     restart: always
     ports:
@@ -44,8 +46,6 @@ services:
       timeout: 30s
       retries: 30
     restart: always
-    ports:
-      - '6379'
   postgres:
     image: 'postgres:alpine'
     environment:
@@ -54,11 +54,9 @@ services:
       - POSTGRES_DB=premises
     restart: always
     healthcheck:
-      test: ["CMD", "pg_isready", "-Upremises", "||", "exit", "1"]
+      test: ["CMD", "pg_isready", "-Upremises"]
       interval: 1s
       timeout: 30s
       retries: 30
     volumes:
       - ./data:/var/lib/postgresql/data
-    ports:
-      - '5432'
