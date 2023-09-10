@@ -22,13 +22,13 @@ type GameServer interface {
 	SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Client, memSizeGB int) bool
 	VMExists() bool
 	VMRunning() bool
-	StopVM() bool
+	StopVM(rdb *redis.Client) bool
 	DeleteVM() bool
 	ImageExists() bool
-	SaveImage() bool
-	DeleteImage() bool
-	UpdateDNS() bool
-	RevertDNS() bool
+	SaveImage(rdb *redis.Client) bool
+	DeleteImage(rdb *redis.Client) bool
+	UpdateDNS(rdb *redis.Client) bool
+	RevertDNS(rdb *redis.Client) bool
 }
 
 type LocalDebugServer struct {
@@ -95,11 +95,11 @@ func (s *LocalDebugServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.C
 	return true
 }
 
-func (s *LocalDebugServer) SaveImage() bool {
+func (s *LocalDebugServer) SaveImage(rdb *redis.Client) bool {
 	return true
 }
 
-func (s *LocalDebugServer) DeleteImage() bool {
+func (s *LocalDebugServer) DeleteImage(rdb *redis.Client) bool {
 	return true
 }
 
@@ -114,7 +114,7 @@ func (s *LocalDebugServer) VMRunning() bool {
 	return s.VMExists()
 }
 
-func (s *LocalDebugServer) StopVM() bool {
+func (s *LocalDebugServer) StopVM(rdb *redis.Client) bool {
 	if err := syscall.Kill(-s.pid, syscall.SIGKILL); err != nil {
 		log.WithError(err).Error("Failed to kill debug runner")
 		return true
@@ -130,11 +130,11 @@ func (s *LocalDebugServer) ImageExists() bool {
 	return !s.VMExists()
 }
 
-func (s *LocalDebugServer) UpdateDNS() bool {
+func (s *LocalDebugServer) UpdateDNS(rdb *redis.Client) bool {
 	return true
 }
 
-func (s *LocalDebugServer) RevertDNS() bool {
+func (s *LocalDebugServer) RevertDNS(rdb *redis.Client) bool {
 	return true
 }
 
@@ -178,8 +178,10 @@ func (s *ConohaServer) getToken() (string, error) {
 func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Client, memSizeGB int) bool {
 	locale := s.cfg.ControlPanel.Locale
 
-	server.monitorChan <- &monitor.StatusData{
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status: L(locale, "vm.gathering_info"),
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	token, err := s.getToken()
@@ -223,8 +225,10 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Clien
 	log.Info("Generating startup script...Done")
 
 	log.Info("Creating VM...")
-	server.monitorChan <- &monitor.StatusData{
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status: L(locale, "vm.creating"),
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 	if _, err := conoha.CreateVM(s.cfg, token, imageID, flavorID, startupScript); err != nil {
 		log.WithError(err).Error("Failed to create VM")
@@ -277,7 +281,7 @@ func (s *ConohaServer) VMRunning() bool {
 	return detail.Status == "ACTIVE"
 }
 
-func (s *ConohaServer) StopVM() bool {
+func (s *ConohaServer) StopVM(rdb *redis.Client) bool {
 	locale := s.cfg.ControlPanel.Locale
 
 	token, err := s.getToken()
@@ -286,8 +290,10 @@ func (s *ConohaServer) StopVM() bool {
 		return false
 	}
 
-	server.monitorChan <- &monitor.StatusData{
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status: L(locale, "vm.stopping"),
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	log.Info("Getting VM information...")
@@ -371,7 +377,7 @@ func (s *ConohaServer) ImageExists() bool {
 	return true
 }
 
-func (s *ConohaServer) SaveImage() bool {
+func (s *ConohaServer) SaveImage(rdb *redis.Client) bool {
 	locale := s.cfg.ControlPanel.Locale
 
 	token, err := s.getToken()
@@ -380,8 +386,10 @@ func (s *ConohaServer) SaveImage() bool {
 		return false
 	}
 
-	server.monitorChan <- &monitor.StatusData{
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status: L(locale, "vm.image.saving"),
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	log.Info("Getting VM information...")
@@ -415,7 +423,7 @@ func (s *ConohaServer) SaveImage() bool {
 	return true
 }
 
-func (s *ConohaServer) DeleteImage() bool {
+func (s *ConohaServer) DeleteImage(rdb *redis.Client) bool {
 	locale := s.cfg.ControlPanel.Locale
 
 	token, err := s.getToken()
@@ -424,8 +432,10 @@ func (s *ConohaServer) DeleteImage() bool {
 		return false
 	}
 
-	server.monitorChan <- &monitor.StatusData{
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status: L(locale, "vm.cleaning_up"),
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	log.Info("Getting image information...")
@@ -450,9 +460,11 @@ func (s *ConohaServer) DeleteImage() bool {
 			time.Sleep(3 * time.Second)
 		}
 
-		server.monitorChan <- &monitor.StatusData{
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
 			Status:   L(locale, "vm.image.delete.error"),
 			HasError: true,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 		return false
 	}
@@ -462,7 +474,7 @@ success:
 	return true
 }
 
-func (s *ConohaServer) UpdateDNS() bool {
+func (s *ConohaServer) UpdateDNS(rdb *redis.Client) bool {
 	locale := s.cfg.ControlPanel.Locale
 
 	token, err := s.getToken()
@@ -471,8 +483,10 @@ func (s *ConohaServer) UpdateDNS() bool {
 		return false
 	}
 
-	server.monitorChan <- &monitor.StatusData{
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status: L(locale, "vm.ip.waiting"),
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	log.Info("Getting VM information...")
@@ -492,16 +506,20 @@ func (s *ConohaServer) UpdateDNS() bool {
 		if err == nil {
 			log.Error("Building VM didn't completed")
 		}
-		server.monitorChan <- &monitor.StatusData{
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
 			Status:   L(locale, "vm.get_detail.error"),
 			HasError: true,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 		return false
 	}
 	log.WithField("vm_status", vms.Status).Info("Getting VM information...Done")
 
-	server.monitorChan <- &monitor.StatusData{
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status: L(locale, "vm.dns.updating"),
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	ip4Addr := vms.GetIPAddress(4)
@@ -513,9 +531,11 @@ func (s *ConohaServer) UpdateDNS() bool {
 	log.Info("Updating DNS record (v4)...")
 	if err := cloudflare.UpdateDNS(s.cfg, ip4Addr, 4); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v4)")
-		server.monitorChan <- &monitor.StatusData{
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
 			Status:   L(locale, "vm.dns.error"),
 			HasError: true,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 		return false
 	}
@@ -524,9 +544,11 @@ func (s *ConohaServer) UpdateDNS() bool {
 	log.Info("Updating DNS record (v6)...")
 	if err := cloudflare.UpdateDNS(s.cfg, ip6Addr, 6); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v6)")
-		server.monitorChan <- &monitor.StatusData{
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
 			Status:   L(locale, "vm.dns.error"),
 			HasError: true,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 		return false
 	}
@@ -535,19 +557,23 @@ func (s *ConohaServer) UpdateDNS() bool {
 	return true
 }
 
-func (s *ConohaServer) RevertDNS() bool {
+func (s *ConohaServer) RevertDNS(rdb *redis.Client) bool {
 	locale := s.cfg.ControlPanel.Locale
 
-	server.monitorChan <- &monitor.StatusData{
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status: L(locale, "vm.dns.reverting"),
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	log.Info("Updating DNS record (v4)...")
 	if err := cloudflare.UpdateDNS(s.cfg, "127.0.0.1", 4); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v4)")
-		server.monitorChan <- &monitor.StatusData{
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
 			Status:   L(locale, "vm.dns.error"),
 			HasError: true,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 		return true
 	}
@@ -556,9 +582,11 @@ func (s *ConohaServer) RevertDNS() bool {
 	log.Info("Updating DNS record (v6)...")
 	if err := cloudflare.UpdateDNS(s.cfg, "::1", 6); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v6)")
-		server.monitorChan <- &monitor.StatusData{
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
 			Status:   L(locale, "vm.dns.error"),
 			HasError: true,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 		return true
 	}

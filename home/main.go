@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/duo-labs/webauthn/protocol"
@@ -160,13 +159,8 @@ func loadI18nData() error {
 }
 
 type serverState struct {
-	statusMu         sync.Mutex
-	status           monitor.StatusData
-	selectedWorld    string
-	monitorChan      chan *monitor.StatusData
-	monitorClients   []chan *monitor.StatusData
-	monitorClientsMu sync.Mutex
-	machineType      string
+	selectedWorld string
+	machineType   string
 }
 
 var server serverState
@@ -177,63 +171,13 @@ const (
 	CacheKeySystemInfoPrefix = "system-info"
 )
 
-func (s *serverState) addMonitorClient(ch chan *monitor.StatusData) {
-	s.monitorClientsMu.Lock()
-	defer s.monitorClientsMu.Unlock()
-
-	s.monitorClients = append(s.monitorClients, ch)
-}
-
-func (s *serverState) removeMonitorClient(ch chan *monitor.StatusData) {
-	s.monitorClientsMu.Lock()
-	defer s.monitorClientsMu.Unlock()
-
-	for i, c := range s.monitorClients {
-		if c == ch {
-			if i != len(s.monitorClients)-1 {
-				s.monitorClients[i] = s.monitorClients[len(s.monitorClients)-1]
-			}
-			s.monitorClients = s.monitorClients[:len(s.monitorClients)-1]
-			break
-		}
-	}
-}
-
-func (s *serverState) dispatchMonitorEvent(rdb *redis.Client) {
-	for {
-		status := <-s.monitorChan
-
-		s.statusMu.Lock()
-		s.status = *status
-		s.statusMu.Unlock()
-
-		if status.Shutdown {
-			if _, err := rdb.Del(context.Background(), CacheKeyBackups).Result(); err != nil {
-				log.WithError(err).Error("Failed to delete backup list cache")
-			}
-		}
-
-		s.monitorClientsMu.Lock()
-		for _, ch := range s.monitorClients {
-			go func(ch chan *monitor.StatusData) {
-				defer func() {
-					if err := recover(); err != nil {
-						log.WithField("error", err).Error("Recovering previous error")
-					}
-				}()
-
-				ch <- status
-			}(ch)
-		}
-		s.monitorClientsMu.Unlock()
-	}
-}
-
-func notifyNonRecoverableFailure(cfg *config.Config, detail string) {
-	server.monitorChan <- &monitor.StatusData{
+func notifyNonRecoverableFailure(cfg *config.Config, rdb *redis.Client, detail string) {
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status:   L(cfg.ControlPanel.Locale, "monitor.unrecoverable"),
 		HasError: true,
 		Shutdown: true,
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	if cfg.ControlPanel.AlertWebhookUrl != "" {
@@ -265,34 +209,38 @@ func notifyNonRecoverableFailure(cfg *config.Config, detail string) {
 func monitorServer(cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
 	locale := cfg.ControlPanel.Locale
 
-	server.monitorChan <- &monitor.StatusData{
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status: L(locale, "monitor.connecting"),
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	if err := monitor.MonitorServer(cfg, cfg.ServerAddr, server.monitorChan, rdb); err != nil {
+	if err := monitor.MonitorServer(cfg, cfg.ServerAddr, rdb); err != nil {
 		log.WithError(err).Error("Failed to monitor server")
 	}
 
-	if !gameServer.StopVM() {
-		notifyNonRecoverableFailure(cfg, "Failed to stop VM")
+	if !gameServer.StopVM(rdb) {
+		notifyNonRecoverableFailure(cfg, rdb, "Failed to stop VM")
 		return
 	}
-	if !gameServer.SaveImage() {
-		notifyNonRecoverableFailure(cfg, "Failed to save image")
+	if !gameServer.SaveImage(rdb) {
+		notifyNonRecoverableFailure(cfg, rdb, "Failed to save image")
 		return
 	}
 	if !gameServer.DeleteVM() {
-		notifyNonRecoverableFailure(cfg, "Failed to delete VM")
+		notifyNonRecoverableFailure(cfg, rdb, "Failed to delete VM")
 		return
 	}
 
 	rdb.Del(context.Background(), "monitor-key").Result()
 
-	gameServer.RevertDNS()
+	gameServer.RevertDNS(rdb)
 
-	server.monitorChan <- &monitor.StatusData{
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status:   L(locale, "monitor.stopped"),
 		Shutdown: true,
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 }
 
@@ -301,10 +249,12 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameSer
 
 	if err := monitor.GenerateTLSKey(cfg, rdb); err != nil {
 		log.WithError(err).Error("Failed to generate TLS key")
-		server.monitorChan <- &monitor.StatusData{
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
 			Status:   L(locale, "monitor.tls_keygen.error"),
 			HasError: true,
 			Shutdown: true,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 		return
 	}
@@ -312,35 +262,43 @@ func LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameSer
 	cfg.MonitorKey = gameConfig.AuthKey
 	rdb.Set(context.Background(), "monitor-key", gameConfig.AuthKey, 0).Result()
 
-	server.monitorChan <- &monitor.StatusData{
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status:   L(locale, "monitor.waiting"),
 		HasError: false,
 		Shutdown: false,
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	if !gameServer.SetUp(gameConfig, rdb, memSizeGB) {
-		server.monitorChan <- &monitor.StatusData{
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
 			Status:   L(locale, "vm.start.error"),
 			HasError: true,
 			Shutdown: false,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 		return
 	}
 
-	if !gameServer.UpdateDNS() {
-		server.monitorChan <- &monitor.StatusData{
+	if !gameServer.UpdateDNS(rdb) {
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
 			Status:   L(locale, "vm.dns.error"),
 			HasError: true,
 			Shutdown: false,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 		return
 	}
 
-	if !gameServer.DeleteImage() {
-		server.monitorChan <- &monitor.StatusData{
+	if !gameServer.DeleteImage(rdb) {
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
 			Status:   L(locale, "vm.image.delete.error"),
 			HasError: true,
 			Shutdown: false,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 
 		return
@@ -437,20 +395,20 @@ func guessAndHandleCurrentVMState(cfg *config.Config, gameServer GameServer, rdb
 
 			if gameServer.ImageExists() {
 				log.Info("Server seems to be running, but remote image exists")
-				gameServer.DeleteImage()
+				gameServer.DeleteImage(rdb)
 			}
 
-			gameServer.UpdateDNS()
+			gameServer.UpdateDNS(rdb)
 
 			log.Info("Start monitoring server")
 			go monitorServer(cfg, gameServer, rdb)
 		} else {
-			if !gameServer.ImageExists() && !gameServer.SaveImage() {
-				notifyNonRecoverableFailure(cfg, "Invalid state")
+			if !gameServer.ImageExists() && !gameServer.SaveImage(rdb) {
+				notifyNonRecoverableFailure(cfg, rdb, "Invalid state")
 				return
 			}
 			if !gameServer.DeleteVM() {
-				notifyNonRecoverableFailure(cfg, "Failed to delete VM")
+				notifyNonRecoverableFailure(cfg, rdb, "Failed to delete VM")
 				return
 			}
 		}
@@ -520,16 +478,17 @@ func main() {
 		bindAddr = os.Args[1]
 	}
 
-	server.status.Status = L(cfg.ControlPanel.Locale, "monitor.stopped")
-	server.status.Shutdown = true
-
-	monitorChan := make(chan *monitor.StatusData)
-	server.monitorChan = monitorChan
-
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     cfg.ControlPanel.Redis.Address,
 		Password: cfg.ControlPanel.Redis.Password,
 	})
+
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
+		Status:   L(cfg.ControlPanel.Locale, "monitor.stopped"),
+		Shutdown: true,
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
+	}
 
 	var gameServer GameServer
 	if cfg.Debug.Runner {
@@ -803,11 +762,6 @@ func main() {
 	})
 	{
 		api.GET("/status", func(c *gin.Context) {
-			ch := make(chan *monitor.StatusData)
-			server.addMonitorClient(ch)
-			defer close(ch)
-			defer server.removeMonitorClient(ch)
-
 			ticker := time.NewTicker(5 * time.Second)
 			defer ticker.Stop()
 
@@ -815,46 +769,44 @@ func main() {
 			c.Writer.Header().Set("Cache-Control", "no-store")
 			c.Writer.Header().Set("X-Accel-Buffering", "no")
 
-			writeEvent := func(status *monitor.StatusData) error {
+			writeEvent := func(status string) error {
 				if _, err := c.Writer.WriteString("event: statuschanged\n"); err != nil {
 					return err
 				}
-				if _, err := c.Writer.WriteString("data: "); err != nil {
-					return err
-				}
 
-				if data, err := json.Marshal(status); err != nil {
-					return err
-				} else {
-					if _, err := c.Writer.Write(data); err != nil {
-						return err
-					}
-				}
-				if _, err := c.Writer.WriteString("\n\n"); err != nil {
+				if _, err := c.Writer.Write([]byte("data: " + status + "\n\n")); err != nil {
 					return err
 				}
 				c.Writer.Flush()
 				return nil
 			}
 
-			server.statusMu.Lock()
-			if err := writeEvent(&server.status); err != nil {
-				log.WithError(err).Error("Failed to write data")
-				return
+			lastStatus, err := rdb.Get(context.Background(), "last-status:default").Result()
+			if err != nil && err != redis.Nil {
+				log.WithError(err).Error("Failed to read from Redis")
 			}
-			server.statusMu.Unlock()
+			if err != redis.Nil {
+				if err := writeEvent(lastStatus); err != nil {
+					log.WithError(err).Error("Failed to write data")
+					return
+				}
+			}
+
+			subscription := rdb.Subscribe(context.Background(), "status:default")
+			defer subscription.Close()
+			eventChannel := subscription.Channel()
 
 			for {
 				select {
-				case status := <-ch:
-					if err := writeEvent(status); err != nil {
+				case status := <-eventChannel:
+					if err := writeEvent(status.Payload); err != nil {
 						log.WithError(err).Error("Failed to write server-sent event")
 						goto end
 					}
 
 				case <-ticker.C:
 					if _, err := c.Writer.WriteString(": uhaha\n"); err != nil {
-						log.WithError(err).Error("Failed to marshal status data")
+						log.WithError(err).Error("Failed to write keep-alive message")
 						goto end
 					}
 					c.Writer.Flush()
@@ -864,9 +816,6 @@ func main() {
 		})
 
 		api.POST("/launch", func(c *gin.Context) {
-			server.statusMu.Lock()
-			defer server.statusMu.Unlock()
-
 			if err := c.Request.ParseForm(); err != nil {
 				log.WithError(err).Error("Failed to parse form")
 				c.JSON(400, gin.H{"success": false, "message": "Form parse error"})
@@ -940,9 +889,6 @@ func main() {
 		})
 
 		api.POST("/stop", func(c *gin.Context) {
-			server.statusMu.Lock()
-			defer server.statusMu.Unlock()
-
 			go StopServer(cfg, gameServer, rdb)
 
 			c.JSON(200, gin.H{"success": true})
@@ -1359,10 +1305,6 @@ func main() {
 		})
 
 	}
-
-	go func() {
-		server.dispatchMonitorEvent(rdb)
-	}()
 
 	guessAndHandleCurrentVMState(cfg, gameServer, rdb)
 

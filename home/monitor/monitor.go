@@ -41,7 +41,24 @@ func makeTLSConfig(config *config.Config, rdb *redis.Client) (*tls.Config, error
 
 }
 
-func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData, rdb *redis.Client) error {
+func PublishEvent(rdb *redis.Client, status StatusData) error {
+	jsonData, err := json.Marshal(status)
+	if err != nil {
+		return err
+	}
+
+	if _, err := rdb.Pipelined(context.Background(), func(p redis.Pipeliner) error {
+		p.Set(context.Background(), "last-status:default", jsonData, -1)
+		p.Publish(context.Background(), "status:default", string(jsonData))
+		return nil
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
+	}
+
+	return nil
+}
+
+func MonitorServer(cfg *config.Config, addr string, rdb *redis.Client) error {
 	tlsConfig, err := makeTLSConfig(cfg, rdb)
 	if err != nil {
 		return err
@@ -59,10 +76,12 @@ func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData, rdb *
 			log.WithError(err).Error("Failed to connect to status server")
 
 			if connLost {
-				evCh <- &StatusData{
+				if err := PublishEvent(rdb, StatusData{
 					Status:   "Connection lost. Will reconnect...",
 					HasError: true,
 					Shutdown: false,
+				}); err != nil {
+					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
 
 				connLost = false
@@ -98,7 +117,9 @@ func MonitorServer(cfg *config.Config, addr string, evCh chan *StatusData, rdb *
 				goto end
 			}
 
-			evCh <- &status
+			if err := PublishEvent(rdb, status); err != nil {
+				log.WithError(err).Error("Failed to write status data to Redis channel")
+			}
 		}
 	}
 end:
@@ -106,10 +127,12 @@ end:
 	return nil
 
 err:
-	evCh <- &StatusData{
+	if err := PublishEvent(rdb, StatusData{
 		Status:   "Server did not respond in 10 minutes. I'm tired of waiting :P",
 		HasError: true,
 		Shutdown: false,
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	return nil
