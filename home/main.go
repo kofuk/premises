@@ -728,6 +728,9 @@ func main() {
 		session := sessions.Default(c)
 		session.Delete("user_id")
 		session.Save()
+
+		DiscardSessionV2(rdb, session.ID())
+
 		c.Redirect(http.StatusFound, "/")
 	})
 

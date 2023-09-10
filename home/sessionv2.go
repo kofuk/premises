@@ -29,3 +29,10 @@ func SaveSessionV2(redi *redis.Client, sessId string, state SessionV2) {
 		return
 	}
 }
+
+func DiscardSessionV2(redi *redis.Client, sessId string) {
+	if err := redi.Del(context.Background(), fmt.Sprintf("%s:%s", SessionV2Prefix, sessId)).Err(); err != nil {
+		log.WithError(err).Error("Failed to store session v2")
+		return
+	}
+}
