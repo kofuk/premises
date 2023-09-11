@@ -321,6 +321,8 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 			return
 		}
 
+		srv.SendChat("スナップショットを取得しました！")
+
 		w.WriteHeader(http.StatusCreated)
 	})
 
@@ -332,7 +334,15 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 			return
 		}
 
-		srv.QuickUndo()
+		go func() {
+			srv.SendChat("3秒後にサーバを再起動します")
+			time.Sleep(time.Second)
+			srv.SendChat("2…")
+			time.Sleep(time.Second)
+			srv.SendChat("1…")
+			time.Sleep(time.Second)
+			srv.QuickUndo()
+		}()
 
 		w.WriteHeader(http.StatusCreated)
 	})

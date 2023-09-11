@@ -189,6 +189,24 @@ func (srv *ServerInstance) AddToOp(players []string) {
 	}
 }
 
+func (srv *ServerInstance) SendChat(message string) error {
+	srv.rconMu.Lock()
+	defer srv.rconMu.Unlock()
+	conn, err := connectToRcon(srv)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	resp, err := conn.Execute(fmt.Sprintf("tellraw @a \"%s\"", message))
+	if err != nil {
+		return err
+	}
+	log.Info(resp)
+
+	return nil
+}
+
 func (srv *ServerInstance) GetSeed() (string, error) {
 	srv.rconMu.Lock()
 	defer srv.rconMu.Unlock()
