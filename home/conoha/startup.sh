@@ -18,7 +18,6 @@ __run() {
 
         curl -O 'https://storage.googleapis.com/premises-artifacts/metadata.txt'
         remote_version="$(cut -d\  -f1 metadata.txt)"
-        meta_hash="$(cut -d\  -f2 metadata.txt)"
 
         current_version="$("${PREMISES_BASEDIR}/bin/premises-mcmanager" --version || true)"
 
