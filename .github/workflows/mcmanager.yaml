@@ -40,28 +40,21 @@ jobs:
         run: make
       - name: Generate Metadata
         run: |
-          echo "$(git rev-parse --short HEAD)	$(sha512sum premises-mcmanager | cut -d\  -f1)" >meta
+          echo "$(git rev-parse --short HEAD)	$(sha512sum premises-mcmanager | cut -d\  -f1)" >metadata.txt
       - name: Create Archive
         run : |
           tar -cJf premises-mcmanager.tar.xz premises-mcmanager
-      - name: Import GPG key
-        uses: crazy-max/ghaction-import-gpg@v5
+      - uses: google-github-actions/auth@v1
         with:
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-      - name: Sign to Artifacts
-        run: |
-          gpg --detach-sign --armor premises-mcmanager.tar.xz
-          gpg --detach-sign --armor meta
-      - name: Upload Artifacts
-        env:
-          UPDATER_AUTH_TOKEN: ${{ secrets.UPDATER_AUTH_TOKEN }}
-        run: |
-          curl https://prmssupd.000webhostapp.com/ \
-               -F f=@premises-mcmanager.tar.xz -F filename=premises-mcmanager.tar.xz -Fauth_token="${UPDATER_AUTH_TOKEN}"
-          curl https://prmssupd.000webhostapp.com/ \
-               -F f=@premises-mcmanager.tar.xz.asc -F filename=premises-mcmanager.tar.xz.asc -Fauth_token="${UPDATER_AUTH_TOKEN}"
-          curl https://prmssupd.000webhostapp.com/ \
-               -F f=@meta -F filename=meta -Fauth_token="${UPDATER_AUTH_TOKEN}"
-          curl https://prmssupd.000webhostapp.com/ \
-               -F f=@meta.asc -F filename=meta.asc -Fauth_token="${UPDATER_AUTH_TOKEN}"
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+      - uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: mcmanager/premises-mcmanager.tar.xz
+          destination: premises-artifacts
+          parent: false
+      - uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: mcmanager/metadata.txt
+          destination: premises-artifacts
+          parent: false
 
