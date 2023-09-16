@@ -9,7 +9,6 @@ const config = {
     devtool: env === 'development' ? 'inline-source-map' : false,
     entry: {
         'login': './frontend/login.tsx',
-        'login-bs': './frontend/login-bs.tsx',
         'control': './frontend/control.tsx',
         'setup': './frontend/setup.tsx'
     },
