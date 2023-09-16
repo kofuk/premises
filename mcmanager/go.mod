@@ -10,7 +10,7 @@ require (
 	github.com/kofuk/go-mega v0.0.0-20220314143053-5929f3eeeac4
 	github.com/nicksnyder/go-i18n/v2 v2.2.0
 	github.com/sirupsen/logrus v1.8.1
-	github.com/ulikunitz/xz v0.5.10
+	github.com/ulikunitz/xz v0.5.11
 	golang.org/x/text v0.3.7
 )
 
