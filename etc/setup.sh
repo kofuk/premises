@@ -6,7 +6,6 @@ PREMISES_BASEDIR=/opt/premises
 PACKAGES=(
     btrfs-progs
     curl
-    gnupg2
     openjdk-17-jre-headless
     ufw
     unzip
