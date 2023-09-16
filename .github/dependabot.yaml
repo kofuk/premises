@@ -4,24 +4,19 @@ updates:
     directory: /
     schedule:
       interval: daily
-    open-pull-requests-limit: 0
   - package-ecosystem: gomod
     directory: /home
     schedule:
       interval: daily
-    open-pull-requests-limit: 0
   - package-ecosystem: gomod
     directory: /mcmanager
     schedule:
       interval: daily
-    open-pull-requests-limit: 0
   - package-ecosystem: npm
     directory: /e2e-tests
     schedule:
       interval: daily
-    open-pull-requests-limit: 0
   - package-ecosystem: npm
     directory: /home
     schedule:
       interval: daily
-    open-pull-requests-limit: 0
