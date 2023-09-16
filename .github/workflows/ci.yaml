@@ -3,6 +3,7 @@ on: push
 
 env:
   NODE_VERSION: 20
+  GO_VERSION: 1.21
 
 jobs:
   test-mcmanager:
@@ -91,9 +92,9 @@ jobs:
         working-directory: ./home
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: '^1.17'
+          go-version-file: home/go.mod
       - name: Run test
         run: go test -v ./...
 
