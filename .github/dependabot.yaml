@@ -20,3 +20,7 @@ updates:
     directory: /home
     schedule:
       interval: daily
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
