@@ -1,8 +1,7 @@
 name: mcmanager
 on:
-  push:
-    branches:
-      - 'master'
+  - push
+  - pull_request
 
 defaults:
   run:
@@ -22,7 +21,7 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v3
