@@ -11,12 +11,12 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/joho/godotenv v1.4.0
+	github.com/kofuk/go-mega v0.0.0-20220314143053-5929f3eeeac4
 	github.com/nicksnyder/go-i18n/v2 v2.2.0
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/crypto v0.8.0
-	golang.org/x/text v0.9.0
+	golang.org/x/text v0.13.0
 	gorm.io/driver/postgres v1.5.2
-	gorm.io/driver/sqlite v1.3.6
 	gorm.io/gorm v1.25.0
 )
 
@@ -67,11 +67,9 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kofuk/go-mega v0.0.0-20220314143053-5929f3eeeac4 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-runewidth v0.0.12 // indirect
-	github.com/mattn/go-sqlite3 v1.14.12 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
