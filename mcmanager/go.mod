@@ -3,7 +3,7 @@ module github.com/kofuk/premises/mcmanager
 go 1.17
 
 require (
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/gorcon/rcon v1.3.4
 	github.com/gorilla/websocket v1.5.0
 	github.com/klauspost/compress v1.16.7
