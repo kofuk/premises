@@ -27,7 +27,7 @@
     "@mui/icons-material": "^5.14.6",
     "@mui/lab": "^5.0.0-alpha.141",
     "@mui/material": "^5.14.6",
-    "@mui/styled-engine-sc": "^5.14.6",
+    "@mui/styled-engine-sc": "^5.14.9",
     "@react-icons/all-files": "^4.1.0",
     "@types/bootstrap": "^5.2.4",
     "@types/react": "^17.0.40",
