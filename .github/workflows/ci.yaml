@@ -1,0 +1,107 @@
+name: CI
+on:
+  - push
+  - pull_request
+
+jobs:
+  test-mcmanager:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./mcmanager
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.17'
+      - name: Run test
+        run: go test -v ./...
+
+  deploy-mcmanager:
+    runs-on: ubuntu-latest
+    needs:
+      - test-mcmanager
+      - test-home
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    defaults:
+      run:
+        working-directory: ./mcmanager
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.17'
+      - name: Install Required Packages
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y make tar xz-utils
+      - name: Build
+        run: make
+      - name: Generate Metadata
+        run: |
+          echo "$(git rev-parse --short HEAD)	$(sha512sum premises-mcmanager | cut -d\  -f1)" >metadata.txt
+      - name: Create Archive
+        run : |
+          tar -cJf premises-mcmanager.tar.xz premises-mcmanager
+      - uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+      - uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: mcmanager/premises-mcmanager.tar.xz
+          destination: premises-artifacts
+          parent: false
+      - uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: mcmanager/metadata.txt
+          destination: premises-artifacts
+          parent: false
+
+  test-home:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./home
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.17'
+      - name: Run test
+        run: go test -v ./...
+
+  deploy-home:
+    runs-on: ubuntu-latest
+    needs:
+      - test-mcmanager
+      - test-home
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    defaults:
+      run:
+        working-directory: ./home
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: . # project root
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          labels: ${{ steps.meta.outputs.labels }}
