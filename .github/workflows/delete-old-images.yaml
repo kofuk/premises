@@ -1,0 +1,15 @@
+name: Delete old Docker images
+on:
+  schedule:
+    - cron: '33 18 * * *'
+
+jobs:
+  delete-old-images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/delete-package-versions@v4
+        with:
+          package-name: premises
+          package-type: container
+          min-versions-to-keep: 10
+          delete-only-untagged-versions: 'true'
