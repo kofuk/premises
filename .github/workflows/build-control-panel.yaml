@@ -1,0 +1,31 @@
+name: Build Control Panel
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: A tag name for built Docker image
+        required: true
+        type: string
+
+jobs:
+  build-docker-image:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./home
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: . # project root
+          tags: ${{ inputs.tag }}
+          outputs: type=docker,dest=image.tar
+          cache-from: type=gha
+          cache-to: type=gha
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: control-panel-image
+          path: image.tar

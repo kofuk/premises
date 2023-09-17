@@ -3,7 +3,6 @@ on: push
 
 env:
   NODE_VERSION: 20
-  GO_VERSION: 1.21
 
 jobs:
   test-mcmanager:
@@ -18,52 +17,6 @@ jobs:
           go-version: '^1.17'
       - name: Run test
         run: go test -v ./...
-
-  build-mcmanager:
-    runs-on: ubuntu-latest
-    needs:
-      - test-mcmanager
-      - check-home-frontend-format
-      - test-home-backend
-    defaults:
-      run:
-        working-directory: ./mcmanager
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-go@v3
-        with:
-          go-version: '^1.17'
-      - name: Install Required Packages
-        run: |
-          set -e
-          sudo apt-get update
-          sudo apt-get install -y make tar xz-utils
-      - name: Build
-        run: make
-      - name: Generate Metadata
-        run: |
-          echo "$(git rev-parse --short HEAD)	$(sha512sum premises-mcmanager | cut -d\  -f1)" >metadata.txt
-      - name: Create Archive
-        run : |
-          tar -cJf premises-mcmanager.tar.xz premises-mcmanager
-      - uses: google-github-actions/auth@v1
-        if: github.ref_name == 'master'
-        with:
-          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
-      - uses: google-github-actions/upload-cloud-storage@v1
-        if: github.ref_name == 'master'
-        with:
-          path: mcmanager/premises-mcmanager.tar.xz
-          destination: premises-artifacts
-          parent: false
-          process_gcloudignore: false
-      - uses: google-github-actions/upload-cloud-storage@v1
-        if: github.ref_name == 'master'
-        with:
-          path: mcmanager/metadata.txt
-          destination: premises-artifacts
-          parent: false
-          process_gcloudignore: false
 
   check-home-frontend-format:
     runs-on: ubuntu-latest
@@ -95,43 +48,81 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version-file: home/go.mod
+          cache-dependency-path: |
+            home/go.sum
       - name: Run test
         run: go test -v ./...
 
-  build-home:
-    runs-on: ubuntu-latest
+  build-mcmanager:
     needs:
       - test-mcmanager
       - check-home-frontend-format
       - test-home-backend
-    defaults:
-      run:
-        working-directory: ./home
-    env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
+    uses: ./.github/workflows/build-mcmanager.yaml
+
+  build-home:
+    needs:
+      - test-mcmanager
+      - check-home-frontend-format
+      - test-home-backend
+    uses: ./.github/workflows/build-control-panel.yaml
+    with:
+      tag: ghcr.io/kofuk/premises:latest
+
+  publish-mcmanager:
+    runs-on: ubuntu-latest
+    needs: build-mcmanager
+    if: github.ref_name == 'master'
+    steps:
+      - name: Install Required Packages
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y tar xz-utils
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: mcmanager
+      - name: Create Archive
+        run : tar -cJf premises-mcmanager.tar.xz premises-mcmanager
+      - name: Generate Metadata
+        run: |
+          echo "$(head -c7 <<<${{ github.sha }})	$(sha512sum premises-mcmanager | cut -d\  -f1)" >metadata.txt
+      - uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+      - uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: premises-mcmanager.tar.xz
+          destination: premises-artifacts
+          parent: false
+          process_gcloudignore: false
+      - uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: metadata.txt
+          destination: premises-artifacts
+          parent: false
+          process_gcloudignore: false
+
+
+  publish-home-docker-image:
+    runs-on: ubuntu-latest
+    needs: build-home
+    if: github.ref_name == 'master'
     permissions:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v3
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v1
+      - name: Download artifact
+        uses: actions/download-artifact@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          name: control-panel-image
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: . # project root
-          push: ${{ github.ref_name == 'master' }}
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha
+      - name: Load image
+        run: docker load --input image.tar
+      - name: Push image
+        run: docker push ghcr.io/kofuk/premises:latest

@@ -1,0 +1,29 @@
+name: Build mcmanager
+on:
+  workflow_call:
+
+jobs:
+  build-mcmanager:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./mcmanager
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: mcmanager/go.mod
+          cache-dependency-path: |
+            mcmanager/go.sum
+      - name: Install Required Packages
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y make
+      - name: Build
+        run: make
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mcmanager
+          path: ./mcmanager/premises-mcmanager
