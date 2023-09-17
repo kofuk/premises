@@ -18,7 +18,7 @@ jobs:
       - name: Run test
         run: go test -v ./...
 
-  check-home-frontend-format:
+  check-format-home-frontend:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -31,7 +31,27 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('home/package-lock.json') }}
+      - name: Check code formatted
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run fmt:check
+
+  check-format-e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./e2e-tests
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('e2e-tests/package-lock.json') }}
       - name: Check code formatted
         run: |
           set -euo pipefail
@@ -56,14 +76,14 @@ jobs:
   build-mcmanager:
     needs:
       - test-mcmanager
-      - check-home-frontend-format
+      - check-format-home-frontend
       - test-home-backend
     uses: ./.github/workflows/build-mcmanager.yaml
 
   build-home:
     needs:
       - test-mcmanager
-      - check-home-frontend-format
+      - check-format-home-frontend
       - test-home-backend
     uses: ./.github/workflows/build-control-panel.yaml
     with:
