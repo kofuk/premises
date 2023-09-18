@@ -2,11 +2,12 @@ package gameconfig
 
 import (
 	"context"
+	"encoding/base32"
 	"errors"
 	"math/rand"
-	"strings"
 	"time"
 
+	"github.com/gorilla/securecookie"
 	"github.com/kofuk/premises/controlpanel/mcversions"
 )
 
@@ -77,13 +78,8 @@ const authKeySymbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123
 var randSource = rand.NewSource(time.Now().UnixNano())
 
 func (gc *GameConfig) GenerateAuthKey() string {
-	length := int(randSource.Int63()%17 + 11)
-	var builder strings.Builder
-	builder.Grow(length)
-	for i := 0; i < length; i++ {
-		builder.WriteByte(authKeySymbols[int(randSource.Int63())%len(authKeySymbols)])
-	}
-	result := builder.String()
+	encoder := base32.StdEncoding.WithPadding(base32.NoPadding)
+	result := encoder.EncodeToString(securecookie.GenerateRandomKey(30))
 	gc.AuthKey = result
 	return result
 }
