@@ -14,8 +14,8 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
-	"github.com/kofuk/premises/home/config"
-	"github.com/kofuk/premises/home/gameconfig"
+	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/controlpanel/gameconfig"
 	log "github.com/sirupsen/logrus"
 )
 

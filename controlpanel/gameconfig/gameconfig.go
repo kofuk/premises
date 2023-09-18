@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kofuk/premises/home/mcversions"
+	"github.com/kofuk/premises/controlpanel/mcversions"
 )
 
 type GameConfig struct {

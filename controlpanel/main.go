@@ -35,11 +35,11 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/kofuk/premises/home/backup"
-	"github.com/kofuk/premises/home/config"
-	"github.com/kofuk/premises/home/gameconfig"
-	"github.com/kofuk/premises/home/mcversions"
-	"github.com/kofuk/premises/home/monitor"
+	"github.com/kofuk/premises/controlpanel/backup"
+	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/controlpanel/gameconfig"
+	"github.com/kofuk/premises/controlpanel/mcversions"
+	"github.com/kofuk/premises/controlpanel/monitor"
 )
 
 //go:embed i18n/*.json

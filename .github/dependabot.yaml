@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: gomod
-    directory: /home
+    directory: /controlpanel
     schedule:
       interval: weekly
   - package-ecosystem: gomod
@@ -17,7 +17,7 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: npm
-    directory: /home
+    directory: /controlpanel
     schedule:
       interval: weekly
   - package-ecosystem: github-actions

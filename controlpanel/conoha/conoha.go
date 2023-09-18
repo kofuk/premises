@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kofuk/premises/home/config"
+	"github.com/kofuk/premises/controlpanel/config"
 	log "github.com/sirupsen/logrus"
 )
 

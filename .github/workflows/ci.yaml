@@ -18,11 +18,11 @@ jobs:
       - name: Run test
         run: go test -v ./...
 
-  check-format-home-frontend:
+  check-format-controlpanel-frontend:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./home
+        working-directory: ./controlpanel
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -31,7 +31,7 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('home/package-lock.json') }}
+          key: ${{ runner.os }}-node-${{ hashFiles('controlpanel/package-lock.json') }}
       - name: Check code formatted
         run: |
           set -euo pipefail
@@ -58,34 +58,34 @@ jobs:
           npm ci
           npm run fmt:check
 
-  test-home-backend:
+  test-controlpanel-backend:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./home
+        working-directory: ./controlpanel
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version-file: home/go.mod
+          go-version-file: controlpanel/go.mod
           cache-dependency-path: |
-            home/go.sum
+            controlpanel/go.sum
       - name: Run test
         run: go test -v ./...
 
   build-mcmanager:
     needs:
       - test-mcmanager
-      - check-format-home-frontend
-      - test-home-backend
+      - check-format-controlpanel-frontend
+      - test-controlpanel-backend
     uses: ./.github/workflows/build-mcmanager.yaml
 
-  build-home:
+  build-controlpanel:
     needs:
       - test-mcmanager
-      - check-format-home-frontend
-      - test-home-backend
-    uses: ./.github/workflows/build-control-panel.yaml
+      - check-format-controlpanel-frontend
+      - test-controlpanel-backend
+    uses: ./.github/workflows/build-controlpanel.yaml
     with:
       tag: ghcr.io/kofuk/premises:latest
 
@@ -125,9 +125,9 @@ jobs:
           process_gcloudignore: false
 
 
-  publish-home-docker-image:
+  publish-controlpanel-docker-image:
     runs-on: ubuntu-latest
-    needs: build-home
+    needs: build-controlpanel
     if: github.ref_name == 'master'
     permissions:
       contents: read

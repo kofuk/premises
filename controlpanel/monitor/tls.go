@@ -6,7 +6,7 @@ import (
 	"os/exec"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/kofuk/premises/home/config"
+	"github.com/kofuk/premises/controlpanel/config"
 )
 
 func GenerateTLSKey(cfg *config.Config, rdb *redis.Client) error {

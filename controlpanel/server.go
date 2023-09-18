@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/kofuk/premises/home/cloudflare"
-	"github.com/kofuk/premises/home/config"
-	"github.com/kofuk/premises/home/conoha"
-	"github.com/kofuk/premises/home/gameconfig"
-	"github.com/kofuk/premises/home/monitor"
+	"github.com/kofuk/premises/controlpanel/cloudflare"
+	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/controlpanel/conoha"
+	"github.com/kofuk/premises/controlpanel/gameconfig"
+	"github.com/kofuk/premises/controlpanel/monitor"
 	log "github.com/sirupsen/logrus"
 )
 

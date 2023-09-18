@@ -3,7 +3,7 @@ package config
 import (
 	"path/filepath"
 
-	"github.com/kofuk/premises/home/backup"
+	"github.com/kofuk/premises/controlpanel/backup"
 )
 
 type Config struct {

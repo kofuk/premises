@@ -1,4 +1,4 @@
-module github.com/kofuk/premises/home
+module github.com/kofuk/premises/controlpanel
 
 go 1.21
 
