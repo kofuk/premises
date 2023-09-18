@@ -1,6 +1,7 @@
 package mcversions
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -32,8 +33,14 @@ type launcherMeta struct {
 	} `json:"versions"`
 }
 
-func fetchVersionManifest() (*launcherMeta, error) {
-	resp, err := http.Get(versionManifestUrl)
+func fetchVersionManifest(ctx context.Context) (*launcherMeta, error) {
+	req, err := http.NewRequest(http.MethodGet, versionManifestUrl, nil)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -55,8 +62,8 @@ func fetchVersionManifest() (*launcherMeta, error) {
 	return &meta, nil
 }
 
-func GetVersions() ([]MCVersion, error) {
-	versionData, err := fetchVersionManifest()
+func GetVersions(ctx context.Context) ([]MCVersion, error) {
+	versionData, err := fetchVersionManifest(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -96,10 +103,10 @@ type versionMeta struct {
 	} `json:"downloads"`
 }
 
-func GetDownloadUrl(version string) (string, error) {
+func GetDownloadUrl(ctx context.Context, version string) (string, error) {
 	// TODO: Use cached launcherMeta
 
-	versionData, err := fetchVersionManifest()
+	versionData, err := fetchVersionManifest(ctx)
 	if err != nil {
 		return "", err
 	}

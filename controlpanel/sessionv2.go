@@ -21,17 +21,17 @@ type SessionV2 struct {
 	UserID uint   `json:"user_id"`
 }
 
-func SaveSessionV2(redi *redis.Client, sessId string, state SessionV2) {
+func SaveSessionV2(ctx context.Context, redi *redis.Client, sessId string, state SessionV2) {
 	data, _ := json.Marshal(state)
 
-	if err := redi.Set(context.Background(), fmt.Sprintf("%s:%s", SessionV2Prefix, sessId), data, 30*24*time.Hour).Err(); err != nil {
+	if err := redi.Set(ctx, fmt.Sprintf("%s:%s", SessionV2Prefix, sessId), data, 30*24*time.Hour).Err(); err != nil {
 		log.WithError(err).Error("Failed to store session v2")
 		return
 	}
 }
 
-func DiscardSessionV2(redi *redis.Client, sessId string) {
-	if err := redi.Del(context.Background(), fmt.Sprintf("%s:%s", SessionV2Prefix, sessId)).Err(); err != nil {
+func DiscardSessionV2(ctx context.Context, redi *redis.Client, sessId string) {
+	if err := redi.Del(ctx, fmt.Sprintf("%s:%s", SessionV2Prefix, sessId)).Err(); err != nil {
 		log.WithError(err).Error("Failed to store session v2")
 		return
 	}

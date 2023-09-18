@@ -1,6 +1,7 @@
 package gameconfig
 
 import (
+	"context"
 	"errors"
 	"math/rand"
 	"strings"
@@ -48,7 +49,7 @@ func New() *GameConfig {
 }
 
 func (gc *GameConfig) SetServerVersion(version string) error {
-	dlUrl, err := mcversions.GetDownloadUrl(version)
+	dlUrl, err := mcversions.GetDownloadUrl(context.TODO(), version)
 	if err != nil {
 		return err
 	}

@@ -197,7 +197,7 @@ func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, ad
 	return nil
 }
 
-func GetSystemInfoData(cfg *config.Config, addr string, rdb *redis.Client) ([]byte, error) {
+func GetSystemInfoData(ctx context.Context, cfg *config.Config, addr string, rdb *redis.Client) ([]byte, error) {
 	tlsConfig, err := makeTLSConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
@@ -209,6 +209,7 @@ func GetSystemInfoData(cfg *config.Config, addr string, rdb *redis.Client) ([]by
 	if err != nil {
 		return nil, err
 	}
+	req = req.WithContext(ctx)
 	req.Header.Add("X-Auth-Key", cfg.MonitorKey)
 
 	resp, err := client.Do(req)
@@ -224,7 +225,7 @@ func GetSystemInfoData(cfg *config.Config, addr string, rdb *redis.Client) ([]by
 	return data, nil
 }
 
-func GetWorldInfoData(cfg *config.Config, addr string, rdb *redis.Client) ([]byte, error) {
+func GetWorldInfoData(ctx context.Context, cfg *config.Config, addr string, rdb *redis.Client) ([]byte, error) {
 	tlsConfig, err := makeTLSConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
@@ -236,6 +237,7 @@ func GetWorldInfoData(cfg *config.Config, addr string, rdb *redis.Client) ([]byt
 	if err != nil {
 		return nil, err
 	}
+	req = req.WithContext(ctx)
 	req.Header.Add("X-Auth-Key", cfg.MonitorKey)
 
 	resp, err := client.Do(req)

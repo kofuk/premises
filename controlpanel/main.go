@@ -538,7 +538,7 @@ func main() {
 		password := c.PostForm("password")
 
 		user := User{}
-		if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+		if err := db.WithContext(c.Request.Context()).Where("name = ?", username).First(&user).Error; err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
 			return
 		}
@@ -572,7 +572,7 @@ func main() {
 		password := c.PostForm("password")
 
 		user := User{}
-		if err := db.Where("name = ?", username).First(&user).Error; err != nil {
+		if err := db.WithContext(c.Request.Context()).Where("name = ?", username).First(&user).Error; err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
 			return
 		}
@@ -596,7 +596,7 @@ func main() {
 		user.Password = string(hashedPassword)
 		user.Initialized = true
 
-		if err := db.Save(user).Error; err != nil {
+		if err := db.WithContext(c.Request.Context()).Save(user).Error; err != nil {
 			log.WithError(err).Error("error updating password")
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 		}
@@ -617,7 +617,7 @@ func main() {
 		username := c.PostForm("username")
 
 		user := User{}
-		if err := db.Where("name = ?", username).Preload("Credentials").First(&user).Error; err != nil {
+		if err := db.WithContext(c.Request.Context()).Where("name = ?", username).Preload("Credentials").First(&user).Error; err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
 			return
 		}
@@ -676,7 +676,7 @@ func main() {
 		}
 
 		user := User{}
-		if err := db.Preload("Credentials").Find(&user, userID).Error; err != nil {
+		if err := db.WithContext(c.Request.Context()).Preload("Credentials").Find(&user, userID).Error; err != nil {
 			c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "login.error")})
 			return
 		}
@@ -715,7 +715,7 @@ func main() {
 		}
 
 		usedCred.AuthenticatorSignCount = cred.Authenticator.SignCount
-		if err := db.Save(usedCred).Error; err != nil {
+		if err := db.WithContext(c.Request.Context()).Save(usedCred).Error; err != nil {
 			log.WithError(err).Warn("failed to save credential")
 		}
 
@@ -729,7 +729,7 @@ func main() {
 		session.Delete("user_id")
 		session.Save()
 
-		DiscardSessionV2(rdb, session.ID())
+		DiscardSessionV2(c.Request.Context(), rdb, session.ID())
 
 		c.Redirect(http.StatusFound, "/")
 	})
@@ -748,7 +748,7 @@ func main() {
 			return
 		}
 
-		SaveSessionV2(rdb, session.ID(), SessionV2{
+		SaveSessionV2(c.Request.Context(), rdb, session.ID(), SessionV2{
 			State:  SessionStateLoggedIn,
 			UserID: session.Get("user_id").(uint),
 		})
@@ -784,7 +784,7 @@ func main() {
 				return nil
 			}
 
-			lastStatus, err := rdb.Get(context.Background(), "last-status:default").Result()
+			lastStatus, err := rdb.Get(c.Request.Context(), "last-status:default").Result()
 			if err != nil && err != redis.Nil {
 				log.WithError(err).Error("Failed to read from Redis")
 			}
@@ -795,27 +795,30 @@ func main() {
 				}
 			}
 
-			subscription := rdb.Subscribe(context.Background(), "status:default")
+			subscription := rdb.Subscribe(c.Request.Context(), "status:default")
 			defer subscription.Close()
 			eventChannel := subscription.Channel()
 
+		end:
 			for {
 				select {
 				case status := <-eventChannel:
 					if err := writeEvent(status.Payload); err != nil {
 						log.WithError(err).Error("Failed to write server-sent event")
-						goto end
+						break end
 					}
 
 				case <-ticker.C:
 					if _, err := c.Writer.WriteString(": uhaha\n"); err != nil {
 						log.WithError(err).Error("Failed to write keep-alive message")
-						goto end
+						break end
 					}
 					c.Writer.Flush()
+
+				case <-c.Request.Context().Done():
+					break end
 				}
 			}
-		end:
 		})
 
 		api.POST("/launch", func(c *gin.Context) {
@@ -899,12 +902,12 @@ func main() {
 
 		api.GET("/backups", func(c *gin.Context) {
 			if _, ok := c.GetQuery("reload"); ok {
-				if _, err := rdb.Del(context.Background(), CacheKeyBackups).Result(); err != nil {
+				if _, err := rdb.Del(c.Request.Context(), CacheKeyBackups).Result(); err != nil {
 					log.WithError(err).Error("Failed to delete backup list cache")
 				}
 			}
 
-			if val, err := rdb.Get(context.Background(), CacheKeyBackups).Result(); err == nil {
+			if val, err := rdb.Get(c.Request.Context(), CacheKeyBackups).Result(); err == nil {
 				c.Header("Content-Type", "application/json")
 				c.Writer.Write([]byte(val))
 				return
@@ -928,7 +931,7 @@ func main() {
 				return
 			}
 
-			if _, err := rdb.Set(context.Background(), CacheKeyBackups, jsonData, 24*time.Hour).Result(); err != nil {
+			if _, err := rdb.Set(c.Request.Context(), CacheKeyBackups, jsonData, 24*time.Hour).Result(); err != nil {
 				log.WithError(err).Error("Failed to store backup list")
 			}
 
@@ -938,12 +941,12 @@ func main() {
 
 		api.GET("/mcversions", func(c *gin.Context) {
 			if _, ok := c.GetQuery("reload"); ok {
-				if _, err := rdb.Del(context.Background(), CacheKeyMCVersions).Result(); err != nil {
+				if _, err := rdb.Del(c.Request.Context(), CacheKeyMCVersions).Result(); err != nil {
 					log.WithError(err).Error("Failed to delete mcversions cache")
 				}
 			}
 
-			if val, err := rdb.Get(context.Background(), CacheKeyMCVersions).Result(); err == nil {
+			if val, err := rdb.Get(c.Request.Context(), CacheKeyMCVersions).Result(); err == nil {
 				c.Header("Content-Type", "application/json")
 				c.Writer.Write([]byte(val))
 				return
@@ -953,7 +956,7 @@ func main() {
 
 			log.WithField("cache_key", CacheKeyMCVersions).Info("cache miss")
 
-			versions, err := mcversions.GetVersions()
+			versions, err := mcversions.GetVersions(c.Request.Context())
 			if err != nil {
 				log.WithError(err).Error("Failed to retrieve Minecraft versions")
 				c.Status(http.StatusInternalServerError)
@@ -967,7 +970,7 @@ func main() {
 				return
 			}
 
-			if _, err := rdb.Set(context.Background(), CacheKeyMCVersions, jsonData, 7*24*time.Hour).Result(); err != nil {
+			if _, err := rdb.Set(c.Request.Context(), CacheKeyMCVersions, jsonData, 7*24*time.Hour).Result(); err != nil {
 				log.WithError(err).Error("Failed to cache mcversions")
 			}
 
@@ -984,12 +987,12 @@ func main() {
 			cacheKey := fmt.Sprintf("%s:%s", CacheKeySystemInfoPrefix, cfg.ServerAddr)
 
 			if _, ok := c.GetQuery("reload"); ok {
-				if _, err := rdb.Del(context.Background(), cacheKey).Result(); err != nil {
+				if _, err := rdb.Del(c.Request.Context(), cacheKey).Result(); err != nil {
 					log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Failed to delete system info cache")
 				}
 			}
 
-			if val, err := rdb.Get(context.Background(), cacheKey).Result(); err == nil {
+			if val, err := rdb.Get(c.Request.Context(), cacheKey).Result(); err == nil {
 				c.Header("Content-Type", "application/json")
 				c.Writer.Write([]byte(val))
 				return
@@ -999,13 +1002,13 @@ func main() {
 
 			log.WithField("cache_key", cacheKey).Info("cache miss")
 
-			data, err := monitor.GetSystemInfoData(cfg, cfg.ServerAddr, rdb)
+			data, err := monitor.GetSystemInfoData(c.Request.Context(), cfg, cfg.ServerAddr, rdb)
 			if err != nil {
 				c.Status(http.StatusInternalServerError)
 				return
 			}
 
-			if _, err := rdb.Set(context.Background(), cacheKey, data, 24*time.Hour).Result(); err != nil {
+			if _, err := rdb.Set(c.Request.Context(), cacheKey, data, 24*time.Hour).Result(); err != nil {
 				log.WithError(err).WithField("server_addr", cfg.ServerAddr).Error("Failed to cache mcversions")
 			}
 
@@ -1019,7 +1022,7 @@ func main() {
 				return
 			}
 
-			data, err := monitor.GetWorldInfoData(cfg, cfg.ServerAddr, rdb)
+			data, err := monitor.GetWorldInfoData(c.Request.Context(), cfg, cfg.ServerAddr, rdb)
 			if err != nil {
 				c.Status(http.StatusInternalServerError)
 				return
@@ -1061,7 +1064,7 @@ func main() {
 			}
 
 			user := User{}
-			if err := db.Find(&user, userID).Error; err != nil {
+			if err := db.WithContext(c.Request.Context()).Find(&user, userID).Error; err != nil {
 				log.WithError(err).Error("User not found")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1080,7 +1083,7 @@ func main() {
 			user.Password = string(hashedPassword)
 			user.Initialized = true
 
-			if err := db.Save(user).Error; err != nil {
+			if err := db.WithContext(c.Request.Context()).Save(user).Error; err != nil {
 				log.WithError(err).Error("error updating password")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 			}
@@ -1123,7 +1126,7 @@ func main() {
 				Initialized:   false,
 			}
 
-			if err := db.Create(user).Error; err != nil {
+			if err := db.WithContext(c.Request.Context()).Create(user).Error; err != nil {
 				log.WithError(err).Error("error registering user")
 				c.JSON(http.StatusOK, gin.H{"success": false, "reason": L(cfg.ControlPanel.Locale, "account.user.exists")})
 				return
@@ -1137,7 +1140,7 @@ func main() {
 			userID := session.Get("user_id")
 
 			var credentials []Credential
-			if err := db.Where("owner_id = ?", userID).Find(&credentials).Error; err != nil {
+			if err := db.WithContext(c.Request.Context()).Where("owner_id = ?", userID).Find(&credentials).Error; err != nil {
 				log.WithError(err).Error("Error fetching credentials")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1163,13 +1166,13 @@ func main() {
 			keyUuid := c.Param("uuid")
 
 			var credential Credential
-			if err := db.Where("owner_id = ? AND uuid = ?", userID, keyUuid).First(&credential).Error; err != nil {
+			if err := db.WithContext(c.Request.Context()).Where("owner_id = ? AND uuid = ?", userID, keyUuid).First(&credential).Error; err != nil {
 				log.WithError(err).Error("Error fetching credentials")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
 			}
 
-			if err := db.Delete(&credential).Error; err != nil {
+			if err := db.WithContext(c.Request.Context()).Delete(&credential).Error; err != nil {
 				log.WithError(err).Error("Error fetching credentials")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1183,7 +1186,7 @@ func main() {
 			userID := session.Get("user_id")
 
 			user := User{}
-			if err := db.Find(&user, userID).Error; err != nil {
+			if err := db.WithContext(c.Request.Context()).Find(&user, userID).Error; err != nil {
 				log.WithError(err).Error("User expected to be found, but didn't")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1194,7 +1197,7 @@ func main() {
 			}
 
 			var credentials []Credential
-			if err := db.Where("owner_id = ?", userID).Find(&credentials).Error; err != nil {
+			if err := db.WithContext(c.Request.Context()).Where("owner_id = ?", userID).Find(&credentials).Error; err != nil {
 				log.WithError(err).Error("Error fetching credentials")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1247,7 +1250,7 @@ func main() {
 			}
 
 			user := User{}
-			if err := db.Find(&user, userID).Error; err != nil {
+			if err := db.WithContext(c.Request.Context()).Find(&user, userID).Error; err != nil {
 				log.WithError(err).Error("User expected to be found, but didn't")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1258,7 +1261,7 @@ func main() {
 			}
 
 			var credentials []Credential
-			if err := db.Where("owner_id = ?", userID).Find(&credentials).Error; err != nil {
+			if err := db.WithContext(c.Request.Context()).Where("owner_id = ?", userID).Find(&credentials).Error; err != nil {
 				log.WithError(err).Error("Error fetching credentials")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1287,7 +1290,7 @@ func main() {
 			}
 
 			var exists bool
-			if err := db.Model(credential).Select("count(*) > 0").Where("owner_id = ? AND credential_id = ?", userID, credential.CredentialID).Find(&exists).Error; err != nil {
+			if err := db.WithContext(c.Request.Context()).Model(credential).Select("count(*) > 0").Where("owner_id = ? AND credential_id = ?", userID, credential.CredentialID).Find(&exists).Error; err != nil {
 				log.WithError(err).Error("Error fetching public key count")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
@@ -1298,7 +1301,7 @@ func main() {
 				return
 			}
 
-			if err := db.Create(&credential).Error; err != nil {
+			if err := db.WithContext(c.Request.Context()).Create(&credential).Error; err != nil {
 				log.WithError(err).Error("Error saving credential")
 				c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 				return
