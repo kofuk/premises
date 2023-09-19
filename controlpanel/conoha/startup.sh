@@ -5,9 +5,9 @@ __run() {
     # Keep system up-to-date
     (
         export DEBIAN_FRONTEND=noninteractive
-        apt-get update
-        apt-get upgrade -y
-        apt-get autoremove -y --purge
+        apt-get update &>>/tmp/premises-apt-upgrade.log
+        apt-get upgrade -y &>>/tmp/premises-apt-upgrade.log
+        apt-get autoremove -y --purge &>>/tmp/premises-apt-upgrade.log
     ) &
     _apt_pid=$!
 
@@ -24,7 +24,8 @@ __run() {
         [ "${current_version}" = "${remote_version}" ] && exit 0
 
         curl 'https://storage.googleapis.com/premises-artifacts/premises-mcmanager.tar.xz' | tar -xJ
-        mv 'premises-mcmanager' "${PREMISES_BASEDIR}/bin/premises-mcmanager"
+        cp 'premises-mcmanager' "${PREMISES_BASEDIR}/bin/premises-mcmanager.new"
+        mv "${PREMISES_BASEDIR}/bin/premises-mcmanager.new" "${PREMISES_BASEDIR}/bin/premises-mcmanager"
 
         # Make sure new version launched
         pid="$(pidof -s premises-mcmanager)"
@@ -51,4 +52,4 @@ EOF
     wait "${_apt_pid}"
 
     exit
-} && __run
+} && __run |& tee /tmp/premises-startup.log
