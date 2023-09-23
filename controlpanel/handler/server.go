@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"context"
@@ -34,11 +34,13 @@ type GameServer interface {
 type LocalDebugServer struct {
 	pid int
 	cfg *config.Config
+	h *Handler
 }
 
-func NewLocalDebugServer(cfg *config.Config) *LocalDebugServer {
+func NewLocalDebugServer(cfg *config.Config, h *Handler) *LocalDebugServer {
 	return &LocalDebugServer{
 		cfg: cfg,
+		h: h,
 	}
 }
 
@@ -142,11 +144,13 @@ type ConohaServer struct {
 	cfg     *config.Config
 	token   string
 	expires string
+	h *Handler
 }
 
-func NewConohaServer(cfg *config.Config) *ConohaServer {
+func NewConohaServer(cfg *config.Config, h *Handler) *ConohaServer {
 	return &ConohaServer{
 		cfg: cfg,
+		h: h,
 	}
 }
 
@@ -179,7 +183,7 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Clien
 	locale := s.cfg.ControlPanel.Locale
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: L(locale, "vm.gathering_info"),
+		Status: s.h.L(locale, "vm.gathering_info"),
 	}); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
@@ -226,7 +230,7 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Clien
 
 	log.Info("Creating VM...")
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: L(locale, "vm.creating"),
+		Status: s.h.L(locale, "vm.creating"),
 	}); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
@@ -291,7 +295,7 @@ func (s *ConohaServer) StopVM(rdb *redis.Client) bool {
 	}
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: L(locale, "vm.stopping"),
+		Status: s.h.L(locale, "vm.stopping"),
 	}); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
@@ -387,7 +391,7 @@ func (s *ConohaServer) SaveImage(rdb *redis.Client) bool {
 	}
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: L(locale, "vm.image.saving"),
+		Status: s.h.L(locale, "vm.image.saving"),
 	}); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
@@ -433,7 +437,7 @@ func (s *ConohaServer) DeleteImage(rdb *redis.Client) bool {
 	}
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: L(locale, "vm.cleaning_up"),
+		Status: s.h.L(locale, "vm.cleaning_up"),
 	}); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
@@ -461,7 +465,7 @@ func (s *ConohaServer) DeleteImage(rdb *redis.Client) bool {
 		}
 
 		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   L(locale, "vm.image.delete.error"),
+			Status:   s.h.L(locale, "vm.image.delete.error"),
 			HasError: true,
 		}); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
@@ -484,7 +488,7 @@ func (s *ConohaServer) UpdateDNS(rdb *redis.Client) bool {
 	}
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: L(locale, "vm.ip.waiting"),
+		Status: s.h.L(locale, "vm.ip.waiting"),
 	}); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
@@ -507,7 +511,7 @@ func (s *ConohaServer) UpdateDNS(rdb *redis.Client) bool {
 			log.Error("Building VM didn't completed")
 		}
 		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   L(locale, "vm.get_detail.error"),
+			Status:   s.h.L(locale, "vm.get_detail.error"),
 			HasError: true,
 		}); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
@@ -517,7 +521,7 @@ func (s *ConohaServer) UpdateDNS(rdb *redis.Client) bool {
 	log.WithField("vm_status", vms.Status).Info("Getting VM information...Done")
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: L(locale, "vm.dns.updating"),
+		Status: s.h.L(locale, "vm.dns.updating"),
 	}); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
@@ -532,7 +536,7 @@ func (s *ConohaServer) UpdateDNS(rdb *redis.Client) bool {
 	if err := cloudflare.UpdateDNS(s.cfg, ip4Addr, 4); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v4)")
 		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   L(locale, "vm.dns.error"),
+			Status:   s.h.L(locale, "vm.dns.error"),
 			HasError: true,
 		}); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
@@ -545,7 +549,7 @@ func (s *ConohaServer) UpdateDNS(rdb *redis.Client) bool {
 	if err := cloudflare.UpdateDNS(s.cfg, ip6Addr, 6); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v6)")
 		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   L(locale, "vm.dns.error"),
+			Status:   s.h.L(locale, "vm.dns.error"),
 			HasError: true,
 		}); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
@@ -561,7 +565,7 @@ func (s *ConohaServer) RevertDNS(rdb *redis.Client) bool {
 	locale := s.cfg.ControlPanel.Locale
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: L(locale, "vm.dns.reverting"),
+		Status: s.h.L(locale, "vm.dns.reverting"),
 	}); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
@@ -570,7 +574,7 @@ func (s *ConohaServer) RevertDNS(rdb *redis.Client) bool {
 	if err := cloudflare.UpdateDNS(s.cfg, "127.0.0.1", 4); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v4)")
 		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   L(locale, "vm.dns.error"),
+			Status:   s.h.L(locale, "vm.dns.error"),
 			HasError: true,
 		}); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
@@ -583,7 +587,7 @@ func (s *ConohaServer) RevertDNS(rdb *redis.Client) bool {
 	if err := cloudflare.UpdateDNS(s.cfg, "::1", 6); err != nil {
 		log.WithError(err).Error("Failed to update DNS (v6)")
 		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   L(locale, "vm.dns.error"),
+			Status:   s.h.L(locale, "vm.dns.error"),
 			HasError: true,
 		}); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
