@@ -3,7 +3,7 @@ WORKDIR /build
 COPY . .
 RUN cd /build/controlpanel && make
 
-FROM node:latest
+FROM node:20
 WORKDIR /build
 COPY /controlpanel .
 RUN npm ci && npm run prod
