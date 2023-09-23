@@ -25,4 +25,3 @@ type Credential struct {
 	AuthenticatorAAGUID    []byte `gorm:"type:bytea;not null"`
 	AuthenticatorSignCount uint32 `gorm:"not null"`
 }
-

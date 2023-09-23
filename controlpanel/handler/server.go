@@ -34,13 +34,13 @@ type GameServer interface {
 type LocalDebugServer struct {
 	pid int
 	cfg *config.Config
-	h *Handler
+	h   *Handler
 }
 
 func NewLocalDebugServer(cfg *config.Config, h *Handler) *LocalDebugServer {
 	return &LocalDebugServer{
 		cfg: cfg,
-		h: h,
+		h:   h,
 	}
 }
 
@@ -144,13 +144,13 @@ type ConohaServer struct {
 	cfg     *config.Config
 	token   string
 	expires string
-	h *Handler
+	h       *Handler
 }
 
 func NewConohaServer(cfg *config.Config, h *Handler) *ConohaServer {
 	return &ConohaServer{
 		cfg: cfg,
-		h: h,
+		h:   h,
 	}
 }
 
