@@ -10,7 +10,7 @@ import (
 )
 
 func GenerateTLSKey(cfg *config.Config, rdb *redis.Client) error {
-	cmd := exec.Command("openssl", "req", "-x509", "-nodes", "-subj", "/C=US", "-addext", "subjectAltName = DNS:*", "-newkey", "rsa:4096", "-keyout", "/tmp/key", "-out", "/tmp/cert")
+	cmd := exec.Command("openssl", "req", "-x509", "-nodes", "-subj", "/C=US", "-addext", "subjectAltName = DNS:usergameservermonitoring.premises.kofuk.org", "-newkey", "rsa:4096", "-keyout", "/tmp/key", "-out", "/tmp/cert")
 	if err := cmd.Run(); err != nil {
 		return err
 	}

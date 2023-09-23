@@ -34,9 +34,8 @@ func makeTLSConfig(config *config.Config, rdb *redis.Client) (*tls.Config, error
 	rootCAs.AppendCertsFromPEM([]byte(certFile))
 
 	return &tls.Config{
-		RootCAs: rootCAs,
-		//TODO: Can't we use TLS without setting InsecureSkipVerify???
-		InsecureSkipVerify: true,
+		RootCAs:    rootCAs,
+		ServerName: "usergameservermonitoring.premises.kofuk.org",
 	}, nil
 
 }
