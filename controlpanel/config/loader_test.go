@@ -1,73 +1,124 @@
 package config
 
 import (
-	"math"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func Test_loadToStruct(t *testing.T) {
+func Test_loadToStruct_withoutPrefix(t *testing.T) {
+	type InnerStruct struct {
+		Foo     string
+		Bar     []string
+		Baz     []int
+		Hoge    string `env:"fuga"`
+		Ignored string `env:"-"`
+	}
 	type Struct struct {
-		Name  string
-		Num   int
-		Bool  bool
-		Float float64
-		Inner struct {
-			Foo  string
-			Bar  []string
-			Baz  []int
-			Hoge string `env:"fuga"`
-		}
+		Name       string
+		Num        int
+		SignedNum  int
+		Uint       uint
+		Bool       bool
+		Float      float64
+		Ignored    string `env:"-"`
+		unexported string
+		Inner      InnerStruct
 	}
 	var v Struct
+	v.Ignored = "hoge"
+	v.unexported = "hoge"
+	v.Inner.Ignored = "hoge"
 	os.Setenv("name", "hoge")
 	os.Setenv("num", "5")
+	os.Setenv("signednum", "-5")
+	os.Setenv("uint", "5")
 	os.Setenv("bool", "true")
 	os.Setenv("float", "1.5")
+	os.Setenv("ignored", "1234")
+	os.Setenv("-", "1234")
+	os.Setenv("unexported", "1234")
 	os.Setenv("inner_foo", "hogehoge")
 	os.Setenv("inner_bar", "foo,bar")
 	os.Setenv("inner_baz", "1,3,5")
 	os.Setenv("inner_fuga", "moge")
+	os.Setenv("inner_-", "moge")
 	if err := loadToStruct("", &v); err != nil {
 		t.Fatal(err)
 	}
-	if v.Name != "hoge" {
-		t.Fatal("v.Name not match", v.Name)
+
+	assert.Equal(t, Struct{
+		Name:       "hoge",
+		Num:        5,
+		SignedNum:  -5,
+		Uint:       5,
+		Bool:       true,
+		Float:      1.5,
+		Ignored:    "hoge",
+		unexported: "hoge",
+		Inner: InnerStruct{
+			Foo:     "hogehoge",
+			Bar:     []string{"foo", "bar"},
+			Baz:     []int{1, 3, 5},
+			Hoge:    "moge",
+			Ignored: "hoge",
+		},
+	}, v)
+}
+
+func Test_loadToStruct_withPrefix(t *testing.T) {
+	type Struct struct {
+		Value string
 	}
-	if v.Num != 5 {
-		t.Fatal("v.Num not match: ", v.Num)
+
+	var v Struct
+	os.Setenv("prefix_value", "hoge")
+	if err := loadToStruct("prefix", &v); err != nil {
+		t.Fatal(err)
 	}
-	if !v.Bool {
-		t.Fatal("v.Bool not match: ", v.Bool)
+
+	assert.Equal(t, Struct{
+		Value: "hoge",
+	}, v)
+}
+
+func Test_loadToStruct_heavilyNested(t *testing.T) {
+	type StructInner2 struct {
+		Value string
 	}
-	if math.Abs(v.Float-1.5) > 1e-9 {
-		t.Fatal("v.Float not match: ", v.Float)
+	type StructInner1 struct {
+		Inner2 StructInner2
 	}
-	if v.Inner.Foo != "hogehoge" {
-		t.Fatal("v.Inner.Foo not match: ", v.Inner.Foo)
+	type Struct struct {
+		Inner1 StructInner1
 	}
-	if len(v.Inner.Bar) != 2 {
-		t.Fatal("len(v.Inner.Bar) not match: ", len(v.Inner.Bar))
+
+	var v Struct
+	os.Setenv("inner1_inner2_value", "hoge")
+	if err := loadToStruct("", &v); err != nil {
+		t.Fatal(err)
 	}
-	if v.Inner.Bar[0] != "foo" {
-		t.Fatal("v.Inner.Bar[0] not match: ", v.Inner.Bar[0])
+
+	assert.Equal(t, Struct{
+		Inner1: StructInner1{
+			Inner2: StructInner2{
+				Value: "hoge",
+			},
+		},
+	}, v)
+}
+
+func Test_loadToStruct_shouldError(t *testing.T) {
+	type Struct struct {
+		Value int
 	}
-	if v.Inner.Bar[1] != "bar" {
-		t.Fatal("v.Inner.Bar[1] not match: ", v.Inner.Bar[1])
+
+	var v Struct
+	os.Setenv("value", "hoge")
+	if err := loadToStruct("", &v); err != nil {
+		assert.True(t, true)
+		return
 	}
-	if len(v.Inner.Baz) != 3 {
-		t.Fatal("len(v.Inner.Baz) not match: ", len(v.Inner.Baz))
-	}
-	if v.Inner.Baz[0] != 1 {
-		t.Fatal("v.Inner.Baz[0] not match: ", v.Inner.Baz[0])
-	}
-	if v.Inner.Baz[1] != 3 {
-		t.Fatal("v.Inner.Baz[1] not match: ", v.Inner.Baz[1])
-	}
-	if v.Inner.Baz[2] != 5 {
-		t.Fatal("v.Inner.Baz[2] not match: ", v.Inner.Baz[2])
-	}
-	if v.Inner.Hoge != "moge" {
-		t.Fatal("v.Inner.Hoge not match: ", v.Inner.Hoge)
-	}
+	t.FailNow()
 }

@@ -2,6 +2,8 @@ package conoha
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_getSpecFromFlavorName(t *testing.T) {
@@ -52,20 +54,14 @@ func Test_getSpecFromFlavorName(t *testing.T) {
 	for _, testcase := range testcases {
 		t.Run(testcase.name, func(t *testing.T) {
 			cores, mem, disk, err := getSpecFromFlavorName(testcase.flavorName)
-			if err != testcase.err {
-				t.Fatalf("Unexpected error: %v", err)
-			} else if testcase.err == nil && err != nil {
-				t.Fatalf("Error shouldn't occur: %v", err)
+			if testcase.err != nil {
+				assert.ErrorIs(t, err, testcase.err)
+			} else {
+				assert.Nil(t, err)
 			}
-			if cores != testcase.cores {
-				t.Errorf("Wrong cores: wants=%v, actual=%v", testcase.cores, cores)
-			}
-			if mem != testcase.mem {
-				t.Errorf("Wrong mem: wants=%v, actual=%v", testcase.mem, mem)
-			}
-			if disk != testcase.disk {
-				t.Errorf("Wrong cores: wants=%v, actual=%v", testcase.disk, disk)
-			}
+			assert.Equal(t, testcase.cores, cores, "Core matches")
+			assert.Equal(t, testcase.mem, mem, "Mem matches")
+			assert.Equal(t, testcase.disk, disk, "Disk matches")
 		})
 	}
 }

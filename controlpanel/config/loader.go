@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
@@ -14,6 +15,10 @@ var (
 
 var (
 	isInDocker = false
+)
+
+const (
+	ignoreFieldName = "-"
 )
 
 func init() {
@@ -41,7 +46,7 @@ func loadField(name string, field reflect.Value) error {
 	case reflect.Int:
 		result, err := strconv.ParseInt(xGetenv(name), 0, 64)
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to parse %s: %w", name, err)
 		}
 		field.SetInt(result)
 		break
@@ -49,7 +54,7 @@ func loadField(name string, field reflect.Value) error {
 	case reflect.Uint:
 		result, err := strconv.ParseUint(xGetenv(name), 0, 64)
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to parse %s: %w", name, err)
 		}
 		field.SetUint(result)
 		break
@@ -59,7 +64,7 @@ func loadField(name string, field reflect.Value) error {
 	case reflect.Float64:
 		result, err := strconv.ParseFloat(xGetenv(name), 64)
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to parse %s: %w", name, err)
 		}
 		field.SetFloat(result)
 		break
@@ -82,10 +87,10 @@ func loadField(name string, field reflect.Value) error {
 
 		case reflect.Int:
 			slice := sliceInterface.([]int)
-			for _, v := range strings.Split(xGetenv(name), ",") {
+			for i, v := range strings.Split(xGetenv(name), ",") {
 				val, err := strconv.ParseInt(v, 0, 64)
 				if err != nil {
-					return err
+					return fmt.Errorf("Failed to parse %dth of %s: %w", i, name, err)
 				}
 				slice = append(slice, int(val))
 			}
@@ -94,10 +99,10 @@ func loadField(name string, field reflect.Value) error {
 
 		case reflect.Uint:
 			slice := sliceInterface.([]uint)
-			for _, v := range strings.Split(xGetenv(name), ",") {
+			for i, v := range strings.Split(xGetenv(name), ",") {
 				val, err := strconv.ParseUint(v, 0, 64)
 				if err != nil {
-					return err
+					return fmt.Errorf("Failed to parse %dth of %s: %w", i, name, err)
 				}
 				slice = append(slice, uint(val))
 			}
@@ -106,10 +111,10 @@ func loadField(name string, field reflect.Value) error {
 
 		case reflect.Float32:
 			slice := sliceInterface.([]float32)
-			for _, v := range strings.Split(xGetenv(name), ",") {
+			for i, v := range strings.Split(xGetenv(name), ",") {
 				val, err := strconv.ParseFloat(v, 32)
 				if err != nil {
-					return err
+					return fmt.Errorf("Failed to parse %dth of %s: %w", i, name, err)
 				}
 				slice = append(slice, float32(val))
 			}
@@ -118,10 +123,10 @@ func loadField(name string, field reflect.Value) error {
 
 		case reflect.Float64:
 			slice := sliceInterface.([]float64)
-			for _, v := range strings.Split(xGetenv(name), ",") {
+			for i, v := range strings.Split(xGetenv(name), ",") {
 				val, err := strconv.ParseFloat(v, 64)
 				if err != nil {
-					return err
+					return fmt.Errorf("Failed to parse %dth of %s: %w", i, name, err)
 				}
 				slice = append(slice, float64(val))
 			}
@@ -148,7 +153,7 @@ func loadInnerField(prefix string, val reflect.Value, ty reflect.Type) error {
 		fieldName, ok := fieldType.Tag.Lookup("env")
 		if !ok {
 			fieldName = strings.ToLower(fieldType.Name)
-		} else if ok && fieldName == "_ignore" {
+		} else if ok && fieldName == ignoreFieldName {
 			continue
 		}
 		name := prefix + "_" + fieldName
@@ -181,7 +186,7 @@ func loadToStruct(prefix string, v interface{}) error {
 		name, ok := fieldType.Tag.Lookup("env")
 		if !ok {
 			name = strings.ToLower(fieldType.Name)
-		} else if ok && name == "_ignore" {
+		} else if ok && name == ignoreFieldName {
 			continue
 		}
 

@@ -50,8 +50,8 @@ type Config struct {
 		Locale          string `env:"locale"`
 		AlertWebhookUrl string `env:"alertWebhook"`
 	} `env:"controlPanel"`
-	MonitorKey string `env:"_ignore"`
-	ServerAddr string `env:"_ignore"`
+	MonitorKey string `env:"-"`
+	ServerAddr string `env:"-"`
 }
 
 type ServerConfig struct {

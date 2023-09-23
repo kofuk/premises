@@ -1,6 +1,11 @@
 package handler
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestIsAllowedPassword(t *testing.T) {
 	testcases := []struct {
@@ -33,9 +38,7 @@ func TestIsAllowedPassword(t *testing.T) {
 	for _, tt := range testcases {
 		t.Run(tt.name, func(t *testing.T) {
 			result := isAllowedPassword(tt.password)
-			if result != tt.allowed {
-				t.Errorf("Failed password=%v, want=%v, got=%v", tt.password, tt.allowed, result)
-			}
+			assert.Equal(t, tt.allowed, result, fmt.Sprintf("Resut for %s is correct", tt.password))
 		})
 	}
 }

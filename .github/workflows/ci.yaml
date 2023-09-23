@@ -73,7 +73,14 @@ jobs:
           cache-dependency-path: |
             controlpanel/go.sum
       - name: Run test
-        run: go test -v ./...
+        run: go test -v -cover -coverprofile=coverprofile ./...
+      - name: Create coverage report
+        run: go tool cover -html=coverprofile -o coverage.html
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: controlpanel-coverage
+          path: ./controlpanel/coverage.html
 
   build-mcmanager:
     needs:
