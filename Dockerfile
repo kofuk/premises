@@ -16,6 +16,7 @@ RUN cargo build --release
 
 FROM scratch
 COPY --from=0 /build/controlpanel/premises /premises
+COPY --from=0 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=1 /build/gen /gen
 COPY --from=2 /build/target/release/pmctl /bin/pmctl
 ENTRYPOINT ["/premises"]
