@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,21 +21,6 @@ type StatusData struct {
 	Status   string `json:"status"`
 	Shutdown bool   `json:"shutdown"`
 	HasError bool   `json:"hasError"`
-}
-
-func makeTLSConfig(config *config.Config, rdb *redis.Client) (*tls.Config, error) {
-	rootCAs := x509.NewCertPool()
-	certFile, err := rdb.Get(context.Background(), "server-crt").Result()
-	if err != nil {
-		return nil, err
-	}
-	rootCAs.AppendCertsFromPEM([]byte(certFile))
-
-	return &tls.Config{
-		RootCAs:    rootCAs,
-		ServerName: "usergameservermonitoring.premises.kofuk.org",
-	}, nil
-
 }
 
 func PublishEvent(rdb *redis.Client, status StatusData) error {
@@ -58,7 +41,7 @@ func PublishEvent(rdb *redis.Client, status StatusData) error {
 }
 
 func MonitorServer(cfg *config.Config, addr string, rdb *redis.Client) error {
-	tlsConfig, err := makeTLSConfig(cfg, rdb)
+	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
 	if err != nil {
 		return err
 	}
@@ -162,7 +145,7 @@ err:
 }
 
 func StopServer(cfg *config.Config, addr string, rdb *redis.Client) error {
-	tlsConfig, err := makeTLSConfig(cfg, rdb)
+	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
@@ -188,7 +171,7 @@ func StopServer(cfg *config.Config, addr string, rdb *redis.Client) error {
 }
 
 func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, addr string, rdb *redis.Client) error {
-	tlsConfig, err := makeTLSConfig(cfg, rdb)
+	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
@@ -221,7 +204,7 @@ func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, ad
 }
 
 func GetSystemInfoData(ctx context.Context, cfg *config.Config, addr string, rdb *redis.Client) ([]byte, error) {
-	tlsConfig, err := makeTLSConfig(cfg, rdb)
+	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
@@ -249,7 +232,7 @@ func GetSystemInfoData(ctx context.Context, cfg *config.Config, addr string, rdb
 }
 
 func GetWorldInfoData(ctx context.Context, cfg *config.Config, addr string, rdb *redis.Client) ([]byte, error) {
-	tlsConfig, err := makeTLSConfig(cfg, rdb)
+	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
@@ -277,7 +260,7 @@ func GetWorldInfoData(ctx context.Context, cfg *config.Config, addr string, rdb 
 }
 
 func TakeSnapshot(cfg *config.Config, addr string, rdb *redis.Client) error {
-	tlsConfig, err := makeTLSConfig(cfg, rdb)
+	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
@@ -303,7 +286,7 @@ func TakeSnapshot(cfg *config.Config, addr string, rdb *redis.Client) error {
 }
 
 func QuickSnapshot(cfg *config.Config, addr string, rdb *redis.Client) error {
-	tlsConfig, err := makeTLSConfig(cfg, rdb)
+	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
@@ -329,7 +312,7 @@ func QuickSnapshot(cfg *config.Config, addr string, rdb *redis.Client) error {
 }
 
 func QuickUndo(cfg *config.Config, addr string, rdb *redis.Client) error {
-	tlsConfig, err := makeTLSConfig(cfg, rdb)
+	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: tlsConfig,
