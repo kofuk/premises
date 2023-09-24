@@ -39,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: mcmanager-coverage
-          path: ./controlpanel/coverage.html
+          path: ./mcmanager/coverage.html
 
   check-format-controlpanel-frontend:
     runs-on: ubuntu-latest
