@@ -153,7 +153,7 @@ func (h *Handler) setupRootRoutes(group *gin.RouterGroup) {
 	h.engine.NoRoute(static.Serve("/", static.LocalFile("gen", false)))
 	h.engine.GET("/", h.handleRoot)
 	h.engine.POST("/login", h.handleLogin)
-	h.engine.POST("/logout", h.handleLogout)
+	h.engine.GET("/logout", h.handleLogout)
 	h.engine.POST("/login/reset-password", h.handleLoginResetPassword)
-	h.engine.POST("/robots.txt", h.handleRobotsTxt)
+	h.engine.GET("/robots.txt", h.handleRobotsTxt)
 }
