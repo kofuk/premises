@@ -15,7 +15,9 @@ jobs:
           cache-dependency-path: |
             mcmanager/go.sum
       - name: Check format
-        run: test "$(go fmt ./... | tee /dev/stderr | wc -l)" -eq 0
+        run: |
+          set -euo pipefail
+          test "$(go fmt ./... | tee /dev/stderr | wc -l)" -eq 0
 
   test-mcmanager:
     runs-on: ubuntu-latest
@@ -72,7 +74,9 @@ jobs:
           cache-dependency-path: |
             controlpanel/go.sum
       - name: Check format
-        run: test "$(go fmt ./... | tee /dev/stderr | wc -l)" -eq 0
+        run: |
+          set -euo pipefail
+          test "$(go fmt ./... | tee /dev/stderr | wc -l)" -eq 0
 
   check-format-e2e:
     runs-on: ubuntu-latest
