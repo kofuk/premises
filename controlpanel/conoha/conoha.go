@@ -161,6 +161,8 @@ func DeleteVM(cfg *config.Config, token, vmID string) error {
 			finalErr = errors.New(fmt.Sprintf("Failed to delete the VM: %d", resp.StatusCode))
 			time.Sleep(time.Duration(rand.Intn(10)))
 		}
+
+		time.Sleep(time.Duration(rand.Intn(10)))
 	}
 
 	return finalErr
