@@ -107,7 +107,7 @@ func isValidLevelType(levelType string) bool {
 }
 
 func (gc *GameConfig) SetLevelType(levelType string) error {
-	if isValidLevelType(levelType) {
+	if !isValidLevelType(levelType) {
 		return errors.New("Unknown level type")
 	}
 	gc.World.LevelType = levelType
@@ -119,7 +119,7 @@ func isValidDifficulty(difficulty string) bool {
 }
 
 func (gc *GameConfig) SetDifficulty(difficulty string) error {
-	if isValidDifficulty(difficulty) {
+	if !isValidDifficulty(difficulty) {
 		return errors.New("Unknown difficulty")
 	}
 	gc.World.Difficulty = difficulty
