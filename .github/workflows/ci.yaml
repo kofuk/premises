@@ -152,6 +152,8 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: mcmanager
+      - name: Set executable bit for premises-mcmanager
+        run: chmod +x premises-mcmanager
       - name: Create Archive
         run : tar -cJf premises-mcmanager.tar.xz premises-mcmanager
       - name: Generate Metadata
