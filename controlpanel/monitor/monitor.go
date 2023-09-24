@@ -18,9 +18,11 @@ import (
 )
 
 type StatusData struct {
-	Status   string `json:"status"`
-	Shutdown bool   `json:"shutdown"`
-	HasError bool   `json:"hasError"`
+	Type     string  `json:"type"`
+	Status   string  `json:"status"`
+	Shutdown bool    `json:"shutdown"`
+	HasError bool    `json:"hasError"`
+	CPUUsage float64 `json:"cpuUsage"`
 }
 
 func PublishEvent(rdb *redis.Client, status StatusData) error {
@@ -34,7 +36,19 @@ func PublishEvent(rdb *redis.Client, status StatusData) error {
 		p.Publish(context.Background(), "status:default", string(jsonData))
 		return nil
 	}); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
+		return err
+	}
+
+	return nil
+}
+
+func publishSystemStatEvent(redis *redis.Client, status StatusData) error {
+	json, err := json.Marshal(status)
+	if err != nil {
+		return err
+	}
+	if err := redis.Publish(context.TODO(), "systemstat:default", string(json)).Err(); err != nil {
+		return err
 	}
 
 	return nil
@@ -117,8 +131,15 @@ out:
 				break out
 			}
 
-			if err := PublishEvent(rdb, *status); err != nil {
-				log.WithError(err).Error("Failed to write status data to Redis channel")
+			// TODO: Remove Type=="" case later
+			if status.Type == "" || status.Type == "legacyEvent" {
+				if err := PublishEvent(rdb, *status); err != nil {
+					log.WithError(err).Error("Failed to write status data to Redis channel")
+				}
+			} else if status.Type == "systemStat" {
+				if err := publishSystemStatEvent(rdb, *status); err != nil {
+					log.WithError(err).Error("Failed to write system stat to Redis channel")
+				}
 			}
 		}
 

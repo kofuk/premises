@@ -15,13 +15,23 @@ import (
 	"github.com/kofuk/premises/mcmanager/config"
 	"github.com/kofuk/premises/mcmanager/gamesrv"
 	"github.com/kofuk/premises/mcmanager/privileged"
+	"github.com/kofuk/premises/mcmanager/systemutil"
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	StatusTypeLegacyEvent = "legacyEvent"
+	StatusTypeSystemStat  = "systemStat"
+)
+
+type StatusType string
+
 type StatusData struct {
-	Status   string `json:"status"`
-	Shutdown bool   `json:"shutdown"`
-	HasError bool   `json:"hasError"`
+	Type     StatusType `json:"type"`
+	Status   string     `json:"status"`
+	Shutdown bool       `json:"shutdown"`
+	HasError bool       `json:"hasError"`
+	CPUUsage float64    `json:"cpuUsage"`
 }
 
 type createSnapshotResp struct {
@@ -203,7 +213,12 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 			return nil
 		}
 
-		if err := writeJson(w, &StatusData{ctx.LastStatus, srv.IsServerFinished, srv.StartupFailed}); err != nil {
+		if err := writeJson(w, &StatusData{
+			Type:     StatusTypeLegacyEvent,
+			Status:   ctx.LastStatus,
+			Shutdown: srv.IsServerFinished,
+			HasError: srv.StartupFailed,
+		}); err != nil {
 			log.WithError(err).Error("Failed to write status")
 			return
 		}
@@ -218,11 +233,48 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 		ctx.AddStatusChannel(statusChannel)
 		defer ctx.RemoveStatusChannel(statusChannel)
 
+		cpuStat, err := systemutil.NewCPUUsage()
+		if err != nil {
+			log.WithError(err).Error("Failed to initialize CPU usage")
+		}
+
+		var tickerChan <-chan time.Time
+		if cpuStat != nil {
+			ticker := time.NewTicker(3 * time.Second)
+			tickerChan = ticker.C
+			defer ticker.Stop()
+		}
+
 	L:
 		for {
 			select {
-			case status := <-statusChannel:
-				if err := writeJson(w, &StatusData{status, srv.IsServerFinished, srv.StartupFailed}); err != nil {
+			case status, ok := <-statusChannel:
+				if !ok {
+					break L
+				}
+				if err := writeJson(w, &StatusData{
+					Type:     StatusTypeLegacyEvent,
+					Status:   status,
+					Shutdown: srv.IsServerFinished,
+					HasError: srv.StartupFailed,
+				}); err != nil {
+					log.WithError(err).Error("Failed to write data to connection")
+					break L
+				}
+
+			case <-tickerChan:
+				cpuUsage, err := cpuStat.Percent()
+				if err != nil {
+					log.WithError(err).Error("Failed to retrieve CPU usage")
+					continue
+				}
+
+				if err := writeJson(w, &StatusData{
+					Type:     StatusTypeSystemStat,
+					Shutdown: srv.IsServerFinished,
+					HasError: srv.StartupFailed,
+					CPUUsage: cpuUsage,
+				}); err != nil {
 					log.WithError(err).Error("Failed to write data to connection")
 					break L
 				}
@@ -358,7 +410,7 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 			return
 		}
 
-		systemInfo := GetSystemInfo()
+		systemInfo := systemutil.GetSystemVersion()
 		data, err := json.Marshal(systemInfo)
 		if err != nil {
 			log.WithError(err).WithField("endpoint", "/systeminfo").Error("Failed to unmarshal system info")
