@@ -4,6 +4,7 @@ import {FaStop} from '@react-icons/all-files/fa/FaStop';
 import '../i18n';
 import {t} from 'i18next';
 
+import {Line, LineChart, YAxis, Tooltip} from 'recharts';
 import ReconfigureMenu from './reconfigure-menu';
 import Snapshot from './control-item/snapshot';
 import QuickUndo from './control-item/quickundo';
@@ -23,17 +24,41 @@ type Prop = {
     showError: (message: string) => void;
 };
 
+interface CPUUsage {
+    cpuUsage: number;
+}
+
 type State = {
     mode: Modes;
+    cpuUsage: CPUUsage[];
 };
 
 export default class ServerControlPane extends React.Component<Prop, State> {
     state: State = {
-        mode: Modes.MainMenu
+        mode: Modes.MainMenu,
+        cpuUsage: Array.apply(null, Array(100)).map((_) => {
+            return {cpuUsage: 0};
+        })
+    };
+
+    componentDidMount = () => {
+        this.connectSystemStat();
     };
 
     handleBackToMenu = () => {
         this.setState({mode: Modes.MainMenu});
+    };
+
+    connectSystemStat = () => {
+        const eventSource = new EventSource('/api/systemstat');
+        eventSource.addEventListener('systemstat', this.handleSystemStat);
+    };
+
+    handleSystemStat = (ev: MessageEvent) => {
+        const event = JSON.parse(ev.data);
+        const data = this.state.cpuUsage.slice(1);
+        data.push({cpuUsage: event['cpuUsage']});
+        this.setState({cpuUsage: data});
     };
 
     render = () => {
@@ -119,6 +144,12 @@ export default class ServerControlPane extends React.Component<Prop, State> {
                             </button>
                         </div>
                     </form>
+
+                    <LineChart data={this.state.cpuUsage} width={800} height={400}>
+                        <YAxis domain={[0, 100]}></YAxis>
+                        <Tooltip />
+                        <Line dataKey="cpuUsage" stroke="#00f" isAnimationActive={false} dot={false} />
+                    </LineChart>
                 </div>
             </div>
         );

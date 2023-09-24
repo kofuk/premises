@@ -92,6 +92,52 @@ end:
 	}
 }
 
+func (h *Handler) handleApiSystemStat(c *gin.Context) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-store")
+	c.Writer.Header().Set("X-Accel-Buffering", "no")
+
+	writeEvent := func(status string) error {
+		if _, err := c.Writer.WriteString("event: systemstat\n"); err != nil {
+			return err
+		}
+
+		if _, err := c.Writer.Write([]byte("data: " + status + "\n\n")); err != nil {
+			return err
+		}
+		c.Writer.Flush()
+		return nil
+	}
+
+	subscription := h.redis.Subscribe(c.Request.Context(), "systemstat:default")
+	defer subscription.Close()
+	eventChannel := subscription.Channel()
+
+end:
+	for {
+		select {
+		case status := <-eventChannel:
+			if err := writeEvent(status.Payload); err != nil {
+				log.WithError(err).Error("Failed to write server-sent event")
+				break end
+			}
+
+		case <-ticker.C:
+			if _, err := c.Writer.WriteString(": uhaha\n"); err != nil {
+				log.WithError(err).Error("Failed to write keep-alive message")
+				break end
+			}
+			c.Writer.Flush()
+
+		case <-c.Request.Context().Done():
+			break end
+		}
+	}
+}
+
 func isValidMemSize(memSize int) bool {
 	return memSize == 1 || memSize == 2 || memSize == 4 || memSize == 8 || memSize == 16 || memSize == 32 || memSize == 64
 }
@@ -823,6 +869,7 @@ func (h *Handler) middlewareSessionCheck(c *gin.Context) {
 func (h *Handler) setupApiRoutes(group *gin.RouterGroup) {
 	group.Use(h.middlewareSessionCheck)
 	group.GET("/status", h.handleApiStatus)
+	group.GET("/systemstat", h.handleApiSystemStat)
 	group.POST("/launch", h.handleApiLaunch)
 	group.POST("/reconfigure", h.handleApiReconfigure)
 	group.POST("/stop", h.handleApiStop)
