@@ -45,15 +45,15 @@ func generateCertPem() (certPem, keyPem []byte, err error) {
 }
 
 func GenerateTLSKey(cfg *config.Config, rdb *redis.Client) error {
-	privKey, pubKey, err := generateCertPem()
+	certPem, keyPem, err := generateCertPem()
 	if err != nil {
 		return err
 	}
 
-	if _, err := rdb.Set(context.Background(), "server-key", privKey, 0).Result(); err != nil {
+	if _, err := rdb.Set(context.Background(), "server-crt", certPem, 0).Result(); err != nil {
 		return err
 	}
-	if _, err := rdb.Set(context.Background(), "server-crt", pubKey, 0).Result(); err != nil {
+	if _, err := rdb.Set(context.Background(), "server-key", keyPem, 0).Result(); err != nil {
 		return err
 	}
 
