@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/tls"
@@ -13,7 +14,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/gorilla/websocket"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
 	log "github.com/sirupsen/logrus"
@@ -63,14 +63,23 @@ func MonitorServer(cfg *config.Config, addr string, rdb *redis.Client) error {
 		return err
 	}
 
-	dialer := &websocket.Dialer{
-		TLSClientConfig: tlsConfig,
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.TLSClientConfig = tlsConfig
+	client := http.Client{
+		Transport: transport,
 	}
+
 	connLost := false
 	startTime := time.Now()
+out:
 	for {
-	newConn:
-		conn, _, err := dialer.Dial("wss://"+addr+":8521/monitor", http.Header{"X-Auth-Key": []string{cfg.MonitorKey}})
+		req, err := http.NewRequest(http.MethodGet, "https://"+addr+":8521/monitor", nil)
+		if err != nil {
+			return err
+		}
+		req.Header.Add("X-Auth-Key", cfg.MonitorKey)
+
+		resp, err := client.Do(req)
 		if err != nil {
 			log.WithError(err).Error("Failed to connect to status server")
 
@@ -91,37 +100,52 @@ func MonitorServer(cfg *config.Config, addr string, rdb *redis.Client) error {
 			}
 
 			time.Sleep(5 * time.Second)
-			goto newConn
+			continue
 		}
-		defer conn.Close()
 
 		connLost = false
 
-		for {
+		receiveEvent := func(reader *bufio.Reader) (*StatusData, error) {
+			line, _, err := reader.ReadLine()
+			if err != nil {
+				return nil, err
+			}
+
 			var status StatusData
-			if err := conn.ReadJSON(&status); err != nil {
-				log.WithError(err).Error("Failed to read data")
-
-				connLost = true
-
-				time.Sleep(2 * time.Second)
-
-				startTime = time.Now()
-				goto newConn
+			if err := json.Unmarshal(line, &status); err != nil {
+				return nil, err
 			}
 
-			// Don't send "shutdown" event.
-			// We'll send one to clients after cleaning up VMs.
+			return &status, nil
+		}
+
+		respReader := bufio.NewReader(resp.Body)
+
+	conn:
+		for {
+			status, err := receiveEvent(respReader)
+			if err != nil {
+				log.WithError(err).Error("Failed to receive event data")
+				break conn
+			}
+
 			if status.Shutdown {
-				goto end
+				resp.Body.Close()
+				break out
 			}
 
-			if err := PublishEvent(rdb, status); err != nil {
+			if err := PublishEvent(rdb, *status); err != nil {
 				log.WithError(err).Error("Failed to write status data to Redis channel")
 			}
 		}
+
+		resp.Body.Close()
+
+		connLost = true
+
+		time.Sleep(2 * time.Second)
+		startTime = time.Now()
 	}
-end:
 
 	return nil
 

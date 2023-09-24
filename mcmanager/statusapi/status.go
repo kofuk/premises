@@ -11,18 +11,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/gorilla/websocket"
 	"github.com/kofuk/premises/mcmanager/backup"
 	"github.com/kofuk/premises/mcmanager/config"
 	"github.com/kofuk/premises/mcmanager/gamesrv"
 	"github.com/kofuk/premises/mcmanager/privileged"
 	log "github.com/sirupsen/logrus"
 )
-
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
 
 type StatusData struct {
 	Status   string `json:"status"`
@@ -194,14 +188,25 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 			return
 		}
 
-		conn, err := upgrader.Upgrade(w, r, nil)
-		if err != nil {
-			log.WithError(err).Error("Failed to upgrade protocol")
+		writeJson := func(w http.ResponseWriter, data *StatusData) error {
+			json, err := json.Marshal(data)
+			if err != nil {
+				return err
+			}
+			json = append(json, '\n')
+			if _, err := w.Write(json); err != nil {
+				return err
+			}
+
+			w.(http.Flusher).Flush()
+
+			return nil
+		}
+
+		if err := writeJson(w, &StatusData{ctx.LastStatus, srv.IsServerFinished, srv.StartupFailed}); err != nil {
+			log.WithError(err).Error("Failed to write status")
 			return
 		}
-		defer conn.Close()
-
-		conn.WriteJSON(&StatusData{ctx.LastStatus, srv.IsServerFinished, srv.StartupFailed})
 		if srv.IsServerFinished {
 			// Connected to shutdown server.
 			// Notify the state and close.
@@ -213,33 +218,19 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 		ctx.AddStatusChannel(statusChannel)
 		defer ctx.RemoveStatusChannel(statusChannel)
 
-		closeChan := make(chan struct{})
-
-		go func() {
-			for {
-				var v struct{}
-				if err := conn.ReadJSON(&v); err != nil {
-					log.Info("Connection closed")
-					close(closeChan)
-					break
-				}
-			}
-		}()
-
+	L:
 		for {
 			select {
 			case status := <-statusChannel:
-				if err := conn.WriteJSON(&StatusData{status, srv.IsServerFinished, srv.StartupFailed}); err != nil {
+				if err := writeJson(w, &StatusData{status, srv.IsServerFinished, srv.StartupFailed}); err != nil {
 					log.WithError(err).Error("Failed to write data to connection")
-					goto end
+					break L
 				}
-				break
 
-			case <-closeChan:
-				goto end
+			case <-r.Context().Done():
+				break L
 			}
 		}
-	end:
 	})
 
 	http.HandleFunc("/newconfig", func(w http.ResponseWriter, r *http.Request) {

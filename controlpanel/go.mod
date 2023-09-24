@@ -10,7 +10,6 @@ require (
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/securecookie v1.1.1
-	github.com/gorilla/websocket v1.5.0
 	github.com/joho/godotenv v1.5.1
 	github.com/kofuk/go-mega v0.0.0-20220314143053-5929f3eeeac4
 	github.com/nicksnyder/go-i18n/v2 v2.2.0
@@ -62,6 +61,7 @@ require (
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
