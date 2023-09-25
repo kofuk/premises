@@ -41,18 +41,24 @@ export default class ServerControlPane extends React.Component<Prop, State> {
         })
     };
 
+    private systemMonitorSource: EventSource | null = null;
+
     componentDidMount = () => {
-        this.connectSystemStat();
+        if (this.systemMonitorSource === null) {
+            const eventSource = new EventSource('/api/systemstat');
+            eventSource.addEventListener('systemstat', this.handleSystemStat);
+            this.systemMonitorSource = eventSource;
+        }
     };
 
     handleBackToMenu = () => {
         this.setState({mode: Modes.MainMenu});
     };
 
-    connectSystemStat = () => {
-        const eventSource = new EventSource('/api/systemstat');
-        eventSource.addEventListener('systemstat', this.handleSystemStat);
-    };
+    componentWillUnmount(): void {
+        this.systemMonitorSource?.close();
+        this.systemMonitorSource = null;
+    }
 
     handleSystemStat = (ev: MessageEvent) => {
         const event = JSON.parse(ev.data);

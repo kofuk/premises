@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/kofuk/premises/controlpanel/model"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
@@ -33,15 +32,6 @@ func (h *Handler) L(locale, msgId string) string {
 		return msg
 	}
 	return msg
-}
-
-func (h *Handler) handleRoot(c *gin.Context) {
-	session := sessions.Default(c)
-	if session.Get("user_id") != nil {
-		c.HTML(200, "control.html", nil)
-	} else {
-		c.HTML(200, "login.html", nil)
-	}
 }
 
 func (h *Handler) handleLogin(c *gin.Context) {
@@ -80,7 +70,7 @@ func (h *Handler) handleLogout(c *gin.Context) {
 	session.Delete("user_id")
 	session.Save()
 
-	c.Redirect(http.StatusFound, "/")
+	c.JSON(http.StatusOK, gin.H{"success": true})
 }
 
 func isAllowedPassword(password string) bool {
@@ -150,10 +140,7 @@ func (h *Handler) handleRobotsTxt(c *gin.Context) {
 }
 
 func (h *Handler) setupRootRoutes(group *gin.RouterGroup) {
-	h.engine.NoRoute(static.Serve("/", static.LocalFile("gen", false)))
-	h.engine.GET("/", h.handleRoot)
-	h.engine.POST("/login", h.handleLogin)
-	h.engine.GET("/logout", h.handleLogout)
-	h.engine.POST("/login/reset-password", h.handleLoginResetPassword)
-	h.engine.GET("/robots.txt", h.handleRobotsTxt)
+	group.POST("/login", h.handleLogin)
+	group.POST("/logout", h.handleLogout)
+	group.POST("/login/reset-password", h.handleLoginResetPassword)
 }

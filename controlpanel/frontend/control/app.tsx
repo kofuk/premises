@@ -7,12 +7,15 @@ import StatusBar from './statusbar';
 import ServerControlPane from './server-control-pane';
 import ServerConfigPane from './server-config-pane';
 import Settings from './settings';
+import {Navigate} from 'react-router-dom';
+import {Helmet, HelmetProvider} from 'react-helmet-async';
 
 type AppState = {
     isServerShutdown: boolean;
     isError: boolean;
     message: string;
     showNotificationToast: boolean;
+    logout: boolean;
 };
 
 export default class App extends React.Component<{}, AppState> {
@@ -21,8 +24,11 @@ export default class App extends React.Component<{}, AppState> {
         isServerShutdown: true,
         isError: false,
         message: '',
-        showNotificationToast: true
+        showNotificationToast: true,
+        logout: false
     };
+
+    private statusSource: EventSource | null = null;
 
     prevStatus: string = '';
 
@@ -36,20 +42,29 @@ export default class App extends React.Component<{}, AppState> {
     }
 
     componentDidMount = () => {
-        this.connectStatus();
+        if (this.statusSource === null) {
+            const eventSource = new EventSource('/api/status');
+            eventSource.addEventListener('error', this.handleEventClose);
+            eventSource.addEventListener('statuschanged', this.handleServerEvent);
 
-        document.title = t('app_name');
+            this.statusSource = eventSource;
+        }
+
+        fetch('/api/current-user')
+            .then((resp) => resp.json())
+            .then((resp) => {
+                if (!resp['success']) {
+                    this.setState({logout: true});
+                }
+            });
     };
 
-    connectStatus = () => {
-        this.setState({isError: false, message: t('connecting')});
+    componentWillUnmount(): void {
+        this.statusSource?.close();
+        this.statusSource = null;
+    }
 
-        const eventSource = new EventSource('/api/status');
-        eventSource.addEventListener('error', this.handleEventClose);
-        eventSource.addEventListener('statuschanged', this.handleServerEvent);
-    };
-
-    handleEventClose = (e: any) => {
+    handleEventClose = (_: any) => {
         this.setState({isError: true, message: t('reconnecting')});
     };
 
@@ -80,6 +95,18 @@ export default class App extends React.Component<{}, AppState> {
         this.closeNotificationToast();
     };
 
+    logout = () => {
+        fetch('/logout', {
+            method: 'POST'
+        })
+            .then((resp) => resp.json())
+            .then((resp) => {
+                if (resp['success']) {
+                    this.setState({logout: true});
+                }
+            });
+    };
+
     render = () => {
         const mainPane: React.ReactElement = this.state.isServerShutdown ? (
             <ServerConfigPane showError={this.showError} />
@@ -88,6 +115,7 @@ export default class App extends React.Component<{}, AppState> {
         );
         return (
             <>
+                {this.state.logout && <Navigate to="/" replace={true} />}
                 <nav className="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
                     <div className="container-fluid">
                         <span className="navbar-brand">{t('app_name')}</span>
@@ -102,9 +130,9 @@ export default class App extends React.Component<{}, AppState> {
                             >
                                 {t('settings')}
                             </a>
-                            <a href="/logout" className="btn btn-primary bg-gradient">
+                            <button onClick={this.logout} className="btn btn-primary bg-gradient">
                                 {t('logout')}
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </nav>
@@ -148,6 +176,9 @@ export default class App extends React.Component<{}, AppState> {
                         </div>
                     </div>
                 </div>
+                <Helmet>
+                    <title>{t('app_name')}</title>
+                </Helmet>
             </>
         );
     };

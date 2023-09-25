@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/url"
 	"os"
-	"path/filepath"
 
 	"github.com/duo-labs/webauthn/webauthn"
 	"github.com/gin-contrib/sessions"
 	redisess "github.com/gin-contrib/sessions/redis"
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/kofuk/premises/controlpanel/config"
@@ -21,6 +20,20 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+const htmlContent = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Premises</title>
+    <meta name="viewport" content="width=device-width" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>
+`
 
 type serverState struct {
 	selectedWorld string
@@ -101,6 +114,13 @@ func createDataDirIfNeeded(cfg *config.Config) error {
 }
 
 func setupRoutes(h *Handler) {
+	h.engine.Use(static.Serve("/", static.LocalFile("gen", false)))
+	h.engine.NoRoute(func(c *gin.Context) {
+		// Return a HTML file for any page to render the page with React.
+		c.Header("Content-Type", "text/html;charset=utf-8")
+		c.Writer.Write([]byte(htmlContent))
+	})
+
 	h.setupRootRoutes(h.engine.Group(""))
 	h.setupWebauthnLoginRoutes(h.engine.Group("/login/hardwarekey"))
 	h.setupApiRoutes(h.engine.Group("/api"))
@@ -147,24 +167,6 @@ func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Cli
 	return nil
 }
 
-func setupTemplates(h *Handler) error {
-	template := template.New("")
-	templateEntries, err := os.ReadDir("templates")
-	if err != nil {
-		return err
-	}
-	for _, ent := range templateEntries {
-		data, err := os.ReadFile(filepath.Join("templates", ent.Name()))
-		if err != nil {
-			log.WithError(err).Fatal("Failed to load templates")
-		}
-		template.New(ent.Name()).Parse(string(data))
-	}
-	h.engine.SetHTMLTemplate(template)
-
-	return nil
-}
-
 func NewHandler(cfg *config.Config, i18nData *i18n.Bundle, bindAddr string) (*Handler, error) {
 	engine := gin.New()
 	engine.SetTrustedProxies([]string{"127.0.0.1"})
@@ -187,10 +189,6 @@ func NewHandler(cfg *config.Config, i18nData *i18n.Bundle, bindAddr string) (*Ha
 	}
 
 	if err := createDataDirIfNeeded(cfg); err != nil {
-		return nil, err
-	}
-
-	if err := setupTemplates(h); err != nil {
 		return nil, err
 	}
 

@@ -35,6 +35,20 @@ const (
 	CacheKeySystemInfoPrefix = "system-info"
 )
 
+func (h*Handler) handleApiCurrentUser(c *gin.Context) {
+	session := sessions.Default(c)
+	userID := session.Get("user_id")
+
+	user := model.User{}
+	if err := h.db.WithContext(c.Request.Context()).Find(&user, userID).Error; err != nil {
+		log.WithError(err).Error("User not found")
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "user_name": user.Name})
+}
+
 func (h *Handler) handleApiStatus(c *gin.Context) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
@@ -868,6 +882,7 @@ func (h *Handler) middlewareSessionCheck(c *gin.Context) {
 
 func (h *Handler) setupApiRoutes(group *gin.RouterGroup) {
 	group.Use(h.middlewareSessionCheck)
+	group.GET("/current-user", h.handleApiCurrentUser)
 	group.GET("/status", h.handleApiStatus)
 	group.GET("/systemstat", h.handleApiSystemStat)
 	group.POST("/launch", h.handleApiLaunch)
