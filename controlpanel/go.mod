@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/duo-labs/webauthn v0.0.0-20220815211337-00c9fb5711f5
-	github.com/gin-contrib/sessions v0.0.4
+	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-redis/redis/v8 v8.11.4
