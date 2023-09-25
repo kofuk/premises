@@ -20,7 +20,7 @@ import {
     Snackbar
 } from '@mui/material';
 import {LoadingButton} from '@mui/lab';
-import {Helmet, HelmetProvider} from 'react-helmet-async';
+import {Helmet} from 'react-helmet-async';
 
 import '../i18n';
 import {t} from 'i18next';

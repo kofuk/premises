@@ -8,7 +8,7 @@ import ServerControlPane from './server-control-pane';
 import ServerConfigPane from './server-config-pane';
 import Settings from './settings';
 import {Navigate} from 'react-router-dom';
-import {Helmet, HelmetProvider} from 'react-helmet-async';
+import {Helmet} from 'react-helmet-async';
 
 type AppState = {
     isServerShutdown: boolean;
