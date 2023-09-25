@@ -35,7 +35,7 @@ const (
 	CacheKeySystemInfoPrefix = "system-info"
 )
 
-func (h*Handler) handleApiCurrentUser(c *gin.Context) {
+func (h *Handler) handleApiCurrentUser(c *gin.Context) {
 	session := sessions.Default(c)
 	userID := session.Get("user_id")
 
