@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/joho/godotenv v1.5.1
 	github.com/kofuk/go-mega v0.0.0-20220314143053-5929f3eeeac4
-	github.com/nicksnyder/go-i18n/v2 v2.2.0
+	github.com/nicksnyder/go-i18n/v2 v2.2.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/crypto v0.13.0
