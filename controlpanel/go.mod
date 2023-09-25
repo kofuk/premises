@@ -7,7 +7,7 @@ require (
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.9.1
-	github.com/go-redis/redis/v8 v8.11.4
+	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.3.1
 	github.com/gorilla/securecookie v1.1.1
 	github.com/joho/godotenv v1.5.1
