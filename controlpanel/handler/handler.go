@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"sync"
 
 	"github.com/duo-labs/webauthn/webauthn"
 	"github.com/gin-contrib/sessions"
@@ -41,15 +42,17 @@ type serverState struct {
 }
 
 type Handler struct {
-	cfg         *config.Config
-	bind        string
-	engine      *gin.Engine
-	db          *gorm.DB
-	redis       *redis.Client
-	webauthn    *webauthn.WebAuthn
-	serverState serverState
-	serverImpl  GameServer
-	i18nData    *i18n.Bundle
+	cfg           *config.Config
+	bind          string
+	engine        *gin.Engine
+	db            *gorm.DB
+	redis         *redis.Client
+	webauthn      *webauthn.WebAuthn
+	serverState   serverState
+	serverImpl    GameServer
+	i18nData      *i18n.Bundle
+	serverMutex   sync.Mutex
+	serverRunning bool
 }
 
 func createDatabaseClient(cfg *config.Config) (*gorm.DB, error) {
@@ -153,6 +156,7 @@ func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Cli
 
 		gameServer.UpdateDNS(rdb)
 
+		h.serverRunning = true
 		log.Info("Start monitoring server")
 		go h.monitorServer(cfg, gameServer, rdb)
 	} else {
@@ -178,10 +182,11 @@ func NewHandler(cfg *config.Config, i18nData *i18n.Bundle, bindAddr string) (*Ha
 	}
 
 	h := &Handler{
-		cfg:      cfg,
-		engine:   engine,
-		bind:     bindAddr,
-		i18nData: i18nData,
+		cfg:           cfg,
+		engine:        engine,
+		bind:          bindAddr,
+		i18nData:      i18nData,
+		serverRunning: false,
 	}
 
 	if err := prepareDependencies(cfg, h); err != nil {
@@ -194,9 +199,9 @@ func NewHandler(cfg *config.Config, i18nData *i18n.Bundle, bindAddr string) (*Ha
 
 	setupSessions(h)
 
-	setupRoutes(h)
-
 	syncRemoteVMState(cfg, h.serverImpl, h.redis, h)
+
+	setupRoutes(h)
 
 	return h, nil
 }

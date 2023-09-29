@@ -242,6 +242,12 @@ func (h *Handler) notifyNonRecoverableFailure(cfg *config.Config, rdb *redis.Cli
 }
 
 func (h *Handler) monitorServer(cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
+	defer func() {
+		h.serverMutex.Lock()
+		defer h.serverMutex.Unlock()
+		h.serverRunning = false
+	}()
+
 	locale := cfg.ControlPanel.Locale
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
@@ -339,7 +345,7 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Co
 		return
 	}
 
-	go h.monitorServer(cfg, gameServer, rdb)
+	h.monitorServer(cfg, gameServer, rdb)
 }
 
 func StopServer(cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
@@ -360,6 +366,15 @@ func (h *Handler) handleApiLaunch(c *gin.Context) {
 		c.JSON(400, gin.H{"success": false, "message": "Form parse error"})
 		return
 	}
+
+	h.serverMutex.Lock()
+	defer h.serverMutex.Unlock()
+
+	if h.serverRunning {
+		c.JSON(400, gin.H{"success": false, "message": "The server has already running"})
+		return
+	}
+	h.serverRunning = true
 
 	gameConfig, err := createConfigFromPostData(c.Request.Form, h.cfg)
 	if err != nil {
