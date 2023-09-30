@@ -41,6 +41,38 @@ jobs:
           name: mcmanager-coverage
           path: ./mcmanager/coverage.html
 
+
+  build-mcmanager:
+    needs:
+      - check-format-mcmanager
+      - test-mcmanager
+      - check-format-controlpanel-frontend
+      - check-format-controlpanel-backend
+      - test-controlpanel-backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./mcmanager
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: mcmanager/go.mod
+          cache-dependency-path: |
+            mcmanager/go.sum
+      - name: Install Required Packages
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y make
+      - name: Build
+        run: make
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: mcmanager
+          path: ./mcmanager/premises-mcmanager
+
   check-format-controlpanel-frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -78,25 +110,31 @@ jobs:
           set -euo pipefail
           test "$(go fmt ./... | tee /dev/stderr | wc -l)" -eq 0
 
-  check-format-e2e:
+  build-controlpanel:
+    needs:
+      - test-mcmanager
+      - check-format-controlpanel-frontend
+      - test-controlpanel-backend
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./e2e-tests
+        working-directory: ./home
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
         with:
-          node-version-file: .node-version
-      - uses: actions/cache@v3
+          context: . # project root
+          tags: ghcr.io/kofuk/premises:latest
+          outputs: type=docker,dest=image.tar
+          cache-from: type=gha
+          cache-to: type=gha
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('e2e-tests/package-lock.json') }}
-      - name: Check code formatted
-        run: |
-          set -euo pipefail
-          npm ci
-          npm run fmt:check
+          name: control-panel-image
+          path: image.tar
 
   test-controlpanel-backend:
     runs-on: ubuntu-latest
@@ -120,51 +158,138 @@ jobs:
           name: controlpanel-coverage
           path: ./controlpanel/coverage.html
 
-  build-mcmanager:
-    needs:
-      - check-format-mcmanager
-      - test-mcmanager
-      - check-format-controlpanel-frontend
-      - check-format-controlpanel-backend
-      - test-controlpanel-backend
-    uses: ./.github/workflows/build-mcmanager.yaml
-
-  build-controlpanel:
-    needs:
-      - test-mcmanager
-      - check-format-controlpanel-frontend
-      - test-controlpanel-backend
-    uses: ./.github/workflows/build-controlpanel.yaml
-    with:
-      tag: ghcr.io/kofuk/premises:latest
-
-  publish-mcmanager:
+  check-format-e2e:
     runs-on: ubuntu-latest
-    needs: build-mcmanager
+    defaults:
+      run:
+        working-directory: ./e2e-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version-file: .node-version
+      - uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('e2e-tests/package-lock.json') }}
+      - name: Check code formatted
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run fmt:check
+
+  check-format-exteriord:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./exteriord
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: exteriord/go.mod
+          cache-dependency-path: |
+            exteriord/go.sum
+      - name: Check format
+        run: |
+          set -euo pipefail
+          test "$(go fmt ./... | tee /dev/stderr | wc -l)" -eq 0
+
+  test-exteriord:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./exteriord
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: exteriord/go.mod
+          cache-dependency-path: |
+            exteriord/go.sum
+      - name: Run test
+        run: go test -v -cover -coverprofile=coverprofile ./...
+      - name: Create coverage report
+        run: go tool cover -html=coverprofile -o coverage.html
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: exteriord-coverage
+          path: ./exteriord/coverage.html
+
+  build-exteriord:
+    needs:
+      - test-exteriord
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./exteriord
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: exteriord/go.mod
+          cache-dependency-path: |
+            exteriord/go.sum
+      - name: Build
+        run: CGO_ENABLED=0 go build -o exteriord
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: exteriord
+          path: ./exteriord/exteriord
+
+  check-all-ok:
+    runs-on: ubuntu-latest
+    needs:
+      - build-exteriord
+      - build-mcmanager
+      - build-controlpanel
+    steps:
+      - run: echo ok
+
+  publish-binaries:
+    runs-on: ubuntu-latest
+    needs: check-all-ok
     if: github.ref_name == 'master'
     steps:
       - name: Install Required Packages
         run: |
           set -euo pipefail
           sudo apt-get update
-          sudo apt-get install -y tar xz-utils
-      - name: Download artifact
+          sudo apt-get install -y tar
+      - name: Download mcmanager
         uses: actions/download-artifact@v3
         with:
           name: mcmanager
-      - name: Set executable bit for premises-mcmanager
-        run: chmod +x premises-mcmanager
+      - name: Download exteriord
+        uses: actions/download-artifact@v3
+        with:
+          name: exteriord
+      - name: Make binaries executable
+        run: |
+          chmod +x premises-mcmanager
+          chmod +x exteriord
       - name: Create Archive
-        run : tar -cJf premises-mcmanager.tar.xz premises-mcmanager
-      - name: Generate Metadata
+        run : |
+          tar -czf premises-mcmanager.tar.gz premises-mcmanager
+          tar -czf exteriord.tar.gz exteriord
+      - name: Generate metadata
         run: |
           echo "$(head -c7 <<<${{ github.sha }})	$(sha512sum premises-mcmanager | cut -d\  -f1)" >metadata.txt
+          echo "$(head -c7 <<<${{ github.sha }})	$(sha512sum exteriord | cut -d\  -f1)" >>metadata.txt
       - uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
       - uses: google-github-actions/upload-cloud-storage@v1
         with:
-          path: premises-mcmanager.tar.xz
+          path: premises-mcmanager.tar.gz
+          destination: premises-artifacts
+          parent: false
+          process_gcloudignore: false
+      - uses: google-github-actions/upload-cloud-storage@v1
+        with:
+          path: exteriord.tar.gz
           destination: premises-artifacts
           parent: false
           process_gcloudignore: false
@@ -178,7 +303,7 @@ jobs:
 
   publish-controlpanel-docker-image:
     runs-on: ubuntu-latest
-    needs: build-controlpanel
+    needs: check-all-ok
     if: github.ref_name == 'master'
     permissions:
       contents: read

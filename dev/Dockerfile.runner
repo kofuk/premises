@@ -1,0 +1,16 @@
+FROM ubuntu:22.04
+
+# TODO: We should do this in exteriord.
+RUN DEBIAN_FRONTEND=noninteractive apt update -y && \
+    DEBIAN_FRONTEND=noninteractive apt install -y curl btrfs-progs openjdk-17-jre-headless unzip xz-utils && \
+    useradd -Us/bin/bash -u1000 premises && \
+    mkdir -p /opt/premises/servers.d/../gamedata/../bin && \
+    fallocate --posix --length 128M /opt/premises/gamedata.img && \
+    mkfs.btrfs /opt/premises/gamedata.img
+
+COPY fake_cloud_init.sh /init.sh
+
+EXPOSE 8521
+EXPOSE 25565
+
+ENTRYPOINT ["/init.sh"]

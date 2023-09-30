@@ -4,8 +4,20 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
   - package-ecosystem: gomod
     directory: /controlpanel
+    schedule:
+      interval: weekly
+  - package-ecosystem: npm
+    directory: /controlpanel
+    schedule:
+      interval: weekly
+  - package-ecosystem: gomod
+    directory: /exteriord
     schedule:
       interval: weekly
   - package-ecosystem: gomod
@@ -14,13 +26,5 @@ updates:
       interval: weekly
   - package-ecosystem: npm
     directory: /e2e-tests
-    schedule:
-      interval: weekly
-  - package-ecosystem: npm
-    directory: /controlpanel
-    schedule:
-      interval: weekly
-  - package-ecosystem: github-actions
-    directory: /
     schedule:
       interval: weekly

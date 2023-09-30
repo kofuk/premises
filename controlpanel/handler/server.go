@@ -1,12 +1,10 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"syscall"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -44,52 +42,73 @@ func NewLocalDebugServer(cfg *config.Config, h *Handler) *LocalDebugServer {
 	}
 }
 
+func buildLocalDeps() {
+	buildExteriord := exec.Command("go", "build", "-o", "/tmp/premises-exteriord")
+	buildExteriord.Dir = filepath.Join(os.Getenv("HOME"), "source/premises/exteriord")
+	if err := buildExteriord.Run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func (s *LocalDebugServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Client, memSizeGB int) bool {
-	configData, err := json.Marshal(gameConfig)
+	locale := s.cfg.ControlPanel.Locale
+
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
+		Status: s.h.L(locale, "vm.gathering_info"),
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
+	}
+
+	log.Info("Generating startup script...")
+	gameConfigData, err := json.Marshal(gameConfig)
 	if err != nil {
 		log.WithError(err).Error("Failed to marshal config")
 		return false
 	}
-	if err := os.WriteFile(s.cfg.Locate("config.json"), configData, 0644); err != nil {
-		log.WithError(err).Error("Failed to write config")
-		return false
-	}
 
-	serverCrt, err := rdb.Get(context.Background(), "server-crt").Result()
+	startupScript, err := conoha.GenerateStartupScript(gameConfigData, rdb)
 	if err != nil {
-		log.WithError(err).Error("Failed to read server-crt")
+		log.WithError(err).Error("Failed to generate startup script")
 		return false
 	}
-	if err := os.WriteFile(s.cfg.Locate("server.crt"), []byte(serverCrt), 0644); err != nil {
-		log.WithError(err).Error("Failed to write server.crt")
-		return false
+	log.Info("Generating startup script...Done")
+
+	if err := os.WriteFile("/tmp/premises-userdata", []byte(startupScript), 0755); err != nil {
+		log.Fatal(err)
 	}
 
-	serverKey, err := rdb.Get(context.Background(), "server-key").Result()
-	if err != nil {
-		log.WithError(err).Error("Failed to read server-key")
-		return false
-	}
-	if err := os.WriteFile(s.cfg.Locate("server.key"), []byte(serverKey), 0644); err != nil {
-		log.WithError(err).Error("Failed to write server.key")
-		return false
+	buildLocalDeps()
+
+	if err := monitor.PublishEvent(rdb, monitor.StatusData{
+		Status: s.h.L(locale, "vm.creating"),
+	}); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	cmd := exec.Command("go", "run", ".")
-	cmd.Dir = filepath.Join(os.Getenv("HOME"), "source/premises/mcmanager")
-	cmd.Env = append(os.Environ(), "PREMISES_RUNNER_DEBUG=true")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	dockerArgs := []string{"container", "run", "--name", "premises-runner", "--rm"}
+	dockerArgs = append(dockerArgs, "-v", "/tmp/premises-exteriord:/exteriord")
+	dockerArgs = append(dockerArgs, "-v", "/tmp/premises-userdata:/userdata")
+	dockerArgs = append(dockerArgs, "-p", "8521:8521")
+	dockerArgs = append(dockerArgs, "--cap-add=MKNOD", "--privileged")
+	dockerArgs = append(dockerArgs, "kofuk/premises-runner-dev:latest")
+	dockerCmd := exec.Command("docker", dockerArgs...)
+	dockerCmd.Stdout = os.Stdout
+	dockerCmd.Stderr = os.Stderr
 
-	if err := cmd.Start(); err != nil {
-		log.WithError(err).Error("Failed to start debug runner")
-		return false
+	if err := dockerCmd.Start(); err != nil {
+		log.Println("docker run failed")
+		log.Println("Did you build our Docker image for development runner?")
+		log.Println("If not, please build with")
+		log.Println("    docker build -t kofuk/premises-runner-dev -f Dockerfile.runner .")
+		log.Println("in premises/dev/ directory.")
+
+		log.Fatal(err)
 	}
-	s.pid = cmd.Process.Pid
+
 	s.cfg.ServerAddr = "localhost"
 
 	go func() {
-		if err := cmd.Wait(); err != nil {
+		if err := dockerCmd.Wait(); err != nil {
 			log.WithError(err).Error("Failed to wait command to finish")
 		}
 	}()
@@ -117,9 +136,11 @@ func (s *LocalDebugServer) VMRunning() bool {
 }
 
 func (s *LocalDebugServer) StopVM(rdb *redis.Client) bool {
-	if err := syscall.Kill(-s.pid, syscall.SIGKILL); err != nil {
-		log.WithError(err).Error("Failed to kill debug runner")
-		return true
+	dockerCmd := exec.Command("docker", "kill", "premises-runner")
+	dockerCmd.Stdout = os.Stdout
+	dockerCmd.Stderr = os.Stderr
+	if err := dockerCmd.Run(); err != nil {
+		log.Fatal(err)
 	}
 	return true
 }
@@ -194,7 +215,7 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Clien
 		return false
 	}
 
-	log.Info("Retriving flavors...")
+	log.Info("Retrieving flavors...")
 	flavors, err := conoha.GetFlavors(s.cfg, token)
 	if err != nil {
 		log.WithError(err).Error("Failed to get flavors")
