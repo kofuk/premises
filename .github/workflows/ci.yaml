@@ -2,7 +2,7 @@ name: CI
 on: push
 
 jobs:
-  check-format-mcmanager:
+  test-mcmanager:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -18,19 +18,6 @@ jobs:
         run: |
           set -euo pipefail
           test "$(go fmt ./... | tee /dev/stderr | wc -l)" -eq 0
-
-  test-mcmanager:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./mcmanager
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: mcmanager/go.mod
-          cache-dependency-path: |
-            mcmanager/go.sum
       - name: Run test
         run: go test -v -cover -coverprofile=coverprofile ./...
       - name: Create coverage report
@@ -44,11 +31,7 @@ jobs:
 
   build-mcmanager:
     needs:
-      - check-format-mcmanager
       - test-mcmanager
-      - check-format-controlpanel-frontend
-      - check-format-controlpanel-backend
-      - test-controlpanel-backend
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -73,7 +56,7 @@ jobs:
           name: mcmanager
           path: ./mcmanager/premises-mcmanager
 
-  check-format-controlpanel-frontend:
+  test-controlpanel-frontend:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -93,7 +76,7 @@ jobs:
           npm ci
           npm run fmt:check
 
-  check-format-controlpanel-backend:
+  test-controlpanel-backend:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -109,10 +92,19 @@ jobs:
         run: |
           set -euo pipefail
           test "$(go fmt ./... | tee /dev/stderr | wc -l)" -eq 0
+      - name: Run test
+        run: go test -v -cover -coverprofile=coverprofile ./...
+      - name: Create coverage report
+        run: go tool cover -html=coverprofile -o coverage.html
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: controlpanel-coverage
+          path: ./controlpanel/coverage.html
 
   build-controlpanel:
     needs:
-      - check-format-controlpanel-frontend
+      - test-controlpanel-frontend
       - test-controlpanel-backend
     runs-on: ubuntu-latest
     defaults:
@@ -135,28 +127,6 @@ jobs:
           name: control-panel-image
           path: image.tar
 
-  test-controlpanel-backend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./controlpanel
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: controlpanel/go.mod
-          cache-dependency-path: |
-            controlpanel/go.sum
-      - name: Run test
-        run: go test -v -cover -coverprofile=coverprofile ./...
-      - name: Create coverage report
-        run: go tool cover -html=coverprofile -o coverage.html
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v3
-        with:
-          name: controlpanel-coverage
-          path: ./controlpanel/coverage.html
-
   check-format-e2e:
     runs-on: ubuntu-latest
     defaults:
@@ -177,7 +147,7 @@ jobs:
           npm ci
           npm run fmt:check
 
-  check-format-exteriord:
+  test-exteriord:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -193,19 +163,6 @@ jobs:
         run: |
           set -euo pipefail
           test "$(go fmt ./... | tee /dev/stderr | wc -l)" -eq 0
-
-  test-exteriord:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./exteriord
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: exteriord/go.mod
-          cache-dependency-path: |
-            exteriord/go.sum
       - name: Run test
         run: go test -v -cover -coverprofile=coverprofile ./...
       - name: Create coverage report
@@ -218,7 +175,6 @@ jobs:
 
   build-exteriord:
     needs:
-      - check-format-exteriord
       - test-exteriord
     runs-on: ubuntu-latest
     defaults:
@@ -242,6 +198,7 @@ jobs:
   check-all-ok:
     runs-on: ubuntu-latest
     needs:
+      - check-format-e2e
       - build-exteriord
       - build-mcmanager
       - build-controlpanel
