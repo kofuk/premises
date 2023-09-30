@@ -35,6 +35,7 @@ func StopVM(cfg *config.Config, token, vmID string) error {
 		return err
 	}
 	req.Header.Add(HeaderKeyAuthToken, token)
+	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
@@ -76,6 +77,7 @@ func CreateImage(cfg *config.Config, token, vmID, imageName string) error {
 		return err
 	}
 	req.Header.Add(HeaderKeyAuthToken, token)
+	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
@@ -213,6 +215,7 @@ func CreateVM(cfg *config.Config, token, imageRef, flavorRef, encodedStartupScri
 		return "", err
 	}
 	req.Header.Add(HeaderKeyAuthToken, token)
+	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
@@ -264,6 +267,7 @@ func GetVMDetail(cfg *config.Config, token, name string) (*VMDetail, error) {
 		return nil, err
 	}
 	req.Header.Add(HeaderKeyAuthToken, token)
+	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -485,6 +489,7 @@ func GetToken(cfg *config.Config) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
+	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", "", err

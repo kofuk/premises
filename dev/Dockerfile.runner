@@ -1,11 +1,17 @@
 FROM ubuntu:22.04
 
+# Build this Dockerfile with
+#  docker build -t kofuk/premises-runner-dev -f Dockerfile.runner \
+#      --label org.kofuk.premises.managed=true \
+#      --label org.kofuk.premises.id=$(uuidgen) \
+#      --label org.kofuk.premises.name=mc-premises .
+
 # TODO: We should do this in exteriord.
 RUN DEBIAN_FRONTEND=noninteractive apt update -y && \
     DEBIAN_FRONTEND=noninteractive apt install -y curl btrfs-progs openjdk-17-jre-headless unzip && \
     useradd -Us/bin/bash -u1000 premises && \
     mkdir -p /opt/premises/servers.d/../gamedata/../bin && \
-    fallocate --posix --length 128M /opt/premises/gamedata.img && \
+    fallocate --posix --length 256M /opt/premises/gamedata.img && \
     mkfs.btrfs /opt/premises/gamedata.img
 
 COPY fake_cloud_init.sh /init.sh

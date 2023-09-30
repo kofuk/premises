@@ -16,7 +16,7 @@ chmod +x /userdata_decoded.sh
 /userdata_decoded.sh
 
 ### Temporary
-/exteriord
+/opt/premises/bin/exteriord >/exteriord.log
 ###
 
 sleep inf

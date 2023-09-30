@@ -28,3 +28,7 @@ updates:
     directory: /e2e-tests
     schedule:
       interval: weekly
+  - package-ecosystem: gomod
+    directory: /ostack-fake
+    schedule:
+      interval: weekly
