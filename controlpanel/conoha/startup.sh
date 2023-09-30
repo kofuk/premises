@@ -23,7 +23,7 @@ __run() {
 
         [ "${current_version}" = "${remote_version}" ] && exit 0
 
-        curl 'https://storage.googleapis.com/premises-artifacts/premises-mcmanager.tar.xz' | tar -xJ
+        curl 'https://storage.googleapis.com/premises-artifacts/premises-mcmanager.tar.gz' | tar -xJ
         cp 'premises-mcmanager' "${PREMISES_BASEDIR}/bin/premises-mcmanager.new"
         mv "${PREMISES_BASEDIR}/bin/premises-mcmanager.new" "${PREMISES_BASEDIR}/bin/premises-mcmanager"
 
