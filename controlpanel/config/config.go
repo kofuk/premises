@@ -20,6 +20,7 @@ type Config struct {
 			Image    string `env:"image"`
 			Compute  string `env:"compute"`
 		} `env:"services"`
+		NameTag string `env:"nameTag"`
 	} `env:"conoha"`
 	Cloudflare struct {
 		Token          string `env:"token"`

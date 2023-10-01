@@ -190,7 +190,7 @@ type CreateVMResp struct {
 	} `json:"server"`
 }
 
-func CreateVM(cfg *config.Config, token, imageRef, flavorRef, encodedStartupScript string) (string, error) {
+func CreateVM(cfg *config.Config, nameTag, token, imageRef, flavorRef, encodedStartupScript string) (string, error) {
 	var reqBody CreateVMReq
 	reqBody.Server.ImageRef = imageRef
 	reqBody.Server.FlavorRef = flavorRef

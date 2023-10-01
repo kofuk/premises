@@ -90,7 +90,7 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Clien
 	log.WithField("selected_flavor", flavorID).Info("Retriving flavors...Done")
 
 	log.Info("Retriving image ID...")
-	imageID, imageStatus, err := conoha.GetImageID(s.cfg, token, "mc-premises")
+	imageID, imageStatus, err := conoha.GetImageID(s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
 		log.WithError(err).Error("Failed to get image ID")
 		return false
@@ -120,7 +120,7 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Clien
 	}); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
-	if _, err := conoha.CreateVM(s.cfg, token, imageID, flavorID, startupScript); err != nil {
+	if _, err := conoha.CreateVM(s.cfg, s.cfg.Conoha.NameTag, token, imageID, flavorID, startupScript); err != nil {
 		log.WithError(err).Error("Failed to create VM")
 		return false
 	}
@@ -129,7 +129,7 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Clien
 	log.Info("Waiting for VM to be created...")
 	var vms *conoha.VMDetail
 	for i := 0; i < 500; i++ {
-		vms, err = conoha.GetVMDetail(s.cfg, token, "mc-premises")
+		vms, err = conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
 		if err != nil || vms.Status == "BUILD" {
 			log.WithField("vm_status", vms.Status).Info("Waiting for VM to be created...")
 			time.Sleep(10 * time.Second)
@@ -170,7 +170,7 @@ func (s *ConohaServer) VMExists() bool {
 	}
 
 	log.Info("Getting VM information...")
-	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
+	detail, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
 		log.WithError(err).Error("Failed to get VM information")
 		return false
@@ -191,7 +191,7 @@ func (s *ConohaServer) VMRunning() bool {
 	}
 
 	log.Info("Getting VM information...")
-	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
+	detail, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
 		log.WithError(err).Error("Failed to get VM detail")
 		return false
@@ -220,7 +220,7 @@ func (s *ConohaServer) StopVM(rdb *redis.Client) bool {
 	}
 
 	log.Info("Getting VM information...")
-	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
+	detail, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
 		log.WithError(err).Error("Failed to get VM detail")
 		return false
@@ -237,7 +237,7 @@ func (s *ConohaServer) StopVM(rdb *redis.Client) bool {
 	// Wait for VM to stop
 	log.Info("Waiting for the VM to stop...")
 	for {
-		detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
+		detail, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
 		if err != nil {
 			log.WithError(err).Error("Failed to get VM information")
 			return false
@@ -261,7 +261,7 @@ func (s *ConohaServer) DeleteVM() bool {
 	}
 
 	log.Info("Getting VM information...")
-	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
+	detail, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
 		log.WithError(err).Error("Failed to get VM detail")
 		return false
@@ -286,7 +286,7 @@ func (s *ConohaServer) ImageExists() bool {
 	}
 
 	log.Info("Getting image information...")
-	_, imageStatus, err := conoha.GetImageID(s.cfg, token, "mc-premises")
+	_, imageStatus, err := conoha.GetImageID(s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
 		log.WithError(err).Error("Failed to get image information")
 		return false
@@ -316,7 +316,7 @@ func (s *ConohaServer) SaveImage(rdb *redis.Client) bool {
 	}
 
 	log.Info("Getting VM information...")
-	detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
+	detail, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
 		log.WithError(err).Error("Failed to get VM detail")
 		return false
@@ -324,7 +324,7 @@ func (s *ConohaServer) SaveImage(rdb *redis.Client) bool {
 	log.Info("Getting VM information...Done")
 
 	log.Info("Requesting to create image...")
-	if err := conoha.CreateImage(s.cfg, token, detail.ID, "mc-premises"); err != nil {
+	if err := conoha.CreateImage(s.cfg, token, detail.ID, s.cfg.Conoha.NameTag); err != nil {
 		log.WithError(err).Error("Failed to create image")
 		return false
 	}
@@ -332,7 +332,7 @@ func (s *ConohaServer) SaveImage(rdb *redis.Client) bool {
 
 	log.Info("Waiting for image to be created...")
 	for {
-		_, imageStatus, err := conoha.GetImageID(s.cfg, token, "mc-premises")
+		_, imageStatus, err := conoha.GetImageID(s.cfg, token, s.cfg.Conoha.NameTag)
 		if err != nil {
 			log.WithError(err).Error("Error getting image information; retrying...")
 		} else if imageStatus == "active" {
@@ -362,7 +362,7 @@ func (s *ConohaServer) DeleteImage(rdb *redis.Client) bool {
 	}
 
 	log.Info("Getting image information...")
-	imageID, imageStatus, err := conoha.GetImageID(s.cfg, token, "mc-premises")
+	imageID, imageStatus, err := conoha.GetImageID(s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
 		log.WithError(err).Error("Failed to get image ID")
 		return false
@@ -413,7 +413,7 @@ func (s *ConohaServer) UpdateDNS(rdb *redis.Client) bool {
 	}
 
 	log.Info("Getting VM information...")
-	vms, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
+	vms, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
 		log.WithField("vm_status", vms.Status).Info("Unable to get VM detail")
 		return false
