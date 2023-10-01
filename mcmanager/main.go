@@ -18,6 +18,7 @@ import (
 	"github.com/kofuk/premises/mcmanager/metadata"
 	"github.com/kofuk/premises/mcmanager/privileged"
 	"github.com/kofuk/premises/mcmanager/serverprop"
+	"github.com/kofuk/premises/mcmanager/serversetup"
 	"github.com/kofuk/premises/mcmanager/statusapi"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
@@ -252,6 +253,7 @@ func main() {
 	printVersion := flag.Bool("version", false, "Print version (in machine-readable way) and exit.")
 	runRcon := flag.Bool("rcon", false, "Launch rcon client.")
 	runPrivilegedHelper := flag.Bool("privileged-helper", false, "Run this process as internal helper process")
+	runServerSetup := flag.Bool("server-setup", false, "Run this process as server setup process")
 
 	flag.Parse()
 
@@ -265,6 +267,11 @@ func main() {
 	}
 	if *runPrivilegedHelper {
 		privileged.Run()
+		return
+	}
+	if *runServerSetup {
+		serverSetup := serversetup.ServerSetup{}
+		serverSetup.Run()
 		return
 	}
 

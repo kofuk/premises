@@ -6,11 +6,6 @@ FROM ubuntu:22.04
 #      --label org.kofuk.premises.id=$(uuidgen) \
 #      --label org.kofuk.premises.name=mc-premises .
 
-# TODO: We should do this in exteriord.
-RUN DEBIAN_FRONTEND=noninteractive apt update -y && \
-    DEBIAN_FRONTEND=noninteractive apt install -y curl btrfs-progs openjdk-17-jre-headless unzip && \
-    useradd -Us/bin/bash -u1000 premises
-
 COPY fake_cloud_init.sh /init.sh
 
 EXPOSE 8521

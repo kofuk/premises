@@ -39,7 +39,7 @@ do_local_update() {
 __run() {
     PREMISES_BASEDIR=/opt/premises
 
-    mkdir -p "${PREMISES_BASEDIR}"
+    mkdir -p "${PREMISES_BASEDIR}/bin"
 
     if ! command -v curl &>/dev/null; then
         (
@@ -68,8 +68,6 @@ __run() {
         fi
     )
 
-    mount "${PREMISES_BASEDIR}/gamedata.img" "${PREMISES_BASEDIR}/gamedata"
-
     cat <<'EOF' >"${PREMISES_BASEDIR}/server.crt"
 #__SERVER_CRT__
 EOF
@@ -81,8 +79,6 @@ EOF
     cat <<'EOF' >"${PREMISES_BASEDIR}/config.json"
 #__CONFIG_FILE__
 EOF
-
-    chown -R 1000:1000 "${PREMISES_BASEDIR}"
 
     nohup /opt/premises/bin/exteriord >/exteriord.log &
 
