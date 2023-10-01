@@ -42,21 +42,13 @@ __run() {
     mkdir -p "${PREMISES_BASEDIR}/bin"
 
     if ! command -v curl &>/dev/null; then
+        # Unfortunately, first initialization can't be done without installing curl.
         (
             export DEBIAN_FRONTEND=noninteractive
             apt-get update -y
             apt-get install -y curl
         )
     fi
-
-    # Keep system up-to-date
-    (
-        export DEBIAN_FRONTEND=noninteractive
-        apt-get update &>>/tmp/premises-apt-upgrade.log
-        apt-get upgrade -y &>>/tmp/premises-apt-upgrade.log
-        apt-get autoremove -y --purge &>>/tmp/premises-apt-upgrade.log
-    ) &
-    _apt_pid=$!
 
     (
         set -euo pipefail
@@ -80,9 +72,7 @@ EOF
 #__CONFIG_FILE__
 EOF
 
-    nohup /opt/premises/bin/exteriord >/exteriord.log &
-
-    wait "${_apt_pid}"
+    nohup /opt/premises/bin/exteriord &>/exteriord.log &
 
     exit
 } && __run |& tee /tmp/premises-startup.log

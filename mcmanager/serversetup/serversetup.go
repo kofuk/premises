@@ -7,29 +7,28 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"syscall"
 	"time"
 
 	"github.com/kofuk/premises/mcmanager/statusapi"
+	"github.com/kofuk/premises/mcmanager/systemutil"
 	log "github.com/sirupsen/logrus"
 )
 
 var requiredProgs = []string{
 	"mkfs.btrfs",
 	"java",
-	"utw",
+	"ufw",
 	"unzip",
 }
 
 type ServerSetup struct {
-	statusLaunched bool
+	statusServer *http.Server
 }
 
 func (self *ServerSetup) launchStatus() {
-	if self.statusLaunched {
+	if self.statusServer != nil {
 		return
 	}
-	self.statusLaunched = true
 
 	http.HandleFunc("/monitor", func(w http.ResponseWriter, r *http.Request) {
 		writeJson := func(w http.ResponseWriter, data *statusapi.StatusData) error {
@@ -69,7 +68,7 @@ func (self *ServerSetup) launchStatus() {
 		},
 	}
 
-	server := &http.Server{
+	self.statusServer = &http.Server{
 		Addr:         "0.0.0.0:8521",
 		TLSConfig:    tlsCfg,
 		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
@@ -78,48 +77,55 @@ func (self *ServerSetup) launchStatus() {
 	}
 
 	log.Info("Launching status server...")
-	log.Fatal(server.ListenAndServeTLS("/opt/premises/server.crt", "/opt/premises/server.key"))
-
+	if err := self.statusServer.ListenAndServeTLS("/opt/premises/server.crt", "/opt/premises/server.key"); err != nil {
+		log.Println(err)
+	}
 }
 
 func isServerInitialized() bool {
 	for _, prog := range requiredProgs {
 		_, err := exec.LookPath(prog)
 		if err != nil {
+			log.Println("Required executable not found:", prog)
 			return false
 		}
 	}
 	return true
 }
 
+func isDevEnv() bool {
+	_, err := os.Stat("/.dockerenv")
+	return err == nil
+}
+
 func (self *ServerSetup) initializeServer() {
 	go self.launchStatus()
 
 	log.Println("Updating package indices")
-	cmd("apt-get", []string{
+	systemutil.Cmd("apt-get", []string{
 		"update", "-y",
 	}, []string{"DEBIAN_FRONTEND=noninteractive"})
 
 	log.Println("Installing packages")
-	cmd("apt-get", []string{
+	systemutil.Cmd("apt-get", []string{
 		"install", "-y", "btrfs-progs", "openjdk-17-jre-headless", "ufw", "unzip",
 	}, []string{"DEBIAN_FRONTEND=noninteractive"})
 
 	if _, err := user.LookupId("1000"); err != nil {
 		log.Println("Adding user")
-		cmd("useradd", []string{
+		systemutil.Cmd("useradd", []string{
 			"-U", "-s", "/bin/bash", "-u", "1000", "premises",
 		}, []string{"DEBIAN_FRONTEND=noninteractive"})
 	}
 
-	if hasSystemd() {
+	if !isDevEnv() {
 		log.Println("Enabling ufw")
-		cmd("systemctl", []string{"enable", "--now", "ufw.service"}, nil)
-		cmd("ufw", []string{"enable"}, nil)
+		systemutil.Cmd("systemctl", []string{"enable", "--now", "ufw.service"}, nil)
+		systemutil.Cmd("ufw", []string{"enable"}, nil)
 
 		log.Println("Adding ufw rules")
-		cmd("ufw", []string{"allow", "25565/tcp"}, nil)
-		cmd("ufw", []string{"allow", "8521/tcp"}, nil)
+		systemutil.Cmd("ufw", []string{"allow", "25565/tcp"}, nil)
+		systemutil.Cmd("ufw", []string{"allow", "8521/tcp"}, nil)
 	}
 
 	log.Println("Creating data directories")
@@ -127,47 +133,30 @@ func (self *ServerSetup) initializeServer() {
 
 	if _, err := os.Stat("/opt/premises/gamedata.img"); os.IsNotExist(err) {
 		log.Println("Creating image file to save game data")
-		file, err := os.Create("/opt/premises/gamedata.img")
-		if err != nil {
-			log.Println(err)
-		} else {
-			if err := syscall.Fallocate(int(file.Fd()), 0644, 0, 8*1024*1024*1024); err != nil {
-				log.Println(err)
-			}
-			file.Close()
+		size := "8G"
+		if isDevEnv() {
+			size = "1G"
 		}
+		systemutil.Cmd("fallocate", []string{"-l", size, "/opt/premises/gamedata.img"}, nil)
 
 		log.Println("Creating filesystem for gamedata.img")
-		cmd("mkfs.btrfs", []string{"/opt/premises/gamedata.img"}, nil)
+		systemutil.Cmd("mkfs.btrfs", []string{"/opt/premises/gamedata.img"}, nil)
 	}
-}
-
-func cmd(cmdPath string, args []string, envs []string) error {
-	cmd := exec.Command(cmdPath, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	for _, env := range envs {
-		cmd.Env = append(cmd.Env, env)
-	}
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func hasSystemd() bool {
-	_, err := exec.LookPath("systemctl")
-	return err == nil
 }
 
 func (self ServerSetup) Run() {
 	if !isServerInitialized() {
+		log.Println("Server seems not to be initialized. Will run full initialization")
 		self.initializeServer()
 	}
 
 	log.Println("Mounting gamedata.img")
-	cmd("mount", []string{"/opt/premises/gamedata.img", "/opt/premises/gamedata"}, nil)
+	systemutil.Cmd("mount", []string{"/opt/premises/gamedata.img", "/opt/premises/gamedata"}, nil)
 
 	log.Println("Ensure data directory owned by execution user")
-	cmd("chown", []string{"-R", "1000:1000", "/opt/premises"}, nil)
+	systemutil.Cmd("chown", []string{"-R", "1000:1000", "/opt/premises"}, nil)
+
+	if self.statusServer != nil {
+		self.statusServer.Close()
+	}
 }

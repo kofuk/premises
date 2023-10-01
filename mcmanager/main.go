@@ -15,6 +15,7 @@ import (
 	"github.com/kofuk/premises/mcmanager/backup"
 	"github.com/kofuk/premises/mcmanager/config"
 	"github.com/kofuk/premises/mcmanager/gamesrv"
+	"github.com/kofuk/premises/mcmanager/keepsystemutd"
 	"github.com/kofuk/premises/mcmanager/metadata"
 	"github.com/kofuk/premises/mcmanager/privileged"
 	"github.com/kofuk/premises/mcmanager/serverprop"
@@ -254,6 +255,7 @@ func main() {
 	runRcon := flag.Bool("rcon", false, "Launch rcon client.")
 	runPrivilegedHelper := flag.Bool("privileged-helper", false, "Run this process as internal helper process")
 	runServerSetup := flag.Bool("server-setup", false, "Run this process as server setup process")
+	runKeepSystemUpToDate := flag.Bool("keep-system-up-to-date", false, "Run this process as keep-system-up-to-date process")
 
 	flag.Parse()
 
@@ -272,6 +274,10 @@ func main() {
 	if *runServerSetup {
 		serverSetup := serversetup.ServerSetup{}
 		serverSetup.Run()
+		return
+	}
+	if *runKeepSystemUpToDate {
+		keepsystemutd.KeepSystemUpToDate()
 		return
 	}
 

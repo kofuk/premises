@@ -52,9 +52,6 @@ func Args(args ...string) Option {
 func Restart(restart RestartPolicy) Option {
 	return func(p *Task) {
 		p.restart = restart
-		if (restart == RestartAlways) && p.procType == ProcOneShot {
-			p.procType = ProcDaemon
-		}
 	}
 }
 
@@ -85,9 +82,6 @@ func Description(description string) Option {
 func Type(procType ProcType) Option {
 	return func(p *Task) {
 		p.procType = procType
-		if procType == ProcOneShot && p.restart == RestartAlways {
-			p.restart = RestartOnFailure
-		}
 	}
 }
 
