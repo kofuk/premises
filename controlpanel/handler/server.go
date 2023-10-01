@@ -130,7 +130,11 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Clien
 	var vms *conoha.VMDetail
 	for i := 0; i < 500; i++ {
 		vms, err = conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
-		if err != nil || vms.Status == "BUILD" {
+		if err != nil {
+			log.WithError(err).Info("Waiting for VM to be created...")
+			time.Sleep(10 * time.Second)
+			continue
+		} else if vms.Status == "BUILD" {
 			log.WithField("vm_status", vms.Status).Info("Waiting for VM to be created...")
 			time.Sleep(10 * time.Second)
 			continue
