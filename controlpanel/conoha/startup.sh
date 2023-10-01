@@ -12,8 +12,7 @@ atomic_copy() {
 do_remote_update() {
     cd '/tmp'
 
-    curl -O 'https://storage.googleapis.com/premises-artifacts/metadata.txt'
-    remote_version="$(cut -d\  -f1 metadata.txt)"
+    remote_version="$(curl 'https://storage.googleapis.com/premises-artifacts/version.txt')"
 
     current_version="$("${PREMISES_BASEDIR}/bin/premises-mcmanager" --version || true)"
 
@@ -39,6 +38,16 @@ do_local_update() {
 
 __run() {
     PREMISES_BASEDIR=/opt/premises
+
+    mkdir -p "${PREMISES_BASEDIR}"
+
+    if ! command -v curl &>/dev/null; then
+        (
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update -y
+            apt-get install -y curl
+        )
+    fi
 
     # Keep system up-to-date
     (
@@ -73,7 +82,9 @@ EOF
 #__CONFIG_FILE__
 EOF
 
-    chown -R premises:premises "${PREMISES_BASEDIR}"
+    chown -R 1000:1000 "${PREMISES_BASEDIR}"
+
+    nohup /opt/premises/bin/exteriord >/exteriord.log &
 
     wait "${_apt_pid}"
 

@@ -233,8 +233,7 @@ jobs:
           tar -czf exteriord.tar.gz exteriord
       - name: Generate metadata
         run: |
-          echo "$(head -c7 <<<${{ github.sha }})	$(sha512sum premises-mcmanager | cut -d\  -f1)" >metadata.txt
-          echo "$(head -c7 <<<${{ github.sha }})	$(sha512sum exteriord | cut -d\  -f1)" >>metadata.txt
+          echo ${{ github.sha }} >version.txt
       - uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
@@ -252,7 +251,7 @@ jobs:
           process_gcloudignore: false
       - uses: google-github-actions/upload-cloud-storage@v1
         with:
-          path: metadata.txt
+          path: version.txt
           destination: premises-artifacts
           parent: false
           process_gcloudignore: false
