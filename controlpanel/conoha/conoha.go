@@ -195,7 +195,7 @@ func CreateVM(cfg *config.Config, nameTag, token, imageRef, flavorRef, encodedSt
 	reqBody.Server.ImageRef = imageRef
 	reqBody.Server.FlavorRef = flavorRef
 	reqBody.Server.UserData = encodedStartupScript
-	reqBody.Server.MetaData.InstanceNameTag = "mc-premises"
+	reqBody.Server.MetaData.InstanceNameTag = nameTag
 	reqBody.Server.SecurityGroups = []struct {
 		Name string `json:"name"`
 	}{{"default"}, {"gncs-ipv4-all"}, {"gncs-ipv6-all"}}
