@@ -5,8 +5,11 @@ if [ ! -e /userdata ]; then
 fi
 
 ### Temporary (we should do this in exteriord in the future)
-mount "${PREMISES_BASEDIR}/gamedata.img" "/mnt"
-chown -R premises:premises "/mnt"
+mkdir -p /opt/premises/servers.d/../gamedata/../bin
+fallocate --posix --length 256M /opt/premises/gamedata.img
+mkfs.btrfs /opt/premises/gamedata.img
+mount "/opt/premises/gamedata.img" "/mnt"
+chown -R 1000:1000 "/mnt"
 umount /mnt
 ###
 
@@ -16,7 +19,7 @@ chmod +x /userdata_decoded.sh
 /userdata_decoded.sh
 
 ### Temporary
-/opt/premises/bin/exteriord >/exteriord.log
+/opt/premises/bin/exteriord &>/exteriord.log
 ###
 
 sleep inf

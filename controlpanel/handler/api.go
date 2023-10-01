@@ -275,7 +275,9 @@ func (h *Handler) monitorServer(cfg *config.Config, gameServer GameServer, rdb *
 
 	rdb.Del(context.Background(), "monitor-key").Result()
 
-	gameServer.RevertDNS(rdb)
+	if h.cfg.Cloudflare.Token != "" {
+		gameServer.RevertDNS(rdb)
+	}
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status:   h.L(locale, "monitor.stopped"),
@@ -322,15 +324,17 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Co
 		return
 	}
 
-	if !gameServer.UpdateDNS(rdb) {
-		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   h.L(locale, "vm.dns.error"),
-			HasError: true,
-			Shutdown: false,
-		}); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
+	if h.cfg.Cloudflare.Token != "" {
+		if !gameServer.UpdateDNS(rdb) {
+			if err := monitor.PublishEvent(rdb, monitor.StatusData{
+				Status:   h.L(locale, "vm.dns.error"),
+				HasError: true,
+				Shutdown: false,
+			}); err != nil {
+				log.WithError(err).Error("Failed to write status data to Redis channel")
+			}
+			return
 		}
-		return
 	}
 
 	if !gameServer.DeleteImage(rdb) {

@@ -1,6 +1,8 @@
 package exterior
 
 import (
+	"log"
+
 	"github.com/kofuk/premises/exteriord/proc"
 )
 
@@ -18,6 +20,7 @@ func (self *Exterior) RegisterTask(task proc.Task) {
 
 func (self *Exterior) Run() {
 	for _, task := range self.tasks {
+		log.Printf("Starting %s\n", task.GetDescription())
 		go task.Start()
 	}
 	<-make(chan any)

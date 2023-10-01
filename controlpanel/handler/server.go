@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	// "github.com/kofuk/premises/controlpanel/cloudflare"
+	"github.com/kofuk/premises/controlpanel/cloudflare"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
@@ -261,6 +261,39 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Clien
 	}
 	log.Info("Creating VM...")
 
+	log.Info("Waiting for VM to be created...")
+	var vms *conoha.VMDetail
+	for i := 0; i < 500; i++ {
+		vms, err = conoha.GetVMDetail(s.cfg, token, "mc-premises")
+		if err != nil || vms.Status == "BUILD" {
+			log.WithField("vm_status", vms.Status).Info("Waiting for VM to be created...")
+			time.Sleep(10 * time.Second)
+			continue
+		}
+		break
+	}
+
+	if err != nil || vms.Status == "BUILD" {
+		log.WithError(err).Error("Timeout creating VM")
+		if err == nil {
+			log.Error("Building VM didn't completed")
+		}
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
+			Status:   s.h.L(locale, "vm.get_detail.error"),
+			HasError: true,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
+		}
+		return false
+	}
+	log.WithField("vm_status", vms.Status).Info("Waiting for VM to be created...Done")
+
+	ip4Addr := vms.GetIPAddress(4)
+	ip6Addr := vms.GetIPAddress(6)
+	log.WithField("ip_addr_4", ip4Addr).WithField("ip_addr_6", ip6Addr).Info("Got IP addresses")
+
+	s.cfg.ServerAddr = ip4Addr
+
 	return true
 }
 
@@ -339,8 +372,6 @@ func (s *ConohaServer) StopVM(rdb *redis.Client) bool {
 	// Wait for VM to stop
 	log.Info("Waiting for the VM to stop...")
 	for {
-		time.Sleep(20 * time.Second)
-
 		detail, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
 		if err != nil {
 			log.WithError(err).Error("Failed to get VM information")
@@ -350,6 +381,8 @@ func (s *ConohaServer) StopVM(rdb *redis.Client) bool {
 		if detail.Status == "SHUTOFF" {
 			break
 		}
+
+		time.Sleep(20 * time.Second)
 	}
 
 	return true
@@ -515,31 +548,12 @@ func (s *ConohaServer) UpdateDNS(rdb *redis.Client) bool {
 	}
 
 	log.Info("Getting VM information...")
-	var vms *conoha.VMDetail
-	for i := 0; i < 500; i++ {
-		vms, err = conoha.GetVMDetail(s.cfg, token, "mc-premises")
-		if err != nil || vms.Status == "BUILD" {
-			log.WithField("vm_status", vms.Status).Info("Waiting VM to be created")
-			time.Sleep(10 * time.Second)
-			continue
-		}
-		break
-	}
-
-	if err != nil || vms.Status == "BUILD" {
-		log.WithError(err).Error("Failed to get VM detail")
-		if err == nil {
-			log.Error("Building VM didn't completed")
-		}
-		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   s.h.L(locale, "vm.get_detail.error"),
-			HasError: true,
-		}); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
-		}
+	vms, err := conoha.GetVMDetail(s.cfg, token, "mc-premises")
+	if err != nil {
+		log.WithField("vm_status", vms.Status).Info("Unable to get VM detail")
 		return false
 	}
-	log.WithField("vm_status", vms.Status).Info("Getting VM information...Done")
+	log.Info("Getting VM information...Done")
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status: s.h.L(locale, "vm.dns.updating"),
@@ -553,31 +567,31 @@ func (s *ConohaServer) UpdateDNS(rdb *redis.Client) bool {
 
 	s.cfg.ServerAddr = ip4Addr
 
-	// log.Info("Updating DNS record (v4)...")
-	// if err := cloudflare.UpdateDNS(s.cfg, ip4Addr, 4); err != nil {
-	// 	log.WithError(err).Error("Failed to update DNS (v4)")
-	// 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-	// 		Status:   s.h.L(locale, "vm.dns.error"),
-	// 		HasError: true,
-	// 	}); err != nil {
-	// 		log.WithError(err).Error("Failed to write status data to Redis channel")
-	// 	}
-	// 	return false
-	// }
-	// log.Info("Updating DNS record (v4)...Done")
+	log.Info("Updating DNS record (v4)...")
+	if err := cloudflare.UpdateDNS(s.cfg, ip4Addr, 4); err != nil {
+		log.WithError(err).Error("Failed to update DNS (v4)")
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
+			Status:   s.h.L(locale, "vm.dns.error"),
+			HasError: true,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
+		}
+		return false
+	}
+	log.Info("Updating DNS record (v4)...Done")
 
-	// log.Info("Updating DNS record (v6)...")
-	// if err := cloudflare.UpdateDNS(s.cfg, ip6Addr, 6); err != nil {
-	// 	log.WithError(err).Error("Failed to update DNS (v6)")
-	// 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-	// 		Status:   s.h.L(locale, "vm.dns.error"),
-	// 		HasError: true,
-	// 	}); err != nil {
-	// 		log.WithError(err).Error("Failed to write status data to Redis channel")
-	// 	}
-	// 	return false
-	// }
-	// log.Info("Updating DNS record (v6)...Done")
+	log.Info("Updating DNS record (v6)...")
+	if err := cloudflare.UpdateDNS(s.cfg, ip6Addr, 6); err != nil {
+		log.WithError(err).Error("Failed to update DNS (v6)")
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
+			Status:   s.h.L(locale, "vm.dns.error"),
+			HasError: true,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
+		}
+		return false
+	}
+	log.Info("Updating DNS record (v6)...Done")
 
 	return true
 }
@@ -591,31 +605,31 @@ func (s *ConohaServer) RevertDNS(rdb *redis.Client) bool {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	// log.Info("Updating DNS record (v4)...")
-	// if err := cloudflare.UpdateDNS(s.cfg, "127.0.0.1", 4); err != nil {
-	// 	log.WithError(err).Error("Failed to update DNS (v4)")
-	// 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-	// 		Status:   s.h.L(locale, "vm.dns.error"),
-	// 		HasError: true,
-	// 	}); err != nil {
-	// 		log.WithError(err).Error("Failed to write status data to Redis channel")
-	// 	}
-	// 	return true
-	// }
-	// log.Info("Updating DNS record (v4)...Done")
+	log.Info("Updating DNS record (v4)...")
+	if err := cloudflare.UpdateDNS(s.cfg, "127.0.0.1", 4); err != nil {
+		log.WithError(err).Error("Failed to update DNS (v4)")
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
+			Status:   s.h.L(locale, "vm.dns.error"),
+			HasError: true,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
+		}
+		return true
+	}
+	log.Info("Updating DNS record (v4)...Done")
 
-	// log.Info("Updating DNS record (v6)...")
-	// if err := cloudflare.UpdateDNS(s.cfg, "::1", 6); err != nil {
-	// 	log.WithError(err).Error("Failed to update DNS (v6)")
-	// 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-	// 		Status:   s.h.L(locale, "vm.dns.error"),
-	// 		HasError: true,
-	// 	}); err != nil {
-	// 		log.WithError(err).Error("Failed to write status data to Redis channel")
-	// 	}
-	// 	return true
-	// }
-	// log.Info("Updating DNS record (v6)...Done")
+	log.Info("Updating DNS record (v6)...")
+	if err := cloudflare.UpdateDNS(s.cfg, "::1", 6); err != nil {
+		log.WithError(err).Error("Failed to update DNS (v6)")
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
+			Status:   s.h.L(locale, "vm.dns.error"),
+			HasError: true,
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
+		}
+		return true
+	}
+	log.Info("Updating DNS record (v6)...Done")
 
 	return true
 }

@@ -46,8 +46,6 @@ func (self *Ostack) ServeGetToken(c *gin.Context) {
 		return
 	}
 
-	log.Println(req)
-
 	user := req.Auth.PasswordCredentials.UserName
 	password := req.Auth.PasswordCredentials.Password
 	tenantId := req.Auth.TenantID

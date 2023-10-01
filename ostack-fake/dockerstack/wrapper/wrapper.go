@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -70,8 +71,12 @@ func createContainer(ctx context.Context, docker *docker.Client, imageID, nameTa
 	}
 
 	var binds []string
-	if _, err := os.Stat(filepath.Join(os.TempDir(), "premises")); err != nil {
+	if _, err := os.Stat(filepath.Join(os.TempDir(), "premises")); err == nil {
 		binds = append(binds, fmt.Sprintf("%s:/premises-dev", filepath.Join(os.TempDir(), "premises")))
+	}
+	if runtime.GOOS == "linux" {
+		os.MkdirAll("/tmp/premises-data", 0755)
+		binds = append(binds, "/tmp/premises-data:/opt/premises")
 	}
 
 	hostConfig := container.HostConfig{
@@ -160,7 +165,9 @@ func StopContainer(ctx context.Context, docker *docker.Client, serverId string) 
 	if err != nil {
 		return err
 	}
-	if err := docker.ContainerStop(ctx, containerId, container.StopOptions{}); err != nil {
+	if err := docker.ContainerStop(ctx, containerId, container.StopOptions{
+		Signal: "SIGINT",
+	}); err != nil {
 		return err
 	}
 	return nil
@@ -204,6 +211,7 @@ func CreateImage(ctx context.Context, docker *docker.Client, serverId, imageName
 	imageId := uuid.New().String()
 
 	buildResp, err := docker.ImageBuild(ctx, buildContext, types.ImageBuildOptions{
+		Tags: []string{fmt.Sprintf("premises.kofuk.org/dev-runner:%s", serverId)},
 		SuppressOutput: true,
 		Remove:         true,
 		Dockerfile:     "Dockerfile",
@@ -218,6 +226,21 @@ func CreateImage(ctx context.Context, docker *docker.Client, serverId, imageName
 	}
 	io.ReadAll(buildResp.Body)
 
+	return nil
+}
+
+func removeOrUntagImage(ctx context.Context, docker *docker.Client, imageId string) error {
+	image, _, err := docker.ImageInspectWithRaw(ctx, imageId)
+	if err != nil {
+		return err
+	}
+	if len(image.RepoTags) > 0 {
+		imageId = image.RepoTags[0]
+	}
+
+	if _, err := docker.ImageRemove(ctx, imageId, types.ImageRemoveOptions{}); err != nil {
+		return fmt.Errorf("Error removing image: %s: %w", imageId, err)
+	}
 	return nil
 }
 
@@ -236,22 +259,12 @@ func DeleteServerAndImage(ctx context.Context, docker *docker.Client, serverId s
 		return err
 	}
 
-	containerImageName := container.Image
-
-	image, _, err := docker.ImageInspectWithRaw(ctx, container.Image)
-	if err != nil {
-		return err
-	}
-	if len(image.RepoTags) > 0 {
-		containerImageName = image.RepoTags[0]
-	}
-
-	if _, err := docker.ImageRemove(ctx, containerImageName, types.ImageRemoveOptions{}); err != nil {
+	if err := removeOrUntagImage(ctx, docker, container.Image); err != nil {
 		return err
 	}
 
 	tagName := fmt.Sprintf("premises.kofuk.org/dev-temp:%s", serverId)
-	if _, err := docker.ImageRemove(ctx, tagName, types.ImageRemoveOptions{}); err != nil {
+	if err := removeOrUntagImage(ctx, docker, tagName); err != nil {
 		return err
 	}
 

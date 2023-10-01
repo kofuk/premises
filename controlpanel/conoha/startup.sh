@@ -33,7 +33,7 @@ do_remote_update() {
 
 do_local_update() {
     cd /premises-dev
-    [ -e exteriord ] && atomic_copy exteriord /exteriord
+    [ -e exteriord ] && atomic_copy exteriord /opt/premises/bin/exteriord
     [ -e premises-mcmanager ] && atomic_copy premises-mcmanager /opt/premises/bin/premises-mcmanager
 }
 

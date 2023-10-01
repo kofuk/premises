@@ -112,16 +112,22 @@ func downloadServerJarIfNeeded(ctx *config.PMCMContext) error {
 		return errors.New(fmt.Sprintf("Download failed with status: %d", resp.StatusCode))
 	}
 
-	outFile, err := os.Create(ctx.LocateServer(ctx.Cfg.Server.Version))
+	outFile, err := os.Create(ctx.LocateServer(ctx.Cfg.Server.Version) + ".download")
 	if err != nil {
 		resp.Body.Close()
 		return err
 	}
-	defer outFile.Close()
 
 	if _, err := io.Copy(outFile, resp.Body); err != nil {
+		outFile.Close()
 		return err
 	}
+	outFile.Close()
+
+	if err := os.Rename(ctx.LocateServer(ctx.Cfg.Server.Version)+".download", ctx.LocateServer(ctx.Cfg.Server.Version)); err != nil {
+		return err
+	}
+
 	log.Info("Downloading Minecraft server...Done")
 
 	return nil
