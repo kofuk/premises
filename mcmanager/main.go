@@ -9,10 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/kofuk/premises/mcmanager/backup"
@@ -134,36 +131,23 @@ func downloadServerJarIfNeeded(ctx *config.PMCMContext) error {
 }
 
 func runServer() {
-	debugMode := false
-	if len(os.Getenv("PREMISES_RUNNER_DEBUG")) > 0 {
-		debugMode = true
-	}
-
-	envPrefix := ""
-	if debugMode {
-		envPrefix = "/tmp/premises"
-	}
-
 	ctx := new(config.PMCMContext)
-	ctx.Debug = debugMode
 
-	if !debugMode {
-		for {
-			log.Info("Waiting for config file to be created...")
-			if _, err := os.Stat(filepath.Join(envPrefix, "/opt/premises/config.json")); err == nil {
-				log.Println("Config file detected. continue")
-				break
-			} else if !os.IsNotExist(err) {
-				log.Fatal("Config file detection failed.", err)
-			}
-			time.Sleep(2 * time.Second)
+	for {
+		log.Info("Waiting for config file to be created...")
+		if _, err := os.Stat("/opt/premises/config.json"); err == nil {
+			log.Println("Config file detected. continue")
+			break
+		} else if !os.IsNotExist(err) {
+			log.Fatal("Config file detection failed.", err)
 		}
+		time.Sleep(2 * time.Second)
 	}
 
 	if err := config.LoadConfig(ctx); err != nil {
 		log.Fatal(err)
 	}
-	if !debugMode && ctx.Cfg.RemoveMe {
+	if ctx.Cfg.RemoveMe {
 		if err := os.Remove(ctx.LocateDataFile("config.json")); err != nil {
 			log.WithError(err).Error("Cannot remove config file")
 		}
@@ -242,17 +226,6 @@ out:
 		log.Info("Restart...")
 		ctx.NotifyStatus(ctx.L("process.restarting"))
 
-		if debugMode {
-			bin, err := exec.LookPath("go")
-			if err != nil {
-				log.WithError(err).Fatal("Failed to find go command")
-			}
-
-			if err := syscall.Exec(bin, []string{"go", "run", "."}, os.Environ()); err != nil {
-				log.WithError(err).Fatal("Failed to exec go command")
-			}
-		}
-
 		os.Exit(100)
 	} else if srv.Crashed && !srv.ShouldStop {
 		ctx.NotifyStatus(ctx.L("game.crashed"))
@@ -269,12 +242,8 @@ out:
 		ctx.NotifyStatus(ctx.L("game.stopped"))
 	}
 
-	if debugMode {
-		time.Sleep(5 * time.Second)
-	} else {
-		// wait...
-		<-make(chan struct{})
-	}
+	// wait...
+	<-make(chan struct{})
 }
 
 func main() {

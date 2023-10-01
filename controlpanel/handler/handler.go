@@ -98,11 +98,7 @@ func prepareDependencies(cfg *config.Config, h *Handler) error {
 	}
 	h.webauthn = wauthn
 
-	if cfg.Debug.Runner {
-		h.serverImpl = NewLocalDebugServer(h.cfg, h)
-	} else {
-		h.serverImpl = NewConohaServer(h.cfg, h)
-	}
+	h.serverImpl = NewConohaServer(h.cfg, h)
 
 	return nil
 }

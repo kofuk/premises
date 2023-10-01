@@ -8,9 +8,8 @@ import (
 
 type Config struct {
 	Debug struct {
-		Env    bool `env:"env"`
-		Web    bool `env:"web"`
-		Runner bool `env:"runner"`
+		Env bool `env:"env"`
+		Web bool `env:"web"`
 	} `env:"debug"`
 	Conoha struct {
 		UserName string `env:"username"`
