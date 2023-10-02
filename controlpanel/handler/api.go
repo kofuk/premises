@@ -299,6 +299,7 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Co
 		}); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
+		h.serverRunning = false
 		return
 	}
 
@@ -321,6 +322,7 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Co
 		}); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
+		h.serverRunning = false
 		return
 	}
 
@@ -333,6 +335,7 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Co
 			}); err != nil {
 				log.WithError(err).Error("Failed to write status data to Redis channel")
 			}
+			h.serverRunning = false
 			return
 		}
 	}
@@ -346,6 +349,7 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Co
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 
+		h.serverRunning = false
 		return
 	}
 
