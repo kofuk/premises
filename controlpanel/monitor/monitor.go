@@ -125,7 +125,6 @@ out:
 				log.WithError(err).Error("Failed to receive event data")
 				break conn
 			}
-
 			if status.Shutdown {
 				resp.Body.Close()
 				break out

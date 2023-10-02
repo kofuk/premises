@@ -36,6 +36,15 @@ do_local_update() {
     [ -e premises-mcmanager ] && atomic_copy premises-mcmanager /opt/premises/bin/premises-mcmanager
 }
 
+xaptget() {
+    if apt-get "$@"; then
+        return
+    else
+        dpkg --configure -a
+        apt-get "$@"
+    fi
+}
+
 __run() {
     PREMISES_BASEDIR=/opt/premises
 

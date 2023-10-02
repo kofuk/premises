@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 	"sync"
 
 	"github.com/duo-labs/webauthn/webauthn"
@@ -103,15 +102,6 @@ func prepareDependencies(cfg *config.Config, h *Handler) error {
 	return nil
 }
 
-func createDataDirIfNeeded(cfg *config.Config) error {
-	if cfg.Debug.Env {
-		if err := os.MkdirAll("/tmp/premises/gamedata", 0755); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func setupRoutes(h *Handler) {
 	h.engine.Use(static.Serve("/", static.LocalFile("gen", false)))
 	h.engine.NoRoute(func(c *gin.Context) {
@@ -186,10 +176,6 @@ func NewHandler(cfg *config.Config, i18nData *i18n.Bundle, bindAddr string) (*Ha
 	}
 
 	if err := prepareDependencies(cfg, h); err != nil {
-		return nil, err
-	}
-
-	if err := createDataDirIfNeeded(cfg); err != nil {
 		return nil, err
 	}
 

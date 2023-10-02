@@ -5,7 +5,7 @@ import (
 )
 
 func KeepSystemUpToDate() {
-	systemutil.Cmd("apt-get", []string{"update", "-y"}, []string{"DEBIAN_FRONTEND=noninteractive"})
-	systemutil.Cmd("apt-get", []string{"upgrade", "-y"}, []string{"DEBIAN_FRONTEND=noninteractive"})
-	systemutil.Cmd("apt-get", []string{"autoremove", "-y", "--purge"}, []string{"DEBIAN_FRONTEND=noninteractive"})
+	systemutil.AptGet("update", "-y")
+	systemutil.AptGet("upgrade", "-y")
+	systemutil.AptGet("autoremove", "-y", "--purge")
 }

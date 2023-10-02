@@ -20,3 +20,11 @@ func Cmd(cmdPath string, args []string, envs []string) error {
 	}
 	return nil
 }
+
+func AptGet(args ...string) error {
+	if err := Cmd("apt-get", args, []string{"DEBIAN_FRONTEND=noninteractive"}); err == nil {
+		return nil
+	}
+	Cmd("dpkg", []string{"--configure", "-a"}, []string{"DEBIAN_FRONTEND=noninteractive"})
+	return Cmd("apt-get", args, []string{"DEBIAN_FRONTEND=noninteractive"})
+}

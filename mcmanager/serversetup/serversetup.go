@@ -90,6 +90,11 @@ func isServerInitialized() bool {
 			return false
 		}
 	}
+
+	if _, err := os.Stat("/opt/premises/gamedata"); os.IsNotExist(err) {
+		return false
+	}
+
 	return true
 }
 
@@ -102,20 +107,14 @@ func (self *ServerSetup) initializeServer() {
 	go self.launchStatus()
 
 	log.Println("Updating package indices")
-	systemutil.Cmd("apt-get", []string{
-		"update", "-y",
-	}, []string{"DEBIAN_FRONTEND=noninteractive"})
+	systemutil.AptGet("update", "-y")
 
 	log.Println("Installing packages")
-	systemutil.Cmd("apt-get", []string{
-		"install", "-y", "btrfs-progs", "openjdk-17-jre-headless", "ufw", "unzip",
-	}, []string{"DEBIAN_FRONTEND=noninteractive"})
+	systemutil.AptGet("install", "-y", "btrfs-progs", "openjdk-17-jre-headless", "ufw", "unzip")
 
 	if _, err := user.LookupId("1000"); err != nil {
 		log.Println("Adding user")
-		systemutil.Cmd("useradd", []string{
-			"-U", "-s", "/bin/bash", "-u", "1000", "premises",
-		}, []string{"DEBIAN_FRONTEND=noninteractive"})
+		systemutil.Cmd("useradd", []string{"-U", "-s", "/bin/bash", "-u", "1000", "premises"}, nil)
 	}
 
 	if !isDevEnv() {
