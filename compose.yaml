@@ -2,9 +2,7 @@ services:
   web:
     image: 'ghcr.io/kofuk/premises:latest'
     environment:
-      - 'premises_debug_env'
       - 'premises_debug_web'
-      - 'premises_debug_runner'
       - 'premises_conoha_username'
       - 'premises_conoha_password'
       - 'premises_conoha_tenantId'

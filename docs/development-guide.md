@@ -27,7 +27,6 @@ $ go run .
 ```
 4. Create /controlpanel/.env by copying /controlpanel/.env.example
 ```ini
-premises_debug_env='true'
 premises_debug_web='true'
 premises_conoha_username='user'
 premises_conoha_password='password'
@@ -39,8 +38,8 @@ premises_conoha_nameTag='mc-premises'
 premises_cloudflare_token=''
 premises_cloudflare_zoneId=''
 premises_cloudflare_gameDomain=''
-premises_mega_email='<Your Mega account's email>'
-premises_mega_password='<Your Mega account's password>'
+premises_mega_email='<Your Mega account email>'
+premises_mega_password='<Your Mega account password>'
 premises_mega_folderName='worlds.dev'
 premises_game_motd=''
 premises_game_operators='<Your Minecraft Username>'

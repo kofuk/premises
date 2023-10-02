@@ -1,14 +1,11 @@
 package config
 
 import (
-	"path/filepath"
-
 	"github.com/kofuk/premises/controlpanel/backup"
 )
 
 type Config struct {
 	Debug struct {
-		Env bool `env:"env"`
 		Web bool `env:"web"`
 	} `env:"debug"`
 	Conoha struct {
@@ -57,13 +54,6 @@ type Config struct {
 type ServerConfig struct {
 	Name      string `json:"name"`
 	IsVanilla bool   `json:"isVanilla"`
-}
-
-func (cfg *Config) Locate(path string) string {
-	if cfg.Debug.Env {
-		return filepath.Join("/tmp/premises", path)
-	}
-	return filepath.Join("/opt/premises", path)
 }
 
 func LoadConfig() (*Config, error) {
