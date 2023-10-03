@@ -28,7 +28,6 @@ jobs:
           name: mcmanager-coverage
           path: ./mcmanager/coverage.html
 
-
   build-mcmanager:
     needs:
       - test-mcmanager

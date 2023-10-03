@@ -31,8 +31,7 @@ const (
 	ProcOneShot
 )
 
-type Task struct {
-	description  string
+type Proc struct {
 	execPath     string
 	args         []string
 	restart      RestartPolicy
@@ -41,54 +40,47 @@ type Task struct {
 	procType     ProcType
 }
 
-type Option func(p *Task)
+type Option func(p *Proc)
 
 func Args(args ...string) Option {
-	return func(p *Task) {
+	return func(p *Proc) {
 		p.args = args
 	}
 }
 
 func Restart(restart RestartPolicy) Option {
-	return func(p *Task) {
+	return func(p *Proc) {
 		p.restart = restart
 	}
 }
 
 func RestartDelay(d time.Duration) Option {
-	return func(p *Task) {
+	return func(p *Proc) {
 		p.restartDelay = &d
 	}
 }
 
 func RestartRandomDelay() Option {
-	return func(p *Task) {
+	return func(p *Proc) {
 		p.restartDelay = nil
 	}
 }
 
 func UserType(userType ExecUserType) Option {
-	return func(p *Task) {
+	return func(p *Proc) {
 		p.userType = userType
 	}
 }
 
-func Description(description string) Option {
-	return func(p *Task) {
-		p.description = description
-	}
-}
-
 func Type(procType ProcType) Option {
-	return func(p *Task) {
+	return func(p *Proc) {
 		p.procType = procType
 	}
 }
 
-func NewProc(execPath string, options ...Option) Task {
-	proc := Task{
-		description: execPath,
-		execPath:    execPath,
+func NewProc(execPath string, options ...Option) Proc {
+	proc := Proc{
+		execPath: execPath,
 	}
 
 	for _, opt := range options {
@@ -98,7 +90,7 @@ func NewProc(execPath string, options ...Option) Task {
 	return proc
 }
 
-func (p Task) waitRestartDelay() {
+func (p Proc) waitRestartDelay() {
 	if p.restartDelay == nil {
 		time.Sleep(time.Duration(rand.Intn(10)) * time.Second)
 	} else {
@@ -106,7 +98,7 @@ func (p Task) waitRestartDelay() {
 	}
 }
 
-func (p Task) startTask() {
+func (p Proc) Start() {
 L:
 	for {
 		cmd := exec.Command(p.execPath, p.args...)
@@ -147,18 +139,4 @@ L:
 			break L
 		}
 	}
-}
-
-func (p Task) Start() {
-	switch p.procType {
-	case ProcOneShot:
-		p.startTask()
-
-	case ProcDaemon:
-		go p.startTask()
-	}
-}
-
-func (p Task) GetDescription() string {
-	return p.description
 }

@@ -19,40 +19,37 @@ func main() {
 		os.Exit(1)
 	}
 
-	exterior := exterior.New()
+	e := exterior.New()
 
-	exterior.RegisterTask(proc.NewProc("/opt/premises/bin/premises-mcmanager",
-		proc.Args("--server-setup"),
-		proc.Description("Initialize Server"),
-		proc.Type(proc.ProcOneShot),
-		proc.Restart(proc.RestartNever),
-		proc.UserType(proc.UserPrivileged),
-	))
+	setupTask := e.RegisterTask("Initialize Server",
+		proc.NewProc("/opt/premises/bin/premises-mcmanager",
+			proc.Args("--server-setup"),
+			proc.Type(proc.ProcOneShot),
+			proc.Restart(proc.RestartNever),
+			proc.UserType(proc.UserPrivileged),
+		))
+	e.RegisterTask("Game Monitoring Service",
+		proc.NewProc("/opt/premises/bin/premises-mcmanager",
+			proc.Type(proc.ProcDaemon),
+			proc.Restart(proc.RestartOnFailure),
+			proc.RestartRandomDelay(),
+			proc.UserType(proc.UserRestricted),
+		), setupTask)
+	e.RegisterTask("Keep System Up-to-date",
+		proc.NewProc("/opt/premises/bin/premises-mcmanager",
+			proc.Args("--keep-system-up-to-date"),
+			proc.Type(proc.ProcDaemon),
+			proc.Restart(proc.RestartNever),
+			proc.UserType(proc.UserPrivileged),
+		), setupTask)
+	e.RegisterTask("Snapshot Service",
+		proc.NewProc("/opt/premises/bin/premises-mcmanager",
+			proc.Args("--privileged-helper"),
+			proc.Type(proc.ProcDaemon),
+			proc.Restart(proc.RestartAlways),
+			proc.RestartRandomDelay(),
+			proc.UserType(proc.UserPrivileged),
+		), setupTask)
 
-	exterior.RegisterTask(proc.NewProc("/opt/premises/bin/premises-mcmanager",
-		proc.Args("--keep-system-up-to-date"),
-		proc.Description("Keep System Up-to-date"),
-		proc.Type(proc.ProcDaemon),
-		proc.Restart(proc.RestartNever),
-		proc.UserType(proc.UserPrivileged),
-	))
-
-	exterior.RegisterTask(proc.NewProc("/opt/premises/bin/premises-mcmanager",
-		proc.Description("Game Monitoring Service"),
-		proc.Type(proc.ProcDaemon),
-		proc.Restart(proc.RestartOnFailure),
-		proc.RestartRandomDelay(),
-		proc.UserType(proc.UserRestricted),
-	))
-
-	exterior.RegisterTask(proc.NewProc("/opt/premises/bin/premises-mcmanager",
-		proc.Args("--privileged-helper"),
-		proc.Description("Snapshot Service"),
-		proc.Type(proc.ProcDaemon),
-		proc.Restart(proc.RestartAlways),
-		proc.RestartRandomDelay(),
-		proc.UserType(proc.UserPrivileged),
-	))
-
-	exterior.Run()
+	e.Run()
 }
