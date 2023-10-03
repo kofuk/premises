@@ -24,20 +24,12 @@ const (
 	UserPrivileged
 )
 
-type ProcType int
-
-const (
-	ProcDaemon ProcType = iota
-	ProcOneShot
-)
-
 type Proc struct {
 	execPath     string
 	args         []string
 	restart      RestartPolicy
 	restartDelay *time.Duration
 	userType     ExecUserType
-	procType     ProcType
 }
 
 type Option func(p *Proc)
@@ -69,12 +61,6 @@ func RestartRandomDelay() Option {
 func UserType(userType ExecUserType) Option {
 	return func(p *Proc) {
 		p.userType = userType
-	}
-}
-
-func Type(procType ProcType) Option {
-	return func(p *Proc) {
-		p.procType = procType
 	}
 }
 
