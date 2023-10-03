@@ -23,11 +23,6 @@ do_remote_update() {
 
     curl 'https://storage.googleapis.com/premises-artifacts/exteriord.tar.gz' | tar -xz
     atomic_copy 'exteriord' "/opt/premises/bin/exteriord"
-
-    # Make sure new version launched
-    pid="$(pidof -s premises-mcmanager)"
-    kill -KILL "${pid}"
-    tail -f /dev/null --pid "${pid}"
 }
 
 do_local_update() {
@@ -62,7 +57,7 @@ __run() {
     (
         set -euo pipefail
 
-        if [ -d /premises-dev ]; then
+        if [ -e /premises-dev/premises-mcmanager -o -e /premises-dev/exteriord ]; then
             do_local_update
         else
             do_remote_update
