@@ -47,7 +47,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
             .then((resp) => resp.json())
             .then((resp) => {
                 this.setState({mcVersions: resp});
-                this.postUpdateCondition();
+                this.postUpdateCondition(resp);
             });
     };
 
@@ -57,7 +57,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
             .then((resp) => resp.json())
             .then((resp) => {
                 this.setState({mcVersions: resp});
-                this.postUpdateCondition();
+                this.postUpdateCondition(resp);
                 this.setState({refreshing: false});
             });
     };
@@ -66,8 +66,8 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
         this.props.setServerVersion(val);
     };
 
-    postUpdateCondition = () => {
-        const versions = this.state.mcVersions
+    postUpdateCondition = (versionsData: McVersion[]) => {
+        const versions = versionsData
             .filter((e) => this.state.showStable || e.channel !== 'stable')
             .filter((e) => this.state.showSnapshot || e.channel !== 'snapshot')
             .filter((e) => this.state.showBeta || e.channel !== 'beta')
@@ -76,7 +76,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
             if (versions.length > 0) {
                 this.props.setServerVersion(versions[0].name);
             } else if (this.state.mcVersions.length > 0) {
-                this.props.setServerVersion(this.state.mcVersions[0].name);
+                this.props.setServerVersion(versionsData[0].name);
             }
         }
     };
@@ -116,7 +116,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
                         checked={this.state.showStable}
                         onChange={() => {
                             this.setState({showStable: !this.state.showStable});
-                            this.postUpdateCondition();
+                            this.postUpdateCondition(this.state.mcVersions);
                         }}
                     />
                     <label className="form-check-label" htmlFor="showStable">
@@ -131,7 +131,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
                         checked={this.state.showSnapshot}
                         onChange={() => {
                             this.setState({showSnapshot: !this.state.showSnapshot});
-                            this.postUpdateCondition();
+                            this.postUpdateCondition(this.state.mcVersions);
                         }}
                     />
                     <label className="form-check-label" htmlFor="showSnapshot">
@@ -146,7 +146,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
                         checked={this.state.showBeta}
                         onChange={() => {
                             this.setState({showBeta: !this.state.showBeta});
-                            this.postUpdateCondition();
+                            this.postUpdateCondition(this.state.mcVersions);
                         }}
                     />
                     <label className="form-check-label" htmlFor="showBeta">
@@ -161,7 +161,7 @@ export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
                         checked={this.state.showAlpha}
                         onChange={() => {
                             this.setState({showAlpha: !this.state.showAlpha});
-                            this.postUpdateCondition();
+                            this.postUpdateCondition(this.state.mcVersions);
                         }}
                     />
                     <label className="form-check-label" htmlFor="showAlpha">
