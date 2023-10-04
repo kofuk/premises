@@ -11,11 +11,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/kofuk/premises/mcmanager/backup"
-	"github.com/kofuk/premises/mcmanager/config"
-	"github.com/kofuk/premises/mcmanager/gamesrv"
-	"github.com/kofuk/premises/mcmanager/privileged"
-	"github.com/kofuk/premises/mcmanager/systemutil"
+	"github.com/kofuk/premises/runner/backup"
+	"github.com/kofuk/premises/runner/config"
+	"github.com/kofuk/premises/runner/gamesrv"
+	"github.com/kofuk/premises/runner/privileged"
+	"github.com/kofuk/premises/runner/systemutil"
 	log "github.com/sirupsen/logrus"
 )
 

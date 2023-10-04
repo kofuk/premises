@@ -9,8 +9,8 @@ import (
 	"os/user"
 	"time"
 
-	"github.com/kofuk/premises/mcmanager/statusapi"
-	"github.com/kofuk/premises/mcmanager/systemutil"
+	"github.com/kofuk/premises/runner/statusapi"
+	"github.com/kofuk/premises/runner/systemutil"
 	log "github.com/sirupsen/logrus"
 )
 

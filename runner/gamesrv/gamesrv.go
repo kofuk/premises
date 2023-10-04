@@ -14,8 +14,8 @@ import (
 	"github.com/gorcon/rcon"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kofuk/premises/mcmanager/backup"
-	"github.com/kofuk/premises/mcmanager/config"
+	"github.com/kofuk/premises/runner/backup"
+	"github.com/kofuk/premises/runner/config"
 )
 
 type ServerInstance struct {

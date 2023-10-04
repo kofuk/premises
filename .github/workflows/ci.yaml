@@ -2,18 +2,18 @@ name: CI
 on: push
 
 jobs:
-  test-mcmanager:
+  test-runner:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./mcmanager
+        working-directory: ./runner
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
         with:
-          go-version-file: mcmanager/go.mod
+          go-version-file: runner/go.mod
           cache-dependency-path: |
-            mcmanager/go.sum
+            runner/go.sum
       - name: Check format
         run: |
           set -euo pipefail
@@ -25,23 +25,23 @@ jobs:
       - name: Upload coverage report
         uses: actions/upload-artifact@v3
         with:
-          name: mcmanager-coverage
-          path: ./mcmanager/coverage.html
+          name: runner-coverage
+          path: ./runner/coverage.html
 
-  build-mcmanager:
+  build-runner:
     needs:
-      - test-mcmanager
+      - test-runner
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./mcmanager
+        working-directory: ./runner
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
         with:
-          go-version-file: mcmanager/go.mod
+          go-version-file: runner/go.mod
           cache-dependency-path: |
-            mcmanager/go.sum
+            runner/go.sum
       - name: Install Required Packages
         run: |
           set -e
@@ -52,8 +52,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: mcmanager
-          path: ./mcmanager/premises-mcmanager
+          name: runner
+          path: ./runner/premises-runner
 
   test-controlpanel-frontend:
     runs-on: ubuntu-latest
@@ -199,7 +199,7 @@ jobs:
     needs:
       - check-format-e2e
       - build-exteriord
-      - build-mcmanager
+      - build-runner
       - build-controlpanel
     steps:
       - run: echo ok
@@ -214,21 +214,21 @@ jobs:
           set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y tar
-      - name: Download mcmanager
+      - name: Download runner
         uses: actions/download-artifact@v3
         with:
-          name: mcmanager
+          name: runner
       - name: Download exteriord
         uses: actions/download-artifact@v3
         with:
           name: exteriord
       - name: Make binaries executable
         run: |
-          chmod +x premises-mcmanager
+          chmod +x premises-runner
           chmod +x exteriord
       - name: Create Archive
         run : |
-          tar -czf premises-mcmanager.tar.gz premises-mcmanager
+          tar -czf premises-runner.tar.gz premises-runner
           tar -czf exteriord.tar.gz exteriord
       - name: Generate metadata
         run: |
@@ -238,7 +238,7 @@ jobs:
           credentials_json: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
       - uses: google-github-actions/upload-cloud-storage@v1
         with:
-          path: premises-mcmanager.tar.gz
+          path: premises-runner.tar.gz
           destination: premises-artifacts
           parent: false
           process_gcloudignore: false

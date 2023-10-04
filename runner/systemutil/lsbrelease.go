@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kofuk/premises/mcmanager/metadata"
+	"github.com/kofuk/premises/runner/metadata"
 	log "github.com/sirupsen/logrus"
 )
 

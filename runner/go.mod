@@ -1,4 +1,4 @@
-module github.com/kofuk/premises/mcmanager
+module github.com/kofuk/premises/runner
 
 go 1.21
 

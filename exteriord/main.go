@@ -22,25 +22,25 @@ func main() {
 	e := exterior.New()
 
 	setupTask := e.RegisterTask("Initialize Server",
-		proc.NewProc("/opt/premises/bin/premises-mcmanager",
+		proc.NewProc("/opt/premises/bin/premises-runner",
 			proc.Args("--server-setup"),
 			proc.Restart(proc.RestartNever),
 			proc.UserType(proc.UserPrivileged),
 		))
 	e.RegisterTask("Game Monitoring Service",
-		proc.NewProc("/opt/premises/bin/premises-mcmanager",
+		proc.NewProc("/opt/premises/bin/premises-runner",
 			proc.Restart(proc.RestartOnFailure),
 			proc.RestartRandomDelay(),
 			proc.UserType(proc.UserRestricted),
 		), setupTask)
 	e.RegisterTask("Keep System Up-to-date",
-		proc.NewProc("/opt/premises/bin/premises-mcmanager",
+		proc.NewProc("/opt/premises/bin/premises-runner",
 			proc.Args("--keep-system-up-to-date"),
 			proc.Restart(proc.RestartNever),
 			proc.UserType(proc.UserPrivileged),
 		), setupTask)
 	e.RegisterTask("Snapshot Service",
-		proc.NewProc("/opt/premises/bin/premises-mcmanager",
+		proc.NewProc("/opt/premises/bin/premises-runner",
 			proc.Args("--privileged-helper"),
 			proc.Restart(proc.RestartAlways),
 			proc.RestartRandomDelay(),

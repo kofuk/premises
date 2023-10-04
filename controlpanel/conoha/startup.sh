@@ -14,12 +14,12 @@ do_remote_update() {
 
     remote_version="$(curl 'https://storage.googleapis.com/premises-artifacts/version.txt')"
 
-    current_version="$("${PREMISES_BASEDIR}/bin/premises-mcmanager" --version || true)"
+    current_version="$("${PREMISES_BASEDIR}/bin/premises-runner" --version || true)"
 
     [ "${current_version}" = "${remote_version}" ] && exit 0
 
-    curl 'https://storage.googleapis.com/premises-artifacts/premises-mcmanager.tar.gz' | tar -xz
-    atomic_copy 'premises-mcmanager' "${PREMISES_BASEDIR}/bin/premises-mcmanager"
+    curl 'https://storage.googleapis.com/premises-artifacts/premises-runner.tar.gz' | tar -xz
+    atomic_copy 'premises-runner' "${PREMISES_BASEDIR}/bin/premises-runner"
 
     curl 'https://storage.googleapis.com/premises-artifacts/exteriord.tar.gz' | tar -xz
     atomic_copy 'exteriord' "/opt/premises/bin/exteriord"
@@ -28,7 +28,7 @@ do_remote_update() {
 do_local_update() {
     cd /premises-dev
     [ -e exteriord ] && atomic_copy exteriord /opt/premises/bin/exteriord
-    [ -e premises-mcmanager ] && atomic_copy premises-mcmanager /opt/premises/bin/premises-mcmanager
+    [ -e premises-runner ] && atomic_copy premises-runner /opt/premises/bin/premises-runner
 }
 
 xaptget() {
@@ -57,7 +57,7 @@ __run() {
     (
         set -euo pipefail
 
-        if [ -e /premises-dev/premises-mcmanager -o -e /premises-dev/exteriord ]; then
+        if [ -e /premises-dev/premises-runner -o -e /premises-dev/exteriord ]; then
             do_local_update
         else
             do_remote_update

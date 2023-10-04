@@ -1,7 +1,7 @@
 package keepsystemutd
 
 import (
-	"github.com/kofuk/premises/mcmanager/systemutil"
+	"github.com/kofuk/premises/runner/systemutil"
 )
 
 func KeepSystemUpToDate() {

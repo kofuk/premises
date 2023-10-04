@@ -67,17 +67,17 @@ $ go run .
 
 ### Q&A
 
-#### Can I use mcmanager or exteriord I'm developing locally?
+#### Can I use runner or exteriord I'm developing locally?
 
 Currently, you can on Linux (and hopefully on Mac OS), but you can't on Windows.
 
-On the supported platforms, running the following commands will deploy your mcmanager and exteriord on the next launch of runner.
+On the supported platforms, running the following commands will deploy your runner and exteriord on the next launch of runner.
 
 ```shell
 $ cd exteriord
 $ make deploy-dev
 
-$ cd mcmanager
+$ cd runner
 $ make deploy-dev
 ```
 

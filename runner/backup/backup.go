@@ -13,7 +13,7 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/kofuk/go-mega"
-	"github.com/kofuk/premises/mcmanager/config"
+	"github.com/kofuk/premises/runner/config"
 	log "github.com/sirupsen/logrus"
 	"github.com/ulikunitz/xz"
 )

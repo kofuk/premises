@@ -1,8 +1,8 @@
 package statusapi
 
 import (
-	"github.com/kofuk/premises/mcmanager/config"
-	"github.com/kofuk/premises/mcmanager/gamesrv"
+	"github.com/kofuk/premises/runner/config"
+	"github.com/kofuk/premises/runner/gamesrv"
 )
 
 type WorldInfo struct {

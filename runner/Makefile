@@ -2,17 +2,17 @@ GO = go
 
 .PHONY: all
 all:
-	CGO_ENABLED=0 $(GO) build -o premises-mcmanager -ldflags \
-	    '-X github.com/kofuk/premises/mcmanager/metadata.Revision=$(shell [ -e ../.git ]&&git rev-parse --short HEAD||echo unkonwn)'
+	CGO_ENABLED=0 $(GO) build -o premises-runner -ldflags \
+	    '-X github.com/kofuk/premises/runner/metadata.Revision=$(shell [ -e ../.git ]&&git rev-parse --short HEAD||echo unkonwn)'
 
 .PHONY: deploy-dev
 deploy-dev:
 	mkdir -p /tmp/premises
-	CGO_ENABLED=0 GOOS=linux $(GO) build -o /tmp/premises/premises-mcmanager
+	CGO_ENABLED=0 GOOS=linux $(GO) build -o /tmp/premises/premises-runner
 
 .PHONY: clean
 clean:
-	$(RM) premises-mcmanager
+	$(RM) premises-runner
 
 .PHONY: setup-gamedatafs
 setup-gamedatafs:
