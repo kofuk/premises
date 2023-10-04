@@ -28,8 +28,9 @@ func (self *Task) Id() TaskId {
 func NewTask(fn func(), description string, deps ...TaskId) *Task {
 	taskId := TaskId(uuid.New().String())
 	task := Task{
-		taskId: taskId,
-		fn:     fn,
+		taskId:      taskId,
+		description: description,
+		fn:          fn,
 	}
 
 	for _, dep := range deps {
