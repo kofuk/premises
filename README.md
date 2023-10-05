@@ -1,30 +1,24 @@
 # Premises
 
-"Premises" is a software to build on-demand Minecraft cloud server.
+"Premises" is a software to build on-demand Minecraft server on cloud.
 
 Premises consists of the following 2 parts:
 
-1. Frontend that determine configuration of the server, and creates VM.
-2. Software to actually configure game and monitor that the server alive.
+1. Frontend that determine configuration of the server, and creates VM. (Control Panel)
+2. Software to actually configure game and monitor that the server alive. (Runner)
 
-## Set Up
+## Features
 
-1. Create your `.env` file (please refer to `.env.example` for keys and description).
-2. Run `docker compose up` and the server will listen on `:8000`.
-3. Add user by the following command
-```shell
-$ docker compose exec web pmctl user add -u "${user}" -p "${password}"
-```
+- Launch Minecraft server from Web.
+- Save world data on Mega and select world to load.
+- Monitor server status in real time.
+- Monitor CPU usage of server in real time.
+- Instantly take snapshot of running world and restore it.
 
-## World Archives
+## Installing
 
-Premises always stores world archives to Mega in the form of Zstandard compressed tar archive,
-but it can recognize `.tar.xz`, `.zip` files in addition to `.tar.zst`.
+See [documentation](docs/installing.md) for step to setup Premises on your server.
 
-Each archives should have the following files or directries in the root:
+## License
 
-Name            | Type | Required | Description
-----------------|------|----------|----------------------------------------------------------
-world           | Dir  | Yes      | World data loaded by vanilla Minecraft server
-world\_nether   | Dir  | No       | World data for nether loaded by spigot Minecraft server
-world\_the\_end | Dir  | No       | World data for the end loaded by spigot Minecraft server
+MIT
