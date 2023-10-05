@@ -62,30 +62,22 @@ func (self *Scheduler) Run() {
 
 	completedTasks := 0
 
-	for {
+	for completedTasks != len(self.tasks) {
 		for _, task := range self.tasks {
 			if !task.started && len(task.deps) == 0 {
 				log.Println("Starting", task.description)
-
 				go task.runTask(notifyComplete)
-
 				task.started = true
 			}
 		}
 
-		if completedTasks == len(self.tasks) {
-			return
-		}
+		taskId := <-notifyComplete
+		completedTasks++
 
-		select {
-		case taskId := <-notifyComplete:
-			completedTasks++
-
-			for _, dep := range self.tasks {
-				dep.deps = slices.DeleteFunc(dep.deps, func(e TaskId) bool {
-					return e == taskId
-				})
-			}
+		for _, dep := range self.tasks {
+			dep.deps = slices.DeleteFunc(dep.deps, func(e TaskId) bool {
+				return e == taskId
+			})
 		}
 	}
 }
