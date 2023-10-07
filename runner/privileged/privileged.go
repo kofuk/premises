@@ -68,7 +68,7 @@ func deleteFsSnapshot(id string) error {
 		return errors.New("Invalid snapshot ID")
 	}
 
-	gameDir :="/opt/premises/gamedata"
+	gameDir := "/opt/premises/gamedata"
 
 	cmd := exec.Command("btrfs", "subvolume", "delete", "ss@"+id)
 	cmd.Dir = gameDir

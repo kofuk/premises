@@ -16,7 +16,6 @@ import (
 
 var shutdown = false
 
-
 func launchStatus() {
 	http.HandleFunc("/monitor", func(w http.ResponseWriter, r *http.Request) {
 		writeJson := func(w http.ResponseWriter, data *statusapi.StatusData) error {
