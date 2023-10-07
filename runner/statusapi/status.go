@@ -216,15 +216,10 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 		if err := writeJson(w, &StatusData{
 			Type:     StatusTypeLegacyEvent,
 			Status:   ctx.LastStatus,
-			Shutdown: srv.IsServerFinished,
+			Shutdown: false,
 			HasError: srv.StartupFailed,
 		}); err != nil {
 			log.WithError(err).Error("Failed to write status")
-			return
-		}
-		if srv.IsServerFinished {
-			// Connected to shutdown server.
-			// Notify the state and close.
 			return
 		}
 
@@ -255,7 +250,7 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 				if err := writeJson(w, &StatusData{
 					Type:     StatusTypeLegacyEvent,
 					Status:   status,
-					Shutdown: srv.IsServerFinished,
+					Shutdown: false,
 					HasError: srv.StartupFailed,
 				}); err != nil {
 					log.WithError(err).Error("Failed to write data to connection")
@@ -271,7 +266,7 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 
 				if err := writeJson(w, &StatusData{
 					Type:     StatusTypeSystemStat,
-					Shutdown: srv.IsServerFinished,
+					Shutdown: false,
 					HasError: srv.StartupFailed,
 					CPUUsage: cpuUsage,
 				}); err != nil {

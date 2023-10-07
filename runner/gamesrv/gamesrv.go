@@ -22,7 +22,6 @@ type ServerInstance struct {
 	Name                   string
 	FinishWG               sync.WaitGroup
 	ShouldStop             bool
-	IsServerFinished       bool
 	StartupFailed          bool
 	rconMu                 sync.Mutex
 	IsServerInitialized    bool

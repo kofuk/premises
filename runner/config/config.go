@@ -11,7 +11,6 @@ import (
 )
 
 type Config struct {
-	RemoveMe  bool   `json:"removeMe"`
 	AllocSize int    `json:"allocSize"`
 	AuthKey   string `json:"authKey"`
 	Locale    string `json:"locale"`
@@ -39,7 +38,6 @@ type Config struct {
 }
 
 type PMCMContext struct {
-	Debug          bool
 	Cfg            Config
 	StatusChannels []chan string
 	ChannelMutex   sync.Mutex
@@ -111,9 +109,6 @@ func (ctx *PMCMContext) LocateServer(serverName string) string {
 }
 
 func (ctx *PMCMContext) LocateDataFile(path string) string {
-	if ctx.Debug {
-		return filepath.Join("/tmp/premises", path)
-	}
 	return filepath.Join("/opt/premises", path)
 }
 

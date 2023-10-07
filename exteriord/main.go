@@ -27,7 +27,7 @@ func main() {
 			proc.Restart(proc.RestartNever),
 			proc.UserType(proc.UserPrivileged),
 		))
-	e.RegisterTask("Game Monitoring Service",
+	monitoring := e.RegisterTask("Game Monitoring Service",
 		proc.NewProc("/opt/premises/bin/premises-runner",
 			proc.Restart(proc.RestartOnFailure),
 			proc.RestartRandomDelay(),
@@ -46,6 +46,12 @@ func main() {
 			proc.RestartRandomDelay(),
 			proc.UserType(proc.UserPrivileged),
 		), setupTask)
+	e.RegisterTask("Clean Up",
+		proc.NewProc("/opt/premises/bin/premises-runner",
+			proc.Args("--clean-up"),
+			proc.Restart(proc.RestartNever),
+			proc.UserType(proc.UserPrivileged),
+		), monitoring)
 
 	e.Run()
 }

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/kofuk/premises/runner/backup"
+	"github.com/kofuk/premises/runner/cleanup"
 	"github.com/kofuk/premises/runner/config"
 	"github.com/kofuk/premises/runner/gamesrv"
 	"github.com/kofuk/premises/runner/keepsystemutd"
@@ -133,26 +134,12 @@ func downloadServerJarIfNeeded(ctx *config.PMCMContext) error {
 }
 
 func runServer() {
-	ctx := new(config.PMCMContext)
+	log.Printf("Starting Premises Runner (revision: %s)\n", metadata.Revision)
 
-	for {
-		log.Info("Waiting for config file to be created...")
-		if _, err := os.Stat("/opt/premises/config.json"); err == nil {
-			log.Println("Config file detected. continue")
-			break
-		} else if !os.IsNotExist(err) {
-			log.Fatal("Config file detection failed.", err)
-		}
-		time.Sleep(2 * time.Second)
-	}
+	ctx := new(config.PMCMContext)
 
 	if err := config.LoadConfig(ctx); err != nil {
 		log.Fatal(err)
-	}
-	if ctx.Cfg.RemoveMe {
-		if err := os.Remove(ctx.LocateDataFile("config.json")); err != nil {
-			log.WithError(err).Error("Cannot remove config file")
-		}
 	}
 
 	if err := LoadI18nData(ctx); err != nil {
@@ -240,12 +227,8 @@ out:
 			}
 		}
 	} else {
-		srv.IsServerFinished = true
 		ctx.NotifyStatus(ctx.L("game.stopped"))
 	}
-
-	// wait...
-	<-make(chan struct{})
 }
 
 func main() {
@@ -256,6 +239,7 @@ func main() {
 	runPrivilegedHelper := flag.Bool("privileged-helper", false, "Run this process as internal helper process")
 	runServerSetup := flag.Bool("server-setup", false, "Run this process as server setup process")
 	runKeepSystemUpToDate := flag.Bool("keep-system-up-to-date", false, "Run this process as keep-system-up-to-date process")
+	runCleanUp := flag.Bool("clean-up", false, "Run this process as clean up process")
 
 	flag.Parse()
 
@@ -278,6 +262,10 @@ func main() {
 	}
 	if *runKeepSystemUpToDate {
 		keepsystemutd.KeepSystemUpToDate()
+		return
+	}
+	if *runCleanUp {
+		cleanup.CleanUp()
 		return
 	}
 

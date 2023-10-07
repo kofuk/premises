@@ -11,7 +11,6 @@ import (
 )
 
 type GameConfig struct {
-	RemoveMe  bool   `json:"removeMe"`
 	AllocSize int    `json:"allocSize"`
 	AuthKey   string `json:"authKey"`
 	Locale    string `json:"locale"`
@@ -39,9 +38,7 @@ type GameConfig struct {
 }
 
 func New() *GameConfig {
-	result := GameConfig{
-		RemoveMe: true,
-	}
+	result := GameConfig{}
 	result.World.LevelType = "default"
 	result.World.Difficulty = "normal"
 

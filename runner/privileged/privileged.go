@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -33,7 +32,7 @@ type SnapshotInfo struct {
 	Path string `json:"path"`
 }
 
-func takeFsSnapshot(debugEnv bool, snapshotId string) (*SnapshotInfo, error) {
+func takeFsSnapshot(snapshotId string) (*SnapshotInfo, error) {
 	if snapshotId == "" {
 		id, err := uuid.NewUUID()
 		if err != nil {
@@ -42,19 +41,14 @@ func takeFsSnapshot(debugEnv bool, snapshotId string) (*SnapshotInfo, error) {
 		snapshotId = id.String()
 	}
 
-	var gameDir string
-	if debugEnv {
-		gameDir = "/tmp/premises/gamedata"
-	} else {
-		gameDir = "/opt/premises/gamedata"
-	}
+	gameDir := "/opt/premises/gamedata"
 
 	var snapshotInfo SnapshotInfo
 	snapshotInfo.ID = snapshotId
 	snapshotInfo.Path = filepath.Join(gameDir, "ss@"+snapshotId)
 
 	if snapshotId != "" {
-		if err := deleteFsSnapshot(debugEnv, snapshotId); err != nil {
+		if err := deleteFsSnapshot(snapshotId); err != nil {
 			log.WithError(err).Info("Failed to remove old snapshot (doesn't the snapshot exist?)")
 		}
 	}
@@ -69,17 +63,12 @@ func takeFsSnapshot(debugEnv bool, snapshotId string) (*SnapshotInfo, error) {
 	return &snapshotInfo, nil
 }
 
-func deleteFsSnapshot(debugEnv bool, id string) error {
+func deleteFsSnapshot(id string) error {
 	if strings.Contains(id, "/") {
 		return errors.New("Invalid snapshot ID")
 	}
 
-	var gameDir string
-	if debugEnv {
-		gameDir = "/tmp/premises/gamedata"
-	} else {
-		gameDir = "/opt/premises/gamedata"
-	}
+	gameDir :="/opt/premises/gamedata"
 
 	cmd := exec.Command("btrfs", "subvolume", "delete", "ss@"+id)
 	cmd.Dir = gameDir
@@ -112,10 +101,6 @@ func Run() {
 	if syscall.Geteuid() != 0 {
 		log.Fatal("Privileged helper must run as root")
 	}
-
-	debugEnv := len(os.Getenv("PREMISES_RUNNER_DEBUG")) > 0
-
-	log.WithField("debug_mode", debugEnv).Info("Running privileged helper process")
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Info("Request received")
@@ -162,7 +147,7 @@ func Run() {
 		}
 
 		if req.Func == "snapshots/create" {
-			ssi, err := takeFsSnapshot(debugEnv, "")
+			ssi, err := takeFsSnapshot("")
 			if err != nil {
 				log.WithError(err).Error("Failed to take snapshot")
 
@@ -202,7 +187,7 @@ func Run() {
 				}
 			}
 
-			if err := deleteFsSnapshot(debugEnv, req.Args[0]); err != nil {
+			if err := deleteFsSnapshot(req.Args[0]); err != nil {
 				log.WithError(err).Error("Failed to delete snapshot")
 
 				err = sendMessage(w, &ResponseMsg{
@@ -226,7 +211,7 @@ func Run() {
 				return
 			}
 		} else if req.Func == "quicksnapshots/create" {
-			ssi, err := takeFsSnapshot(debugEnv, "quick0")
+			ssi, err := takeFsSnapshot("quick0")
 			if err != nil {
 				log.WithError(err).Error("Failed to take snapshot")
 
