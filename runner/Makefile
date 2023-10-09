@@ -3,7 +3,7 @@ GO = go
 .PHONY: all
 all:
 	CGO_ENABLED=0 $(GO) build -o premises-runner -ldflags \
-	    '-X github.com/kofuk/premises/runner/metadata.Revision=$(shell [ -e ../.git ]&&git rev-parse --short HEAD||echo unkonwn)'
+	    '-X github.com/kofuk/premises/runner/metadata.Revision=$(shell [ -e ../.git ] && git rev-parse HEAD || echo unkonwn)'
 
 .PHONY: deploy-dev
 deploy-dev:
