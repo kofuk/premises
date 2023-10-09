@@ -10,6 +10,12 @@ import Settings from './settings';
 import {Navigate} from 'react-router-dom';
 import {Helmet} from 'react-helmet-async';
 
+// For bootstrap based screen. We should remove this after transition to styled-component completed.
+import './control.scss';
+import 'bootstrap/js/dist/offcanvas';
+import 'bootstrap/js/dist/collapse';
+/////
+
 type AppState = {
     isServerShutdown: boolean;
     isError: boolean;

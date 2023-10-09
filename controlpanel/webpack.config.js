@@ -8,7 +8,7 @@ const config = {
     mode: env,
     devtool: env === 'development' ? 'inline-source-map' : false,
     entry: {
-        'app': './frontend/app.tsx',
+        app: './frontend/app.tsx',
     },
     resolve: {
         modules: ['node_modules'],
