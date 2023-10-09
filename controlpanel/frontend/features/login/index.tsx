@@ -22,94 +22,42 @@ import {
 import {LoadingButton} from '@mui/lab';
 import {Helmet} from 'react-helmet-async';
 
-import '../i18n';
+import '@/i18n';
 import {t} from 'i18next';
-import {encodeBuffer, decodeBuffer} from '../base64url';
 import {useNavigate} from 'react-router-dom';
+import {LoginResult, useAuth} from '@/utils/auth';
 
 interface WebAuthnLoginProps {
   setFeedback: (feedback: string) => void;
   switchToPassword: () => void;
 }
 
-const WebAuthnLogin: React.FC<WebAuthnLoginProps> = (props: WebAuthnLoginProps) => {
-  const {setFeedback, switchToPassword} = props;
-
+const WebAuthnLogin: React.FC<WebAuthnLoginProps> = ({setFeedback, switchToPassword}: WebAuthnLoginProps) => {
   const [username, setUsername] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
 
   const navigate = useNavigate();
 
+  const {loginWebAuthn} = useAuth();
+
   const handleWebAuthn = async () => {
-    const params = new URLSearchParams();
-    params.append('username', username);
-
-    let beginResp: any = await fetch('/login/hardwarekey/begin', {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+    loginWebAuthn(username).then(
+      () => {
+        setLoggingIn(false);
+        navigate('/launch', {replace: true});
       },
-      body: params.toString()
-    }).then((resp) => resp.json());
-
-    if (!beginResp['success']) {
-      setLoggingIn(false);
-      setFeedback(beginResp['reason']);
-      return;
-    }
-
-    const options = beginResp['options'];
-
-    options.publicKey.challenge = decodeBuffer(options.publicKey.challenge);
-    if (options.publicKey.allowCredentials) {
-      for (let i = 0; i < options.publicKey.allowCredentials.length; i++) {
-        options.publicKey.allowCredentials[i].id = decodeBuffer(options.publicKey.allowCredentials[i].id);
+      (err) => {
+        setLoggingIn(false);
+        setFeedback(err.message);
       }
-    }
-
-    const publicKeyCred = (await navigator.credentials.get(options)) as PublicKeyCredential;
-    const rawId = publicKeyCred.rawId;
-    const {authenticatorData, clientDataJSON, signature, userHandle} = publicKeyCred.response as AuthenticatorAssertionResponse;
-
-    const finishResp: any = await fetch('/login/hardwarekey/finish', {
-      method: 'post',
-      body: JSON.stringify({
-        id: publicKeyCred.id,
-        rawId: encodeBuffer(rawId),
-        type: publicKeyCred.type,
-        response: {
-          authenticatorData: encodeBuffer(authenticatorData),
-          clientDataJSON: encodeBuffer(clientDataJSON),
-          signature: encodeBuffer(signature),
-          userHandle: encodeBuffer(userHandle!!)
-        }
-      })
-    }).then((resp) => resp.json());
-
-    if (!finishResp['success']) {
-      setLoggingIn(false);
-      setFeedback(finishResp['reason']);
-      return;
-    }
-
-    navigate('/launch', {replace: true});
-
-    setLoggingIn(false);
-  };
-
-  const login = () => {
-    setLoggingIn(true);
-
-    handleWebAuthn().catch(() => {
-      setFeedback(t('passwordless_login_error'));
-    });
+    );
   };
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        login();
+        handleWebAuthn();
       }}
     >
       <Stack spacing={2}>
@@ -142,9 +90,7 @@ interface PasswordLoginProps {
   switchToSecurityKey: () => void;
 }
 
-const PasswordLogin: React.FC<PasswordLoginProps> = (props: PasswordLoginProps) => {
-  const {setFeedback, switchToSecurityKey} = props;
-
+const PasswordLogin: React.FC<PasswordLoginProps> = ({setFeedback, switchToSecurityKey}: PasswordLoginProps) => {
   const [loggingIn, setLoggingIn] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -153,60 +99,39 @@ const PasswordLogin: React.FC<PasswordLoginProps> = (props: PasswordLoginProps) 
 
   const navigate = useNavigate();
 
-  const login = () => {
+  const {login, initializePassword} = useAuth();
+
+  const handleLogin = () => {
     setLoggingIn(true);
 
-    const params = new URLSearchParams();
-    params.append('username', username);
-    params.append('password', password);
-
-    fetch('/login', {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: params.toString()
-    })
-      .then((resp) => resp.json())
-      .then((resp) => {
-        if (resp['success']) {
-          if (resp['needsChangePassword']) {
-            setOpenResetPasswordDialog(true);
-            return;
-          }
-
+    login(username, password).then(
+      (result) => {
+        if (result === LoginResult.LoggedIn) {
           setLoggingIn(false);
           navigate('/launch', {replace: true});
-          return;
+        } else {
+          setOpenResetPasswordDialog(true);
         }
+      },
+      (err) => {
         setLoggingIn(false);
-        setFeedback(resp['reason']);
-      });
+        setFeedback(err.message);
+      }
+    );
   };
 
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
 
-  const changePassword = () => {
-    const params = new URLSearchParams();
-    params.append('username', username);
-    params.append('password', newPassword);
-
-    fetch('/login/reset-password', {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+  const handleChangePassword = () => {
+    initializePassword(username, newPassword).then(
+      () => {
+        navigate('/launch', {replace: true});
       },
-      body: params.toString()
-    })
-      .then((resp) => resp.json())
-      .then((resp) => {
-        if (resp['success']) {
-          location.reload();
-          return;
-        }
-        setFeedback(resp['reason']);
-      });
+      (err) => {
+        setFeedback(err.message);
+      }
+    );
   };
 
   return (
@@ -214,7 +139,7 @@ const PasswordLogin: React.FC<PasswordLoginProps> = (props: PasswordLoginProps) 
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          login();
+          handleLogin();
         }}
       >
         <Stack spacing={2}>
@@ -253,7 +178,7 @@ const PasswordLogin: React.FC<PasswordLoginProps> = (props: PasswordLoginProps) 
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            changePassword();
+            handleChangePassword();
           }}
         >
           <DialogContent>
@@ -287,20 +212,16 @@ const PasswordLogin: React.FC<PasswordLoginProps> = (props: PasswordLoginProps) 
   );
 };
 
-const LoginApp = () => {
+export default () => {
   const [feedback, setFeedback] = useState('');
   const [loginMethod, setLoginMethod] = useState('password');
 
   const navigate = useNavigate();
-
+  const {loggedIn} = useAuth();
   useEffect(() => {
-    fetch('/api/current-user')
-      .then((resp) => resp.json())
-      .then((resp) => {
-        if (resp['success']) {
-          navigate('/launch', {replace: true});
-        }
-      });
+    if (loggedIn) {
+      navigate('/launch', {replace: true});
+    }
   }, []);
 
   return (
@@ -337,5 +258,3 @@ const LoginApp = () => {
     </Box>
   );
 };
-
-export default LoginApp;

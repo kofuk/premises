@@ -1,15 +1,15 @@
 import React, {useState, useEffect} from 'react';
 import {FaStop} from '@react-icons/all-files/fa/FaStop';
 
-import '../i18n';
+import '@/i18n';
 import {t} from 'i18next';
 
 import {Line, LineChart, YAxis, Tooltip} from 'recharts';
-import ReconfigureMenu from './reconfigure-menu';
-import Snapshot from './control-item/snapshot';
-import QuickUndo from './control-item/quickundo';
-import SystemInfo from './control-item/system-info';
-import WorldInfo from './control-item/world-info';
+import ReconfigureMenu from '@/features/launch/reconfigure-menu';
+import Snapshot from '@/features/launch/control-item/snapshot';
+import QuickUndo from '@/features/launch/control-item/quickundo';
+import SystemInfo from '@/features/launch/control-item/system-info';
+import WorldInfo from '@/features/launch/control-item/world-info';
 
 enum Modes {
   MainMenu,

@@ -1,11 +1,11 @@
 import {useState, useEffect} from 'react';
 import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
 
-import '../../i18n';
+import '@/i18n';
 import {t} from 'i18next';
 
-import {ItemProp} from './prop';
-import ConfigContainer from './config-container';
+import {ItemProp} from '@/features/launch/config-item/prop';
+import ConfigContainer from '@/features/launch/config-item/config-container';
 
 type McVersion = {
   name: string;

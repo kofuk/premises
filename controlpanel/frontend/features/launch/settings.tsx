@@ -1,21 +1,11 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 
-import '../i18n';
+import '@/i18n';
 import {t} from 'i18next';
 
-import PasswordlessLogin from './setting-item/passwordless-login';
-import ChangePassword from './setting-item/change-passowrd';
-import AddUser from './setting-item/add-user';
-
-type State = {
-  canChangePassword: boolean;
-  currentPassword: string;
-  newPassword: string;
-  newPasswordConfirm: string;
-  feedback: string;
-  negativeFeedback: boolean;
-  passwordSuccess: boolean;
-};
+import PasswordlessLogin from '@/features/launch/setting-item/passwordless-login';
+import ChangePassword from '@/features/launch/setting-item/change-passowrd';
+import AddUser from '@/features/launch/setting-item/add-user';
 
 export default () => {
   const [feedback, setFeedback] = useState('');

@@ -887,7 +887,7 @@ func (h *Handler) middlewareSessionCheck(c *gin.Context) {
 	// 1. Verify that the client is logged in.
 	session := sessions.Default(c)
 	if session.Get("user_id") == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Not logged in"})
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Not logged in"})
 		c.Abort()
 		return
 	}

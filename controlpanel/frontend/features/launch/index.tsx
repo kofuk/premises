@@ -1,19 +1,20 @@
 import React, {useState, useEffect} from 'react';
 
-import '../i18n';
+import '@/i18n';
 import {t} from 'i18next';
 
 import StatusBar from './statusbar';
 import ServerControlPane from './server-control-pane';
 import ServerConfigPane from './server-config-pane';
 import Settings from './settings';
-import {Navigate} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import {Helmet} from 'react-helmet-async';
 
 // For bootstrap based screen. We should remove this after transition to styled-component completed.
 import './control.scss';
 import 'bootstrap/js/dist/offcanvas';
 import 'bootstrap/js/dist/collapse';
+import {useAuth} from '@/utils/auth';
 /////
 
 export default () => {
@@ -58,15 +59,12 @@ export default () => {
     }
   }, []);
 
-  const [logout, setLogout] = useState(false);
+  const navigate = useNavigate();
+  const {loggedIn, logout} = useAuth();
   useEffect(() => {
-    fetch('/api/current-user')
-      .then((resp) => resp.json())
-      .then((resp) => {
-        if (!resp['success']) {
-          setLogout(true);
-        }
-      });
+    if (!loggedIn) {
+      navigate('/', {replace: true});
+    }
   }, []);
 
   const showError = (message: string) => {
@@ -86,21 +84,14 @@ export default () => {
   };
 
   const handleLogout = () => {
-    fetch('/logout', {
-      method: 'POST'
-    })
-      .then((resp) => resp.json())
-      .then((resp) => {
-        if (resp['success']) {
-          setLogout(true);
-        }
-      });
+    logout().then(() => {
+      navigate('/', {replace: true});
+    });
   };
 
   const mainPane: React.ReactElement = isServerShutdown ? <ServerConfigPane showError={showError} /> : <ServerControlPane showError={showError} />;
   return (
     <>
-      {logout && <Navigate to="/" replace={true} />}
       <nav className="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
         <div className="container-fluid">
           <span className="navbar-brand">{t('app_name')}</span>

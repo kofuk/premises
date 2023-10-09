@@ -1,7 +1,7 @@
 import {useState, useEffect} from 'react';
 import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
 
-import '../../i18n';
+import '@/i18n';
 import {t} from 'i18next';
 
 import {ItemProp} from './prop';

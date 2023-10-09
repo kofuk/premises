@@ -1,8 +1,8 @@
 import {useState, useEffect} from 'react';
 
-import '../../i18n';
+import '@/i18n';
 import {t} from 'i18next';
-import {encodeBuffer, decodeBuffer} from '../../base64url';
+import {encodeBuffer, decodeBuffer} from '@/utils/base64url';
 import {FaTrash} from '@react-icons/all-files/fa/FaTrash';
 
 interface HardwareKey {

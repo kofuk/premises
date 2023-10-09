@@ -1,6 +1,6 @@
 import {useState} from 'react';
 
-import '../../i18n';
+import '@/i18n';
 import {t} from 'i18next';
 
 type Props = {

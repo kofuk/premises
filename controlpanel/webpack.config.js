@@ -8,9 +8,12 @@ const config = {
     mode: env,
     devtool: env === 'development' ? 'inline-source-map' : false,
     entry: {
-        app: './frontend/app.tsx',
+        app: './frontend/main.tsx',
     },
     resolve: {
+        alias: {
+            '@': path.resolve(__dirname, 'frontend')
+        },
         modules: ['node_modules'],
         extensions: ['.mjs', '.ts', '.tsx', '.js']
     },
@@ -39,7 +42,7 @@ const config = {
     plugins: [
         new CopyPlugin({
             patterns: [
-                {from: 'frontend/favicon.ico', to: path.resolve(__dirname, 'gen')},
+                {from: 'etc/favicon.ico', to: path.resolve(__dirname, 'gen')},
                 {from: 'etc/robots.txt', to: path.resolve(__dirname, 'gen')}
             ]
         })

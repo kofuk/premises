@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import '../../i18n';
+import '@/i18n';
 import {t} from 'i18next';
 
 import {ItemProp} from './prop';

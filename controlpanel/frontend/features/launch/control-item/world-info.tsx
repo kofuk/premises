@@ -2,10 +2,10 @@ import {useState, useEffect} from 'react';
 import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
 import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
 
-import '../../i18n';
+import '@/i18n';
 import {t} from 'i18next';
 
-import CopyableListItem from '../../components/copyable-list-item';
+import CopyableListItem from '@/components/copyable-list-item';
 
 type Prop = {
   backToMenu: () => void;

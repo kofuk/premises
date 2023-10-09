@@ -1,17 +1,17 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 import {VscDebugStart} from '@react-icons/all-files/vsc/VscDebugStart';
 
-import '../i18n';
+import '@/i18n';
 import {t} from 'i18next';
 
-import MachineType from './config-item/machine-type';
-import ServerVersion from './config-item/server-version';
-import WorldSource from './config-item/world-source';
-import {WorldLocation} from './config-item/world-source';
-import ChooseBackup from './config-item/choose-backup';
-import WorldName from './config-item/world-name';
-import ConfigureWorld from './config-item/configure-world';
-import {LevelType} from './config-item/configure-world';
+import MachineType from '@/features/launch/config-item/machine-type';
+import ServerVersion from '@/features/launch/config-item/server-version';
+import WorldSource from '@/features/launch/config-item/world-source';
+import {WorldLocation} from '@/features/launch/config-item/world-source';
+import ChooseBackup from '@/features/launch/config-item/choose-backup';
+import WorldName from '@/features/launch/config-item/world-name';
+import ConfigureWorld from '@/features/launch/config-item/configure-world';
+import {LevelType} from '@/features/launch/config-item/configure-world';
 
 type Prop = {
   showError: (message: string) => void;

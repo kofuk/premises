@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
 
-import '../../i18n';
+import '@/i18n';
 import {t} from 'i18next';
 
 type Prop = {

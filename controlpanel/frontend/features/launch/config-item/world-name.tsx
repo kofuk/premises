@@ -1,11 +1,11 @@
 import {useState, useEffect} from 'react';
 
-import '../../i18n';
+import '@/i18n';
 import {t} from 'i18next';
 
-import {ItemProp} from './prop';
-import {WorldBackup} from './world-backup';
-import ConfigContainer from './config-container';
+import {ItemProp} from '@/features/launch/config-item/prop';
+import {WorldBackup} from '@/features/launch/config-item/world-backup';
+import ConfigContainer from '@/features/launch/config-item/config-container';
 
 export default ({
   isFocused,
