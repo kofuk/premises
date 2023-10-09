@@ -1,4 +1,3 @@
-import * as React from 'react';
 import {MdContentCopy} from '@react-icons/all-files/md/MdContentCopy';
 
 import '../i18n';
@@ -9,25 +8,25 @@ type Prop = {
     content: string;
 };
 
-export default class CopyableListItem extends React.Component<Prop, {}> {
-    handleCopy = () => {
-        navigator.clipboard.writeText(this.props.content);
+export default (props: Prop) => {
+    const {title, content} = props;
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(content);
     };
 
-    render = () => {
-        return (
-            <div className="list-group-item">
-                <h5 className="mb-1">{this.props.title}</h5>
-                <div className="mb-1 d-flex flex-row">
-                    <div className="flex-fill">{this.props.content}</div>
-                    <div>
-                        <button type="button" className="btn btn-outline-dark btn-sm" onClick={this.handleCopy}>
-                            <MdContentCopy className="me-1" />
-                            {t('copy')}
-                        </button>
-                    </div>
+    return (
+        <div className="list-group-item">
+            <h5 className="mb-1">{title}</h5>
+            <div className="mb-1 d-flex flex-row">
+                <div className="flex-fill">{content}</div>
+                <div>
+                    <button type="button" className="btn btn-outline-dark btn-sm" onClick={handleCopy}>
+                        <MdContentCopy className="me-1" />
+                        {t('copy')}
+                    </button>
                 </div>
             </div>
-        );
-    };
-}
+        </div>
+    );
+};

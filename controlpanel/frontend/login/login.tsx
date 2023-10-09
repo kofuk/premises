@@ -27,12 +27,6 @@ import {t} from 'i18next';
 import {encodeBuffer, decodeBuffer} from '../base64url';
 import {useNavigate} from 'react-router-dom';
 
-// For material UI
-import '@fontsource/roboto/300.css';
-import '@fontsource/roboto/400.css';
-import '@fontsource/roboto/500.css';
-import '@fontsource/roboto/700.css';
-
 interface WebAuthnLoginProps {
     setFeedback: (feedback: string) => void;
     switchToPassword: () => void;
