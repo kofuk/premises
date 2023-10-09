@@ -1,4 +1,4 @@
-import * as React from 'react';
+import {useState, useEffect} from 'react';
 
 import '../../i18n';
 import {t} from 'i18next';
@@ -6,184 +6,177 @@ import {encodeBuffer, decodeBuffer} from '../../base64url';
 import {FaTrash} from '@react-icons/all-files/fa/FaTrash';
 
 interface HardwareKey {
-    id: string;
-    name: string;
+  id: string;
+  name: string;
 }
-
-type State = {
-    keyName: string;
-    canContinue: boolean;
-    hardwareKeys: HardwareKey[];
-};
 
 type Props = {
-    updateFeedback: (message: string, negative: boolean) => void;
+  updateFeedback: (message: string) => void;
 };
 
-export default class PasswordlessLogin extends React.Component<Props, State> {
-    state = {
-        keyName: '',
-        canContinue: true,
-        hardwareKeys: [] as HardwareKey[]
-    };
+export default (props: Props) => {
+  const {updateFeedback} = props;
 
-    refreshHardwareKeys = () => {
-        fetch('/api/hardwarekey')
-            .then((resp) => resp.json())
-            .then((resp) => {
-                if (!resp['success']) {
-                    this.props.updateFeedback(resp['reason'], true);
-                    return;
-                }
-                this.setState({hardwareKeys: resp['data']});
-            });
-    };
+  const [keyName, setKeyName] = useState('');
+  const [canContinue, setCanContinue] = useState(true);
+  const [hardwareKeys, setHardwareKeys] = useState<HardwareKey[]>([]);
 
-    componentDidMount = () => {
-        this.refreshHardwareKeys();
-    };
+  const refreshHardwareKeys = () => {
+    fetch('/api/hardwarekey')
+      .then((resp) => resp.json())
+      .then((resp) => {
+        if (!resp['success']) {
+          updateFeedback(resp['reason']);
+          return;
+        }
+        setHardwareKeys(resp['data']);
+      });
+  };
 
-    handleAddKey = () => {
-        this.setState({canContinue: false});
+  useEffect(() => {
+    refreshHardwareKeys();
+  }, []);
 
-        fetch('/api/hardwarekey/begin', {
-            method: 'post'
-        })
-            .then((resp) => resp.json())
-            .then((resp) => {
-                if (!resp['success']) {
-                    this.props.updateFeedback(resp['reason'], true);
-                    this.setState({canContinue: true});
-                    return;
-                }
+  const handleAddKey = () => {
+    setCanContinue(false);
 
-                const options = resp.options;
+    fetch('/api/hardwarekey/begin', {
+      method: 'post'
+    })
+      .then((resp) => resp.json())
+      .then((resp) => {
+        if (!resp['success']) {
+          updateFeedback(resp['reason']);
+          setCanContinue(true);
+          return;
+        }
 
-                options.publicKey.challenge = decodeBuffer(options.publicKey.challenge);
-                options.publicKey.user.id = decodeBuffer(options.publicKey.user.id);
-                if (options.publicKey.excludeCredentials) {
-                    for (let i = 0; i < options.publicKey.excludeCredentials.length; i++) {
-                        options.publicKey.excludeCredentials[i].id = decodeBuffer(options.publicKey.excludeCredentials[i].id);
-                    }
-                }
+        const options = resp.options;
 
-                return navigator.credentials.create(options);
-            })
-            .then((cred) => {
-                if (!cred) {
-                    throw 'error';
-                }
+        options.publicKey.challenge = decodeBuffer(options.publicKey.challenge);
+        options.publicKey.user.id = decodeBuffer(options.publicKey.user.id);
+        if (options.publicKey.excludeCredentials) {
+          for (let i = 0; i < options.publicKey.excludeCredentials.length; i++) {
+            options.publicKey.excludeCredentials[i].id = decodeBuffer(options.publicKey.excludeCredentials[i].id);
+          }
+        }
 
-                let publicKeyCred = cred as PublicKeyCredential;
-                let attestationObject = (publicKeyCred.response as AuthenticatorAttestationResponse).attestationObject;
-                let clientDataJson = publicKeyCred.response.clientDataJSON;
-                let rawId = publicKeyCred.rawId;
+        return navigator.credentials.create(options);
+      })
+      .then((cred) => {
+        if (!cred) {
+          throw 'error';
+        }
 
-                return fetch('/api/hardwarekey/finish?name=' + encodeURI(this.state.keyName), {
-                    method: 'post',
-                    body: JSON.stringify({
-                        id: cred.id,
-                        rawId: encodeBuffer(rawId),
-                        type: publicKeyCred.type,
-                        response: {
-                            attestationObject: encodeBuffer(attestationObject),
-                            clientDataJSON: encodeBuffer(clientDataJson)
-                        }
-                    })
-                })
-                    .then((resp) => resp.json())
-                    .then((resp) => {
-                        if (!resp['success']) {
-                            this.props.updateFeedback(resp['reason'], true);
-                            this.setState({canContinue: true});
-                            return;
-                        }
-                        this.setState({canContinue: true, keyName: ''});
-                        this.refreshHardwareKeys();
-                    })
-                    .catch((e) => {
-                        this.props.updateFeedback(t('passwordless_login_error'), true);
+        let publicKeyCred = cred as PublicKeyCredential;
+        let attestationObject = (publicKeyCred.response as AuthenticatorAttestationResponse).attestationObject;
+        let clientDataJson = publicKeyCred.response.clientDataJSON;
+        let rawId = publicKeyCred.rawId;
 
-                        this.setState({canContinue: true});
-                    });
-            })
-            .catch((e) => {
-                this.props.updateFeedback(t('passwordless_login_error'), true);
-
-                this.setState({canContinue: true});
-            });
-    };
-
-    handleInputKeyName = (val: string) => {
-        this.setState({keyName: val});
-    };
-
-    deleteKey = (id: string) => {
-        fetch('/api/hardwarekey/' + id, {
-            method: 'delete'
-        }).then((resp) => {
-            if (resp.status === 204) {
-                this.refreshHardwareKeys();
+        return fetch('/api/hardwarekey/finish?name=' + encodeURI(keyName), {
+          method: 'post',
+          body: JSON.stringify({
+            id: cred.id,
+            rawId: encodeBuffer(rawId),
+            type: publicKeyCred.type,
+            response: {
+              attestationObject: encodeBuffer(attestationObject),
+              clientDataJSON: encodeBuffer(clientDataJson)
             }
-        });
-    };
+          })
+        })
+          .then((resp) => resp.json())
+          .then((resp) => {
+            if (!resp['success']) {
+              updateFeedback(resp['reason']);
+              setCanContinue(true);
+              return;
+            }
+            setCanContinue(true);
+            setKeyName('');
+            refreshHardwareKeys();
+          })
+          .catch((_) => {
+            updateFeedback(t('passwordless_login_error'));
 
-    render = () => {
-        return (
-            <>
-                <div className="mb-3">{t('passwordless_login_description')}</div>
-                {this.state.hardwareKeys.length === 0 ? null : (
-                    <>
-                        <table className="table">
-                            <thead>
-                                <tr>
-                                    <td></td>
-                                    <td>{t('passwordless_login_key_name')}</td>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {this.state.hardwareKeys.map((e) => (
-                                    <tr key={e.id}>
-                                        <td>
-                                            <button
-                                                type="button"
-                                                className="btn btn-danger bg-gradient"
-                                                onClick={(ev) => {
-                                                    ev.preventDefault();
-                                                    this.deleteKey(e.id);
-                                                }}
-                                            >
-                                                <FaTrash />
-                                            </button>
-                                        </td>
-                                        <td className="align-middle">{e.name}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </>
-                )}
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        this.handleAddKey();
-                    }}
-                >
-                    <div className="input-group">
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder={t('passwordless_login_key_name')}
-                            onChange={(e) => this.handleInputKeyName(e.target.value)}
-                            value={this.state.keyName}
-                            disabled={!this.state.canContinue}
-                        />
-                        <button type="submit" className="btn btn-primary bg-gradient" disabled={!this.state.canContinue}>
-                            {t('passwordless_login_add')}
-                        </button>
-                    </div>
-                </form>
-            </>
-        );
-    };
-}
+            setCanContinue(true);
+          });
+      })
+      .catch((_) => {
+        updateFeedback(t('passwordless_login_error'));
+
+        setCanContinue(true);
+      });
+  };
+
+  const handleInputKeyName = (val: string) => {
+    setKeyName(val);
+  };
+
+  const deleteKey = (id: string) => {
+    fetch('/api/hardwarekey/' + id, {
+      method: 'delete'
+    }).then((resp) => {
+      if (resp.status === 204) {
+        refreshHardwareKeys();
+      }
+    });
+  };
+
+  return (
+    <>
+      <div className="mb-3">{t('passwordless_login_description')}</div>
+      {hardwareKeys.length === 0 ? null : (
+        <>
+          <table className="table">
+            <thead>
+              <tr>
+                <td></td>
+                <td>{t('passwordless_login_key_name')}</td>
+              </tr>
+            </thead>
+            <tbody>
+              {hardwareKeys.map((e) => (
+                <tr key={e.id}>
+                  <td>
+                    <button
+                      type="button"
+                      className="btn btn-danger bg-gradient"
+                      onClick={(ev) => {
+                        ev.preventDefault();
+                        deleteKey(e.id);
+                      }}
+                    >
+                      <FaTrash />
+                    </button>
+                  </td>
+                  <td className="align-middle">{e.name}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleAddKey();
+        }}
+      >
+        <div className="input-group">
+          <input
+            type="text"
+            className="form-control"
+            placeholder={t('passwordless_login_key_name')}
+            onChange={(e) => handleInputKeyName(e.target.value)}
+            value={keyName}
+            disabled={!canContinue}
+          />
+          <button type="submit" className="btn btn-primary bg-gradient" disabled={!canContinue}>
+            {t('passwordless_login_add')}
+          </button>
+        </div>
+      </form>
+    </>
+  );
+};

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import {useState, useEffect} from 'react';
 import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
 import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
 
@@ -8,74 +8,69 @@ import {t} from 'i18next';
 import CopyableListItem from '../../components/copyable-list-item';
 
 type Prop = {
-    backToMenu: () => void;
+  backToMenu: () => void;
 };
 
 type WorldDetail = {
-    name: string;
-    seed: string;
+  name: string;
+  seed: string;
 };
 
 type WorldInfoData = {
-    serverVersion: string;
-    world: WorldDetail;
-} | null;
-
-type State = {
-    worldInfo: WorldInfoData;
-    refreshing: boolean;
+  serverVersion: string;
+  world: WorldDetail;
 };
 
-export default class WorldInfo extends React.Component<Prop, State> {
-    state: State = {
-        worldInfo: null,
-        refreshing: true
-    };
+export default (props: Prop) => {
+  const {backToMenu} = props;
 
-    componentDidMount = () => {
-        fetch('/api/worldinfo')
-            .then((resp) => resp.json())
-            .then((resp) => {
-                this.setState({worldInfo: resp, refreshing: false});
-            });
-    };
+  const [worldInfo, setWorldInfo] = useState<WorldInfoData | null>(null);
+  const [refreshing, setRefreshing] = useState(true);
 
-    handleRefresh = () => {
-        this.setState({refreshing: true});
-        fetch('/api/worldinfo')
-            .then((resp) => resp.json())
-            .then((resp) => {
-                this.setState({worldInfo: resp, refreshing: false});
-            });
-    };
+  useEffect(() => {
+    fetch('/api/worldinfo')
+      .then((resp) => resp.json())
+      .then((resp) => {
+        setWorldInfo(resp);
+        setRefreshing(false);
+      });
+  }, []);
 
-    render = () => {
-        let mainContents: React.ReactElement;
-        if (this.state.worldInfo === null) {
-            mainContents = <></>;
-        } else {
-            mainContents = (
-                <div className="list-group">
-                    <CopyableListItem title={t('world_info_game_version')} content={this.state.worldInfo.serverVersion} />
-                    <CopyableListItem title={t('world_info_world_name')} content={this.state.worldInfo.world.name.replace(/^[0-9]+-/, '')} />
-                    <CopyableListItem title={t('world_info_seed')} content={this.state.worldInfo.world.seed} />
-                </div>
-            );
-        }
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetch('/api/worldinfo')
+      .then((resp) => resp.json())
+      .then((resp) => {
+        setWorldInfo(resp);
+        setRefreshing(false);
+      });
+  };
 
-        return (
-            <div className="m-2">
-                <button className="btn btn-outline-primary" onClick={this.props.backToMenu}>
-                    <IoIosArrowBack /> {t('back')}
-                </button>
-                <div className="m-2">{mainContents}</div>
-                <div className="m-1">
-                    <button type="button" className="btn btn-sm btn-outline-secondary" onClick={this.handleRefresh} disabled={this.state.refreshing}>
-                        {this.state.refreshing ? <div className="spinner-border spinner-border-sm me-1" role="status"></div> : <IoIosRefresh />}
-                        {t('refresh')}
-                    </button>
-                </div>
-            </div>
-        );
-    };
-}
+  let mainContents: React.ReactElement;
+  if (worldInfo === null) {
+    mainContents = <></>;
+  } else {
+    mainContents = (
+      <div className="list-group">
+        <CopyableListItem title={t('world_info_game_version')} content={worldInfo.serverVersion} />
+        <CopyableListItem title={t('world_info_world_name')} content={worldInfo.world.name.replace(/^[0-9]+-/, '')} />
+        <CopyableListItem title={t('world_info_seed')} content={worldInfo.world.seed} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="m-2">
+      <button className="btn btn-outline-primary" onClick={backToMenu}>
+        <IoIosArrowBack /> {t('back')}
+      </button>
+      <div className="m-2">{mainContents}</div>
+      <div className="m-1">
+        <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleRefresh} disabled={refreshing}>
+          {refreshing ? <div className="spinner-border spinner-border-sm me-1" role="status"></div> : <IoIosRefresh />}
+          {t('refresh')}
+        </button>
+      </div>
+    </div>
+  );
+};

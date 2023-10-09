@@ -1,138 +1,120 @@
-import * as React from 'react';
+import React, {useState} from 'react';
 
 import '../../i18n';
 import {t} from 'i18next';
 
-type State = {
-    canContinue: boolean;
-    userName: string;
-    password: string;
-    passwordConfirm: string;
-    success: boolean;
-};
-
 type Props = {
-    updateFeedback: (message: string, negative: boolean) => void;
+  updateFeedback: (message: string) => void;
 };
 
-export default class AddUser extends React.Component<Props, State> {
-    state = {
-        canContinue: false,
-        userName: '',
-        password: '',
-        passwordConfirm: '',
-        success: false
-    };
+export default (props: Props) => {
+  const {updateFeedback} = props;
 
-    handleAddUser = () => {
-        this.setState({canContinue: false});
+  const [canContinue, setCanContinue] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [success, setSuccess] = useState(false);
 
-        const params = new URLSearchParams();
-        params.append('username', this.state.userName);
-        params.append('password', this.state.password);
+  const handleAddUser = () => {
+    setCanContinue(false);
 
-        fetch('/api/users/add', {
-            method: 'post',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: params.toString()
-        })
-            .then((resp) => resp.json())
-            .then((resp) => {
-                if (resp['success']) {
-                    this.setState({
-                        canContinue: false,
-                        userName: '',
-                        password: '',
-                        passwordConfirm: '',
-                        success: true
-                    });
-                    return;
-                }
-                this.props.updateFeedback(resp['reason'], true);
-            });
-    };
+    const params = new URLSearchParams();
+    params.append('username', userName);
+    params.append('password', password);
 
-    handleInputUserName = (val: string) => {
-        this.setState({
-            userName: val,
-            canContinue: val !== '' && this.state.password.length >= 8 && this.state.password == this.state.passwordConfirm
-        });
-    };
+    fetch('/api/users/add', {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params.toString()
+    })
+      .then((resp) => resp.json())
+      .then((resp) => {
+        if (resp['success']) {
+          setCanContinue(false);
+          setUserName('');
+          setPassword('');
+          setPasswordConfirm('');
+          setSuccess(true);
+          return;
+        }
+        updateFeedback(resp['reason']);
+      });
+  };
 
-    handleInputPassword = (val: string) => {
-        this.setState({
-            password: val,
-            canContinue: this.state.userName !== '' && val.length >= 8 && val == this.state.passwordConfirm
-        });
-    };
+  const handleInputUserName = (val: string) => {
+    setUserName(val);
+    setCanContinue(val !== '' && password.length >= 8 && password == passwordConfirm);
+  };
 
-    handleInputPasswordConfirm = (val: string) => {
-        this.setState({
-            passwordConfirm: val,
-            canContinue: this.state.userName !== '' && this.state.password.length >= 8 && this.state.password == val
-        });
-    };
+  const handleInputPassword = (val: string) => {
+    setPassword(val);
+    setCanContinue(userName !== '' && val.length >= 8 && val == passwordConfirm);
+  };
 
-    render = () => {
-        return (
-            <form
-                onSubmit={(e) => {
-                    e.preventDefault();
-                    this.handleAddUser();
-                }}
-            >
-                <div className="mb-3 form-floating">
-                    <input
-                        type="text"
-                        autoComplete="username"
-                        id="newUser_username"
-                        className="form-control"
-                        placeholder={t('username')}
-                        onChange={(e) => this.handleInputUserName(e.target.value)}
-                        value={this.state.userName}
-                        required={true}
-                    />
-                    <label htmlFor="newUser_username">{t('username')}</label>
-                </div>
-                <div>
-                    <div className="mb-3 form-floating">
-                        <input
-                            type="password"
-                            id="newUser_password"
-                            autoComplete="new-password"
-                            className="form-control"
-                            placeholder={t('password')}
-                            onChange={(e) => this.handleInputPassword(e.target.value)}
-                            value={this.state.password}
-                            required={true}
-                        />
-                        <label htmlFor="newUser_password">{t('password')}</label>
-                    </div>
-                </div>
-                <div>
-                    <div className="mb-3 form-floating">
-                        <input
-                            type="password"
-                            autoComplete="new-password"
-                            id="newUser_password_confirm"
-                            className="form-control"
-                            placeholder={t('password_confirm')}
-                            onChange={(e) => this.handleInputPasswordConfirm(e.target.value)}
-                            value={this.state.passwordConfirm}
-                            required={true}
-                        />
-                        <label htmlFor="newUser_password_confirm">{t('password_confirm')}</label>
-                    </div>
-                </div>
-                <div className="text-end">
-                    {this.state.success ? <span className="text-success">✓ {t('add_user_success')}</span> : ''}
-                    <button type="submit" className="btn btn-primary bg-gradient ms-3" disabled={!this.state.canContinue}>
-                        {t('add_user_submit')}
-                    </button>
-                </div>
-            </form>
-        );
-    };
-}
+  const handleInputPasswordConfirm = (val: string) => {
+    setPasswordConfirm(val);
+    setCanContinue(userName !== '' && password.length >= 8 && password == val);
+  };
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleAddUser();
+      }}
+    >
+      <div className="mb-3 form-floating">
+        <input
+          type="text"
+          autoComplete="username"
+          id="newUser_username"
+          className="form-control"
+          placeholder={t('username')}
+          onChange={(e) => handleInputUserName(e.target.value)}
+          value={userName}
+          required={true}
+        />
+        <label htmlFor="newUser_username">{t('username')}</label>
+      </div>
+      <div>
+        <div className="mb-3 form-floating">
+          <input
+            type="password"
+            id="newUser_password"
+            autoComplete="new-password"
+            className="form-control"
+            placeholder={t('password')}
+            onChange={(e) => handleInputPassword(e.target.value)}
+            value={password}
+            required={true}
+          />
+          <label htmlFor="newUser_password">{t('password')}</label>
+        </div>
+      </div>
+      <div>
+        <div className="mb-3 form-floating">
+          <input
+            type="password"
+            autoComplete="new-password"
+            id="newUser_password_confirm"
+            className="form-control"
+            placeholder={t('password_confirm')}
+            onChange={(e) => handleInputPasswordConfirm(e.target.value)}
+            value={passwordConfirm}
+            required={true}
+          />
+          <label htmlFor="newUser_password_confirm">{t('password_confirm')}</label>
+        </div>
+      </div>
+      <div className="text-end">
+        {success ? <span className="text-success">✓ {t('add_user_success')}</span> : ''}
+        <button type="submit" className="btn btn-primary bg-gradient ms-3" disabled={!canContinue}>
+          {t('add_user_submit')}
+        </button>
+      </div>
+    </form>
+  );
+};

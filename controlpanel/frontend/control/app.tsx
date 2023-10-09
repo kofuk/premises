@@ -1,5 +1,4 @@
-import * as React from 'react';
-const {useState, useEffect} = React;
+import React, {useState, useEffect} from 'react';
 
 import '../i18n';
 import {t} from 'i18next';
@@ -18,151 +17,141 @@ import 'bootstrap/js/dist/collapse';
 /////
 
 export default () => {
-    const [useNotification, setUseNotification] = useState(false);
-    const [isServerShutdown, setIsServerShutdown] = useState(true);
-    const [isError, setIsError] = useState(false);
-    const [message, setMessage] = useState('');
-    const [prevStatus, setPrevStatus] = useState('');
+  const [useNotification, setUseNotification] = useState(false);
+  const [isServerShutdown, setIsServerShutdown] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [message, setMessage] = useState('');
+  const [prevStatus, setPrevStatus] = useState('');
 
-    useEffect(() => {
-        const handleClose = (_: any) => {
-            setIsError(true);
-            setMessage(t('reconnecting'));
-        };
-
-        const handleEvent = (ev: MessageEvent) => {
-            const event = JSON.parse(ev.data);
-            setIsServerShutdown(event.shutdown);
-            setIsError(event.hasError);
-            setMessage(event.status);
-
-            //TODO: temporary implementation
-            if (useNotification) {
-                if (event.status !== prevStatus && prevStatus !== '' && (event.status === '実行中' || event.status === 'Running')) {
-                    new Notification(t('notification_title'), {body: t('notification_body')});
-                }
-            }
-
-            setPrevStatus(event.status);
-        };
-
-        const eventSource = new EventSource('/api/status');
-        eventSource.addEventListener('error', handleClose);
-        eventSource.addEventListener('statuschanged', handleEvent);
-
-        return () => {
-            eventSource.close();
-        };
+  useEffect(() => {
+    const eventSource = new EventSource('/api/status');
+    eventSource.addEventListener('error', () => {
+      setIsError(true);
+      setMessage(t('reconnecting'));
     });
+    eventSource.addEventListener('statuschanged', (ev: MessageEvent) => {
+      const event = JSON.parse(ev.data);
+      setIsServerShutdown(event.shutdown);
+      setIsError(event.hasError);
+      setMessage(event.status);
 
-    const [showNotificationToast, setShowNotificationToast] = useState(true);
-    useEffect(() => {
-        if (Notification.permission === 'granted') {
-            setShowNotificationToast(false);
-            setUseNotification(true);
+      //TODO: temporary implementation
+      if (useNotification) {
+        if (event.status !== prevStatus && prevStatus !== '' && (event.status === '実行中' || event.status === 'Running')) {
+          new Notification(t('notification_title'), {body: t('notification_body')});
         }
+      }
+
+      setPrevStatus(event.status);
     });
 
-    const [logout, setLogout] = useState(false);
-    useEffect(() => {
-        fetch('/api/current-user')
-            .then((resp) => resp.json())
-            .then((resp) => {
-                if (!resp['success']) {
-                    setLogout(true);
-                }
-            });
+    return () => {
+      eventSource.close();
+    };
+  }, []);
+
+  const [showNotificationToast, setShowNotificationToast] = useState(true);
+  useEffect(() => {
+    if (Notification.permission === 'granted') {
+      setShowNotificationToast(false);
+      setUseNotification(true);
+    }
+  }, []);
+
+  const [logout, setLogout] = useState(false);
+  useEffect(() => {
+    fetch('/api/current-user')
+      .then((resp) => resp.json())
+      .then((resp) => {
+        if (!resp['success']) {
+          setLogout(true);
+        }
+      });
+  }, []);
+
+  const showError = (message: string) => {
+    setIsError(true);
+    setMessage(message);
+  };
+
+  const closeNotificationToast = () => {
+    setShowNotificationToast(false);
+  };
+
+  const requestNotification = () => {
+    Notification.requestPermission().then((result) => {
+      setUseNotification(result === 'granted');
     });
+    closeNotificationToast();
+  };
 
-    const showError = (message: string) => {
-        setIsError(true);
-        setMessage(message);
-    };
+  const handleLogout = () => {
+    fetch('/logout', {
+      method: 'POST'
+    })
+      .then((resp) => resp.json())
+      .then((resp) => {
+        if (resp['success']) {
+          setLogout(true);
+        }
+      });
+  };
 
-    const closeNotificationToast = () => {
-        setShowNotificationToast(false);
-    };
+  const mainPane: React.ReactElement = isServerShutdown ? <ServerConfigPane showError={showError} /> : <ServerControlPane showError={showError} />;
+  return (
+    <>
+      {logout && <Navigate to="/" replace={true} />}
+      <nav className="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
+        <div className="container-fluid">
+          <span className="navbar-brand">{t('app_name')}</span>
+          <div className="collapse navbar-collapse">
+            <div className="navbar-nav me-auto"></div>
+            <a className="btn btn-link me-1" data-bs-toggle="offcanvas" href="#settingsPane" role="button" aria-controls="settingsPane">
+              {t('settings')}
+            </a>
+            <button onClick={handleLogout} className="btn btn-primary bg-gradient">
+              {t('logout')}
+            </button>
+          </div>
+        </div>
+      </nav>
 
-    const requestNotification = () => {
-        Notification.requestPermission().then((result) => {
-            setUseNotification(result === 'granted');
-        });
-        closeNotificationToast();
-    };
+      <div className="offcanvas offcanvas-start" tabIndex={-1} id="settingsPane" aria-labelledby="SettingsLabel">
+        <div className="offcanvas-header">
+          <h5 className="offcanvas-title" id="settingsLabel">
+            {t('settings')}
+          </h5>
+          <button type="button" className="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div className="offcanvas-body">
+          <Settings />
+        </div>
+      </div>
 
-    const handleLogout = () => {
-        fetch('/logout', {
-            method: 'POST'
-        })
-            .then((resp) => resp.json())
-            .then((resp) => {
-                if (resp['success']) {
-                    setLogout(true);
-                }
-            });
-    };
+      <div className="container">
+        <StatusBar isError={isError} message={message} />
+        {mainPane}
+      </div>
 
-    const mainPane: React.ReactElement = isServerShutdown ? <ServerConfigPane showError={showError} /> : <ServerControlPane showError={showError} />;
-    return (
-        <>
-            {logout && <Navigate to="/" replace={true} />}
-            <nav className="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
-                <div className="container-fluid">
-                    <span className="navbar-brand">{t('app_name')}</span>
-                    <div className="collapse navbar-collapse">
-                        <div className="navbar-nav me-auto"></div>
-                        <a className="btn btn-link me-1" data-bs-toggle="offcanvas" href="#settingsPane" role="button" aria-controls="settingsPane">
-                            {t('settings')}
-                        </a>
-                        <button onClick={handleLogout} className="btn btn-primary bg-gradient">
-                            {t('logout')}
-                        </button>
-                    </div>
-                </div>
-            </nav>
-
-            <div className="offcanvas offcanvas-start" tabIndex={-1} id="settingsPane" aria-labelledby="SettingsLabel">
-                <div className="offcanvas-header">
-                    <h5 className="offcanvas-title" id="settingsLabel">
-                        {t('settings')}
-                    </h5>
-                    <button type="button" className="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-                </div>
-                <div className="offcanvas-body">
-                    <Settings />
-                </div>
+      <div className="toast-container position-absolute top-0 end-0 pe-1 pt-5">
+        <div className={`toast ${showNotificationToast ? 'show' : ''}`}>
+          <div className="toast-header">
+            <strong className="me-auto">{t('notification_toast_title')}</strong>
+            <button type="button" className="btn-close" data-bs-dismiss="toast" aria-label="Close" onClick={closeNotificationToast}></button>
+          </div>
+          <div className="toast-body">
+            {t('notification_toast_description')}
+            <div className="text-end">
+              <button type="button" className="btn btn-primary btn-sm" onClick={requestNotification}>
+                {t('notification_allow')}
+              </button>
             </div>
-
-            <div className="container">
-                <StatusBar isError={isError} message={message} />
-                {mainPane}
-            </div>
-
-            <div className="toast-container position-absolute top-0 end-0 pe-1 pt-5">
-                <div className={`toast ${showNotificationToast ? 'show' : ''}`}>
-                    <div className="toast-header">
-                        <strong className="me-auto">{t('notification_toast_title')}</strong>
-                        <button
-                            type="button"
-                            className="btn-close"
-                            data-bs-dismiss="toast"
-                            aria-label="Close"
-                            onClick={closeNotificationToast}
-                        ></button>
-                    </div>
-                    <div className="toast-body">
-                        {t('notification_toast_description')}
-                        <div className="text-end">
-                            <button type="button" className="btn btn-primary btn-sm" onClick={requestNotification}>
-                                {t('notification_allow')}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <Helmet>
-                <title>{t('app_name')}</title>
-            </Helmet>
-        </>
-    );
+          </div>
+        </div>
+      </div>
+      <Helmet>
+        <title>{t('app_name')}</title>
+      </Helmet>
+    </>
+  );
 };

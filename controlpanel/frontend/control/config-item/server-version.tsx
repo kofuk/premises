@@ -1,179 +1,162 @@
-import * as React from 'react';
+import {useState, useEffect} from 'react';
 import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
 
 import '../../i18n';
 import {t} from 'i18next';
 
 import {ItemProp} from './prop';
-import {ConfigItem} from './config-item';
-
-type Prop = ItemProp & {
-    serverVersion: string;
-    setServerVersion: (val: string) => void;
-};
+import ConfigContainer from './config-container';
 
 type McVersion = {
-    name: string;
-    isStable: boolean;
-    channel: string;
-    releaseDate: string;
+  name: string;
+  isStable: boolean;
+  channel: string;
+  releaseDate: string;
 };
 
-type State = {
-    mcVersions: McVersion[];
-    showStable: boolean;
-    showSnapshot: boolean;
-    showBeta: boolean;
-    showAlpha: boolean;
-    refreshing: boolean;
-};
+export default ({
+  isFocused,
+  nextStep,
+  requestFocus,
+  stepNum,
+  serverVersion,
+  setServerVersion
+}: ItemProp & {
+  serverVersion: string;
+  setServerVersion: (val: string) => void;
+}) => {
+  const [mcVersions, setMcVersions] = useState<McVersion[]>([]);
+  const [showStable, setShowStable] = useState(true);
+  const [showSnapshot, setShowSnapshot] = useState(false);
+  const [showAlpha, setShowAlpha] = useState(false);
+  const [showBeta, setShowBeta] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-export default class ServerVersionConfigItem extends ConfigItem<Prop, State> {
-    state: State = {
-        mcVersions: [],
-        showStable: true,
-        showSnapshot: false,
-        showAlpha: false,
-        showBeta: false,
-        refreshing: false
-    };
+  useEffect(() => {
+    fetch('/api/mcversions')
+      .then((resp) => resp.json())
+      .then((resp) => {
+        setMcVersions(resp);
+        postUpdateCondition(resp);
+      });
+  }, []);
 
-    constructor(prop: Prop) {
-        super(prop, t('config_server_version'));
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetch('/api/mcversions?reload')
+      .then((resp) => resp.json())
+      .then((resp) => {
+        setMcVersions(resp);
+        postUpdateCondition(resp);
+        setRefreshing(false);
+      });
+  };
+
+  const handleChange = (val: string) => {
+    setServerVersion(val);
+  };
+
+  const postUpdateCondition = (versionsData: McVersion[]) => {
+    const versions = versionsData
+      .filter((e) => showStable || e.channel !== 'stable')
+      .filter((e) => showSnapshot || e.channel !== 'snapshot')
+      .filter((e) => showBeta || e.channel !== 'beta')
+      .filter((e) => showAlpha || e.channel !== 'alpha');
+    if (!versions.find((e) => e.name === serverVersion)) {
+      if (versions.length > 0) {
+        setServerVersion(versions[0].name);
+      } else if (mcVersions.length > 0) {
+        setServerVersion(versionsData[0].name);
+      }
     }
+  };
 
-    componentDidMount = () => {
-        fetch('/api/mcversions')
-            .then((resp) => resp.json())
-            .then((resp) => {
-                this.setState({mcVersions: resp});
-                this.postUpdateCondition(resp);
-            });
-    };
-
-    handleRefresh = () => {
-        this.setState({refreshing: true});
-        fetch('/api/mcversions?reload')
-            .then((resp) => resp.json())
-            .then((resp) => {
-                this.setState({mcVersions: resp});
-                this.postUpdateCondition(resp);
-                this.setState({refreshing: false});
-            });
-    };
-
-    handleChange = (val: string) => {
-        this.props.setServerVersion(val);
-    };
-
-    postUpdateCondition = (versionsData: McVersion[]) => {
-        const versions = versionsData
-            .filter((e) => this.state.showStable || e.channel !== 'stable')
-            .filter((e) => this.state.showSnapshot || e.channel !== 'snapshot')
-            .filter((e) => this.state.showBeta || e.channel !== 'beta')
-            .filter((e) => this.state.showAlpha || e.channel !== 'alpha');
-        if (!versions.find((e) => e.name === this.props.serverVersion)) {
-            if (versions.length > 0) {
-                this.props.setServerVersion(versions[0].name);
-            } else if (this.state.mcVersions.length > 0) {
-                this.props.setServerVersion(versionsData[0].name);
-            }
-        }
-    };
-
-    createContent = (): React.ReactElement => {
-        const versions = this.state.mcVersions
-            .filter((e) => this.state.showStable || e.channel !== 'stable')
-            .filter((e) => this.state.showSnapshot || e.channel !== 'snapshot')
-            .filter((e) => this.state.showBeta || e.channel !== 'beta')
-            .filter((e) => this.state.showAlpha || e.channel !== 'alpha')
-            .map((e) => (
-                <option value={e.name} key={e.name}>
-                    {e.name}
-                </option>
-            ));
-        return (
-            <>
-                <select
-                    className="form-select"
-                    area-label={t('config_server_version')}
-                    value={this.props.serverVersion}
-                    onChange={(e) => this.handleChange(e.target.value)}
-                >
-                    {versions}
-                </select>
-                <div className="m-1 text-end">
-                    <button type="button" className="btn btn-sm btn-outline-secondary" onClick={this.handleRefresh} disabled={this.state.refreshing}>
-                        {this.state.refreshing ? <div className="spinner-border spinner-border-sm me-1" role="status"></div> : <IoIosRefresh />}
-                        {t('refresh')}
-                    </button>
-                </div>
-                <div className="m-1 form-check form-switch">
-                    <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="showStable"
-                        checked={this.state.showStable}
-                        onChange={() => {
-                            this.setState({showStable: !this.state.showStable});
-                            this.postUpdateCondition(this.state.mcVersions);
-                        }}
-                    />
-                    <label className="form-check-label" htmlFor="showStable">
-                        {t('version_show_stable')}
-                    </label>
-                </div>
-                <div className="m-1 form-check form-switch">
-                    <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="showSnapshot"
-                        checked={this.state.showSnapshot}
-                        onChange={() => {
-                            this.setState({showSnapshot: !this.state.showSnapshot});
-                            this.postUpdateCondition(this.state.mcVersions);
-                        }}
-                    />
-                    <label className="form-check-label" htmlFor="showSnapshot">
-                        {t('version_show_snapshot')}
-                    </label>
-                </div>
-                <div className="m-1 form-check form-switch">
-                    <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="showSnapshot"
-                        checked={this.state.showBeta}
-                        onChange={() => {
-                            this.setState({showBeta: !this.state.showBeta});
-                            this.postUpdateCondition(this.state.mcVersions);
-                        }}
-                    />
-                    <label className="form-check-label" htmlFor="showBeta">
-                        {t('version_show_beta')}
-                    </label>
-                </div>
-                <div className="m-1 form-check form-switch">
-                    <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="showSnapshot"
-                        checked={this.state.showAlpha}
-                        onChange={() => {
-                            this.setState({showAlpha: !this.state.showAlpha});
-                            this.postUpdateCondition(this.state.mcVersions);
-                        }}
-                    />
-                    <label className="form-check-label" htmlFor="showAlpha">
-                        {t('version_show_alpha')}
-                    </label>
-                </div>
-                <div className="m-1 text-end">
-                    <button type="button" className="btn btn-primary" onClick={this.props.nextStep}>
-                        {t('next')}
-                    </button>
-                </div>
-            </>
-        );
-    };
-}
+  const versions = mcVersions
+    .filter((e) => showStable || e.channel !== 'stable')
+    .filter((e) => showSnapshot || e.channel !== 'snapshot')
+    .filter((e) => showBeta || e.channel !== 'beta')
+    .filter((e) => showAlpha || e.channel !== 'alpha')
+    .map((e) => (
+      <option value={e.name} key={e.name}>
+        {e.name}
+      </option>
+    ));
+  return (
+    <ConfigContainer title={t('config_server_version')} isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum}>
+      <select className="form-select" area-label={t('config_server_version')} value={serverVersion} onChange={(e) => handleChange(e.target.value)}>
+        {versions}
+      </select>
+      <div className="m-1 text-end">
+        <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleRefresh} disabled={refreshing}>
+          {refreshing ? <div className="spinner-border spinner-border-sm me-1" role="status"></div> : <IoIosRefresh />}
+          {t('refresh')}
+        </button>
+      </div>
+      <div className="m-1 form-check form-switch">
+        <input
+          className="form-check-input"
+          type="checkbox"
+          id="showStable"
+          checked={showStable}
+          onChange={() => {
+            setShowStable(!showStable);
+            postUpdateCondition(mcVersions);
+          }}
+        />
+        <label className="form-check-label" htmlFor="showStable">
+          {t('version_show_stable')}
+        </label>
+      </div>
+      <div className="m-1 form-check form-switch">
+        <input
+          className="form-check-input"
+          type="checkbox"
+          id="showSnapshot"
+          checked={showSnapshot}
+          onChange={() => {
+            setShowSnapshot(!showSnapshot);
+            postUpdateCondition(mcVersions);
+          }}
+        />
+        <label className="form-check-label" htmlFor="showSnapshot">
+          {t('version_show_snapshot')}
+        </label>
+      </div>
+      <div className="m-1 form-check form-switch">
+        <input
+          className="form-check-input"
+          type="checkbox"
+          id="showSnapshot"
+          checked={showBeta}
+          onChange={() => {
+            setShowBeta(!showBeta);
+            postUpdateCondition(mcVersions);
+          }}
+        />
+        <label className="form-check-label" htmlFor="showBeta">
+          {t('version_show_beta')}
+        </label>
+      </div>
+      <div className="m-1 form-check form-switch">
+        <input
+          className="form-check-input"
+          type="checkbox"
+          id="showSnapshot"
+          checked={showAlpha}
+          onChange={() => {
+            setShowAlpha(!showAlpha);
+            postUpdateCondition(mcVersions);
+          }}
+        />
+        <label className="form-check-label" htmlFor="showAlpha">
+          {t('version_show_alpha')}
+        </label>
+      </div>
+      <div className="m-1 text-end">
+        <button type="button" className="btn btn-primary" onClick={nextStep}>
+          {t('next')}
+        </button>
+      </div>
+    </ConfigContainer>
+  );
+};

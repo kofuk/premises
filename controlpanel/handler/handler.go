@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"sync"
 
@@ -106,6 +107,7 @@ func setupRoutes(h *Handler) {
 	h.engine.Use(static.Serve("/", static.LocalFile("gen", false)))
 	h.engine.NoRoute(func(c *gin.Context) {
 		// Return a HTML file for any page to render the page with React.
+		c.Status(http.StatusOK)
 		c.Header("Content-Type", "text/html;charset=utf-8")
 		c.Writer.Write([]byte(htmlContent))
 	})
