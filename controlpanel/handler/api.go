@@ -459,7 +459,7 @@ func (h *Handler) handleApiBackups(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.redis.Set(c.Request.Context(), CacheKeyBackups, jsonData, 24*time.Hour).Result(); err != nil {
+	if _, err := h.redis.Set(c.Request.Context(), CacheKeyBackups, jsonData, 3*time.Minute).Result(); err != nil {
 		log.WithError(err).Error("Failed to store backup list")
 	}
 
