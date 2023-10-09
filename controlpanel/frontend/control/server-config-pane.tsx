@@ -1,4 +1,5 @@
 import * as React from 'react';
+const {useState} = React;
 import {VscDebugStart} from '@react-icons/all-files/vsc/VscDebugStart';
 
 import '../i18n';
@@ -13,39 +14,36 @@ import WorldName from './config-item/world-name';
 import ConfigureWorld from './config-item/configure-world';
 import {LevelType} from './config-item/configure-world';
 
-import {ServerConfig} from './server-config';
-
 type Prop = {
     showError: (message: string) => void;
 };
 
-export default class ServerConfigPane extends React.Component<Prop, ServerConfig> {
-    state: ServerConfig = {
-        machineType: '4g',
-        serverVersion: '',
-        worldSource: WorldLocation.Backups,
-        worldName: '',
-        backupGeneration: '',
-        useCachedWorld: true,
-        seed: '',
-        levelType: LevelType.Default,
-        currentStep: 0
-    };
-    stepCount: number = 0;
+export default (props: Prop) => {
+    const {showError} = props;
 
-    handleStart = () => {
+    const [machineType, setMachineType] = useState('4g');
+    const [serverVersion, setServerVersion] = useState('');
+    const [worldSource, setWorldSource] = useState(WorldLocation.Backups);
+    const [worldName, setWorldName] = useState('');
+    const [backupGeneration, setBackupGeneration] = useState('');
+    const [useCachedWorld, setUseCachedWorld] = useState(true);
+    const [seed, setSeed] = useState('');
+    const [levelType, setLevelType] = useState(LevelType.Default);
+    const [currentStep, setCurrentStep] = useState(0);
+
+    const handleStart = () => {
         const data = new URLSearchParams();
-        data.append('machine-type', this.state.machineType);
-        data.append('server-version', this.state.serverVersion);
-        data.append('world-source', this.state.worldSource);
-        if (this.state.worldSource === WorldLocation.Backups) {
-            data.append('world-name', this.state.worldName);
-            data.append('backup-generation', this.state.backupGeneration);
-            data.append('use-cache', this.state.useCachedWorld.toString());
+        data.append('machine-type', machineType);
+        data.append('server-version', serverVersion);
+        data.append('world-source', worldSource);
+        if (worldSource === WorldLocation.Backups) {
+            data.append('world-name', worldName);
+            data.append('backup-generation', backupGeneration);
+            data.append('use-cache', useCachedWorld.toString());
         } else {
-            data.append('world-name', this.state.worldName);
-            data.append('seed', this.state.seed);
-            data.append('level-type', this.state.levelType);
+            data.append('world-name', worldName);
+            data.append('seed', seed);
+            data.append('level-type', levelType);
         }
 
         fetch('/api/launch', {
@@ -58,175 +56,140 @@ export default class ServerConfigPane extends React.Component<Prop, ServerConfig
             .then((resp) => resp.json())
             .then((resp) => {
                 if (!resp['success']) {
-                    this.props.showError(resp['message']);
+                    showError(resp['message']);
                 }
             });
     };
 
-    setMachineType = (machineType: string) => {
-        this.setState({machineType: machineType});
-    };
-
-    setServerVersion = (serverVersion: string) => {
-        this.setState({serverVersion: serverVersion});
-    };
-
-    setWorldSource = (worldSource: WorldLocation) => {
-        this.setState({worldSource: worldSource});
+    const xSetWorldSource = (worldSource: WorldLocation) => {
+        setWorldSource(worldSource);
         if (worldSource !== WorldLocation.Backups) {
-            this.setState({worldName: ''});
+            setWorldName('');
         }
     };
 
-    setWorldName = (worldName: string) => {
-        this.setState({worldName: worldName});
-    };
-
-    setBackupGeneration = (generationId: string) => {
-        this.setState({backupGeneration: generationId});
-    };
-
-    setUseCachedWorld = (useCachedWorld: boolean) => {
-        this.setState({useCachedWorld: useCachedWorld});
-    };
-
-    setLevelType = (levelType: LevelType) => {
-        this.setState({levelType: levelType});
-    };
-
-    setSeed = (seed: string) => {
-        this.setState({seed: seed});
-    };
-
-    handleRequestFocus = (step: number) => {
-        if (step < this.state.currentStep) {
-            this.setState({currentStep: step});
+    const handleRequestFocus = (step: number) => {
+        if (step < currentStep) {
+            setCurrentStep(step);
         }
     };
 
-    handleNextStep = () => {
-        if (this.state.currentStep < this.stepCount) {
-            this.setState({currentStep: this.state.currentStep + 1});
+    const handleNextStep = () => {
+        if (currentStep < stepCount) {
+            setCurrentStep(currentStep + 1);
         }
     };
 
-    render = () => {
-        const configItems = [];
-        {
-            const stepIndex = configItems.length;
-            configItems.push(
-                <MachineType
-                    key="machineType"
-                    isFocused={this.state.currentStep === stepIndex}
-                    nextStep={this.handleNextStep}
-                    requestFocus={() => this.handleRequestFocus(stepIndex)}
-                    stepNum={stepIndex + 1}
-                    machineType={this.state.machineType}
-                    setMachineType={this.setMachineType}
-                />
-            );
-        }
-        {
-            const stepIndex = configItems.length;
-            configItems.push(
-                <ServerVersion
-                    key="serverVersion"
-                    isFocused={this.state.currentStep === stepIndex}
-                    nextStep={this.handleNextStep}
-                    requestFocus={() => this.handleRequestFocus(stepIndex)}
-                    stepNum={stepIndex + 1}
-                    serverVersion={this.state.serverVersion}
-                    setServerVersion={this.setServerVersion}
-                />
-            );
-        }
-        {
-            const stepIndex = configItems.length;
-            configItems.push(
-                <WorldSource
-                    key="worldSource"
-                    isFocused={this.state.currentStep === stepIndex}
-                    nextStep={this.handleNextStep}
-                    requestFocus={() => this.handleRequestFocus(stepIndex)}
-                    stepNum={stepIndex + 1}
-                    worldSource={this.state.worldSource}
-                    setWorldSource={this.setWorldSource}
-                />
-            );
-        }
-
-        if (this.state.worldSource === WorldLocation.Backups) {
-            {
-                const stepIndex = configItems.length;
-                configItems.push(
-                    <ChooseBackup
-                        key="chooseBackup"
-                        isFocused={this.state.currentStep === stepIndex}
-                        nextStep={this.handleNextStep}
-                        requestFocus={() => this.handleRequestFocus(stepIndex)}
-                        stepNum={stepIndex + 1}
-                        worldName={this.state.worldName}
-                        backupGeneration={this.state.backupGeneration}
-                        useCachedWorld={this.state.useCachedWorld}
-                        setWorldName={this.setWorldName}
-                        setBackupGeneration={this.setBackupGeneration}
-                        setUseCachedWorld={this.setUseCachedWorld}
-                    />
-                );
-            }
-        } else {
-            {
-                const stepIndex = configItems.length;
-                configItems.push(
-                    <WorldName
-                        key="worldName"
-                        isFocused={this.state.currentStep === stepIndex}
-                        nextStep={this.handleNextStep}
-                        requestFocus={() => this.handleRequestFocus(stepIndex)}
-                        stepNum={stepIndex + 1}
-                        worldName={this.state.worldName}
-                        setWorldName={this.setWorldName}
-                    />
-                );
-            }
-            {
-                const stepIndex = configItems.length;
-                configItems.push(
-                    <ConfigureWorld
-                        key="configureWorld"
-                        isFocused={this.state.currentStep === stepIndex}
-                        nextStep={this.handleNextStep}
-                        requestFocus={() => this.handleRequestFocus(stepIndex)}
-                        stepNum={stepIndex + 1}
-                        levelType={this.state.levelType}
-                        seed={this.state.seed}
-                        setLevelType={this.setLevelType}
-                        setSeed={this.setSeed}
-                    />
-                );
-            }
-        }
-
-        this.stepCount = configItems.length;
-
-        return (
-            <div className="my-5 card mx-auto">
-                <div className="card-body">
-                    <form>
-                        {configItems}
-                        <div className="d-md-block mt-3 text-end">
-                            <button
-                                className="btn btn-primary bg-gradient"
-                                type="button"
-                                onClick={this.handleStart}
-                                disabled={this.state.currentStep !== this.stepCount}
-                            >
-                                <VscDebugStart /> {t('launch_server')}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+    const configItems = [];
+    {
+        const stepIndex = configItems.length;
+        configItems.push(
+            <MachineType
+                key="machineType"
+                isFocused={currentStep === stepIndex}
+                nextStep={handleNextStep}
+                requestFocus={() => handleRequestFocus(stepIndex)}
+                stepNum={stepIndex + 1}
+                machineType={machineType}
+                setMachineType={setMachineType}
+            />
         );
-    };
-}
+    }
+    {
+        const stepIndex = configItems.length;
+        configItems.push(
+            <ServerVersion
+                key="serverVersion"
+                isFocused={currentStep === stepIndex}
+                nextStep={handleNextStep}
+                requestFocus={() => handleRequestFocus(stepIndex)}
+                stepNum={stepIndex + 1}
+                serverVersion={serverVersion}
+                setServerVersion={setServerVersion}
+            />
+        );
+    }
+    {
+        const stepIndex = configItems.length;
+        configItems.push(
+            <WorldSource
+                key="worldSource"
+                isFocused={currentStep === stepIndex}
+                nextStep={handleNextStep}
+                requestFocus={() => handleRequestFocus(stepIndex)}
+                stepNum={stepIndex + 1}
+                worldSource={worldSource}
+                setWorldSource={xSetWorldSource}
+            />
+        );
+    }
+
+    if (worldSource === WorldLocation.Backups) {
+        {
+            const stepIndex = configItems.length;
+            configItems.push(
+                <ChooseBackup
+                    key="chooseBackup"
+                    isFocused={currentStep === stepIndex}
+                    nextStep={handleNextStep}
+                    requestFocus={() => handleRequestFocus(stepIndex)}
+                    stepNum={stepIndex + 1}
+                    worldName={worldName}
+                    backupGeneration={backupGeneration}
+                    useCachedWorld={useCachedWorld}
+                    setWorldName={setWorldName}
+                    setBackupGeneration={setBackupGeneration}
+                    setUseCachedWorld={setUseCachedWorld}
+                />
+            );
+        }
+    } else {
+        {
+            const stepIndex = configItems.length;
+            configItems.push(
+                <WorldName
+                    key="worldName"
+                    isFocused={currentStep === stepIndex}
+                    nextStep={handleNextStep}
+                    requestFocus={() => handleRequestFocus(stepIndex)}
+                    stepNum={stepIndex + 1}
+                    worldName={worldName}
+                    setWorldName={setWorldName}
+                />
+            );
+        }
+        {
+            const stepIndex = configItems.length;
+            configItems.push(
+                <ConfigureWorld
+                    key="configureWorld"
+                    isFocused={currentStep === stepIndex}
+                    nextStep={handleNextStep}
+                    requestFocus={() => handleRequestFocus(stepIndex)}
+                    stepNum={stepIndex + 1}
+                    levelType={levelType}
+                    seed={seed}
+                    setLevelType={setLevelType}
+                    setSeed={setSeed}
+                />
+            );
+        }
+    }
+
+    const stepCount = configItems.length;
+
+    return (
+        <div className="my-5 card mx-auto">
+            <div className="card-body">
+                <form>
+                    {configItems}
+                    <div className="d-md-block mt-3 text-end">
+                        <button className="btn btn-primary bg-gradient" type="button" onClick={handleStart} disabled={currentStep !== stepCount}>
+                            <VscDebugStart /> {t('launch_server')}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
