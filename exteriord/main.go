@@ -65,7 +65,7 @@ func Run() {
 			proc.Restart(proc.RestartNever),
 			proc.UserType(proc.UserPrivileged),
 		))
-	e.RegisterTask("Keep System Up-to-date",
+	e.RegisterTask("Syatem Statistics",
 		proc.NewProc("/opt/premises/bin/premises-runner",
 			proc.Args("--system-stat"),
 			proc.Restart(proc.RestartOnFailure),
