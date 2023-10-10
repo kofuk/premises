@@ -1,5 +1,6 @@
 import React, {ReactNode, useState, useEffect, useContext} from 'react';
 import {encodeBuffer, decodeBuffer} from '@/utils/base64url';
+import Loading from '@/components/loading';
 
 export enum LoginResult {
   LoggedIn,
@@ -30,7 +31,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
   }, []);
 
   if (!initialized) {
-    return <div>ohyohyoi♪～(´ε｀ )</div>;
+    return <Loading />;
   }
 
   const login = async (username: string, password: string): Promise<LoginResult> => {
