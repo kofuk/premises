@@ -27,6 +27,7 @@ jobs:
         with:
           name: runner-coverage
           path: ./runner/coverage.html
+          retention-days: 1
 
   build-runner:
     needs:
@@ -54,6 +55,7 @@ jobs:
         with:
           name: runner
           path: ./runner/premises-runner
+          retention-days: 1
 
   test-controlpanel-frontend:
     runs-on: ubuntu-latest
@@ -100,6 +102,7 @@ jobs:
         with:
           name: controlpanel-coverage
           path: ./controlpanel/coverage.html
+          retention-days: 1
 
   build-controlpanel:
     needs:
@@ -125,6 +128,7 @@ jobs:
         with:
           name: control-panel-image
           path: image.tar
+          retention-days: 1
 
   check-format-e2e:
     runs-on: ubuntu-latest
@@ -171,6 +175,7 @@ jobs:
         with:
           name: exteriord-coverage
           path: ./exteriord/coverage.html
+          retention-days: 1
 
   build-exteriord:
     needs:
@@ -193,6 +198,7 @@ jobs:
         with:
           name: exteriord
           path: ./exteriord/exteriord
+          retention-days: 1
 
   check-all-ok:
     runs-on: ubuntu-latest
