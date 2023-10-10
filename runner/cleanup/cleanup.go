@@ -29,14 +29,18 @@ func removeSnapshots() {
 	}
 
 	args := []string{"subvolume", "delete", "--commit-after"}
+	needsClean := false
 	for _, ent := range dirent {
 		if ent.Name()[:3] == "ss@" {
+			needsClean = true
 			args = append(args, filepath.Join("/opt/premises/gamedata", ent.Name()))
 		}
 	}
 
-	if err := systemutil.Cmd("btrfs", args, nil); err != nil {
-		log.WithError(err).Info("Failed to remove snapshots")
+	if needsClean {
+		if err := systemutil.Cmd("btrfs", args, nil); err != nil {
+			log.WithError(err).Info("Failed to remove snapshots")
+		}
 	}
 }
 
