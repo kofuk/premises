@@ -21,7 +21,7 @@ export default () => {
   const [useNotification, setUseNotification] = useState(false);
   const [isServerShutdown, setIsServerShutdown] = useState(true);
   const [isError, setIsError] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState(t('connecting'));
   const [prevStatus, setPrevStatus] = useState('');
 
   useEffect(() => {
