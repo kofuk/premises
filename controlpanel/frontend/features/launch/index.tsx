@@ -78,9 +78,12 @@ export default () => {
 
   const requestNotification = () => {
     Notification.requestPermission().then((result) => {
-      setUseNotification(result === 'granted');
+      const granted = result === 'granted';
+      setUseNotification(granted);
+      if (granted) {
+        closeNotificationToast();
+      }
     });
-    closeNotificationToast();
   };
 
   const handleLogout = () => {
