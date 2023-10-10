@@ -22,6 +22,7 @@ import (
 	"github.com/kofuk/premises/runner/serverprop"
 	"github.com/kofuk/premises/runner/serversetup"
 	"github.com/kofuk/premises/runner/statusapi"
+	"github.com/kofuk/premises/runner/systemstat"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/text/language"
@@ -239,7 +240,8 @@ func main() {
 	runPrivilegedHelper := flag.Bool("privileged-helper", false, "Run this process as internal helper process")
 	runServerSetup := flag.Bool("server-setup", false, "Run this process as server setup process")
 	runKeepSystemUpToDate := flag.Bool("keep-system-up-to-date", false, "Run this process as keep-system-up-to-date process")
-	runCleanUp := flag.Bool("clean-up", false, "Run this process as clean up process")
+	runCleanUp := flag.Bool("clean", false, "Run this process as clean up process")
+	runSystemStat := flag.Bool("system-stat", false, "Run this process as clean up process")
 
 	flag.Parse()
 
@@ -266,6 +268,10 @@ func main() {
 	}
 	if *runCleanUp {
 		cleanup.CleanUp()
+		return
+	}
+	if *runSystemStat {
+		systemstat.Run()
 		return
 	}
 

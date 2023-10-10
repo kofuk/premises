@@ -65,6 +65,13 @@ func Run() {
 			proc.Restart(proc.RestartNever),
 			proc.UserType(proc.UserPrivileged),
 		))
+	e.RegisterTask("Keep System Up-to-date",
+		proc.NewProc("/opt/premises/bin/premises-runner",
+			proc.Args("--system-stat"),
+			proc.Restart(proc.RestartOnFailure),
+			proc.RestartRandomDelay(),
+			proc.UserType(proc.UserRestricted),
+		))
 	monitoring := e.RegisterTask("Game Monitoring Service",
 		proc.NewProc("/opt/premises/bin/premises-runner",
 			proc.Restart(proc.RestartOnFailure),
@@ -86,7 +93,7 @@ func Run() {
 		), setupTask)
 	e.RegisterTask("Clean Up",
 		proc.NewProc("/opt/premises/bin/premises-runner",
-			proc.Args("--clean-up"),
+			proc.Args("--clean"),
 			proc.Restart(proc.RestartNever),
 			proc.UserType(proc.UserPrivileged),
 		), monitoring)
