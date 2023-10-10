@@ -78,14 +78,14 @@ func downloadWorldIfNeeded(ctx *config.PMCMContext) error {
 			log.WithError(err).Error("Failed to remove last world hash")
 		}
 
-		ctx.NotifyStatus(ctx.L("world.downloading"))
+		ctx.NotifyStatus(ctx.L("world.downloading"), false)
 		if err := backup.DownloadWorldData(ctx); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	ctx.NotifyStatus(ctx.L("world.download.not_needed"))
+	ctx.NotifyStatus(ctx.L("world.download.not_needed"), false)
 
 	return nil
 }
@@ -149,39 +149,39 @@ func runServer() {
 	srv := new(gamesrv.ServerInstance)
 	go statusapi.LaunchStatusServer(ctx, srv)
 
-	ctx.NotifyStatus(ctx.L("mc.downloading"))
+	ctx.NotifyStatus(ctx.L("mc.downloading"), srv.StartupFailed)
 	if err := downloadServerJarIfNeeded(ctx); err != nil {
 		log.WithError(err).Error("Couldn't download server.jar")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("mc.download.error"))
+		ctx.NotifyStatus(ctx.L("mc.download.error"), srv.StartupFailed)
 		goto out
 	}
 
 	if err := generateServerProps(ctx, srv); err != nil {
 		log.WithError(err).Error("Couldn't generate server.properties")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("serverprops.generate.error"))
+		ctx.NotifyStatus(ctx.L("serverprops.generate.error"), srv.StartupFailed)
 		goto out
 	}
 
 	if strings.Contains(ctx.Cfg.Server.Version, "/") {
 		log.Error("ServerName can't contain /")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("mc.invalid_server_name"))
+		ctx.NotifyStatus(ctx.L("mc.invalid_server_name"), srv.StartupFailed)
 		goto out
 	}
 
 	if err := downloadWorldIfNeeded(ctx); err != nil {
 		log.WithError(err).Error("Failed to download world data")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("world.download.error"))
+		ctx.NotifyStatus(ctx.L("world.download.error"), srv.StartupFailed)
 		goto out
 	}
 
 	if err := gamesrv.LaunchServer(ctx, srv); err != nil {
 		log.WithError(err).Error("Failed to launch Minecraft server")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("game.launch.error"))
+		ctx.NotifyStatus(ctx.L("game.launch.error"), srv.StartupFailed)
 		goto out
 	}
 
@@ -194,30 +194,30 @@ func runServer() {
 
 	srv.IsGameFinished = true
 
-	ctx.NotifyStatus(ctx.L("world.processing"))
+	ctx.NotifyStatus(ctx.L("world.processing"), srv.StartupFailed)
 	if err := backup.PrepareUploadData(ctx, backup.UploadOptions{}); err != nil {
 		log.WithError(err).Error("Failed to create world archive")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("world.archive.error"))
+		ctx.NotifyStatus(ctx.L("world.archive.error"), srv.StartupFailed)
 		goto out
 	}
 
-	ctx.NotifyStatus(ctx.L("world.uploading"))
+	ctx.NotifyStatus(ctx.L("world.uploading"), srv.StartupFailed)
 	if err := backup.UploadWorldData(ctx, backup.UploadOptions{}); err != nil {
 		log.WithError(err).Error("Failed to upload world data")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("world.upload.error"))
+		ctx.NotifyStatus(ctx.L("world.upload.error"), srv.StartupFailed)
 		goto out
 	}
 
 out:
 	if srv.RestartRequested {
 		log.Info("Restart...")
-		ctx.NotifyStatus(ctx.L("process.restarting"))
+		ctx.NotifyStatus(ctx.L("process.restarting"), srv.StartupFailed)
 
 		os.Exit(100)
 	} else if srv.Crashed && !srv.ShouldStop {
-		ctx.NotifyStatus(ctx.L("game.crashed"))
+		ctx.NotifyStatus(ctx.L("game.crashed"), srv.StartupFailed)
 
 		// User may reconfigure the server
 		for {
@@ -227,7 +227,7 @@ out:
 			}
 		}
 	} else {
-		ctx.NotifyStatus(ctx.L("game.stopped"))
+		ctx.NotifyStatus(ctx.L("game.stopped"), srv.StartupFailed)
 	}
 }
 

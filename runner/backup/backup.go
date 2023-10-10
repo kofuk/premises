@@ -209,7 +209,7 @@ func doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
 				if showNext {
 					percentage := totalUploaded * 100 / size
 					if percentage != prevPercentage {
-						ctx.NotifyStatus(fmt.Sprintf(ctx.L("world.uploading.pct"), int(percentage)))
+						ctx.NotifyStatus(fmt.Sprintf(ctx.L("world.uploading.pct"), int(percentage)), false)
 					}
 					prevPercentage = percentage
 
@@ -335,7 +335,7 @@ func DownloadWorldData(ctx *config.PMCMContext) error {
 				if showNext {
 					percentage := totalUploaded * 100 / size
 					if percentage != prevPercentage {
-						ctx.NotifyStatus(fmt.Sprintf(ctx.L("world.downloading.pct"), int(percentage)))
+						ctx.NotifyStatus(fmt.Sprintf(ctx.L("world.downloading.pct"), int(percentage)), false)
 					}
 					prevPercentage = percentage
 

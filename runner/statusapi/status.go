@@ -2,8 +2,6 @@ package statusapi
 
 import (
 	"bytes"
-	"crypto/subtle"
-	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io"
@@ -19,21 +17,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	StatusTypeLegacyEvent = "legacyEvent"
-	StatusTypeSystemStat  = "systemStat"
-)
-
-type StatusType string
-
-type StatusData struct {
-	Type     StatusType `json:"type"`
-	Status   string     `json:"status"`
-	Shutdown bool       `json:"shutdown"`
-	HasError bool       `json:"hasError"`
-	CPUUsage float64    `json:"cpuUsage"`
-}
-
 type createSnapshotResp struct {
 	Version int                     `json:"version"`
 	Success bool                    `json:"success"`
@@ -47,26 +30,26 @@ func uploadSnapshot(ctx *config.PMCMContext, ssi *privileged.SnapshotInfo) {
 		SourceDir:   ssi.Path,
 	}
 
-	ctx.NotifyStatus(ctx.L("snapshot.processing"))
+	ctx.NotifyStatus(ctx.L("snapshot.processing"), false)
 	if err := backup.PrepareUploadData(ctx, options); err != nil {
-		ctx.NotifyStatus(ctx.L("snapshot.process.error"))
+		ctx.NotifyStatus(ctx.L("snapshot.process.error"), false)
 		goto out
 	}
 
-	ctx.NotifyStatus(ctx.L("world.uploading"))
+	ctx.NotifyStatus(ctx.L("world.uploading"), false)
 	if err := backup.UploadWorldData(ctx, options); err != nil {
-		ctx.NotifyStatus(ctx.L("world.upload.error"))
+		ctx.NotifyStatus(ctx.L("world.upload.error"), false)
 		goto out
 	}
 out:
 
 	if err := requestDeleteSnapshot(ssi); err != nil {
-		ctx.NotifyStatus(ctx.L("snapshot.clean.error"))
+		ctx.NotifyStatus(ctx.L("snapshot.clean.error"), false)
 	} else {
 		log.Info("Successfully cleaned snapshot")
 	}
 
-	ctx.NotifyStatus(ctx.L("game.running"))
+	ctx.NotifyStatus(ctx.L("game.running"), false)
 }
 
 func requestSnapshot() (*privileged.SnapshotInfo, error) {
@@ -190,104 +173,7 @@ func requestDeleteSnapshot(ssi *privileged.SnapshotInfo) error {
 }
 
 func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
-	http.HandleFunc("/monitor", func(w http.ResponseWriter, r *http.Request) {
-		authKey := r.Header.Get("X-Auth-Key")
-		if subtle.ConstantTimeCompare([]byte(authKey), []byte(ctx.Cfg.AuthKey)) == 0 {
-			log.WithField("endpoint", "/monitor").Error("Invalid auth key")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
-		writeJson := func(w http.ResponseWriter, data *StatusData) error {
-			json, err := json.Marshal(data)
-			if err != nil {
-				return err
-			}
-			json = append(json, '\n')
-			if _, err := w.Write(json); err != nil {
-				return err
-			}
-
-			w.(http.Flusher).Flush()
-
-			return nil
-		}
-
-		if err := writeJson(w, &StatusData{
-			Type:     StatusTypeLegacyEvent,
-			Status:   ctx.LastStatus,
-			Shutdown: false,
-			HasError: srv.StartupFailed,
-		}); err != nil {
-			log.WithError(err).Error("Failed to write status")
-			return
-		}
-
-		statusChannel := make(chan string)
-		defer close(statusChannel)
-		ctx.AddStatusChannel(statusChannel)
-		defer ctx.RemoveStatusChannel(statusChannel)
-
-		cpuStat, err := systemutil.NewCPUUsage()
-		if err != nil {
-			log.WithError(err).Error("Failed to initialize CPU usage")
-		}
-
-		var tickerChan <-chan time.Time
-		if cpuStat != nil {
-			ticker := time.NewTicker(3 * time.Second)
-			tickerChan = ticker.C
-			defer ticker.Stop()
-		}
-
-	L:
-		for {
-			select {
-			case status, ok := <-statusChannel:
-				if !ok {
-					break L
-				}
-				if err := writeJson(w, &StatusData{
-					Type:     StatusTypeLegacyEvent,
-					Status:   status,
-					Shutdown: false,
-					HasError: srv.StartupFailed,
-				}); err != nil {
-					log.WithError(err).Error("Failed to write data to connection")
-					break L
-				}
-
-			case <-tickerChan:
-				cpuUsage, err := cpuStat.Percent()
-				if err != nil {
-					log.WithError(err).Error("Failed to retrieve CPU usage")
-					continue
-				}
-
-				if err := writeJson(w, &StatusData{
-					Type:     StatusTypeSystemStat,
-					Shutdown: false,
-					HasError: srv.StartupFailed,
-					CPUUsage: cpuUsage,
-				}); err != nil {
-					log.WithError(err).Error("Failed to write data to connection")
-					break L
-				}
-
-			case <-r.Context().Done():
-				break L
-			}
-		}
-	})
-
 	http.HandleFunc("/newconfig", func(w http.ResponseWriter, r *http.Request) {
-		authKey := r.Header.Get("X-Auth-Key")
-		if subtle.ConstantTimeCompare([]byte(authKey), []byte(ctx.Cfg.AuthKey)) == 0 {
-			log.WithField("endpoint", "/newconfig").Error("Invalid auth key")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
 		var config config.Config
 		if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
 			log.WithError(err).Error("Failed to parse request JSON")
@@ -313,13 +199,6 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 	})
 
 	http.HandleFunc("/snapshot", func(w http.ResponseWriter, r *http.Request) {
-		authKey := r.Header.Get("X-Auth-Key")
-		if subtle.ConstantTimeCompare([]byte(authKey), []byte(ctx.Cfg.AuthKey)) == 0 {
-			log.WithField("endpoint", "/snapshot").Error("Invalid auth key")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
 		if err := srv.SaveAll(); err != nil {
 			log.WithError(err).Error("Failed to run save-all")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -339,13 +218,6 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 	})
 
 	http.HandleFunc("/quickss", func(w http.ResponseWriter, r *http.Request) {
-		authKey := r.Header.Get("X-Auth-Key")
-		if subtle.ConstantTimeCompare([]byte(authKey), []byte(ctx.Cfg.AuthKey)) == 0 {
-			log.WithField("endpoint", "/quickss").Error("Invalid auth key")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
 		if err := srv.SaveAll(); err != nil {
 			log.WithError(err).Error("Failed to run save-all")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -365,13 +237,6 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 	})
 
 	http.HandleFunc("/quickundo", func(w http.ResponseWriter, r *http.Request) {
-		authKey := r.Header.Get("X-Auth-Key")
-		if subtle.ConstantTimeCompare([]byte(authKey), []byte(ctx.Cfg.AuthKey)) == 0 {
-			log.WithField("endpoint", "/quickss").Error("Invalid auth key")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
 		go func() {
 			srv.SendChat("3秒後にサーバを再起動します")
 			time.Sleep(time.Second)
@@ -386,25 +251,11 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 	})
 
 	http.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
-		authKey := r.Header.Get("X-Auth-Key")
-		if subtle.ConstantTimeCompare([]byte(authKey), []byte(ctx.Cfg.AuthKey)) == 0 {
-			log.WithField("endpoint", "/stop").Error("Invalid auth key")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
 		srv.ShouldStop = true
 		srv.Stop()
 	})
 
 	http.HandleFunc("/systeminfo", func(w http.ResponseWriter, r *http.Request) {
-		authKey := r.Header.Get("X-Auth-Key")
-		if subtle.ConstantTimeCompare([]byte(authKey), []byte(ctx.Cfg.AuthKey)) == 0 {
-			log.WithField("endpoint", "/systeminfo").Error("Invalid auth key")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
 		systemInfo := systemutil.GetSystemVersion()
 		data, err := json.Marshal(systemInfo)
 		if err != nil {
@@ -417,13 +268,6 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 	})
 
 	http.HandleFunc("/worldinfo", func(w http.ResponseWriter, r *http.Request) {
-		authKey := r.Header.Get("X-Auth-Key")
-		if subtle.ConstantTimeCompare([]byte(authKey), []byte(ctx.Cfg.AuthKey)) == 0 {
-			log.WithField("endpoint", "/systeminfo").Error("Invalid auth key")
-			w.WriteHeader(http.StatusForbidden)
-			return
-		}
-
 		if !srv.IsServerInitialized {
 			log.Info("Server is not started. Abort")
 			w.WriteHeader(http.StatusTooEarly)
@@ -444,26 +288,6 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 		w.Write(data)
 	})
 
-	tlsCfg := &tls.Config{
-		MinVersion:               tls.VersionTLS13,
-		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-		PreferServerCipherSuites: true,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-		},
-	}
-
-	server := &http.Server{
-		Addr:         "0.0.0.0:8521",
-		TLSConfig:    tlsCfg,
-		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
-		ReadTimeout:  5 * time.Second,
-		IdleTimeout:  120 * time.Second,
-	}
-
 	log.Info("Launching status server...")
-	log.Fatal(server.ListenAndServeTLS(ctx.LocateDataFile("server.crt"), ctx.LocateDataFile("server.key")))
+	log.Fatal(http.ListenAndServe("127.0.0.1:9000", nil))
 }

@@ -1,11 +1,15 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 	"syscall"
 
 	"github.com/kofuk/premises/exteriord/exterior"
+	"github.com/kofuk/premises/exteriord/interior"
+	"github.com/kofuk/premises/exteriord/msgrouter"
+	"github.com/kofuk/premises/exteriord/outbound"
 	"github.com/kofuk/premises/exteriord/proc"
 )
 
@@ -13,11 +17,45 @@ func IAmRoot() bool {
 	return syscall.Getuid() == 0
 }
 
-func main() {
-	if !IAmRoot() {
-		log.Println("exteriord must be executed as root")
-		os.Exit(1)
+type Config struct {
+	AuthKey string `json:"authKey"`
+}
+
+func getServerAuthKey() (string, error) {
+	data, err := os.ReadFile("/opt/premises/config.json")
+	if err != nil {
+		return "", err
 	}
+
+	var config Config
+	if err := json.Unmarshal(data, &config); err != nil {
+		return "", err
+	}
+
+	return config.AuthKey, nil
+}
+
+func Run() {
+	msgRouter := msgrouter.NewMsgRouter()
+
+	authKey, err := getServerAuthKey()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ob := outbound.NewServer("0.0.0.0:8521", authKey, msgRouter)
+	go func() {
+		if err := ob.Start(); err != nil {
+			log.Println("Unable to start outbound server:", err)
+		}
+	}()
+
+	interior := interior.NewServer("127.0.0.1:2000", msgRouter)
+	go func() {
+		if err := interior.Start(); err != nil {
+			log.Println("Unable to start interior server:", err)
+		}
+	}()
 
 	e := exterior.New()
 
@@ -54,4 +92,13 @@ func main() {
 		), monitoring)
 
 	e.Run()
+}
+
+func main() {
+	if !IAmRoot() {
+		log.Println("exteriord must be executed as root")
+		os.Exit(1)
+	}
+
+	Run()
 }

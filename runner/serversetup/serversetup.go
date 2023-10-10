@@ -1,15 +1,13 @@
 package serversetup
 
 import (
-	"crypto/tls"
 	"encoding/json"
-	"net/http"
 	"os"
 	"os/exec"
 	"os/user"
-	"time"
 
-	"github.com/kofuk/premises/runner/statusapi"
+	"github.com/kofuk/premises/runner/config"
+	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/systemutil"
 	log "github.com/sirupsen/logrus"
 )
@@ -21,66 +19,7 @@ var requiredProgs = []string{
 	"unzip",
 }
 
-type ServerSetup struct {
-	statusServer *http.Server
-}
-
-func (self *ServerSetup) launchStatus() {
-	if self.statusServer != nil {
-		return
-	}
-
-	http.HandleFunc("/monitor", func(w http.ResponseWriter, r *http.Request) {
-		writeJson := func(w http.ResponseWriter, data *statusapi.StatusData) error {
-			json, err := json.Marshal(data)
-			if err != nil {
-				return err
-			}
-			json = append(json, '\n')
-			if _, err := w.Write(json); err != nil {
-				return err
-			}
-
-			w.(http.Flusher).Flush()
-
-			return nil
-		}
-
-		writeJson(w, &statusapi.StatusData{
-			Type:     statusapi.StatusTypeLegacyEvent,
-			Status:   "サーバを初期化しています…",
-			Shutdown: false,
-			HasError: false,
-		})
-
-		<-make(chan struct{})
-	})
-
-	tlsCfg := &tls.Config{
-		MinVersion:               tls.VersionTLS13,
-		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-		PreferServerCipherSuites: true,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-		},
-	}
-
-	self.statusServer = &http.Server{
-		Addr:         "0.0.0.0:8521",
-		TLSConfig:    tlsCfg,
-		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
-		ReadTimeout:  5 * time.Second,
-		IdleTimeout:  120 * time.Second,
-	}
-
-	log.Info("Launching status server...")
-	if err := self.statusServer.ListenAndServeTLS("/opt/premises/server.crt", "/opt/premises/server.key"); err != nil {
-		log.Println(err)
-	}
-}
+type ServerSetup struct{}
 
 func isServerInitialized() bool {
 	for _, prog := range requiredProgs {
@@ -103,8 +42,25 @@ func isDevEnv() bool {
 	return err == nil
 }
 
+func (self *ServerSetup) notifyStatus() {
+	statusData := config.StatusData{
+		Type:     config.StatusTypeLegacyEvent,
+		Status:   "サーバを初期化しています…",
+		Shutdown: false,
+		HasError: false,
+	}
+	statusJson, _ := json.Marshal(statusData)
+
+	if err := exterior.SendMessage(exterior.Message{
+		Type:     "serverStatus",
+		UserData: string(statusJson),
+	}); err != nil {
+		log.Error(err)
+	}
+}
+
 func (self *ServerSetup) initializeServer() {
-	go self.launchStatus()
+	self.notifyStatus()
 
 	log.Println("Updating package indices")
 	systemutil.AptGet("update", "-y")
@@ -154,8 +110,4 @@ func (self ServerSetup) Run() {
 
 	log.Println("Ensure data directory owned by execution user")
 	systemutil.Cmd("chown", []string{"-R", "1000:1000", "/opt/premises"}, nil)
-
-	if self.statusServer != nil {
-		self.statusServer.Close()
-	}
 }

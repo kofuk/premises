@@ -286,15 +286,15 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 		}
 		fmt.Println(string(line))
 		if serverLoadingRegexp.Match(line) {
-			ctx.NotifyStatus(ctx.L("game.loading"))
+			ctx.NotifyStatus(ctx.L("game.loading"), false)
 		} else if serverLoadedRegexp.Match(line) {
-			ctx.NotifyStatus(ctx.L("game.running"))
+			ctx.NotifyStatus(ctx.L("game.running"), false)
 
 			if err := SaveLastServerVersion(ctx); err != nil {
 				log.WithError(err).Error("Error saving last server versoin")
 			}
 		} else if serverStoppingRegexp.Match(line) {
-			ctx.NotifyStatus(ctx.L("game.stopping"))
+			ctx.NotifyStatus(ctx.L("game.stopping"), false)
 		}
 	}
 }

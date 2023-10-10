@@ -103,9 +103,19 @@ out:
 		connLost = false
 
 		receiveEvent := func(reader *bufio.Reader) (*StatusData, error) {
-			line, _, err := reader.ReadLine()
-			if err != nil {
-				return nil, err
+			var line []byte
+
+			for {
+				var err error
+				line, _, err = reader.ReadLine()
+				if err != nil {
+					return nil, err
+				}
+				if len(line) > 0 && line[0] == ':' {
+					continue
+				}
+
+				break
 			}
 
 			var status StatusData

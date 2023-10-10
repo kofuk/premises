@@ -1,81 +1,16 @@
 package cleanup
 
 import (
-	"crypto/tls"
 	"encoding/json"
-	"net/http"
 	"os"
 	"path/filepath"
 	"syscall"
-	"time"
 
-	"github.com/kofuk/premises/runner/statusapi"
+	"github.com/kofuk/premises/runner/config"
+	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/systemutil"
 	log "github.com/sirupsen/logrus"
 )
-
-var shutdown = false
-
-func launchStatus() {
-	http.HandleFunc("/monitor", func(w http.ResponseWriter, r *http.Request) {
-		writeJson := func(w http.ResponseWriter, data *statusapi.StatusData) error {
-			json, err := json.Marshal(data)
-			if err != nil {
-				return err
-			}
-			json = append(json, '\n')
-			if _, err := w.Write(json); err != nil {
-				return err
-			}
-
-			w.(http.Flusher).Flush()
-
-			return nil
-		}
-
-		ticker := time.NewTicker(1 * time.Second)
-
-		for {
-			<-ticker.C
-
-			if err := writeJson(w, &statusapi.StatusData{
-				Type:     statusapi.StatusTypeLegacyEvent,
-				Status:   "終了準備しています…",
-				Shutdown: shutdown,
-				HasError: false,
-			}); err != nil {
-				break
-			}
-		}
-
-		ticker.Stop()
-	})
-
-	tlsCfg := &tls.Config{
-		MinVersion:               tls.VersionTLS13,
-		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-		PreferServerCipherSuites: true,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-		},
-	}
-
-	statusServer := &http.Server{
-		Addr:         "0.0.0.0:8521",
-		TLSConfig:    tlsCfg,
-		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
-		ReadTimeout:  5 * time.Second,
-		IdleTimeout:  120 * time.Second,
-	}
-
-	log.Info("Launching status server...")
-	if err := statusServer.ListenAndServeTLS("/opt/premises/server.crt", "/opt/premises/server.key"); err != nil {
-		log.Println(err)
-	}
-}
 
 func removeFilesIgnoreError(paths ...string) {
 	for _, path := range paths {
@@ -110,11 +45,25 @@ func unmountData() {
 	}
 }
 
-func CleanUp() {
-	go launchStatus()
+func notifyStatus(finished bool) {
+	statusData := config.StatusData{
+		Type:     config.StatusTypeLegacyEvent,
+		Status:   "サーバを終了する準備をしています…",
+		Shutdown: finished,
+		HasError: false,
+	}
+	statusJson, _ := json.Marshal(statusData)
 
-	// XXX
-	time.Sleep(5 * time.Second)
+	if err := exterior.SendMessage(exterior.Message{
+		Type:     "serverStatus",
+		UserData: string(statusJson),
+	}); err != nil {
+		log.WithError(err).Error("Unable to write send message")
+	}
+}
+
+func CleanUp() {
+	notifyStatus(false)
 
 	log.Info("Removing config files...")
 	removeFilesIgnoreError(
@@ -131,7 +80,5 @@ func CleanUp() {
 	log.Info("Unmounting data dir...")
 	unmountData()
 
-	shutdown = true
-
-	<-make(chan struct{})
+	notifyStatus(true)
 }

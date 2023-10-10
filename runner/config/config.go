@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/kofuk/premises/runner/exterior"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
 )
@@ -69,12 +70,36 @@ func (ctx *PMCMContext) L(msgId string) string {
 	return msg
 }
 
-func (ctx *PMCMContext) NotifyStatus(status string) {
-	ctx.ChannelMutex.Lock()
-	defer ctx.ChannelMutex.Unlock()
-	ctx.LastStatus = status
-	for _, ch := range ctx.StatusChannels {
-		ch <- status
+type StatusType string
+
+const (
+	StatusTypeLegacyEvent StatusType = "legacyEvent"
+	StatusTypeSystemStat  StatusType = "systemStat"
+)
+
+type StatusData struct {
+	Type     StatusType `json:"type"`
+	Status   string     `json:"status"`
+	Shutdown bool       `json:"shutdown"`
+	HasError bool       `json:"hasError"`
+	CPUUsage float64    `json:"cpuUsage"`
+}
+
+func (ctx *PMCMContext) NotifyStatus(status string, hasError bool) {
+	statusData := StatusData{
+		Type:     StatusTypeLegacyEvent,
+		Status:   status,
+		Shutdown: false,
+		HasError: hasError,
+	}
+
+	statusJson, _ := json.Marshal(statusData)
+
+	if err := exterior.SendMessage(exterior.Message{
+		Type:     "serverStatus",
+		UserData: string(statusJson),
+	}); err != nil {
+		log.Error(err)
 	}
 }
 
