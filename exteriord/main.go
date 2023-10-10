@@ -78,7 +78,7 @@ func Run() {
 			proc.RestartRandomDelay(),
 			proc.UserType(proc.UserRestricted),
 		), setupTask)
-	e.RegisterTask("Keep System Up-to-date",
+	systemUpdate := e.RegisterTask("Keep System Up-to-date",
 		proc.NewProc("/opt/premises/bin/premises-runner",
 			proc.Args("--keep-system-up-to-date"),
 			proc.Restart(proc.RestartNever),
@@ -96,7 +96,7 @@ func Run() {
 			proc.Args("--clean"),
 			proc.Restart(proc.RestartNever),
 			proc.UserType(proc.UserPrivileged),
-		), monitoring)
+		), monitoring, systemUpdate)
 
 	e.Run()
 }

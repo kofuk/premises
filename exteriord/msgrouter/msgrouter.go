@@ -1,7 +1,6 @@
 package msgrouter
 
 import (
-	"log"
 	"sync"
 
 	"golang.org/x/exp/slices"
@@ -13,37 +12,62 @@ type Message struct {
 }
 
 type MsgRouter struct {
-	clients []chan Message
-	m       sync.Mutex
+	clients    []*Client
+	m          sync.Mutex
+	latestMsgs map[string]*Message
+}
+
+type Client struct {
+	C chan Message
 }
 
 func NewMsgRouter() *MsgRouter {
-	return &MsgRouter{}
+	return &MsgRouter{
+		latestMsgs: make(map[string]*Message),
+	}
 }
 
 func (self *MsgRouter) DispatchMessage(msg Message) {
 	self.m.Lock()
 	defer self.m.Unlock()
 
-	log.Println(msg)
+	self.latestMsgs[msg.Type] = &msg
 
 	for _, client := range self.clients {
-		client <- msg
+		client.C <- msg
 	}
 }
 
-func (self *MsgRouter) Subscribe() chan Message {
-	channel := make(chan Message, 8)
-	self.m.Lock()
-	defer self.m.Unlock()
-	self.clients = append(self.clients, channel)
-	return channel
+type SubscriptionOption func(c *Client, msgRouter *MsgRouter)
+
+func NotifyLatest(msgType string) SubscriptionOption {
+	return func(c *Client, msgRouter *MsgRouter) {
+		if msgRouter.latestMsgs[msgType] != nil {
+			c.C <- *msgRouter.latestMsgs[msgType]
+		}
+	}
 }
 
-func (self *MsgRouter) Unsubscribe(client chan Message) {
+func (self *MsgRouter) Subscribe(opts ...SubscriptionOption) *Client {
+	client := &Client{
+		C: make(chan Message, 8),
+	}
 	self.m.Lock()
 	defer self.m.Unlock()
-	slices.DeleteFunc(self.clients, func(c chan Message) bool {
+
+	for _, opt := range opts {
+		opt(client, self)
+	}
+
+	self.clients = append(self.clients, client)
+
+	return client
+}
+
+func (self *MsgRouter) Unsubscribe(client *Client) {
+	self.m.Lock()
+	defer self.m.Unlock()
+	slices.DeleteFunc(self.clients, func(c *Client) bool {
 		return c == client
 	})
 }

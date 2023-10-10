@@ -33,8 +33,8 @@ func (self *Server) HandleMonitor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	msgChan := self.msgRouter.Subscribe()
-	defer self.msgRouter.Unsubscribe(msgChan)
+	client := self.msgRouter.Subscribe(msgrouter.NotifyLatest("serverStatus"))
+	defer self.msgRouter.Unsubscribe(client)
 
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
@@ -44,7 +44,7 @@ func (self *Server) HandleMonitor(w http.ResponseWriter, r *http.Request) {
 L:
 	for {
 		select {
-		case msg := <-msgChan:
+		case msg := <-client.C:
 			w.Write([]byte(msg.UserData + "\n"))
 			w.(http.Flusher).Flush()
 

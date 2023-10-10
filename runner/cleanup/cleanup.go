@@ -2,6 +2,7 @@ package cleanup
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -62,6 +63,35 @@ func notifyStatus(finished bool) {
 	}
 }
 
+func copyLogData() {
+	if _, err := os.Stat("/premises-dev"); err != nil {
+		return
+	}
+
+	logFile, err := os.Open("/exteriord.log")
+	if err != nil {
+		log.WithError(err).Error("Error creating log file")
+		return
+	}
+	defer logFile.Close()
+
+	out, err := os.Create("/premises-dev/exteriord.log")
+	if err != nil {
+		log.WithError(err).Error("Error creating copy file")
+		return
+	}
+	defer out.Close()
+
+	if _, err := io.Copy(out, logFile); err != nil {
+		log.WithError(err).Error("Error copying log file")
+		return
+	}
+
+	if err := os.Remove("/exteriord.log"); err != nil {
+		log.WithError(err).Error("Error removing unneeded log file")
+	}
+}
+
 func CleanUp() {
 	notifyStatus(false)
 
@@ -79,6 +109,9 @@ func CleanUp() {
 
 	log.Info("Unmounting data dir...")
 	unmountData()
+
+	log.Info("Copying log file if it is dev runner")
+	copyLogData()
 
 	notifyStatus(true)
 }
