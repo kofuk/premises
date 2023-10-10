@@ -1,21 +1,10 @@
 import React, {useState, useEffect} from 'react';
-
 import '@/i18n';
 import {t} from 'i18next';
-
 import StatusBar from './statusbar';
 import ServerControlPane from './server-control-pane';
 import ServerConfigPane from './server-config-pane';
-import Settings from './settings';
-import {useNavigate} from 'react-router-dom';
 import {Helmet} from 'react-helmet-async';
-
-// For bootstrap based screen. We should remove this after transition to styled-component completed.
-import './control.scss';
-import 'bootstrap/js/dist/offcanvas';
-import 'bootstrap/js/dist/collapse';
-import {useAuth} from '@/utils/auth';
-/////
 
 export default () => {
   const [useNotification, setUseNotification] = useState(false);
@@ -59,14 +48,6 @@ export default () => {
     }
   }, []);
 
-  const navigate = useNavigate();
-  const {loggedIn, logout} = useAuth();
-  useEffect(() => {
-    if (!loggedIn) {
-      navigate('/', {replace: true});
-    }
-  }, []);
-
   const showError = (message: string) => {
     setIsError(true);
     setMessage(message);
@@ -86,46 +67,11 @@ export default () => {
     });
   };
 
-  const handleLogout = () => {
-    logout().then(() => {
-      navigate('/', {replace: true});
-    });
-  };
-
   const mainPane: React.ReactElement = isServerShutdown ? <ServerConfigPane showError={showError} /> : <ServerControlPane showError={showError} />;
   return (
     <>
-      <nav className="navbar navbar-expand-lg navbar-dark bg-dark mb-3">
-        <div className="container-fluid">
-          <span className="navbar-brand">{t('app_name')}</span>
-          <div className="collapse navbar-collapse">
-            <div className="navbar-nav me-auto"></div>
-            <a className="btn btn-link me-1" data-bs-toggle="offcanvas" href="#settingsPane" role="button" aria-controls="settingsPane">
-              {t('settings')}
-            </a>
-            <button onClick={handleLogout} className="btn btn-primary bg-gradient">
-              {t('logout')}
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      <div className="offcanvas offcanvas-start" tabIndex={-1} id="settingsPane" aria-labelledby="SettingsLabel">
-        <div className="offcanvas-header">
-          <h5 className="offcanvas-title" id="settingsLabel">
-            {t('settings')}
-          </h5>
-          <button type="button" className="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-        </div>
-        <div className="offcanvas-body">
-          <Settings />
-        </div>
-      </div>
-
-      <div className="container">
-        <StatusBar isError={isError} message={message} />
-        {mainPane}
-      </div>
+      <StatusBar isError={isError} message={message} />
+      {mainPane}
 
       <div className="toast-container position-absolute top-0 end-0 pe-1 pt-5">
         <div className={`toast ${showNotificationToast ? 'show' : ''}`}>

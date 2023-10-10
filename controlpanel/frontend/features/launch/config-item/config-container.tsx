@@ -1,5 +1,6 @@
 import {ReactNode} from 'react';
 import {ItemProp} from './prop';
+import StepTitle from './step-title';
 
 export default ({
   title,
@@ -22,9 +23,9 @@ export default ({
         </svg>
       </div>
       <div className="mx-2 p-2 flex-fill border rounded">
-        <h3 className="step-title user-select-none" onClick={requestFocus}>
+        <StepTitle className="user-select-none" onClick={requestFocus}>
           {title}
-        </h3>
+        </StepTitle>
         {isFocused && children}
       </div>
     </div>
