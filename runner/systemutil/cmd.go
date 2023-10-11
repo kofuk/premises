@@ -12,9 +12,7 @@ func Cmd(cmdPath string, args []string, envs []string) error {
 	cmd := exec.Command(cmdPath, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	for _, env := range envs {
-		cmd.Env = append(cmd.Env, env)
-	}
+	cmd.Env = append(cmd.Environ(), envs...)
 	if err := cmd.Run(); err != nil {
 		return err
 	}
