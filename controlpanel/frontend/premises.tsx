@@ -6,7 +6,7 @@ import {AuthProvider} from './utils/auth';
 import Loading from './components/loading';
 const LaunchPage = React.lazy(() => import('@/features/launch'));
 const LoginPage = React.lazy(() => import('@/features/login'));
-const Dashboard = React.lazy(() => import('@/features/dashboard'));
+const UI = React.lazy(() => import('@/features/ui'));
 const Settings = React.lazy(() => import('@/features/settings'));
 
 export default () => {
@@ -18,10 +18,10 @@ export default () => {
             <Suspense fallback={<Loading />}>
               <Routes>
                 <Route index element={<LoginPage />} />
-                <Route path="/launch" element={<Dashboard />}>
+                <Route path="/launch" element={<UI />}>
                   <Route index element={<LaunchPage />} />
                 </Route>
-                <Route path="/settings" element={<Dashboard />}>
+                <Route path="/settings" element={<UI />}>
                   <Route index element={<Settings />} />
                 </Route>
               </Routes>
