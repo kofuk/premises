@@ -7,6 +7,7 @@ import Loading from './components/loading';
 const LaunchPage = React.lazy(() => import('@/features/launch'));
 const LoginPage = React.lazy(() => import('@/features/login'));
 const Dashboard = React.lazy(() => import('@/features/dashboard'));
+const Settings = React.lazy(() => import('@/features/settings'));
 
 export default () => {
   return (
@@ -19,6 +20,9 @@ export default () => {
                 <Route index element={<LoginPage />} />
                 <Route path="/launch" element={<Dashboard />}>
                   <Route index element={<LaunchPage />} />
+                </Route>
+                <Route path="/settings" element={<Dashboard />}>
+                  <Route index element={<Settings />} />
                 </Route>
               </Routes>
             </Suspense>
