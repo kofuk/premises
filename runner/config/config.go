@@ -103,28 +103,6 @@ func (ctx *PMCMContext) NotifyStatus(status string, hasError bool) {
 	}
 }
 
-func (ctx *PMCMContext) AddStatusChannel(ch chan string) {
-	ctx.ChannelMutex.Lock()
-	defer ctx.ChannelMutex.Unlock()
-
-	ctx.StatusChannels = append(ctx.StatusChannels, ch)
-}
-
-func (ctx *PMCMContext) RemoveStatusChannel(ch chan string) {
-	ctx.ChannelMutex.Lock()
-	defer ctx.ChannelMutex.Unlock()
-
-	for i, c := range ctx.StatusChannels {
-		if c == ch {
-			if i != len(ctx.StatusChannels)-1 {
-				ctx.StatusChannels[i] = ctx.StatusChannels[len(ctx.StatusChannels)-1]
-			}
-			ctx.StatusChannels = ctx.StatusChannels[0 : len(ctx.StatusChannels)-1]
-			break
-		}
-	}
-}
-
 func (ctx *PMCMContext) LocateWorldData(path string) string {
 	return ctx.LocateDataFile(filepath.Join("gamedata", path))
 }
