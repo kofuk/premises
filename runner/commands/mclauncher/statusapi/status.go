@@ -9,10 +9,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/kofuk/premises/runner/backup"
-	"github.com/kofuk/premises/runner/config"
-	"github.com/kofuk/premises/runner/gamesrv"
-	"github.com/kofuk/premises/runner/privileged"
+	"github.com/kofuk/premises/runner/commands/mclauncher/backup"
+	"github.com/kofuk/premises/runner/commands/mclauncher/config"
+	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
+	"github.com/kofuk/premises/runner/commands/privileged"
 	"github.com/kofuk/premises/runner/systemutil"
 	log "github.com/sirupsen/logrus"
 )

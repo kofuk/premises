@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/kofuk/premises/runner/config"
+	"github.com/kofuk/premises/runner/commands/mclauncher/config"
 	log "github.com/sirupsen/logrus"
 )
 
