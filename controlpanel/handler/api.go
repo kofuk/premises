@@ -884,15 +884,7 @@ func setupApiWebauthnRoutes(h *Handler, group *gin.RouterGroup) {
 }
 
 func (h *Handler) middlewareSessionCheck(c *gin.Context) {
-	// 1. Verify that the client is logged in.
-	session := sessions.Default(c)
-	if session.Get("user_id") == nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Not logged in"})
-		c.Abort()
-		return
-	}
-
-	// 2. Verify that the request is sent from allowed origin (if needed).
+	// 1. Verify that the request is sent from allowed origin (if needed).
 	if c.Request.Method == http.MethodPost || (c.Request.Method == http.MethodGet && c.GetHeader("Upgrade") == "WebSocket") {
 		if c.GetHeader("Origin") != h.cfg.ControlPanel.Origin {
 			log.WithField("origin", c.GetHeader("Origin")).Error("origin not allowed")
@@ -900,6 +892,14 @@ func (h *Handler) middlewareSessionCheck(c *gin.Context) {
 			c.Abort()
 			return
 		}
+	}
+
+	// 2. Verify that the client is logged in.
+	session := sessions.Default(c)
+	if session.Get("user_id") == nil {
+		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Not logged in"})
+		c.Abort()
+		return
 	}
 }
 
