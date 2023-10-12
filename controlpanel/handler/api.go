@@ -726,7 +726,7 @@ func (h *Handler) handleApiWebauthnRoot(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": credentialResp})
 }
 
-func (h *Handler) handleApiWebauthnUuid(c *gin.Context) {
+func (h *Handler) handleApiDeleteWebauthnUuid(c *gin.Context) {
 	session := sessions.Default(c)
 	userID := session.Get("user_id")
 	keyUuid := c.Param("uuid")
@@ -878,7 +878,7 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 
 func setupApiWebauthnRoutes(h *Handler, group *gin.RouterGroup) {
 	group.GET("", h.handleApiWebauthnRoot)
-	group.POST("/:uuid", h.handleApiWebauthnUuid)
+	group.DELETE("/:uuid", h.handleApiDeleteWebauthnUuid)
 	group.POST("/begin", h.handleApiWebauthnBegin)
 	group.POST("/finish", h.handleApiWebauthnFinish)
 }
