@@ -4,11 +4,11 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/kofuk/premises/runner/commands/keepsystemutd"
-	"github.com/kofuk/premises/runner/commands/privileged"
 	"github.com/kofuk/premises/runner/commands/cleanup"
+	"github.com/kofuk/premises/runner/commands/keepsystemutd"
 	"github.com/kofuk/premises/runner/commands/mclauncher"
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
+	"github.com/kofuk/premises/runner/commands/privileged"
 	"github.com/kofuk/premises/runner/commands/serversetup"
 	"github.com/kofuk/premises/runner/commands/systemstat"
 	"github.com/kofuk/premises/runner/metadata"
