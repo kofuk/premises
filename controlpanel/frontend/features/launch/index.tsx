@@ -73,7 +73,7 @@ export default () => {
       <StatusBar isError={isError} message={message} />
       {mainPane}
 
-      <div className="toast-container position-absolute top-0 end-0 pe-1 pt-5">
+      <div className="toast-container position-absolute top-0 end-0 pe-1 pt-5 mt-3">
         <div className={`toast ${showNotificationToast ? 'show' : ''}`}>
           <div className="toast-header">
             <strong className="me-auto">{t('notification_toast_title')}</strong>
