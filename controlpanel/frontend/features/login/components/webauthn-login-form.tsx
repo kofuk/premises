@@ -2,7 +2,7 @@ import {useState} from 'react';
 import PasswordIcon from '@mui/icons-material/Password';
 import {ButtonGroup, Tooltip, Stack, Button, TextField} from '@mui/material';
 import {LoadingButton} from '@mui/lab';
-
+import {useForm} from 'react-hook-form';
 import '@/i18n';
 import {t} from 'i18next';
 import {useNavigate} from 'react-router-dom';
@@ -14,14 +14,15 @@ interface WebAuthnLoginProps {
 }
 
 export default ({setFeedback, switchToPassword}: WebAuthnLoginProps) => {
-  const [username, setUsername] = useState('');
+  const {register, handleSubmit, formState} = useForm();
+
   const [loggingIn, setLoggingIn] = useState(false);
 
   const navigate = useNavigate();
 
   const {loginWebAuthn} = useAuth();
 
-  const handleWebAuthn = async () => {
+  const handleWebAuthn = async ({username}: any) => {
     loginWebAuthn(username).then(
       () => {
         setLoggingIn(false);
@@ -35,22 +36,9 @@ export default ({setFeedback, switchToPassword}: WebAuthnLoginProps) => {
   };
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleWebAuthn();
-      }}
-    >
+    <form onSubmit={handleSubmit(handleWebAuthn)}>
       <Stack spacing={2}>
-        <TextField
-          variant="outlined"
-          label={t('username')}
-          autoComplete="username"
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          fullWidth
-        />
+        <TextField variant="outlined" label={t('username')} autoComplete="username" type="text" fullWidth {...register('username')} />
         <Stack direction="row" justifyContent="end" sx={{mt: 1}}>
           <ButtonGroup disabled={loggingIn} variant="contained" aria-label="outlined primary button group">
             <Tooltip title="Use password">
