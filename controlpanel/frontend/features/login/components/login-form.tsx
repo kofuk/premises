@@ -1,19 +1,18 @@
-import {useState, useRef} from 'react';
+import {useState, useEffect} from 'react';
 import KeyIcon from '@mui/icons-material/Key';
 import {DialogActions, DialogContent, DialogTitle, Dialog, ButtonGroup, Tooltip, Stack, Button, TextField} from '@mui/material';
 import {LoadingButton} from '@mui/lab';
 import '@/i18n';
 import {t} from 'i18next';
 import {useNavigate} from 'react-router-dom';
-import {LoginResult, useAuth} from '@/utils/auth';
+import {LoginResult, useAuth, passkeysSupported} from '@/utils/auth';
 import {useForm} from 'react-hook-form';
 
-interface PasswordLoginProps {
+interface Prop {
   setFeedback: (feedback: string) => void;
-  switchToSecurityKey: () => void;
 }
 
-export default ({setFeedback, switchToSecurityKey}: PasswordLoginProps) => {
+export default ({setFeedback}: Prop) => {
   const loginForm = useForm();
   const resetPasswdForm = useForm();
 
@@ -22,7 +21,7 @@ export default ({setFeedback, switchToSecurityKey}: PasswordLoginProps) => {
 
   const navigate = useNavigate();
 
-  const {login, initializePassword} = useAuth();
+  const {login, loginPasskeys, initializePassword} = useAuth();
 
   const handleLogin = ({username, password}: any) => {
     setLoggingIn(true);
@@ -43,6 +42,34 @@ export default ({setFeedback, switchToSecurityKey}: PasswordLoginProps) => {
     );
   };
 
+  const handlePasskeys = async () => {
+    loginPasskeys().then(
+      () => {
+        setLoggingIn(false);
+        navigate('/launch', {replace: true});
+      },
+      (err) => {
+        setLoggingIn(false);
+        setFeedback(err.message);
+      }
+    );
+  };
+
+  const [passkeysAvailable, setPasskeysAvailable] = useState(false);
+  useEffect(() => {
+    (async () => {
+      setPasskeysAvailable(await passkeysSupported());
+    })();
+  }, []);
+
+  const passkeysLoginButton = (
+    <Tooltip title="Use Passkey">
+      <Button size="small" aria-label="security key" type="button" onClick={handlePasskeys}>
+        <KeyIcon />
+      </Button>
+    </Tooltip>
+  );
+
   const handleChangePassword = ({password}: any) => {
     initializePassword(loginForm.getValues('username'), password).then(
       () => {
@@ -62,11 +89,7 @@ export default ({setFeedback, switchToSecurityKey}: PasswordLoginProps) => {
           <TextField variant="outlined" label={t('password')} autoComplete="password" type="password" {...loginForm.register('password')} fullWidth />
           <Stack direction="row" justifyContent="end" sx={{mt: 1}}>
             <ButtonGroup disabled={loggingIn} variant="contained" aria-label="outlined primary button group">
-              <Tooltip title="Use security key">
-                <Button size="small" aria-label="security key" type="button" onClick={() => switchToSecurityKey()}>
-                  <KeyIcon />
-                </Button>
-              </Tooltip>
+              {passkeysAvailable && passkeysLoginButton}
               <LoadingButton loading={loggingIn} variant="contained" type="submit">
                 {t('login')}
               </LoadingButton>

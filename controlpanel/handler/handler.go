@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/duo-labs/webauthn/protocol"
 	"github.com/duo-labs/webauthn/webauthn"
 	"github.com/gin-contrib/sessions"
 	redisess "github.com/gin-contrib/sessions/redis"
@@ -92,6 +93,9 @@ func prepareDependencies(cfg *config.Config, h *Handler) error {
 		RPDisplayName: "Premises",
 		RPID:          origin.Hostname(),
 		RPOrigin:      h.cfg.ControlPanel.Origin,
+		AuthenticatorSelection: protocol.AuthenticatorSelection{
+			UserVerification: protocol.VerificationPreferred,
+		},
 	})
 	if err != nil {
 		return err

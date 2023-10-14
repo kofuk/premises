@@ -10,7 +10,7 @@ export enum LoginResult {
 type AuthContextType = {
   loggedIn: boolean;
   login: (username: string, password: string) => Promise<LoginResult>;
-  loginWebAuthn: (username: string) => Promise<void>;
+  loginPasskeys: () => Promise<void>;
   logout: () => Promise<void>;
   initializePassword: (username: string, newPassword: string) => Promise<void>;
 };
@@ -60,16 +60,12 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
     return LoginResult.LoggedIn;
   };
 
-  const loginWebAuthn = async (username: string): Promise<void> => {
-    const params = new URLSearchParams();
-    params.append('username', username);
-
+  const loginPasskeys = async (): Promise<void> => {
     let beginResp: any = await fetch('/login/hardwarekey/begin', {
       method: 'post',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: params.toString()
+      }
     }).then((resp) => resp.json());
 
     if (!beginResp['success']) {
@@ -79,11 +75,8 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
     const options = beginResp['options'];
 
     options.publicKey.challenge = decodeBuffer(options.publicKey.challenge);
-    if (options.publicKey.allowCredentials) {
-      for (let i = 0; i < options.publicKey.allowCredentials.length; i++) {
-        options.publicKey.allowCredentials[i].id = decodeBuffer(options.publicKey.allowCredentials[i].id);
-      }
-    }
+    options.publicKey.allowCredentials = [];
+    options.mediation = 'conditional';
 
     const publicKeyCred = (await navigator.credentials.get(options)) as PublicKeyCredential;
     const rawId = publicKeyCred.rawId;
@@ -142,7 +135,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
   const value = {
     loggedIn,
     login,
-    loginWebAuthn,
+    loginPasskeys,
     logout,
     initializePassword
   };
@@ -152,4 +145,16 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
 
 export const useAuth = () => {
   return useContext(AuthContext);
+};
+
+export const passkeysSupported = async (): Promise<boolean> => {
+  try {
+    const supported = (
+      await Promise.all([PublicKeyCredential.isConditionalMediationAvailable(), PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()])
+    ).every((v) => v);
+
+    return supported;
+  } catch (_) {
+    return false;
+  }
 };

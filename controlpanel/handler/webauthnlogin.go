@@ -2,8 +2,8 @@ package handler
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
-	"encoding/json"
 	"net/http"
 
 	"github.com/duo-labs/webauthn/protocol"
@@ -41,16 +41,18 @@ func (u *webAuthnUser) WebAuthnCredentials() []webauthn.Credential {
 	return u.credentials
 }
 
-func (u *webAuthnUser) registerCredential(cred model.Credential) {
-	u.credentials = append(u.credentials, webauthn.Credential{
-		ID:              cred.CredentialID,
-		PublicKey:       cred.PublicKey,
-		AttestationType: cred.AttestationType,
-		Authenticator: webauthn.Authenticator{
-			AAGUID:    cred.AuthenticatorAAGUID,
-			SignCount: cred.AuthenticatorSignCount,
-		},
-	})
+func (u *webAuthnUser) registerCredential(creds ...model.Credential) {
+	for _, cred := range creds {
+		u.credentials = append(u.credentials, webauthn.Credential{
+			ID:              cred.CredentialID,
+			PublicKey:       cred.PublicKey,
+			AttestationType: cred.AttestationType,
+			Authenticator: webauthn.Authenticator{
+				AAGUID:    cred.AuthenticatorAAGUID,
+				SignCount: cred.AuthenticatorSignCount,
+			},
+		})
+	}
 }
 
 func (u *webAuthnUser) getCredentialExcludeList() []protocol.CredentialDescriptor {
@@ -66,46 +68,29 @@ func (u *webAuthnUser) getCredentialExcludeList() []protocol.CredentialDescripto
 
 func (h *Handler) handleLoginHardwarekeyBegin(c *gin.Context) {
 	if c.GetHeader("Origin") != h.cfg.ControlPanel.Origin {
-		c.Status(http.StatusBadGateway)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	username := c.PostForm("username")
-
-	user := model.User{}
-	if err := h.db.WithContext(c.Request.Context()).Where("name = ?", username).Preload("Credentials").First(&user).Error; err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "login.error")})
-		return
-	}
-
-	waUser := webAuthnUser{
-		user: user,
-	}
-	if len(user.Credentials) == 0 {
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "login.error")})
-		return
-	}
-	for _, c := range user.Credentials {
-		waUser.registerCredential(c)
-	}
-
-	options, sessionData, err := h.webauthn.BeginLogin(&waUser)
+	challenge, err := protocol.CreateChallenge()
 	if err != nil {
-		log.WithError(err).Error("error beginning login")
+		log.WithError(err).Error("Error creating challenge")
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
 		return
 	}
 
-	marshaled, err := json.Marshal(sessionData)
-	if err != nil {
-		log.WithError(err).Error("error beginning login")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
-		return
+	requestOptions := protocol.PublicKeyCredentialRequestOptions{
+		Challenge:          challenge,
+		Timeout:            h.webauthn.Config.Timeout,
+		RelyingPartyID:     h.webauthn.Config.RPID,
+		UserVerification:   h.webauthn.Config.AuthenticatorSelection.UserVerification,
+		AllowedCredentials: make([]protocol.CredentialDescriptor, 0),
 	}
+
+	options := protocol.CredentialAssertion{Response: requestOptions}
 
 	session := sessions.Default(c)
-	session.Set("hwkey_auth_user_id", user.ID)
-	session.Set("hwkey_authentication", string(marshaled))
+	session.Set("hwkey_challenge", base64.RawURLEncoding.EncodeToString(challenge))
 	session.Save()
 
 	c.JSON(http.StatusOK, gin.H{"success": true, "options": options})
@@ -118,21 +103,28 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 	}
 
 	session := sessions.Default(c)
-	userID := session.Get("hwkey_auth_user_id")
-	marshaledData := session.Get("hwkey_authentication")
-	session.Delete("hwkey_authentication")
-	session.Delete("hwkey_auth_user_id")
-	defer session.Save()
-
-	var sessionData webauthn.SessionData
-	if err := json.Unmarshal([]byte(marshaledData.(string)), &sessionData); err != nil {
-		log.WithError(err).Error("Failed to unmarshal session data")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+	challenge, ok := session.Get("hwkey_challenge").(string)
+	if !ok {
+		log.Error("Client have no challenge")
+		c.JSON(http.StatusOK, gin.H{"success": false, "reason": "bad request"})
 		return
 	}
+	session.Delete("hwkey_challenge")
+	defer session.Save()
+
+	parsedResponse, err := protocol.ParseCredentialRequestResponse(c.Request)
+	if err != nil {
+		log.WithError(err).Error("Error parsing credential request response")
+		c.JSON(http.StatusOK, gin.H{"success": false, "reason": "bad request"})
+	}
+
+	// TODO: Improve this logic.
+
+	userId := binary.BigEndian.Uint64(parsedResponse.Response.UserHandle)
 
 	user := model.User{}
-	if err := h.db.WithContext(c.Request.Context()).Preload("Credentials").Find(&user, userID).Error; err != nil {
+	if err := h.db.WithContext(c.Request.Context()).Preload("Credentials").Find(&user, userId).Error; err != nil {
+		log.WithError(err).Error("User not found")
 		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "login.error")})
 		return
 	}
@@ -140,13 +132,22 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 	waUser := webAuthnUser{
 		user: user,
 	}
-	for _, c := range user.Credentials {
-		waUser.registerCredential(c)
+	waUser.registerCredential(user.Credentials...)
+	var allowedCredentials [][]byte
+	for _, cred := range user.Credentials {
+		allowedCredentials = append(allowedCredentials, cred.CredentialID)
 	}
 
-	cred, err := h.webauthn.FinishLogin(&waUser, sessionData, c.Request)
+	sessionData := webauthn.SessionData{
+		Challenge:            challenge,
+		UserID:               waUser.WebAuthnID(),
+		AllowedCredentialIDs: allowedCredentials,
+		UserVerification:     h.webauthn.Config.AuthenticatorSelection.UserVerification,
+	}
+
+	cred, err := h.webauthn.ValidateLogin(&waUser, sessionData, parsedResponse)
 	if err != nil {
-		log.WithError(err).Error("error finishing login")
+		log.WithError(err).Error("error validating login")
 		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "login.error")})
 		return
 	}
@@ -175,7 +176,7 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 		log.WithError(err).Warn("failed to save credential")
 	}
 
-	session.Set("user_id", userID)
+	session.Set("user_id", userId)
 
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
