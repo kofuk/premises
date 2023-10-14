@@ -10,8 +10,6 @@ const i18nData = {
       username: 'User',
       password: 'Password',
       login: 'Login',
-      login_use_hardware_key: 'Have a hardware key?',
-      login_dont_use_hardware_key: 'Back to normal login',
       logging_in: 'Logging in…',
       next: 'Next',
       back: 'Back',
@@ -80,7 +78,8 @@ const i18nData = {
       add_user_submit: 'Add',
       set_password_title: 'Set Password',
       set_password_submit: 'Set password',
-      passwordless_login_description: 'You can login to Control Panel without password, using hardware security key.',
+      passwordless_login: 'Passkeys',
+      passwordless_login_description: 'You can login to Control Panel without password, using Passkeys.',
       passwordless_login_key_name: 'Key name',
       passwordless_login_add: 'Add Key',
       passwordless_login_error: 'Operation was disallowed or timed out'
@@ -94,8 +93,6 @@ const i18nData = {
       username: 'ユーザー名',
       password: 'パスワード',
       login: 'ログイン',
-      login_use_hardware_key: '物理キーをお持ちですか？',
-      login_dont_use_hardware_key: '通常のログインに戻る',
       logging_in: 'ログイン中…',
       next: '次へ',
       back: '戻る',
@@ -165,11 +162,11 @@ const i18nData = {
       add_user_submit: '追加',
       set_password_title: 'パスワードを設定',
       set_password_submit: 'パスワードを設定',
-      passwordless_login: 'パスワードなしでログイン',
-      passwordless_login_description: '物理キーを使ってコントロールパネルにパスワードなしでログインできます。',
+      passwordless_login: 'パスキー',
+      passwordless_login_description: 'パスキーを使ってコントロールパネルにパスワードなしでログインできます。',
       passwordless_login_key_name: 'キーの名前',
       passwordless_login_add: 'キーを追加',
-      passwordless_login_error: '物理キーへのアクセスが拒否されたかタイムアウトしました'
+      passwordless_login_error: 'パスキーへのアクセスが拒否されたかタイムアウトしました'
     }
   }
 };

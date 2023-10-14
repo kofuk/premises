@@ -1,8 +1,7 @@
-import {useState} from 'react';
-
+import {useState, useEffect} from 'react';
+import {passkeysSupported} from '@/utils/auth';
 import '@/i18n';
 import {t} from 'i18next';
-
 import PasswordlessLogin from './setting-item/passwordless-login';
 import ChangePassword from './setting-item/change-passowrd';
 import AddUser from './setting-item/add-user';
@@ -14,34 +13,43 @@ export default () => {
     setFeedback(message);
   };
 
+  const [passkeysAvailable, setPasskeysAvailable] = useState(false);
+  useEffect(() => {
+    (async () => {
+      setPasskeysAvailable(await passkeysSupported());
+    })();
+  }, []);
+
   return (
     <>
       {feedback === '' ? null : <div className="alert alert-danger">{feedback}</div>}
       <div className="accordion" id="accordionSettings">
-        <div className="accordion-item">
-          <h2 className="accordion-header" id="settings_heading_passwordlessLogin">
-            <button
-              className="accordion-button collapsed"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#settings_passwordlessLogin"
-              aria-expanded="false"
-              aria-controls="settings_passwordlessLogin"
+        {passkeysAvailable && (
+          <div className="accordion-item">
+            <h2 className="accordion-header" id="settings_heading_passwordlessLogin">
+              <button
+                className="accordion-button collapsed"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#settings_passwordlessLogin"
+                aria-expanded="false"
+                aria-controls="settings_passwordlessLogin"
+              >
+                {t('passwordless_login')}
+              </button>
+            </h2>
+            <div
+              id="settings_passwordlessLogin"
+              className="accordion-collapse collapse"
+              aria-labelledby="settings_heading_passwordlessLogin"
+              data-bs-parent="#accordionSettings"
             >
-              {t('passwordless_login')}
-            </button>
-          </h2>
-          <div
-            id="settings_passwordlessLogin"
-            className="accordion-collapse collapse"
-            aria-labelledby="settings_heading_passwordlessLogin"
-            data-bs-parent="#accordionSettings"
-          >
-            <div className="accordion-body">
-              <PasswordlessLogin updateFeedback={updateFeedback} />
+              <div className="accordion-body">
+                <PasswordlessLogin updateFeedback={updateFeedback} />
+              </div>
             </div>
           </div>
-        </div>
+        )}
         <div className="accordion-item">
           <h2 className="accordion-header" id="settings_heading_changePassword">
             <button
