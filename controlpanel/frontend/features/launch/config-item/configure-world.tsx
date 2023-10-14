@@ -1,10 +1,9 @@
-import * as React from 'react';
+import React from 'react';
 
-import '@/i18n';
-import {t} from 'i18next';
+import {useTranslation} from 'react-i18next';
 
-import {ItemProp} from './prop';
 import ConfigContainer from './config-container';
+import {ItemProp} from './prop';
 
 export enum LevelType {
   Default = 'default',
@@ -27,14 +26,7 @@ class LevelTypeInfo {
   };
 }
 
-const levelTypes: LevelTypeInfo[] = [
-  new LevelTypeInfo(LevelType.Default, t('world_type_default')),
-  new LevelTypeInfo(LevelType.Superflat, t('world_type_superflat')),
-  new LevelTypeInfo(LevelType.LargeBiomes, t('world_type_large_biomes')),
-  new LevelTypeInfo(LevelType.Amplified, t('world_type_amplified'))
-];
-
-export default ({
+const ConfigureWorld = ({
   isFocused,
   nextStep,
   requestFocus,
@@ -49,6 +41,15 @@ export default ({
   setLevelType: (val: LevelType) => void;
   setSeed: (val: string) => void;
 }) => {
+  const [t] = useTranslation();
+
+  const levelTypes: LevelTypeInfo[] = [
+    new LevelTypeInfo(LevelType.Default, t('world_type_default')),
+    new LevelTypeInfo(LevelType.Superflat, t('world_type_superflat')),
+    new LevelTypeInfo(LevelType.LargeBiomes, t('world_type_large_biomes')),
+    new LevelTypeInfo(LevelType.Amplified, t('world_type_amplified'))
+  ];
+
   return (
     <ConfigContainer title={t('config_configure_world')} isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum}>
       <div className="m-2">
@@ -75,3 +76,5 @@ export default ({
     </ConfigContainer>
   );
 };
+
+export default ConfigureWorld;

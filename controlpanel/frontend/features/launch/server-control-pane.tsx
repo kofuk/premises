@@ -1,15 +1,14 @@
 import React, {useState, useEffect} from 'react';
+
 import {FaStop} from '@react-icons/all-files/fa/FaStop';
-
-import '@/i18n';
-import {t} from 'i18next';
-
+import {useTranslation} from 'react-i18next';
 import {Line, LineChart, YAxis, Tooltip} from 'recharts';
-import ReconfigureMenu from '@/features/launch/reconfigure-menu';
-import Snapshot from '@/features/launch/control-item/snapshot';
+
 import QuickUndo from '@/features/launch/control-item/quickundo';
+import Snapshot from '@/features/launch/control-item/snapshot';
 import SystemInfo from '@/features/launch/control-item/system-info';
 import WorldInfo from '@/features/launch/control-item/world-info';
+import ReconfigureMenu from '@/features/launch/reconfigure-menu';
 
 enum Modes {
   MainMenu,
@@ -24,12 +23,14 @@ type Prop = {
   showError: (message: string) => void;
 };
 
-export default (props: Prop) => {
+const ServerControlPane = (props: Prop) => {
+  const [t] = useTranslation();
+
   const {showError} = props;
 
   const [mode, setMode] = useState(Modes.MainMenu);
   const [cpuUsage, setCpuUsage] = useState(
-    Array.apply(null, Array(100)).map((_) => {
+    [...Array(100)].map((_) => {
       return {cpuUsage: 0};
     })
   );
@@ -143,3 +144,5 @@ export default (props: Prop) => {
     </div>
   );
 };
+
+export default ServerControlPane;

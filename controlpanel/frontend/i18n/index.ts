@@ -1,5 +1,6 @@
 import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import {initReactI18next} from 'react-i18next';
 
 const i18nData = {
   en: {
@@ -171,10 +172,13 @@ const i18nData = {
   }
 };
 
-export default i18n.use(LanguageDetector).init({
-  resources: i18nData,
-  debug: false,
-  interpolation: {
-    escapeValue: false
-  }
-});
+export default i18n
+  .use(initReactI18next)
+  .use(LanguageDetector)
+  .init({
+    resources: i18nData,
+    debug: false,
+    interpolation: {
+      escapeValue: false
+    }
+  });

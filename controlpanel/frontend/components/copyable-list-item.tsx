@@ -1,15 +1,15 @@
-import {MdContentCopy} from '@react-icons/all-files/md/MdContentCopy';
+import React from 'react';
 
-import '../i18n';
-import {t} from 'i18next';
+import {MdContentCopy} from '@react-icons/all-files/md/MdContentCopy';
+import {useTranslation} from 'react-i18next';
 
 type Prop = {
   title: string;
   content: string;
 };
 
-export default (props: Prop) => {
-  const {title, content} = props;
+const CopyableListItem = ({title, content}: Prop) => {
+  const [t] = useTranslation();
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -30,3 +30,5 @@ export default (props: Prop) => {
     </div>
   );
 };
+
+export default CopyableListItem;

@@ -1,9 +1,9 @@
-import {useState, useEffect} from 'react';
+import React, {useState, useEffect} from 'react';
 
-import '@/i18n';
-import {t} from 'i18next';
-import {encodeBuffer, decodeBuffer} from '@/utils/base64url';
 import {FaTrash} from '@react-icons/all-files/fa/FaTrash';
+import {useTranslation} from 'react-i18next';
+
+import {encodeBuffer, decodeBuffer} from '@/utils/base64url';
 
 interface HardwareKey {
   id: string;
@@ -14,7 +14,9 @@ type Props = {
   updateFeedback: (message: string) => void;
 };
 
-export default (props: Props) => {
+const PasswordlessLogin = (props: Props) => {
+  const [t] = useTranslation();
+
   const {updateFeedback} = props;
 
   const [keyName, setKeyName] = useState('');
@@ -22,15 +24,18 @@ export default (props: Props) => {
   const [hardwareKeys, setHardwareKeys] = useState<HardwareKey[]>([]);
 
   const refreshHardwareKeys = () => {
-    fetch('/api/hardwarekey')
-      .then((resp) => resp.json())
-      .then((resp) => {
-        if (!resp['success']) {
-          updateFeedback(resp['reason']);
+    (async () => {
+      try {
+        const result = await fetch('/api/hardwarekey').then((resp) => resp.json());
+        if (!result['success']) {
+          updateFeedback(result['reason']);
           return;
         }
-        setHardwareKeys(resp['data']);
-      });
+        setHardwareKeys(result['data']);
+      } catch (err) {
+        console.log(err);
+      }
+    })();
   };
 
   useEffect(() => {
@@ -38,20 +43,19 @@ export default (props: Props) => {
   }, []);
 
   const handleAddKey = () => {
-    setCanContinue(false);
+    (async () => {
+      setCanContinue(false);
 
-    fetch('/api/hardwarekey/begin', {
-      method: 'post'
-    })
-      .then((resp) => resp.json())
-      .then((resp) => {
-        if (!resp['success']) {
-          updateFeedback(resp['reason']);
-          setCanContinue(true);
+      try {
+        const beginResp = await fetch('/api/hardwarekey/begin', {
+          method: 'post'
+        }).then((resp) => resp.json());
+        if (!beginResp['success']) {
+          updateFeedback(beginResp['reason']);
           return;
         }
 
-        const options = resp.options;
+        const options = beginResp.options;
 
         options.publicKey.challenge = decodeBuffer(options.publicKey.challenge);
         options.publicKey.user.id = decodeBuffer(options.publicKey.user.id);
@@ -61,19 +65,17 @@ export default (props: Props) => {
           }
         }
 
-        return navigator.credentials.create(options);
-      })
-      .then((cred) => {
+        const cred = await navigator.credentials.create(options);
         if (!cred) {
           throw 'error';
         }
 
-        let publicKeyCred = cred as PublicKeyCredential;
-        let attestationObject = (publicKeyCred.response as AuthenticatorAttestationResponse).attestationObject;
-        let clientDataJson = publicKeyCred.response.clientDataJSON;
-        let rawId = publicKeyCred.rawId;
+        const publicKeyCred = cred as PublicKeyCredential;
+        const attestationObject = (publicKeyCred.response as AuthenticatorAttestationResponse).attestationObject;
+        const clientDataJson = publicKeyCred.response.clientDataJSON;
+        const rawId = publicKeyCred.rawId;
 
-        return fetch('/api/hardwarekey/finish?name=' + encodeURI(keyName), {
+        const finishResp = await fetch('/api/hardwarekey/finish?name=' + encodeURI(keyName), {
           method: 'post',
           body: JSON.stringify({
             id: cred.id,
@@ -84,29 +86,21 @@ export default (props: Props) => {
               clientDataJSON: encodeBuffer(clientDataJson)
             }
           })
-        })
-          .then((resp) => resp.json())
-          .then((resp) => {
-            if (!resp['success']) {
-              updateFeedback(resp['reason']);
-              setCanContinue(true);
-              return;
-            }
-            setCanContinue(true);
-            setKeyName('');
-            refreshHardwareKeys();
-          })
-          .catch((_) => {
-            updateFeedback(t('passwordless_login_error'));
+        }).then((resp) => resp.json());
 
-            setCanContinue(true);
-          });
-      })
-      .catch((_) => {
+        if (!finishResp['success']) {
+          updateFeedback(finishResp['reason']);
+          return;
+        }
+        setKeyName('');
+        refreshHardwareKeys();
+      } catch (err) {
+        console.error(err);
         updateFeedback(t('passwordless_login_error'));
-
+      } finally {
         setCanContinue(true);
-      });
+      }
+    })();
   };
 
   const handleInputKeyName = (val: string) => {
@@ -114,13 +108,16 @@ export default (props: Props) => {
   };
 
   const deleteKey = (id: string) => {
-    fetch('/api/hardwarekey/' + id, {
-      method: 'delete'
-    }).then((resp) => {
-      if (resp.status === 204) {
-        refreshHardwareKeys();
+    (async () => {
+      try {
+        const resp = await fetch('/api/hardwarekey/' + id, {method: 'delete'});
+        if (resp.status === 204) {
+          refreshHardwareKeys();
+        }
+      } catch (err) {
+        console.error(err);
       }
-    });
+    })();
   };
 
   return (
@@ -180,3 +177,5 @@ export default (props: Props) => {
     </>
   );
 };
+
+export default PasswordlessLogin;

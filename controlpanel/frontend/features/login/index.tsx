@@ -1,13 +1,18 @@
-import {useEffect, useState} from 'react';
-import {Helmet} from 'react-helmet-async';
-import {t} from 'i18next';
+import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {useAuth} from '@/utils/auth';
+
+import {Helmet} from 'react-helmet-async';
+import {useTranslation} from 'react-i18next';
+
 import LoginForm from './components/login-form';
 import LoginFormCard from './components/login-form-card';
-import Snackbar from '@/components/snackbar';
 
-export default () => {
+import Snackbar from '@/components/snackbar';
+import {useAuth} from '@/utils/auth';
+
+const LoginPage = () => {
+  const [t] = useTranslation();
+
   const [feedback, setFeedback] = useState('');
 
   const navigate = useNavigate();
@@ -30,3 +35,5 @@ export default () => {
     </>
   );
 };
+
+export default LoginPage;

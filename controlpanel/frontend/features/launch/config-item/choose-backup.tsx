@@ -1,14 +1,22 @@
-import {useState, useEffect} from 'react';
+import React, {useState, useEffect} from 'react';
+
 import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
+import {useTranslation} from 'react-i18next';
 
-import '@/i18n';
-import {t} from 'i18next';
-
+import ConfigContainer from './config-container';
 import {ItemProp} from './prop';
 import {WorldBackup} from './world-backup';
-import ConfigContainer from './config-container';
 
-export default ({
+type Props = ItemProp & {
+  worldName: string;
+  backupGeneration: string;
+  useCachedWorld: boolean;
+  setWorldName: (val: string) => void;
+  setBackupGeneration: (val: string) => void;
+  setUseCachedWorld: (val: boolean) => void;
+};
+
+const ChooseBackup = ({
   isFocused,
   nextStep,
   requestFocus,
@@ -19,41 +27,32 @@ export default ({
   setBackupGeneration,
   useCachedWorld,
   setUseCachedWorld
-}: ItemProp & {
-  worldName: string;
-  backupGeneration: string;
-  useCachedWorld: boolean;
-  setWorldName: (val: string) => void;
-  setBackupGeneration: (val: string) => void;
-  setUseCachedWorld: (val: boolean) => void;
-}) => {
+}: Props) => {
+  const [t] = useTranslation();
+
   const [backups, setBackups] = useState<WorldBackup[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    fetch('/api/backups')
-      .then((resp) => resp.json())
-      .then((resp) => {
-        setBackups(resp);
-        if (resp.length > 0) {
-          setWorldName(resp[0].worldName);
-          setBackupGeneration(resp[0].generations[0].id);
-        }
-      });
+    refreshBackups();
   }, []);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetch('/api/backups?reload')
-      .then((resp) => resp.json())
-      .then((resp) => {
-        setBackups(resp);
-        if (resp.length > 0) {
-          setWorldName(resp[0].worldName);
-          setBackupGeneration(resp[0].generations[0].id);
+  const refreshBackups = (reload: boolean = false) => {
+    (async () => {
+      setRefreshing(true);
+      try {
+        const backups = await fetch(`/api/backups${reload ? '?reload' : ''}`).then((resp) => resp.json());
+        setBackups(backups);
+        if (backups.length > 0) {
+          setWorldName(backups[0].worldName);
+          setBackupGeneration(backups[0].generations[0].id);
         }
+      } catch (err) {
+        console.error(err);
+      } finally {
         setRefreshing(false);
-      });
+      }
+    })();
   };
 
   const handleChangeWorld = (worldName: string) => {
@@ -119,7 +118,7 @@ export default ({
           </label>
         </div>
         <div className="m-1">
-          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleRefresh} disabled={refreshing}>
+          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => refreshBackups(true)} disabled={refreshing}>
             {refreshing ? <div className="spinner-border spinner-border-sm me-1" role="status"></div> : <IoIosRefresh />}
             {t('refresh')}
           </button>
@@ -149,3 +148,5 @@ export default ({
     </ConfigContainer>
   );
 };
+
+export default ChooseBackup;

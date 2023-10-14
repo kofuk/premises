@@ -1,12 +1,15 @@
 import React, {useState, useEffect} from 'react';
-import '@/i18n';
-import {t} from 'i18next';
-import StatusBar from './statusbar';
-import ServerControlPane from './server-control-pane';
-import ServerConfigPane from './server-config-pane';
-import {Helmet} from 'react-helmet-async';
 
-export default () => {
+import {Helmet} from 'react-helmet-async';
+import {useTranslation} from 'react-i18next';
+
+import ServerConfigPane from './server-config-pane';
+import ServerControlPane from './server-control-pane';
+import StatusBar from './statusbar';
+
+const LaunchPage = () => {
+  const [t] = useTranslation();
+
   const [useNotification, setUseNotification] = useState(false);
   const [isServerShutdown, setIsServerShutdown] = useState(true);
   const [isError, setIsError] = useState(false);
@@ -58,13 +61,18 @@ export default () => {
   };
 
   const requestNotification = () => {
-    Notification.requestPermission().then((result) => {
-      const granted = result === 'granted';
-      setUseNotification(granted);
-      if (granted) {
-        closeNotificationToast();
+    (async () => {
+      try {
+        const result = await Notification.requestPermission();
+        const granted = result === 'granted';
+        setUseNotification(granted);
+        if (granted) {
+          closeNotificationToast();
+        }
+      } catch (err) {
+        console.error(err);
       }
-    });
+    })();
   };
 
   const mainPane: React.ReactElement = isServerShutdown ? <ServerConfigPane showError={showError} /> : <ServerControlPane showError={showError} />;
@@ -95,3 +103,5 @@ export default () => {
     </>
   );
 };
+
+export default LaunchPage;

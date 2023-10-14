@@ -1,9 +1,13 @@
-import {t} from 'i18next';
-import {Tooltip, Toolbar, IconButton, Typography} from '@mui/material';
-import styled from 'styled-components';
-import {Settings as SettingsIcon, Logout as LogoutIcon} from '@mui/icons-material';
-import {useAuth} from '@/utils/auth';
+import React from 'react';
 import {useNavigate} from 'react-router-dom';
+
+import {useTranslation} from 'react-i18next';
+import styled from 'styled-components';
+
+import {Settings as SettingsIcon, Logout as LogoutIcon} from '@mui/icons-material';
+import {Tooltip, Toolbar, IconButton, Typography} from '@mui/material';
+
+import {useAuth} from '@/utils/auth';
 
 const RoundedAppBar = styled.div`
   position: sticky;
@@ -17,13 +21,20 @@ const RoundedAppBar = styled.div`
   z-index: 1;
 `;
 
-export default () => {
+const NavBar = () => {
+  const [t] = useTranslation();
+
   const navigate = useNavigate();
   const {logout} = useAuth();
   const handleLogout = () => {
-    logout().then(() => {
-      navigate('/', {replace: true});
-    });
+    (async () => {
+      try {
+        await logout();
+        navigate('/', {replace: true});
+      } catch (err) {
+        console.error(err);
+      }
+    })();
   };
 
   return (
@@ -47,3 +58,5 @@ export default () => {
     </RoundedAppBar>
   );
 };
+
+export default NavBar;

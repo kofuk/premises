@@ -1,8 +1,8 @@
-import {ReactNode} from 'react';
-import {Box, Card, Typography, CardContent} from '@mui/material';
-import '@/i18n';
+import React, {ReactNode} from 'react';
 
-export default ({title, children}: {title: string; children: ReactNode}) => {
+import {Box, Card, Typography, CardContent} from '@mui/material';
+
+const LoginFormCard = ({title, children}: {title: string; children: ReactNode}) => {
   return (
     <Box display="flex" justifyContent="center">
       <Card sx={{minWidth: 350, p: 3, mt: 5}}>
@@ -16,3 +16,5 @@ export default ({title, children}: {title: string; children: ReactNode}) => {
     </Box>
   );
 };
+
+export default LoginFormCard;

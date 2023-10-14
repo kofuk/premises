@@ -1,10 +1,9 @@
-import * as React from 'react';
+import React from 'react';
 
-import '@/i18n';
-import {t} from 'i18next';
+import {useTranslation} from 'react-i18next';
 
-import {ItemProp} from '@/features/launch/config-item/prop';
 import ConfigContainer from '@/features/launch/config-item/config-container';
+import {ItemProp} from '@/features/launch/config-item/prop';
 
 class Machine {
   name: string;
@@ -53,7 +52,7 @@ const machines: Machine[] = [
   new Machine('64g', 64, 24, 96.8)
 ];
 
-export default ({
+const MachineType = ({
   isFocused,
   nextStep,
   requestFocus,
@@ -64,6 +63,8 @@ export default ({
   machineType: string;
   setMachineType: (val: string) => void;
 }) => {
+  const [t] = useTranslation();
+
   const handleClick = (val: string) => {
     setMachineType(val);
   };
@@ -81,3 +82,5 @@ export default ({
     </ConfigContainer>
   );
 };
+
+export default MachineType;

@@ -1,9 +1,8 @@
-import {useState, useEffect} from 'react';
+import React, {useState, useEffect} from 'react';
+
 import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
 import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
-
-import '@/i18n';
-import {t} from 'i18next';
+import {useTranslation} from 'react-i18next';
 
 import CopyableListItem from '@/components/copyable-list-item';
 
@@ -21,29 +20,30 @@ type WorldInfoData = {
   world: WorldDetail;
 };
 
-export default (props: Prop) => {
+const WorldInfo = (props: Prop) => {
+  const [t] = useTranslation();
+
   const {backToMenu} = props;
 
   const [worldInfo, setWorldInfo] = useState<WorldInfoData | null>(null);
   const [refreshing, setRefreshing] = useState(true);
 
   useEffect(() => {
-    fetch('/api/worldinfo')
-      .then((resp) => resp.json())
-      .then((resp) => {
-        setWorldInfo(resp);
-        setRefreshing(false);
-      });
+    refreshInfo();
   }, []);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetch('/api/worldinfo')
-      .then((resp) => resp.json())
-      .then((resp) => {
-        setWorldInfo(resp);
+  const refreshInfo = () => {
+    (async () => {
+      setRefreshing(true);
+      try {
+        const worldInfo = await fetch('/api/worldinfo').then((resp) => resp.json());
+        setWorldInfo(worldInfo);
+      } catch (err) {
+        console.error(err);
+      } finally {
         setRefreshing(false);
-      });
+      }
+    })();
   };
 
   let mainContents: React.ReactElement;
@@ -66,7 +66,7 @@ export default (props: Prop) => {
       </button>
       <div className="m-2">{mainContents}</div>
       <div className="m-1">
-        <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleRefresh} disabled={refreshing}>
+        <button type="button" className="btn btn-sm btn-outline-secondary" onClick={refreshInfo} disabled={refreshing}>
           {refreshing ? <div className="spinner-border spinner-border-sm me-1" role="status"></div> : <IoIosRefresh />}
           {t('refresh')}
         </button>
@@ -74,3 +74,5 @@ export default (props: Prop) => {
     </div>
   );
 };
+
+export default WorldInfo;

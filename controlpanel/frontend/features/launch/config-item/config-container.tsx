@@ -1,8 +1,9 @@
-import {ReactNode} from 'react';
+import React, {ReactNode} from 'react';
+
 import {ItemProp} from './prop';
 import StepTitle from './step-title';
 
-export default ({
+const ConfigContainer = ({
   title,
   isFocused,
   requestFocus,
@@ -31,3 +32,5 @@ export default ({
     </div>
   );
 };
+
+export default ConfigContainer;

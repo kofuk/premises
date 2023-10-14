@@ -1,13 +1,14 @@
-import {useState} from 'react';
+import React, {useState} from 'react';
 
-import '@/i18n';
-import {t} from 'i18next';
+import {useTranslation} from 'react-i18next';
 
 type Props = {
   updateFeedback: (message: string) => void;
 };
 
-export default (props: Props) => {
+const ChangePassword = (props: Props) => {
+  const [t] = useTranslation();
+
   const {updateFeedback} = props;
   const [canChangePassword, setCanChangePassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -47,22 +48,22 @@ export default (props: Props) => {
   };
 
   const handleChangePassword = () => {
-    setCanChangePassword(false);
+    (async () => {
+      setCanChangePassword(false);
 
-    const params = new URLSearchParams();
-    params.append('password', currentPassword);
-    params.append('new-password', newPassword);
+      const params = new URLSearchParams();
+      params.append('password', currentPassword);
+      params.append('new-password', newPassword);
 
-    fetch('/api/users/change-password', {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: params.toString()
-    })
-      .then((resp) => resp.json())
-      .then((resp) => {
-        if (resp['success']) {
+      try {
+        const result = await fetch('/api/users/change-password', {
+          method: 'post',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: params.toString()
+        }).then((resp) => resp.json());
+        if (result['success']) {
           setCurrentPassword('');
           setNewPassword('');
           setNewPasswordConfirm('');
@@ -72,9 +73,12 @@ export default (props: Props) => {
         } else {
           setCanChangePassword(true);
           setPasswordSuccess(false);
-          updateFeedback(resp['reason']);
+          updateFeedback(result['reason']);
         }
-      });
+      } catch (err) {
+        console.error(err);
+      }
+    })();
   };
 
   return (
@@ -136,3 +140,5 @@ export default (props: Props) => {
     </form>
   );
 };
+
+export default ChangePassword;

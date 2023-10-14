@@ -1,6 +1,8 @@
+import React from 'react';
+
 import {Box, Skeleton} from '@mui/material';
 
-export default () => {
+const Loading = () => {
   return (
     <Box sx={{width: '70%', m: '0 auto'}}>
       <Skeleton animation="wave" height={200} />
@@ -10,3 +12,5 @@ export default () => {
     </Box>
   );
 };
+
+export default Loading;

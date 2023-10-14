@@ -1,5 +1,7 @@
-import Premises from './premises';
+import React from 'react';
 import {createRoot} from 'react-dom/client';
+
+import Premises from './premises';
 
 // For material UI
 import '@fontsource/roboto/300.css';

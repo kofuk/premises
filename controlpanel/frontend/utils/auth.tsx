@@ -1,6 +1,7 @@
 import React, {ReactNode, useState, useEffect, useContext} from 'react';
-import {encodeBuffer, decodeBuffer} from '@/utils/base64url';
+
 import Loading from '@/components/loading';
+import {encodeBuffer, decodeBuffer} from '@/utils/base64url';
 
 export enum LoginResult {
   LoggedIn,
@@ -18,8 +19,8 @@ type AuthContextType = {
 const AuthContext = React.createContext<AuthContextType>(null!);
 
 export const AuthProvider = ({children}: {children: ReactNode}) => {
-  let [loggedIn, setLoggedIn] = useState(false);
-  let [initialized, setInitialized] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   useEffect(() => {
     (async () => {
       const loggedIn = await fetch('/api/current-user')
@@ -61,7 +62,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
   };
 
   const loginPasskeys = async (): Promise<void> => {
-    let beginResp: any = await fetch('/login/hardwarekey/begin', {
+    const beginResp: any = await fetch('/login/hardwarekey/begin', {
       method: 'post',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -92,7 +93,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
           authenticatorData: encodeBuffer(authenticatorData),
           clientDataJSON: encodeBuffer(clientDataJSON),
           signature: encodeBuffer(signature),
-          userHandle: encodeBuffer(userHandle!!)
+          userHandle: encodeBuffer(userHandle ?? new ArrayBuffer(0))
         }
       })
     }).then((resp) => resp.json());

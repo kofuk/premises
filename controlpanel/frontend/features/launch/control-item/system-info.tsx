@@ -1,8 +1,7 @@
-import {useState, useEffect} from 'react';
-import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
+import React, {useState, useEffect} from 'react';
 
-import '@/i18n';
-import {t} from 'i18next';
+import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
+import {useTranslation} from 'react-i18next';
 
 import CopyableListItem from '@/components/copyable-list-item';
 
@@ -15,17 +14,20 @@ type SystemInfoData = {
   hostOS: string;
 } | null;
 
-export default (props: Prop) => {
-  const {backToMenu} = props;
+const SystemInfo = ({backToMenu}: Prop) => {
+  const [t] = useTranslation();
 
   const [systemInfo, setSystemInfo] = useState<SystemInfoData | null>(null);
 
   useEffect(() => {
-    fetch('/api/systeminfo')
-      .then((resp) => resp.json())
-      .then((resp) => {
-        setSystemInfo(resp);
-      });
+    (async () => {
+      try {
+        const systemInfo = await fetch('/api/systeminfo').then((resp) => resp.json());
+        setSystemInfo(systemInfo);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
   }, []);
 
   let mainContents: React.ReactElement;
@@ -49,3 +51,5 @@ export default (props: Prop) => {
     </div>
   );
 };
+
+export default SystemInfo;

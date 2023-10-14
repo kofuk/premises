@@ -1,23 +1,22 @@
-import {useState} from 'react';
+import React, {useState} from 'react';
+
 import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
+import {useTranslation} from 'react-i18next';
 
-import '@/i18n';
-import {t} from 'i18next';
-
-import ServerVersion from '@/features/launch/config-item/server-version';
-import WorldSource from '@/features/launch/config-item/world-source';
-import {WorldLocation} from '@/features/launch/config-item/world-source';
 import ChooseBackup from '@/features/launch/config-item/choose-backup';
+import ConfigureWorld, {LevelType} from '@/features/launch/config-item/configure-world';
+import ServerVersion from '@/features/launch/config-item/server-version';
 import WorldName from '@/features/launch/config-item/world-name';
-import ConfigureWorld from '@/features/launch/config-item/configure-world';
-import {LevelType} from '@/features/launch/config-item/configure-world';
+import WorldSource, {WorldLocation} from '@/features/launch/config-item/world-source';
 
 type Prop = {
   backToMenu: () => void;
   showError: (message: string) => void;
 };
 
-export default (props: Prop) => {
+const ReconfigureMenu = (props: Prop) => {
+  const [t] = useTranslation();
+
   const {backToMenu, showError} = props;
 
   const [serverVersion, setServerVersion] = useState('');
@@ -30,34 +29,37 @@ export default (props: Prop) => {
   const [currentStep, setCurrentStep] = useState(0);
 
   const handleStart = () => {
-    const data = new URLSearchParams();
-    data.append('server-version', serverVersion);
-    data.append('world-source', worldSource);
-    if (worldSource === WorldLocation.Backups) {
-      data.append('world-name', worldName);
-      data.append('backup-generation', backupGeneration);
-      data.append('use-cache', useCachedWorld.toString());
-    } else {
-      data.append('world-name', worldName);
-      data.append('seed', seed);
-      data.append('level-type', levelType);
-    }
+    (async () => {
+      const data = new URLSearchParams();
+      data.append('server-version', serverVersion);
+      data.append('world-source', worldSource);
+      if (worldSource === WorldLocation.Backups) {
+        data.append('world-name', worldName);
+        data.append('backup-generation', backupGeneration);
+        data.append('use-cache', useCachedWorld.toString());
+      } else {
+        data.append('world-name', worldName);
+        data.append('seed', seed);
+        data.append('level-type', levelType);
+      }
 
-    fetch('/api/reconfigure', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: data.toString()
-    })
-      .then((resp) => resp.json())
-      .then((resp) => {
-        if (resp['success']) {
+      try {
+        const result = await fetch('/api/reconfigure', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: data.toString()
+        }).then((resp) => resp.json());
+        if (result['success']) {
           backToMenu();
         } else {
-          showError(resp['message']);
+          showError(result['message']);
         }
-      });
+      } catch (err) {
+        console.error(err);
+      }
+    })();
   };
 
   const xSetWorldSource = (worldSource: WorldLocation) => {
@@ -179,3 +181,5 @@ export default (props: Prop) => {
     </div>
   );
 };
+
+export default ReconfigureMenu;

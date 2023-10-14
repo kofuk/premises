@@ -1,12 +1,16 @@
-import {useState, useEffect} from 'react';
-import {passkeysSupported} from '@/utils/auth';
-import '@/i18n';
-import {t} from 'i18next';
-import PasswordlessLogin from './setting-item/passwordless-login';
-import ChangePassword from './setting-item/change-passowrd';
-import AddUser from './setting-item/add-user';
+import React, {useState, useEffect} from 'react';
 
-export default () => {
+import {useTranslation} from 'react-i18next';
+
+import AddUser from './setting-item/add-user';
+import ChangePassword from './setting-item/change-passowrd';
+import PasswordlessLogin from './setting-item/passwordless-login';
+
+import {passkeysSupported} from '@/utils/auth';
+
+const SettingsPage = () => {
+  const [t] = useTranslation();
+
   const [feedback, setFeedback] = useState('');
 
   const updateFeedback = (message: string) => {
@@ -102,3 +106,5 @@ export default () => {
     </>
   );
 };
+
+export default SettingsPage;

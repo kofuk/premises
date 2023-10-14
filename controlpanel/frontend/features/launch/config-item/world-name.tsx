@@ -1,13 +1,12 @@
-import {useState, useEffect} from 'react';
+import React, {useState, useEffect} from 'react';
 
-import '@/i18n';
-import {t} from 'i18next';
+import {useTranslation} from 'react-i18next';
 
+import ConfigContainer from '@/features/launch/config-item/config-container';
 import {ItemProp} from '@/features/launch/config-item/prop';
 import {WorldBackup} from '@/features/launch/config-item/world-backup';
-import ConfigContainer from '@/features/launch/config-item/config-container';
 
-export default ({
+const WorldName = ({
   isFocused,
   nextStep,
   requestFocus,
@@ -18,16 +17,21 @@ export default ({
   worldName: string;
   setWorldName: (val: string) => void;
 }) => {
+  const [t] = useTranslation();
+
   const [backups, setBackups] = useState<WorldBackup[]>([]);
   const [duplicateName, setDuplicateName] = useState(false);
   const [invalidName, setInvalidName] = useState(false);
 
   useEffect(() => {
-    fetch('/api/backups')
-      .then((resp) => resp.json())
-      .then((resp) => {
-        setBackups(resp);
-      });
+    (async () => {
+      try {
+        const backups = await fetch('/api/backups').then((resp) => resp.json());
+        setBackups(backups);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
   }, []);
 
   const handleChange = (val: string) => {
@@ -84,3 +88,5 @@ export default ({
     </ConfigContainer>
   );
 };
+
+export default WorldName;

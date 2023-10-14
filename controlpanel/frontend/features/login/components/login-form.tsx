@@ -1,18 +1,22 @@
-import {useState, useEffect} from 'react';
-import KeyIcon from '@mui/icons-material/Key';
-import {DialogActions, DialogContent, DialogTitle, Dialog, ButtonGroup, Tooltip, Stack, Button, TextField} from '@mui/material';
-import {LoadingButton} from '@mui/lab';
-import '@/i18n';
-import {t} from 'i18next';
+import React, {useState, useEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {LoginResult, useAuth, passkeysSupported} from '@/utils/auth';
+
 import {useForm} from 'react-hook-form';
+import {useTranslation} from 'react-i18next';
+
+import KeyIcon from '@mui/icons-material/Key';
+import {LoadingButton} from '@mui/lab';
+import {DialogActions, DialogContent, DialogTitle, Dialog, ButtonGroup, Tooltip, Stack, Button, TextField} from '@mui/material';
+
+import {LoginResult, useAuth, passkeysSupported} from '@/utils/auth';
 
 interface Prop {
   setFeedback: (feedback: string) => void;
 }
 
-export default ({setFeedback}: Prop) => {
+const LoginForm = ({setFeedback}: Prop) => {
+  const [t] = useTranslation();
+
   const loginForm = useForm();
   const resetPasswdForm = useForm();
 
@@ -24,35 +28,32 @@ export default ({setFeedback}: Prop) => {
   const {login, loginPasskeys, initializePassword} = useAuth();
 
   const handleLogin = ({username, password}: any) => {
-    setLoggingIn(true);
-
-    login(username, password).then(
-      (result) => {
+    (async () => {
+      setLoggingIn(true);
+      try {
+        const result = await login(username, password);
         if (result === LoginResult.LoggedIn) {
           setLoggingIn(false);
           navigate('/launch', {replace: true});
         } else {
           setOpenResetPasswordDialog(true);
         }
-      },
-      (err) => {
+      } catch (err: any) {
         setLoggingIn(false);
         setFeedback(err.message);
       }
-    );
+    })();
   };
 
   const handlePasskeys = async () => {
-    loginPasskeys().then(
-      () => {
-        setLoggingIn(false);
-        navigate('/launch', {replace: true});
-      },
-      (err) => {
-        setLoggingIn(false);
-        setFeedback(err.message);
-      }
-    );
+    try {
+      await loginPasskeys();
+      setLoggingIn(false);
+      navigate('/launch', {replace: true});
+    } catch (err: any) {
+      setLoggingIn(false);
+      setFeedback(err.message);
+    }
   };
 
   const [passkeysAvailable, setPasskeysAvailable] = useState(false);
@@ -71,14 +72,15 @@ export default ({setFeedback}: Prop) => {
   );
 
   const handleChangePassword = ({password}: any) => {
-    initializePassword(loginForm.getValues('username'), password).then(
-      () => {
+    (async () => {
+      try {
+        await initializePassword(loginForm.getValues('username'), password);
         navigate('/launch', {replace: true});
-      },
-      (err) => {
+      } catch (err: any) {
+        console.error(err);
         setFeedback(err.message);
       }
-    );
+    })();
   };
 
   return (
@@ -137,3 +139,5 @@ export default ({setFeedback}: Prop) => {
     </>
   );
 };
+
+export default LoginForm;

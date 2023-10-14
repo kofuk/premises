@@ -1,13 +1,14 @@
-import {useState} from 'react';
+import React, {useState} from 'react';
 
-import '@/i18n';
-import {t} from 'i18next';
+import {useTranslation} from 'react-i18next';
 
 type Props = {
   updateFeedback: (message: string) => void;
 };
 
-export default (props: Props) => {
+const AddUser = (props: Props) => {
+  const [t] = useTranslation();
+
   const {updateFeedback} = props;
 
   const [canContinue, setCanContinue] = useState(false);
@@ -17,22 +18,22 @@ export default (props: Props) => {
   const [success, setSuccess] = useState(false);
 
   const handleAddUser = () => {
-    setCanContinue(false);
+    (async () => {
+      setCanContinue(false);
 
-    const params = new URLSearchParams();
-    params.append('username', userName);
-    params.append('password', password);
+      try {
+        const params = new URLSearchParams();
+        params.append('username', userName);
+        params.append('password', password);
 
-    fetch('/api/users/add', {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: params.toString()
-    })
-      .then((resp) => resp.json())
-      .then((resp) => {
-        if (resp['success']) {
+        const result = await fetch('/api/users/add', {
+          method: 'post',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: params.toString()
+        }).then((resp) => resp.json());
+        if (result['success']) {
           setCanContinue(false);
           setUserName('');
           setPassword('');
@@ -40,8 +41,11 @@ export default (props: Props) => {
           setSuccess(true);
           return;
         }
-        updateFeedback(resp['reason']);
-      });
+        updateFeedback(result['reason']);
+      } catch (err) {
+        console.error(err);
+      }
+    })();
   };
 
   const handleInputUserName = (val: string) => {
@@ -118,3 +122,5 @@ export default (props: Props) => {
     </form>
   );
 };
+
+export default AddUser;

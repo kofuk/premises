@@ -1,15 +1,18 @@
 import React, {Suspense} from 'react';
-import {BrowserRouter} from 'react-router-dom';
+import {BrowserRouter, Routes, Route} from 'react-router-dom';
+
 import {HelmetProvider} from 'react-helmet-async';
-import {Routes, Route} from 'react-router-dom';
-import {AuthProvider} from './utils/auth';
+
 import Loading from './components/loading';
+import {AuthProvider} from './utils/auth';
 const LaunchPage = React.lazy(() => import('@/features/launch'));
 const LoginPage = React.lazy(() => import('@/features/login'));
 const UI = React.lazy(() => import('@/features/ui'));
 const Settings = React.lazy(() => import('@/features/settings'));
 
-export default () => {
+import './i18n';
+
+const Premises = () => {
   return (
     <React.StrictMode>
       <HelmetProvider>
@@ -32,3 +35,5 @@ export default () => {
     </React.StrictMode>
   );
 };
+
+export default Premises;

@@ -1,42 +1,51 @@
-import {useState} from 'react';
-import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
+import React, {useState} from 'react';
 
-import '@/i18n';
-import {t} from 'i18next';
+import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
+import {useTranslation} from 'react-i18next';
 
 type Prop = {
   backToMenu: () => void;
   showError: (message: string) => void;
 };
 
-export default (props: Prop) => {
+const QuickUndo = (props: Prop) => {
+  const [t] = useTranslation();
+
   const {backToMenu, showError} = props;
   const [isRequesting, setIsRequesting] = useState(false);
 
   const handleSnapshot = () => {
-    setIsRequesting(true);
-    fetch('/api/quickundo/snapshot', {method: 'POST'})
-      .then((resp) => resp.json())
-      .then((resp) => {
-        setIsRequesting(false);
-        if (!resp['success']) {
-          showError(resp['message']);
+    (async () => {
+      setIsRequesting(true);
+      try {
+        const result = await fetch('/api/quickundo/snapshot', {method: 'POST'}).then((resp) => resp.json());
+        if (!result['success']) {
+          showError(result['message']);
           return;
         }
-      });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsRequesting(false);
+      }
+    })();
   };
 
   const handleUndo = () => {
-    setIsRequesting(true);
-    fetch('/api/quickundo/undo', {method: 'POST'})
-      .then((resp) => resp.json())
-      .then((resp) => {
-        setIsRequesting(false);
-        if (!resp['success']) {
-          showError(resp['message']);
+    (async () => {
+      setIsRequesting(true);
+      try {
+        const result = await fetch('/api/quickundo/undo', {method: 'POST'}).then((resp) => resp.json());
+        if (!result['success']) {
+          showError(result['message']);
           return;
         }
-      });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsRequesting(false);
+      }
+    })();
   };
 
   return (
@@ -65,3 +74,5 @@ export default (props: Prop) => {
     </div>
   );
 };
+
+export default QuickUndo;

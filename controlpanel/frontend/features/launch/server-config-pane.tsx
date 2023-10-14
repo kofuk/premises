@@ -1,23 +1,22 @@
-import {useState} from 'react';
+import React, {useState} from 'react';
+
 import {VscDebugStart} from '@react-icons/all-files/vsc/VscDebugStart';
+import {useTranslation} from 'react-i18next';
 
-import '@/i18n';
-import {t} from 'i18next';
-
+import ChooseBackup from '@/features/launch/config-item/choose-backup';
+import ConfigureWorld, {LevelType} from '@/features/launch/config-item/configure-world';
 import MachineType from '@/features/launch/config-item/machine-type';
 import ServerVersion from '@/features/launch/config-item/server-version';
-import WorldSource from '@/features/launch/config-item/world-source';
-import {WorldLocation} from '@/features/launch/config-item/world-source';
-import ChooseBackup from '@/features/launch/config-item/choose-backup';
 import WorldName from '@/features/launch/config-item/world-name';
-import ConfigureWorld from '@/features/launch/config-item/configure-world';
-import {LevelType} from '@/features/launch/config-item/configure-world';
+import WorldSource, {WorldLocation} from '@/features/launch/config-item/world-source';
 
 type Prop = {
   showError: (message: string) => void;
 };
 
-export default (props: Prop) => {
+const ServerConfigPane = (props: Prop) => {
+  const [t] = useTranslation();
+
   const {showError} = props;
 
   const [machineType, setMachineType] = useState('4g');
@@ -31,33 +30,36 @@ export default (props: Prop) => {
   const [currentStep, setCurrentStep] = useState(0);
 
   const handleStart = () => {
-    const data = new URLSearchParams();
-    data.append('machine-type', machineType);
-    data.append('server-version', serverVersion);
-    data.append('world-source', worldSource);
-    if (worldSource === WorldLocation.Backups) {
-      data.append('world-name', worldName);
-      data.append('backup-generation', backupGeneration);
-      data.append('use-cache', useCachedWorld.toString());
-    } else {
-      data.append('world-name', worldName);
-      data.append('seed', seed);
-      data.append('level-type', levelType);
-    }
+    (async () => {
+      const data = new URLSearchParams();
+      data.append('machine-type', machineType);
+      data.append('server-version', serverVersion);
+      data.append('world-source', worldSource);
+      if (worldSource === WorldLocation.Backups) {
+        data.append('world-name', worldName);
+        data.append('backup-generation', backupGeneration);
+        data.append('use-cache', useCachedWorld.toString());
+      } else {
+        data.append('world-name', worldName);
+        data.append('seed', seed);
+        data.append('level-type', levelType);
+      }
 
-    fetch('/api/launch', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: data.toString()
-    })
-      .then((resp) => resp.json())
-      .then((resp) => {
-        if (!resp['success']) {
-          showError(resp['message']);
+      try {
+        const result = await fetch('/api/launch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: data.toString()
+        }).then((resp) => resp.json());
+        if (!result['success']) {
+          showError(result['message']);
         }
-      });
+      } catch (err) {
+        console.error(err);
+      }
+    })();
   };
 
   const xSetWorldSource = (worldSource: WorldLocation) => {
@@ -192,3 +194,5 @@ export default (props: Prop) => {
     </div>
   );
 };
+
+export default ServerConfigPane;

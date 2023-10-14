@@ -1,15 +1,16 @@
-import '@/i18n';
-import {t} from 'i18next';
+import React from 'react';
 
-import {ItemProp} from '@/features/launch/config-item/prop';
+import {useTranslation} from 'react-i18next';
+
 import ConfigContainer from '@/features/launch/config-item/config-container';
+import {ItemProp} from '@/features/launch/config-item/prop';
 
 export enum WorldLocation {
   Backups = 'backups',
   NewWorld = 'new-world'
 }
 
-export default ({
+const WorldSource = ({
   isFocused,
   nextStep,
   requestFocus,
@@ -17,6 +18,8 @@ export default ({
   worldSource,
   setWorldSource
 }: ItemProp & {worldSource: WorldLocation; setWorldSource: (val: WorldLocation) => void}) => {
+  const [t] = useTranslation();
+
   const handleChange = (val: string) => {
     setWorldSource(val === 'backups' ? WorldLocation.Backups : WorldLocation.NewWorld);
   };
@@ -60,3 +63,5 @@ export default ({
     </ConfigContainer>
   );
 };
+
+export default WorldSource;

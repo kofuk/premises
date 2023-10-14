@@ -1,11 +1,10 @@
-import {useState, useEffect} from 'react';
+import React, {useState, useEffect} from 'react';
+
 import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
+import {useTranslation} from 'react-i18next';
 
-import '@/i18n';
-import {t} from 'i18next';
-
-import {ItemProp} from '@/features/launch/config-item/prop';
 import ConfigContainer from '@/features/launch/config-item/config-container';
+import {ItemProp} from '@/features/launch/config-item/prop';
 
 type McVersion = {
   name: string;
@@ -14,7 +13,7 @@ type McVersion = {
   releaseDate: string;
 };
 
-export default ({
+const ServerVersion = ({
   isFocused,
   nextStep,
   requestFocus,
@@ -25,6 +24,8 @@ export default ({
   serverVersion: string;
   setServerVersion: (val: string) => void;
 }) => {
+  const [t] = useTranslation();
+
   const [mcVersions, setMcVersions] = useState<McVersion[]>([]);
   const [showStable, setShowStable] = useState(true);
   const [showSnapshot, setShowSnapshot] = useState(false);
@@ -33,23 +34,22 @@ export default ({
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    fetch('/api/mcversions')
-      .then((resp) => resp.json())
-      .then((resp) => {
-        setMcVersions(resp);
-        postUpdateCondition(resp);
-      });
+    refreshVersions();
   }, []);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetch('/api/mcversions?reload')
-      .then((resp) => resp.json())
-      .then((resp) => {
-        setMcVersions(resp);
-        postUpdateCondition(resp);
+  const refreshVersions = (reload: boolean = false) => {
+    (async () => {
+      setRefreshing(true);
+      try {
+        const versions = await fetch(`/api/mcversions${reload ? '?reload' : ''}`).then((resp) => resp.json());
+        setMcVersions(versions);
+        postUpdateCondition(versions);
+      } catch (err) {
+        console.error(err);
+      } finally {
         setRefreshing(false);
-      });
+      }
+    })();
   };
 
   const handleChange = (val: string) => {
@@ -83,11 +83,11 @@ export default ({
     ));
   return (
     <ConfigContainer title={t('config_server_version')} isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum}>
-      <select className="form-select" area-label={t('config_server_version')} value={serverVersion} onChange={(e) => handleChange(e.target.value)}>
+      <select className="form-select" aria-label={t('config_server_version')} value={serverVersion} onChange={(e) => handleChange(e.target.value)}>
         {versions}
       </select>
       <div className="m-1 text-end">
-        <button type="button" className="btn btn-sm btn-outline-secondary" onClick={handleRefresh} disabled={refreshing}>
+        <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => refreshVersions()} disabled={refreshing}>
           {refreshing ? <div className="spinner-border spinner-border-sm me-1" role="status"></div> : <IoIosRefresh />}
           {t('refresh')}
         </button>
@@ -160,3 +160,5 @@ export default ({
     </ConfigContainer>
   );
 };
+
+export default ServerVersion;
