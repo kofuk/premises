@@ -1,5 +1,5 @@
 import {t} from 'i18next';
-import {Toolbar, IconButton, Typography} from '@mui/material';
+import {Tooltip, Toolbar, IconButton, Typography} from '@mui/material';
 import styled from 'styled-components';
 import {Settings as SettingsIcon, Logout as LogoutIcon} from '@mui/icons-material';
 import {useAuth} from '@/utils/auth';
@@ -33,12 +33,16 @@ export default () => {
           {t('app_name')}
         </Typography>
 
-        <IconButton size="large" color="inherit" onClick={handleLogout}>
-          <LogoutIcon />
-        </IconButton>
-        <IconButton size="large" color="inherit" onClick={() => navigate('/settings')}>
-          <SettingsIcon />
-        </IconButton>
+        <Tooltip title={t('settings')}>
+          <IconButton size="large" color="inherit" onClick={() => navigate('/settings')}>
+            <SettingsIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={t('logout')}>
+          <IconButton size="large" color="inherit" onClick={handleLogout}>
+            <LogoutIcon />
+          </IconButton>
+        </Tooltip>
       </Toolbar>
     </RoundedAppBar>
   );
