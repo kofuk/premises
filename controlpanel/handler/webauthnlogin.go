@@ -176,7 +176,7 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 		log.WithError(err).Warn("failed to save credential")
 	}
 
-	session.Set("user_id", userId)
+	session.Set("user_id", uint(userId))
 
 	c.JSON(http.StatusOK, gin.H{"success": true})
 }
