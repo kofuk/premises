@@ -4,8 +4,8 @@ import {useNavigate} from 'react-router-dom';
 import {useTranslation} from 'react-i18next';
 import styled from 'styled-components';
 
-import {Settings as SettingsIcon, Logout as LogoutIcon} from '@mui/icons-material';
-import {Tooltip, Toolbar, IconButton, Typography} from '@mui/material';
+import {Logout as LogoutIcon, Settings as SettingsIcon} from '@mui/icons-material';
+import {IconButton, Toolbar, Tooltip, Typography} from '@mui/material';
 
 import {useAuth} from '@/utils/auth';
 

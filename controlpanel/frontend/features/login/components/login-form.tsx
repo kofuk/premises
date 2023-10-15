@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {useForm} from 'react-hook-form';
@@ -6,9 +6,9 @@ import {useTranslation} from 'react-i18next';
 
 import KeyIcon from '@mui/icons-material/Key';
 import {LoadingButton} from '@mui/lab';
-import {DialogActions, DialogContent, DialogTitle, Dialog, ButtonGroup, Tooltip, Stack, Button, TextField} from '@mui/material';
+import {Button, ButtonGroup, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Tooltip} from '@mui/material';
 
-import {LoginResult, useAuth, passkeysSupported} from '@/utils/auth';
+import {LoginResult, passkeysSupported, useAuth} from '@/utils/auth';
 
 interface Prop {
   setFeedback: (feedback: string) => void;

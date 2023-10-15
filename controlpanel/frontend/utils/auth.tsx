@@ -1,7 +1,7 @@
-import React, {ReactNode, useState, useEffect, useContext} from 'react';
+import React, {ReactNode, useContext, useEffect, useState} from 'react';
 
 import Loading from '@/components/loading';
-import {encodeBuffer, decodeBuffer} from '@/utils/base64url';
+import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
 
 export enum LoginResult {
   LoggedIn,

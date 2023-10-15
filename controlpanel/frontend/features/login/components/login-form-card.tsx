@@ -1,6 +1,6 @@
 import React, {ReactNode} from 'react';
 
-import {Box, Card, Typography, CardContent} from '@mui/material';
+import {Box, Card, CardContent, Typography} from '@mui/material';
 
 const LoginFormCard = ({title, children}: {title: string; children: ReactNode}) => {
   return (

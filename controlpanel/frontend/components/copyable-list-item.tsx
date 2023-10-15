@@ -1,8 +1,8 @@
 import React from 'react';
 
-import {MdContentCopy} from '@react-icons/all-files/md/MdContentCopy';
 import {useTranslation} from 'react-i18next';
 
+import {ContentCopy as ContentCopyIcon} from '@mui/icons-material';
 import {Divider, IconButton, ListItem, ListItemText, Tooltip} from '@mui/material';
 
 type Prop = {
@@ -23,7 +23,7 @@ const CopyableListItem = ({title, children}: Prop) => {
         secondaryAction={
           <Tooltip title={t('copy')}>
             <IconButton edge="end" aria-label="copy" onClick={handleCopy}>
-              <MdContentCopy />
+              <ContentCopyIcon />
             </IconButton>
           </Tooltip>
         }

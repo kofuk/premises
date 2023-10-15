@@ -1,8 +1,8 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 
 import {FaStop} from '@react-icons/all-files/fa/FaStop';
 import {useTranslation} from 'react-i18next';
-import {Line, LineChart, YAxis, Tooltip} from 'recharts';
+import {Line, LineChart, Tooltip, YAxis} from 'recharts';
 
 import QuickUndo from '@/features/launch/control-item/quickundo';
 import Snapshot from '@/features/launch/control-item/snapshot';
