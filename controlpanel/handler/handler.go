@@ -161,6 +161,13 @@ func setupSessions(h *Handler) {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize Redis store")
 	}
+
+	sessionStore.Options(sessions.Options{
+		MaxAge:   60 * 60 * 24 * 30,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
 	redisess.SetKeyPrefix(sessionStore, "session:")
 	h.engine.Use(sessions.Sessions("session", sessionStore))
 }
