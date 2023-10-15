@@ -20,14 +20,10 @@ do_remote_update() {
 
     curl 'https://storage.googleapis.com/premises-artifacts/premises-runner.tar.gz' | tar -xz
     atomic_copy 'premises-runner' "${PREMISES_BASEDIR}/bin/premises-runner"
-
-    curl 'https://storage.googleapis.com/premises-artifacts/exteriord.tar.gz' | tar -xz
-    atomic_copy 'exteriord' "/opt/premises/bin/exteriord"
 }
 
 do_local_update() {
     cd /premises-dev
-    [ -e exteriord ] && atomic_copy exteriord /opt/premises/bin/exteriord
     [ -e premises-runner ] && atomic_copy premises-runner /opt/premises/bin/premises-runner
 }
 
@@ -57,7 +53,7 @@ __run() {
     (
         set -euo pipefail
 
-        if [ -e /premises-dev/premises-runner -o -e /premises-dev/exteriord ]; then
+        if [ -e /premises-dev/premises-runner ]; then
             do_local_update
         else
             do_remote_update
@@ -76,7 +72,7 @@ EOF
 #__CONFIG_FILE__
 EOF
 
-    nohup /opt/premises/bin/exteriord &>/exteriord.log &
+    nohup /opt/premises/bin/premises-runner --exteriord &>/exteriord.log &
 
     exit
 } && __run |& tee /tmp/premises-startup.log

@@ -5,7 +5,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/kofuk/premises/exteriord/msgrouter"
+	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
 )
 
 type Server struct {

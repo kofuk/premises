@@ -1,4 +1,4 @@
-package main
+package exteriord
 
 import (
 	"encoding/json"
@@ -6,11 +6,11 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/kofuk/premises/exteriord/exterior"
-	"github.com/kofuk/premises/exteriord/interior"
-	"github.com/kofuk/premises/exteriord/msgrouter"
-	"github.com/kofuk/premises/exteriord/outbound"
-	"github.com/kofuk/premises/exteriord/proc"
+	"github.com/kofuk/premises/runner/commands/exteriord/exterior"
+	"github.com/kofuk/premises/runner/commands/exteriord/interior"
+	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
+	"github.com/kofuk/premises/runner/commands/exteriord/outbound"
+	"github.com/kofuk/premises/runner/commands/exteriord/proc"
 )
 
 func IAmRoot() bool {
@@ -35,7 +35,7 @@ func getServerAuthKey() (string, error) {
 	return config.AuthKey, nil
 }
 
-func Run() {
+func startTasks() {
 	msgRouter := msgrouter.NewMsgRouter()
 
 	authKey, err := getServerAuthKey()
@@ -101,11 +101,11 @@ func Run() {
 	e.Run()
 }
 
-func main() {
+func Run() {
 	if !IAmRoot() {
 		log.Println("exteriord must be executed as root")
 		os.Exit(1)
 	}
 
-	Run()
+	startTasks()
 }

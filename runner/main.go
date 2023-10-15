@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/kofuk/premises/runner/commands/cleanup"
+	"github.com/kofuk/premises/runner/commands/exteriord"
 	"github.com/kofuk/premises/runner/commands/keepsystemutd"
 	"github.com/kofuk/premises/runner/commands/mclauncher"
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
@@ -25,6 +26,7 @@ func main() {
 	runKeepSystemUpToDate := flag.Bool("keep-system-up-to-date", false, "Run this process as keep-system-up-to-date process")
 	runCleanUp := flag.Bool("clean", false, "Run this process as clean up process")
 	runSystemStat := flag.Bool("system-stat", false, "Run this process as clean up process")
+	runExteriord := flag.Bool("exteriord", false, "Run exteriord")
 
 	flag.Parse()
 
@@ -56,6 +58,9 @@ func main() {
 	if *runSystemStat {
 		systemstat.Run()
 		return
+	}
+	if *runExteriord {
+		exteriord.Run()
 	}
 
 	mclauncher.Run()
