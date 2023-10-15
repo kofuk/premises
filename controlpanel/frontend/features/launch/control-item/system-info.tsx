@@ -1,7 +1,9 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 
 import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
 import {useTranslation} from 'react-i18next';
+
+import {List} from '@mui/material';
 
 import CopyableListItem from '@/components/copyable-list-item';
 
@@ -35,10 +37,14 @@ const SystemInfo = ({backToMenu}: Prop) => {
     mainContents = <></>;
   } else {
     mainContents = (
-      <div className="list-group">
-        <CopyableListItem title={t('system_info_server_version')} content={systemInfo.premisesVersion} />
-        <CopyableListItem title={t('system_info_host_os')} content={systemInfo.hostOS} />
-      </div>
+      <List disablePadding>
+        <CopyableListItem key="server_version" title={t('system_info_server_version')}>
+          {systemInfo.premisesVersion}
+        </CopyableListItem>
+        <CopyableListItem key="host_os" title={t('system_info_host_os')}>
+          {systemInfo.hostOS}
+        </CopyableListItem>
+      </List>
     );
   }
 

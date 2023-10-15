@@ -1,8 +1,10 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 
 import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
 import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
 import {useTranslation} from 'react-i18next';
+
+import {List} from '@mui/material';
 
 import CopyableListItem from '@/components/copyable-list-item';
 
@@ -51,11 +53,17 @@ const WorldInfo = (props: Prop) => {
     mainContents = <></>;
   } else {
     mainContents = (
-      <div className="list-group">
-        <CopyableListItem title={t('world_info_game_version')} content={worldInfo.serverVersion} />
-        <CopyableListItem title={t('world_info_world_name')} content={worldInfo.world.name.replace(/^[0-9]+-/, '')} />
-        <CopyableListItem title={t('world_info_seed')} content={worldInfo.world.seed} />
-      </div>
+      <List disablePadding>
+        <CopyableListItem key="game_version" title={t('world_info_game_version')}>
+          {worldInfo.serverVersion}
+        </CopyableListItem>
+        <CopyableListItem key="world_name" title={t('world_info_world_name')}>
+          {worldInfo.world.name.replace(/^[0-9]+-/, '')}
+        </CopyableListItem>
+        <CopyableListItem key="seed" title={t('world_info_seed')}>
+          {worldInfo.world.seed}
+        </CopyableListItem>
+      </List>
     );
   }
 
