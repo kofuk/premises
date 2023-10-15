@@ -72,12 +72,16 @@ jobs:
           key: ${{ runner.os }}-node-controlpanel-${{ hashFiles('controlpanel/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-controlpanel-
+      - name: Install dependencies
+        run: |
+          npm ci
       - name: Check code formatted
         run: |
-          set -euo pipefail
-          npm ci
           npm run fmt:check
           npm run lint:check
+      - name: Run unit tests
+        run: |
+          npm test
 
   test-controlpanel-backend:
     runs-on: ubuntu-latest
@@ -150,7 +154,6 @@ jobs:
             ${{ runner.os }}-node-e2e-
       - name: Check code formatted
         run: |
-          set -euo pipefail
           npm ci
           npm run fmt:check
 
@@ -170,7 +173,6 @@ jobs:
     steps:
       - name: Install Required Packages
         run: |
-          set -euo pipefail
           sudo apt-get update
           sudo apt-get install -y tar
       - name: Download runner
