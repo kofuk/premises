@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
+	"os"
 	"sync"
 
 	"github.com/duo-labs/webauthn/protocol"
@@ -32,7 +35,15 @@ const htmlContent = `<!doctype html>
   </head>
   <body>
     <div id="app"></div>
-    <script src="/app.js"></script>
+<script type="module">
+  import RefreshRuntime from 'http://localhost:5173/@react-refresh'
+  RefreshRuntime.injectIntoGlobalHook(window)
+  window.$RefreshReg$ = () => {}
+  window.$RefreshSig$ = () => (type) => type
+  window.__vite_plugin_react_preamble_installed__ = true
+</script>
+<script type="module" src="http://localhost:5173/@vite/client"></script>
+<script type="module" src="http://localhost:5173/main.js"></script>
   </body>
 </html>
 `
@@ -108,13 +119,37 @@ func prepareDependencies(cfg *config.Config, h *Handler) error {
 }
 
 func setupRoutes(h *Handler) {
-	h.engine.Use(static.Serve("/", static.LocalFile("gen", false)))
-	h.engine.NoRoute(func(c *gin.Context) {
-		// Return a HTML file for any page to render the page with React.
-		c.Status(http.StatusOK)
-		c.Header("Content-Type", "text/html;charset=utf-8")
-		c.Writer.Write([]byte(htmlContent))
-	})
+	if h.cfg.Debug.Web {
+		log.Info("Proxying vite dev server")
+
+		remoteUrl, err := url.Parse("http://localhost:5173")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		proxy := httputil.NewSingleHostReverseProxy(remoteUrl)
+
+		h.engine.NoRoute(func(c *gin.Context) {
+			proxy.ServeHTTP(c.Writer, c.Request)
+		})
+	} else {
+		h.engine.Use(static.Serve("/", static.LocalFile("gen", false)))
+		h.engine.NoRoute(func(c *gin.Context) {
+			// Return a HTML file for any page to render the page with React.
+			c.Status(http.StatusOK)
+			c.Header("Content-Type", "text/html;charset=utf-8")
+
+			entryFile, err := os.Open("gen/index.html")
+			if err != nil {
+				log.WithError(err).Error("Unable to open index.html")
+				c.JSON(http.StatusInternalServerError, gin.H{"success": false})
+				return
+			}
+			defer entryFile.Close()
+
+			io.Copy(c.Writer, entryFile)
+		})
+	}
 
 	h.setupRootRoutes(h.engine.Group(""))
 	h.setupWebauthnLoginRoutes(h.engine.Group("/login/hardwarekey"))

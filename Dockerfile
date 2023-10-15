@@ -6,7 +6,8 @@ RUN cd /build/controlpanel && make
 FROM node:20 AS frontend_build
 WORKDIR /build
 COPY /controlpanel .
-RUN npm ci && npm run prod
+RUN npm ci
+RUN npm run build
 
 FROM rust:alpine AS tool_build
 WORKDIR /build

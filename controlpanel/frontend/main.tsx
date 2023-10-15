@@ -3,6 +3,8 @@ import {createRoot} from 'react-dom/client';
 
 import Premises from './premises';
 
+import 'vite/modulepreload-polyfill';
+
 // For material UI
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
