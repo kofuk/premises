@@ -27,7 +27,7 @@ $ go run .
 ```
 4. Create /controlpanel/.env by copying /controlpanel/.env.example
 ```ini
-premises_debug_web='true'
+premises_debug_web='false'
 premises_conoha_username='user'
 premises_conoha_password='password'
 premises_conoha_tenantId='tenantId'
@@ -58,7 +58,7 @@ premises_controlPanel_locale='ja'
 5. Build frontend in /controlpanel directory.
 ```shell
 $ npm install
-$ npm run dev
+$ npm run build
 ```
 6. Launch Control Panel server in /controlpanel directory.
 ```shell
@@ -67,16 +67,13 @@ $ go run .
 
 ### Q&A
 
-#### Can I use runner or exteriord I'm developing locally?
+#### Can I use runner I'm developing locally?
 
 Currently, you can on Linux (and hopefully on Mac OS), but you can't on Windows.
 
-On the supported platforms, running the following commands will deploy your runner and exteriord on the next launch of runner.
+On the supported platforms, running the following commands will deploy your runner on the next launch of runner.
 
 ```shell
-$ cd exteriord
-$ make deploy-dev
-
 $ cd runner
 $ make deploy-dev
 ```
@@ -86,3 +83,10 @@ $ make deploy-dev
 On Linux, it is saved to /tmp/premises-data on your computer, but on the other platforms, it is inside your Docker image.
 
 Therefore, Docker image size will become significantly large on these platforms.
+
+#### Can I use Vite's HMR feature?
+
+Yes.
+
+To use it, set `premises_debug_web=true` in `controlpanel/.env` and run Vite server.
+Backend server will proxy requests to Vite development server.
