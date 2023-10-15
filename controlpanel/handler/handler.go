@@ -199,14 +199,14 @@ func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Cli
 }
 
 func NewHandler(cfg *config.Config, i18nData *i18n.Bundle, bindAddr string) (*Handler, error) {
-	engine := gin.New()
-	engine.SetTrustedProxies([]string{"127.0.0.1"})
-
 	if cfg.Debug.Web {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	engine := gin.Default()
+	engine.SetTrustedProxies([]string{"127.0.0.1"})
 
 	h := &Handler{
 		cfg:           cfg,
