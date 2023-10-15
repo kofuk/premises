@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
@@ -98,10 +97,6 @@ func sendMessage(w http.ResponseWriter, msg interface{}) error {
 }
 
 func Run() {
-	if syscall.Geteuid() != 0 {
-		log.Fatal("Privileged helper must run as root")
-	}
-
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Info("Request received")
 
