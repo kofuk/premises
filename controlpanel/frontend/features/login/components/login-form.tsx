@@ -50,7 +50,8 @@ const LoginForm = ({setFeedback}: Prop) => {
       await loginPasskeys();
       setLoggingIn(false);
       navigate('/launch', {replace: true});
-    } catch (err: any) {
+    } catch (err: Error) {
+      console.error(err);
       setLoggingIn(false);
       setFeedback(err.message);
     }

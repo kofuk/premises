@@ -6,10 +6,10 @@ import (
 	"encoding/binary"
 	"net/http"
 
-	"github.com/duo-labs/webauthn/protocol"
-	"github.com/duo-labs/webauthn/webauthn"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/go-webauthn/webauthn/protocol"
+	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/kofuk/premises/controlpanel/model"
 	log "github.com/sirupsen/logrus"
 )
@@ -79,21 +79,21 @@ func (h *Handler) handleLoginHardwarekeyBegin(c *gin.Context) {
 		return
 	}
 
-	requestOptions := protocol.PublicKeyCredentialRequestOptions{
-		Challenge:          challenge,
-		Timeout:            h.webauthn.Config.Timeout,
-		RelyingPartyID:     h.webauthn.Config.RPID,
-		UserVerification:   h.webauthn.Config.AuthenticatorSelection.UserVerification,
-		AllowedCredentials: make([]protocol.CredentialDescriptor, 0),
+	assertion := &protocol.CredentialAssertion{
+		Response: protocol.PublicKeyCredentialRequestOptions{
+			Challenge:          challenge,
+			Timeout:            int(h.webauthn.Config.Timeouts.Login.Timeout.Milliseconds()),
+			RelyingPartyID:     h.webauthn.Config.RPID,
+			UserVerification:   h.webauthn.Config.AuthenticatorSelection.UserVerification,
+			AllowedCredentials: make([]protocol.CredentialDescriptor, 0),
+		},
 	}
-
-	options := protocol.CredentialAssertion{Response: requestOptions}
 
 	session := sessions.Default(c)
 	session.Set("hwkey_challenge", base64.RawURLEncoding.EncodeToString(challenge))
 	session.Save()
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "options": options})
+	c.JSON(http.StatusOK, gin.H{"success": true, "options": assertion})
 }
 
 func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
