@@ -56,7 +56,7 @@
     "react-i18next": "^13.3.0",
     "react-router-dom": "^6.16.0",
     "recharts": "^2.8.0",
-    "sass": "^1.69.0",
+    "sass": "^1.69.3",
     "sass-loader": "^13.3.2",
     "style-loader": "^3.3.3",
     "ts-jest": "^29.1.1",
