@@ -1,8 +1,8 @@
-import useSWR from 'swr';
+import useSWR, {KeyedMutator} from 'swr';
 
 import {SessionData, WorldBackup} from './entities';
 
-const getSessionData = async (): SessionData => {
+const getSessionData = async (): Promise<SessionData> => {
   const resp = await fetch('/api/session-data').then((resp) => resp.json());
   if (!resp.success) {
     throw new Error(resp.reason);
@@ -11,16 +11,24 @@ const getSessionData = async (): SessionData => {
   return resp.data;
 };
 
-export const useSessionData = () => {
-  const {data, mutate, isLoading} = useSWR('/api/session-data', getSessionData);
+export type UseSessionDataResponse = {
+  session: SessionData;
+  error: Error;
+  isLoading: boolean;
+  mutate: KeyedMutator<SessionData>;
+};
+
+export const useSessionData = (): UseSessionDataResponse => {
+  const {data, error, mutate, isLoading} = useSWR('/api/session-data', getSessionData);
   return {
-    session: data,
+    session: data!,
+    error,
     isLoading,
     mutate
   };
 };
 
-const getBackups = async (): WorldBackup[] => {
+const getBackups = async (): Promise<WorldBackup[]> => {
   const resp = await fetch('/api/backups').then((resp) => resp.json());
   if (!resp.success) {
     throw new Error(resp.reason);
@@ -29,11 +37,19 @@ const getBackups = async (): WorldBackup[] => {
   return resp.data;
 };
 
-export const useBackups = () => {
-  const {data, mutate, isLoading} = useSWR('/api/backups', getBackups);
+export type UseBackupsResponse = {
+  backups: WorldBackup[];
+  error: Error;
+  isLoading: boolean;
+  mutate: KeyedMutator<WorldBackup[]>;
+};
+
+export const useBackups = (): UseBackupsResponse => {
+  const {data, error, isLoading, mutate} = useSWR('/api/backups', getBackups);
   return {
-    backups: data,
-    mutate,
-    isLoading
+    backups: data!,
+    error,
+    isLoading,
+    mutate
   };
 };
