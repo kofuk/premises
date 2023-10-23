@@ -17,10 +17,6 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: gomod
-    directory: /exteriord
-    schedule:
-      interval: weekly
-  - package-ecosystem: gomod
     directory: /runner
     schedule:
       interval: weekly
