@@ -1,3 +1,8 @@
 export const getSessionData = async (): SessionData => {
-  return await fetch('/api/session-data').then((resp) => resp.json());
+  const resp = await fetch('/api/session-data').then((resp) => resp.json());
+  if (!resp.success) {
+    throw new Error(resp.reason);
+  }
+
+  return resp.data;
 };

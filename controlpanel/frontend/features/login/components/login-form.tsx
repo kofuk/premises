@@ -1,5 +1,4 @@
 import React, {useEffect, useState} from 'react';
-import {useNavigate} from 'react-router-dom';
 
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
@@ -23,8 +22,6 @@ const LoginForm = ({setFeedback}: Prop) => {
   const [loggingIn, setLoggingIn] = useState(false);
   const [openResetPasswordDialog, setOpenResetPasswordDialog] = useState(false);
 
-  const navigate = useNavigate();
-
   const {login, loginPasskeys, initializePassword} = useAuth();
 
   const handleLogin = ({username, password}: any) => {
@@ -34,7 +31,6 @@ const LoginForm = ({setFeedback}: Prop) => {
         const result = await login(username, password);
         if (result === LoginResult.LoggedIn) {
           setLoggingIn(false);
-          navigate('/launch', {replace: true});
         } else {
           setOpenResetPasswordDialog(true);
         }
@@ -49,7 +45,6 @@ const LoginForm = ({setFeedback}: Prop) => {
     try {
       await loginPasskeys();
       setLoggingIn(false);
-      navigate('/launch', {replace: true});
     } catch (err: Error) {
       console.error(err);
       setLoggingIn(false);
@@ -76,7 +71,6 @@ const LoginForm = ({setFeedback}: Prop) => {
     (async () => {
       try {
         await initializePassword(loginForm.getValues('username'), password);
-        navigate('/launch', {replace: true});
       } catch (err: any) {
         console.error(err);
         setFeedback(err.message);

@@ -30,7 +30,6 @@ const NavBar = () => {
     (async () => {
       try {
         await logout();
-        navigate('/', {replace: true});
       } catch (err) {
         console.error(err);
       }

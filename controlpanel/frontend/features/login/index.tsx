@@ -21,7 +21,7 @@ const LoginPage = () => {
     if (loggedIn) {
       navigate('/launch', {replace: true});
     }
-  }, []);
+  }, [loggedIn]);
 
   return (
     <>
