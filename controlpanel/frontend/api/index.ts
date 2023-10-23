@@ -1,5 +1,7 @@
 import useSWR from 'swr';
 
+import {SessionData, WorldBackup} from './entities';
+
 const getSessionData = async (): SessionData => {
   const resp = await fetch('/api/session-data').then((resp) => resp.json());
   if (!resp.success) {
