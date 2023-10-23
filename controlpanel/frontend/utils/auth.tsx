@@ -1,5 +1,8 @@
-import React, {ReactNode, useContext, useEffect, useState} from 'react';
+import React, {ReactNode, useContext} from 'react';
 
+import useSWR from 'swr';
+
+import {getSessionData} from '@/api';
 import Loading from '@/components/loading';
 import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
 
@@ -7,6 +10,15 @@ export enum LoginResult {
   LoggedIn,
   NeedsChangePassword
 }
+
+const useSession = () => {
+  const {data, mutate, isLoading} = useSWR('/api/session-data', getSessionData);
+  return {
+    session: data,
+    isLoading,
+    mutate
+  };
+};
 
 type AuthContextType = {
   loggedIn: boolean;
@@ -19,19 +31,8 @@ type AuthContextType = {
 const AuthContext = React.createContext<AuthContextType>(null!);
 
 export const AuthProvider = ({children}: {children: ReactNode}) => {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [initialized, setInitialized] = useState(false);
-  useEffect(() => {
-    (async () => {
-      const loggedIn = await fetch('http://localhost/api/current-user')
-        .then((resp) => resp.json())
-        .then((resp) => resp['success'] as boolean);
-      setLoggedIn(loggedIn);
-      setInitialized(true);
-    })();
-  }, []);
-
-  if (!initialized) {
+  const {session, isLoading, mutate} = useSession();
+  if (isLoading) {
     return <Loading />;
   }
 
@@ -56,7 +57,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
       return LoginResult.NeedsChangePassword;
     }
 
-    setLoggedIn(true);
+    mutate();
 
     return LoginResult.LoggedIn;
   };
@@ -102,7 +103,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
       throw new Error(finishResp['reason']);
     }
 
-    setLoggedIn(true);
+    mutate();
   };
 
   const logout = async () => {
@@ -110,7 +111,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
     if (!resp['success']) {
       throw new Error(resp['reason']);
     }
-    setLoggedIn(false);
+    mutate();
   };
 
   const initializePassword = async (username: string, newPassword: string): Promise<void> => {
@@ -130,11 +131,11 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
       throw new Error(resp['reason']);
     }
 
-    setLoggedIn(true);
+    mutate();
   };
 
   const value = {
-    loggedIn,
+    loggedIn: session.loggedIn,
     login,
     loginPasskeys,
     logout,

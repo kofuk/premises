@@ -21,6 +21,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kofuk/premises/controlpanel/backup"
 	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/controlpanel/entity"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
 	"github.com/kofuk/premises/controlpanel/mcversions"
 	"github.com/kofuk/premises/controlpanel/model"
@@ -37,16 +38,23 @@ const (
 
 func (h *Handler) handleApiCurrentUser(c *gin.Context) {
 	session := sessions.Default(c)
-	userID := session.Get("user_id")
+	userID, ok := session.Get("user_id").(uint)
 
-	user := model.User{}
-	if err := h.db.WithContext(c.Request.Context()).Find(&user, userID).Error; err != nil {
-		log.WithError(err).Error("User not found")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
-		return
+	sessionData := entity.SessionData{
+		LoggedIn: ok,
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "user_name": user.Name})
+	if ok {
+		user := model.User{}
+		if err := h.db.WithContext(c.Request.Context()).Find(&user, userID).Error; err != nil {
+			log.WithError(err).Error("User not found")
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+			return
+		}
+		sessionData.UserName = user.Name
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": sessionData})
 }
 
 func (h *Handler) handleApiStatus(c *gin.Context) {
@@ -904,19 +912,20 @@ func (h *Handler) middlewareSessionCheck(c *gin.Context) {
 }
 
 func (h *Handler) setupApiRoutes(group *gin.RouterGroup) {
-	group.Use(h.middlewareSessionCheck)
-	group.GET("/current-user", h.handleApiCurrentUser)
-	group.GET("/status", h.handleApiStatus)
-	group.GET("/systemstat", h.handleApiSystemStat)
-	group.POST("/launch", h.handleApiLaunch)
-	group.POST("/reconfigure", h.handleApiReconfigure)
-	group.POST("/stop", h.handleApiStop)
-	group.GET("/backups", h.handleApiBackups)
-	group.GET("/mcversions", h.handleApiMcversions)
-	group.GET("/systeminfo", h.handleApiSystemInfo)
-	group.GET("/worldinfo", h.handleApiWorldInfo)
-	group.POST("/snapshot", h.handleApiSnapshot)
-	setupApiQuickUndoRoutes(h, group.Group("/quickundo"))
-	setupApiUsersRoutes(h, group.Group("/users"))
-	setupApiWebauthnRoutes(h, group.Group("/hardwarekey"))
+	group.GET("/session-data", h.handleApiCurrentUser)
+	needsAuth := group.Group("")
+	needsAuth.Use(h.middlewareSessionCheck)
+	needsAuth.GET("/status", h.handleApiStatus)
+	needsAuth.GET("/systemstat", h.handleApiSystemStat)
+	needsAuth.POST("/launch", h.handleApiLaunch)
+	needsAuth.POST("/reconfigure", h.handleApiReconfigure)
+	needsAuth.POST("/stop", h.handleApiStop)
+	needsAuth.GET("/backups", h.handleApiBackups)
+	needsAuth.GET("/mcversions", h.handleApiMcversions)
+	needsAuth.GET("/systeminfo", h.handleApiSystemInfo)
+	needsAuth.GET("/worldinfo", h.handleApiWorldInfo)
+	needsAuth.POST("/snapshot", h.handleApiSnapshot)
+	setupApiQuickUndoRoutes(h, needsAuth.Group("/quickundo"))
+	setupApiUsersRoutes(h, needsAuth.Group("/users"))
+	setupApiWebauthnRoutes(h, needsAuth.Group("/hardwarekey"))
 }
