@@ -11,6 +11,7 @@ export enum LoginResult {
 
 type AuthContextType = {
   loggedIn: boolean;
+  userName: string | null;
   login: (username: string, password: string) => Promise<LoginResult>;
   loginPasskeys: () => Promise<void>;
   logout: () => Promise<void>;
@@ -20,9 +21,12 @@ type AuthContextType = {
 const AuthContext = React.createContext<AuthContextType>(null!);
 
 export const AuthProvider = ({children}: {children: ReactNode}) => {
-  const {session, isLoading, mutate} = useSessionData();
+  const {session, error, isLoading, mutate} = useSessionData();
   if (isLoading) {
     return <Loading />;
+  }
+  if (error) {
+    throw error;
   }
 
   const login = async (username: string, password: string): Promise<LoginResult> => {
@@ -124,7 +128,8 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
   };
 
   const value = {
-    loggedIn: session.loggedIn,
+    loggedIn: !!session && session.loggedIn,
+    userName: (session && session.userName) || null,
     login,
     loginPasskeys,
     logout,

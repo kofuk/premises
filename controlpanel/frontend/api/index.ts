@@ -2,8 +2,10 @@ import useSWR, {KeyedMutator} from 'swr';
 
 import {SessionData, WorldBackup} from './entities';
 
+const domain = process.env.NODE_ENV === 'test' ? 'http://localhost' : '';
+
 const getSessionData = async (): Promise<SessionData> => {
-  const resp = await fetch('/api/session-data').then((resp) => resp.json());
+  const resp = await fetch(`${domain}/api/session-data`).then((resp) => resp.json());
   if (!resp.success) {
     throw new Error(resp.reason);
   }
@@ -29,7 +31,7 @@ export const useSessionData = (): UseSessionDataResponse => {
 };
 
 const getBackups = async (): Promise<WorldBackup[]> => {
-  const resp = await fetch('/api/backups').then((resp) => resp.json());
+  const resp = await fetch(`${domain}/api/backups`).then((resp) => resp.json());
   if (!resp.success) {
     throw new Error(resp.reason);
   }
