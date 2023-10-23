@@ -1,21 +1,11 @@
 import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
-import useSWR from 'swr';
 
-import {getBackups} from '@/api';
+import {useBackups} from '@/api';
 import Loading from '@/components/loading';
 import ConfigContainer from '@/features/launch/config-item/config-container';
 import {ItemProp} from '@/features/launch/config-item/prop';
-
-
-const useBackups = () => {
-  const {data, isLoading} = useSWR('/api/backups', getBackups);
-  return {
-    backups: data,
-    isLoading
-  };
-};
 
 const WorldName = ({
   isFocused,

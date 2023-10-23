@@ -1,8 +1,6 @@
 import React, {ReactNode, useContext} from 'react';
 
-import useSWR from 'swr';
-
-import {getSessionData} from '@/api';
+import {useSessionData} from '@/api';
 import Loading from '@/components/loading';
 import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
 
@@ -10,15 +8,6 @@ export enum LoginResult {
   LoggedIn,
   NeedsChangePassword
 }
-
-const useSession = () => {
-  const {data, mutate, isLoading} = useSWR('/api/session-data', getSessionData);
-  return {
-    session: data,
-    isLoading,
-    mutate
-  };
-};
 
 type AuthContextType = {
   loggedIn: boolean;
@@ -31,7 +20,7 @@ type AuthContextType = {
 const AuthContext = React.createContext<AuthContextType>(null!);
 
 export const AuthProvider = ({children}: {children: ReactNode}) => {
-  const {session, isLoading, mutate} = useSession();
+  const {session, isLoading, mutate} = useSessionData();
   if (isLoading) {
     return <Loading />;
   }

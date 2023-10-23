@@ -1,21 +1,12 @@
 import React from 'react';
 
 import {useTranslation} from 'react-i18next';
-import useSWR from 'swr';
 
 import ConfigContainer from './config-container';
 import {ItemProp} from './prop';
 
-import {getBackups} from '@/api';
+import {useBackups} from '@/api';
 import Loading from '@/components/loading';
-
-const useBackups = () => {
-  const {data, isLoading} = useSWR('/api/backups', getBackups);
-  return {
-    backups: data,
-    isLoading
-  };
-};
 
 type Props = ItemProp & {
   worldName: string;
