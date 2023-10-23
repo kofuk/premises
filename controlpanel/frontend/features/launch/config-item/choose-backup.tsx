@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
@@ -32,11 +32,20 @@ const ChooseBackup = ({
   const [t] = useTranslation();
 
   const {backups, isLoading} = useBackups();
+  useEffect(() => {
+    if (backups && backups.length > 0) {
+      if (worldName === '') {
+        setWorldName(backups[0].worldName);
+      }
+    }
+  }, [backups]);
 
   const handleChangeWorld = (worldName: string) => {
-    setWorldName(worldName);
     const generations = backups?.find((e) => e.worldName === worldName)!.generations;
-    setBackupGeneration(generations[0].id);
+    if (generations) {
+      setWorldName(worldName);
+      setBackupGeneration(generations[0].id);
+    }
   };
 
   const handleChangeGeneration = (generationId: string) => {
@@ -58,7 +67,7 @@ const ChooseBackup = ({
         </select>
       </div>
     );
-    const worldData = backups?.find((e) => e.worldName === worldName);
+    const worldData = backups!.find((e) => e.worldName === worldName);
     const generations = worldData && (
       <div className="m-2">
         <label className="form-label" htmlFor="backupGenerationSelect">
@@ -105,7 +114,7 @@ const ChooseBackup = ({
     );
   };
 
-  const content = backups?.length === 0 ? createEmptyMessage() : createBackupSelector();
+  const content = !backups || backups?.length === 0 ? createEmptyMessage() : createBackupSelector();
 
   return (
     <ConfigContainer title={t('config_choose_backup')} isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum}>

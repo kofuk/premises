@@ -12,7 +12,7 @@ const getSessionData = async (): Promise<SessionData> => {
 };
 
 export type UseSessionDataResponse = {
-  session: SessionData;
+  session: SessionData | undefined;
   error: Error;
   isLoading: boolean;
   mutate: KeyedMutator<SessionData>;
@@ -21,7 +21,7 @@ export type UseSessionDataResponse = {
 export const useSessionData = (): UseSessionDataResponse => {
   const {data, error, mutate, isLoading} = useSWR('/api/session-data', getSessionData);
   return {
-    session: data!,
+    session: data,
     error,
     isLoading,
     mutate
@@ -38,7 +38,7 @@ const getBackups = async (): Promise<WorldBackup[]> => {
 };
 
 export type UseBackupsResponse = {
-  backups: WorldBackup[];
+  backups: WorldBackup[] | undefined;
   error: Error;
   isLoading: boolean;
   mutate: KeyedMutator<WorldBackup[]>;
@@ -47,7 +47,7 @@ export type UseBackupsResponse = {
 export const useBackups = (): UseBackupsResponse => {
   const {data, error, isLoading, mutate} = useSWR('/api/backups', getBackups);
   return {
-    backups: data!,
+    backups: data,
     error,
     isLoading,
     mutate
