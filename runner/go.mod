@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/google/uuid v1.3.1
 	github.com/gorcon/rcon v1.3.4
-	github.com/klauspost/compress v1.17.1
+	github.com/klauspost/compress v1.17.2
 	github.com/kofuk/go-mega v0.0.0-20220314143053-5929f3eeeac4
 	github.com/mackerelio/go-osstat v0.2.4
 	github.com/nicksnyder/go-i18n/v2 v2.2.1
