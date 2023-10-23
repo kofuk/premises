@@ -1,10 +1,21 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
+import useSWR from 'swr';
 
+import {getBackups} from '@/api';
+import Loading from '@/components/loading';
 import ConfigContainer from '@/features/launch/config-item/config-container';
 import {ItemProp} from '@/features/launch/config-item/prop';
-import {WorldBackup} from '@/features/launch/config-item/world-backup';
+
+
+const useBackups = () => {
+  const {data, isLoading} = useSWR('/api/backups', getBackups);
+  return {
+    backups: data,
+    isLoading
+  };
+};
 
 const WorldName = ({
   isFocused,
@@ -19,20 +30,9 @@ const WorldName = ({
 }) => {
   const [t] = useTranslation();
 
-  const [backups, setBackups] = useState<WorldBackup[]>([]);
+  const {backups, isLoading} = useBackups();
   const [duplicateName, setDuplicateName] = useState(false);
   const [invalidName, setInvalidName] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const backups = await fetch('/api/backups').then((resp) => resp.json());
-        setBackups(backups);
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-  }, []);
 
   const handleChange = (val: string) => {
     setWorldName(val);
@@ -41,7 +41,7 @@ const WorldName = ({
       setInvalidName(true);
       return;
     }
-    if (backups.find((e) => e.worldName === val)) {
+    if (backups?.find((e) => e.worldName === val)) {
       setDuplicateName(true);
       return;
     }
@@ -67,19 +67,23 @@ const WorldName = ({
 
   return (
     <ConfigContainer title={t('config_world_name')} isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum}>
-      <label className="form-label" htmlFor="newWorldName">
-        {t('world_name')}
-      </label>
-      <input
-        type="text"
-        className="form-control"
-        id="newWorldName"
-        value={worldName}
-        onChange={(e) => {
-          handleChange(e.target.value);
-        }}
-      />
-      {alert}
+      {(isLoading && <Loading compact />) || (
+        <>
+          <label className="form-label" htmlFor="newWorldName">
+            {t('world_name')}
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="newWorldName"
+            value={worldName}
+            onChange={(e) => {
+              handleChange(e.target.value);
+            }}
+          />
+          {alert}
+        </>
+      )}
       <div className="m-1 text-end">
         <button type="button" className="btn btn-primary" onClick={nextStep} disabled={worldName.length === 0 || duplicateName || invalidName}>
           {t('next')}

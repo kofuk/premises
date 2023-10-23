@@ -22,7 +22,11 @@ class LevelTypeInfo {
   }
 
   createReactElement = (): React.ReactElement => {
-    return <option value={this.levelType}>{this.label}</option>;
+    return (
+      <option value={this.levelType} key={this.levelType}>
+        {this.label}
+      </option>
+    );
   };
 }
 
