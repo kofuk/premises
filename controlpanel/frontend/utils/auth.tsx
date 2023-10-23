@@ -23,7 +23,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
   const [initialized, setInitialized] = useState(false);
   useEffect(() => {
     (async () => {
-      const loggedIn = await fetch('/api/current-user')
+      const loggedIn = await fetch('http://localhost/api/current-user')
         .then((resp) => resp.json())
         .then((resp) => resp['success'] as boolean);
       setLoggedIn(loggedIn);

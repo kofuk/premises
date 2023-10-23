@@ -1,5 +1,9 @@
 {
+  "testEnvironment": "jsdom",
   "transform": {
     "\\.(ts|tsx)": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@/(.+)$": "<rootDir>/frontend/$1"
   }
 }
