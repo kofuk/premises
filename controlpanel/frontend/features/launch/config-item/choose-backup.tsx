@@ -1,11 +1,21 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 
-import {IoIosRefresh} from '@react-icons/all-files/io/IoIosRefresh';
 import {useTranslation} from 'react-i18next';
+import useSWR from 'swr';
 
 import ConfigContainer from './config-container';
 import {ItemProp} from './prop';
-import {WorldBackup} from './world-backup';
+
+import {getBackups} from '@/api';
+import Loading from '@/components/loading';
+
+const useBackups = () => {
+  const {data, isLoading} = useSWR('/api/backups', getBackups);
+  return {
+    backups: data,
+    isLoading
+  };
+};
 
 type Props = ItemProp & {
   worldName: string;
@@ -30,34 +40,11 @@ const ChooseBackup = ({
 }: Props) => {
   const [t] = useTranslation();
 
-  const [backups, setBackups] = useState<WorldBackup[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-
-  useEffect(() => {
-    refreshBackups();
-  }, []);
-
-  const refreshBackups = (reload: boolean = false) => {
-    (async () => {
-      setRefreshing(true);
-      try {
-        const backups = await fetch(`/api/backups${reload ? '?reload' : ''}`).then((resp) => resp.json());
-        setBackups(backups);
-        if (backups.length > 0) {
-          setWorldName(backups[0].worldName);
-          setBackupGeneration(backups[0].generations[0].id);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setRefreshing(false);
-      }
-    })();
-  };
+  const {backups, isLoading} = useBackups();
 
   const handleChangeWorld = (worldName: string) => {
     setWorldName(worldName);
-    const generations = backups.find((e) => e.worldName === worldName)!.generations;
+    const generations = backups?.find((e) => e.worldName === worldName)!.generations;
     setBackupGeneration(generations[0].id);
   };
 
@@ -72,7 +59,7 @@ const ChooseBackup = ({
           {t('select_world')}
         </label>
         <select className="form-select" value={worldName} id="worldSelect" onChange={(e) => handleChangeWorld(e.target.value)}>
-          {backups.map((e) => (
+          {backups?.map((e) => (
             <option value={e.worldName} key={e.worldName}>
               {e.worldName.replace(/^[0-9]+-/, '')}
             </option>
@@ -80,8 +67,8 @@ const ChooseBackup = ({
         </select>
       </div>
     );
-    const worldData = backups.find((e) => e.worldName === worldName);
-    const generations = worldData ? (
+    const worldData = backups?.find((e) => e.worldName === worldName);
+    const generations = worldData && (
       <div className="m-2">
         <label className="form-label" htmlFor="backupGenerationSelect">
           {t('backup_generation')}
@@ -97,8 +84,6 @@ const ChooseBackup = ({
           })}
         </select>
       </div>
-    ) : (
-      <></>
     );
 
     return (
@@ -117,12 +102,6 @@ const ChooseBackup = ({
             {t('use_cached_world')}
           </label>
         </div>
-        <div className="m-1">
-          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={() => refreshBackups(true)} disabled={refreshing}>
-            {refreshing ? <div className="spinner-border spinner-border-sm me-1" role="status"></div> : <IoIosRefresh />}
-            {t('refresh')}
-          </button>
-        </div>
       </>
     );
   };
@@ -135,16 +114,20 @@ const ChooseBackup = ({
     );
   };
 
-  const content = backups.length === 0 ? createEmptyMessage() : createBackupSelector();
+  const content = backups?.length === 0 ? createEmptyMessage() : createBackupSelector();
 
   return (
     <ConfigContainer title={t('config_choose_backup')} isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum}>
-      {content}
-      <div className="m-1 text-end">
-        <button type="button" className="btn btn-primary" onClick={nextStep} disabled={backups.length === 0}>
-          {t('next')}
-        </button>
-      </div>
+      {(isLoading && <Loading compact />) || (
+        <>
+          {content}
+          <div className="m-1 text-end">
+            <button type="button" className="btn btn-primary" onClick={nextStep} disabled={backups?.length === 0}>
+              {t('next')}
+            </button>
+          </div>
+        </>
+      )}
     </ConfigContainer>
   );
 };

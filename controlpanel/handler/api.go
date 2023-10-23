@@ -437,12 +437,6 @@ func (h *Handler) handleApiStop(c *gin.Context) {
 }
 
 func (h *Handler) handleApiBackups(c *gin.Context) {
-	if _, ok := c.GetQuery("reload"); ok {
-		if _, err := h.redis.Del(c.Request.Context(), CacheKeyBackups).Result(); err != nil {
-			log.WithError(err).Error("Failed to delete backup list cache")
-		}
-	}
-
 	if val, err := h.redis.Get(c.Request.Context(), CacheKeyBackups).Result(); err == nil {
 		c.Header("Content-Type", "application/json")
 		c.Writer.Write([]byte(val))
@@ -460,7 +454,9 @@ func (h *Handler) handleApiBackups(c *gin.Context) {
 		return
 	}
 
-	jsonData, err := json.Marshal(backups)
+	data := gin.H{"success": true, "data": backups}
+
+	jsonData, err := json.Marshal(data)
 	if err != nil {
 		log.WithError(err).Error("Failed to marshal backpu list")
 		c.Status(http.StatusInternalServerError)
