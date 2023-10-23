@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/kofuk/premises/runner/commands/exteriord/exterior"
 	"github.com/kofuk/premises/runner/commands/exteriord/interior"
@@ -31,6 +33,8 @@ func getServerAuthKey() (string, error) {
 }
 
 func Run() {
+	signal.Ignore(syscall.SIGHUP)
+
 	msgRouter := msgrouter.NewMsgRouter()
 
 	authKey, err := getServerAuthKey()

@@ -72,7 +72,7 @@ EOF
 #__CONFIG_FILE__
 EOF
 
-    nohup /opt/premises/bin/premises-runner --exteriord &>/exteriord.log &
+    /opt/premises/bin/premises-runner --exteriord &>/exteriord.log &
 
     exit
 } && __run |& tee /tmp/premises-startup.log
