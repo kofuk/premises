@@ -1,7 +1,8 @@
 import React, {useEffect, useState} from 'react';
 
-import {FaTrash} from '@react-icons/all-files/fa/FaTrash';
 import {useTranslation} from 'react-i18next';
+
+import {Delete as DeleteIcon} from '@mui/icons-material';
 
 import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
 
@@ -144,7 +145,7 @@ const PasswordlessLogin = (props: Props) => {
                         deleteKey(e.id);
                       }}
                     >
-                      <FaTrash />
+                      <DeleteIcon />
                     </button>
                   </td>
                   <td className="align-middle">{e.name}</td>

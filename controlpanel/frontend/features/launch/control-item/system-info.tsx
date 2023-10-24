@@ -1,8 +1,8 @@
 import React, {useEffect, useState} from 'react';
 
-import {IoIosArrowBack} from '@react-icons/all-files/io/IoIosArrowBack';
 import {useTranslation} from 'react-i18next';
 
+import {ArrowBack as ArrowBackIcon} from '@mui/icons-material';
 import {List} from '@mui/material';
 
 import CopyableListItem from '@/components/copyable-list-item';
@@ -51,7 +51,7 @@ const SystemInfo = ({backToMenu}: Prop) => {
   return (
     <div className="m-2">
       <button className="btn btn-outline-primary" onClick={backToMenu}>
-        <IoIosArrowBack /> {t('back')}
+        <ArrowBackIcon /> {t('back')}
       </button>
       <div className="m-2">{mainContents}</div>
     </div>

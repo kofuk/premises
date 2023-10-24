@@ -1,8 +1,9 @@
 import React, {useEffect, useState} from 'react';
 
-import {FaStop} from '@react-icons/all-files/fa/FaStop';
 import {useTranslation} from 'react-i18next';
 import {Line, LineChart, Tooltip, YAxis} from 'recharts';
+
+import {Stop as StopIcon} from '@mui/icons-material';
 
 import QuickUndo from '@/features/launch/control-item/quickundo';
 import Snapshot from '@/features/launch/control-item/snapshot';
@@ -128,7 +129,7 @@ const ServerControlPane = (props: Prop) => {
                 fetch('/api/stop', {method: 'post'});
               }}
             >
-              <FaStop /> {t('stop_server')}
+              <StopIcon /> {t('stop_server')}
             </button>
           </div>
         </form>

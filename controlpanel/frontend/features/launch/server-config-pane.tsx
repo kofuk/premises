@@ -1,7 +1,8 @@
 import React, {useState} from 'react';
 
-import {VscDebugStart} from '@react-icons/all-files/vsc/VscDebugStart';
 import {useTranslation} from 'react-i18next';
+
+import {PlayArrow as StartIcon} from '@mui/icons-material';
 
 import ChooseBackup from '@/features/launch/config-item/choose-backup';
 import ConfigureWorld, {LevelType} from '@/features/launch/config-item/configure-world';
@@ -186,7 +187,7 @@ const ServerConfigPane = (props: Prop) => {
           {configItems}
           <div className="d-md-block mt-3 text-end">
             <button className="btn btn-primary bg-gradient" type="button" onClick={handleStart} disabled={currentStep !== stepCount}>
-              <VscDebugStart /> {t('launch_server')}
+              <StartIcon /> {t('launch_server')}
             </button>
           </div>
         </form>
