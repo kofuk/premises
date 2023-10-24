@@ -1,15 +1,22 @@
-export interface SessionData {
+export type SessionData = {
   loggedIn: boolean;
   userName: string;
-}
+};
 
-export interface GenerationInfo {
+export type GenerationInfo = {
   gen: string;
   id: string;
   timestamp: number;
-}
+};
 
-export interface WorldBackup {
+export type WorldBackup = {
   worldName: string;
   generations: GenerationInfo[];
-}
+};
+
+export type MCVersion = {
+  name: string;
+  isStable: boolean;
+  channel: string;
+  releaseDate: string;
+};

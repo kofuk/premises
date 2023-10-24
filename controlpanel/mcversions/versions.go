@@ -6,6 +6,8 @@ import (
 	"errors"
 	"io"
 	"net/http"
+
+	"github.com/kofuk/premises/controlpanel/entity"
 )
 
 const (
@@ -16,13 +18,6 @@ var (
 	ErrHttpFailure = errors.New("Failed to retrieve versions")
 	ErrNotFound    = errors.New("Specified version not found")
 )
-
-type MCVersion struct {
-	Name        string `json:"name"`
-	IsStable    bool   `json:"isStable"`
-	Channel     string `json:"channel"`
-	ReleaseDate string `json:"releaseDate"`
-}
 
 type launcherMeta struct {
 	Versions []struct {
@@ -62,13 +57,13 @@ func fetchVersionManifest(ctx context.Context) (*launcherMeta, error) {
 	return &meta, nil
 }
 
-func GetVersions(ctx context.Context) ([]MCVersion, error) {
+func GetVersions(ctx context.Context) ([]entity.MCVersion, error) {
 	versionData, err := fetchVersionManifest(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	var result []MCVersion
+	var result []entity.MCVersion
 
 	for _, ver := range versionData.Versions {
 		channel := ""
@@ -84,7 +79,7 @@ func GetVersions(ctx context.Context) ([]MCVersion, error) {
 			channel = "unknown"
 		}
 
-		result = append(result, MCVersion{
+		result = append(result, entity.MCVersion{
 			Name:        ver.ID,
 			IsStable:    ver.Type == "release",
 			Channel:     channel,

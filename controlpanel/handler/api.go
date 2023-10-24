@@ -442,7 +442,7 @@ func (h *Handler) handleApiBackups(c *gin.Context) {
 		c.Writer.Write([]byte(val))
 		return
 	} else if err != redis.Nil {
-		log.WithError(err).Error("Error retrieving mcversions cache")
+		log.WithError(err).Error("Error retrieving backups from cache")
 	}
 
 	log.WithField("cache_key", CacheKeyBackups).Info("cache miss")
@@ -472,12 +472,6 @@ func (h *Handler) handleApiBackups(c *gin.Context) {
 }
 
 func (h *Handler) handleApiMcversions(c *gin.Context) {
-	if _, ok := c.GetQuery("reload"); ok {
-		if _, err := h.redis.Del(c.Request.Context(), CacheKeyMCVersions).Result(); err != nil {
-			log.WithError(err).Error("Failed to delete mcversions cache")
-		}
-	}
-
 	if val, err := h.redis.Get(c.Request.Context(), CacheKeyMCVersions).Result(); err == nil {
 		c.Header("Content-Type", "application/json")
 		c.Writer.Write([]byte(val))
@@ -495,14 +489,16 @@ func (h *Handler) handleApiMcversions(c *gin.Context) {
 		return
 	}
 
-	jsonData, err := json.Marshal(versions)
+	data := gin.H{"success": true, "data": versions}
+
+	jsonData, err := json.Marshal(data)
 	if err != nil {
 		log.WithError(err).Error("Failed to marshal mcversions")
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 
-	if _, err := h.redis.Set(c.Request.Context(), CacheKeyMCVersions, jsonData, 7*24*time.Hour).Result(); err != nil {
+	if _, err := h.redis.Set(c.Request.Context(), CacheKeyMCVersions, jsonData, 24*time.Hour).Result(); err != nil {
 		log.WithError(err).Error("Failed to cache mcversions")
 	}
 

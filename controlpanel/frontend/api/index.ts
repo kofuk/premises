@@ -1,6 +1,7 @@
 import useSWR, {KeyedMutator} from 'swr';
+import useSWRImmutable from 'swr/immutable';
 
-import {SessionData, WorldBackup} from './entities';
+import {MCVersion, SessionData, WorldBackup} from './entities';
 
 const domain = process.env.NODE_ENV === 'test' ? 'http://localhost' : '';
 
@@ -53,5 +54,29 @@ export const useBackups = (): UseBackupsResponse => {
     error,
     isLoading,
     mutate
+  };
+};
+
+const getMCVersions = async (): Promise<MCVersion[]> => {
+  const resp = await fetch(`${domain}/api/mcversions`).then((resp) => resp.json());
+  if (!resp.success) {
+    throw new Error(resp.reason);
+  }
+
+  return resp.data;
+};
+
+export type UseMCVersionsResponse = {
+  mcVersions: MCVersion[] | undefined;
+  error: Error;
+  isLoading: boolean;
+};
+
+export const useMCVersions = (): UseMCVersionsResponse => {
+  const {data, error, isLoading} = useSWRImmutable('/api/mcversions', getMCVersions);
+  return {
+    mcVersions: data,
+    error,
+    isLoading
   };
 };
