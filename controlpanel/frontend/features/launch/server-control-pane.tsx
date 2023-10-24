@@ -39,9 +39,7 @@ const ServerControlPane = (props: Prop) => {
     const eventSource = new EventSource('/api/systemstat');
     eventSource.addEventListener('systemstat', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);
-      const data = cpuUsage;
-      data.push({cpuUsage: event['cpuUsage']});
-      setCpuUsage(data.slice(1));
+      setCpuUsage((current) => [...current.slice(1, 101), event]);
     });
     return () => {
       eventSource.close();
