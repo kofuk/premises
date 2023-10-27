@@ -11,5 +11,9 @@ import '@fontsource/roboto/700.css';
 
 (() => {
   const root = createRoot(document.getElementById('app')!);
-  root.render(<Premises />);
+  root.render(
+    <React.StrictMode>
+      <Premises />
+    </React.StrictMode>
+  );
 })();

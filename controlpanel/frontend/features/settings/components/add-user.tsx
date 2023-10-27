@@ -2,14 +2,12 @@ import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
-type Props = {
-  updateFeedback: (message: string) => void;
-};
+import Snackbar from '@/components/snackbar';
 
-const AddUser = (props: Props) => {
+const AddUser = () => {
   const [t] = useTranslation();
 
-  const {updateFeedback} = props;
+  const [feedback, setFeedback] = useState('');
 
   const [canContinue, setCanContinue] = useState(false);
   const [userName, setUserName] = useState('');
@@ -41,7 +39,7 @@ const AddUser = (props: Props) => {
           setSuccess(true);
           return;
         }
-        updateFeedback(result['reason']);
+        setFeedback(result['reason']);
       } catch (err) {
         console.error(err);
       }
@@ -70,6 +68,8 @@ const AddUser = (props: Props) => {
         handleAddUser();
       }}
     >
+      <h2>{t('add_user_header')}</h2>
+
       <div className="mb-3 form-floating">
         <input
           type="text"
@@ -119,6 +119,8 @@ const AddUser = (props: Props) => {
           {t('add_user_submit')}
         </button>
       </div>
+
+      <Snackbar onClose={() => setFeedback('')} message={feedback} />
     </form>
   );
 };

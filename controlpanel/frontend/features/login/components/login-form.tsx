@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
@@ -7,7 +7,7 @@ import KeyIcon from '@mui/icons-material/Key';
 import {LoadingButton} from '@mui/lab';
 import {Button, ButtonGroup, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Tooltip} from '@mui/material';
 
-import {LoginResult, passkeysSupported, useAuth} from '@/utils/auth';
+import {LoginResult, useAuth, usePasskeysSupported} from '@/utils/auth';
 
 interface Prop {
   setFeedback: (feedback: string) => void;
@@ -52,20 +52,7 @@ const LoginForm = ({setFeedback}: Prop) => {
     }
   };
 
-  const [passkeysAvailable, setPasskeysAvailable] = useState(false);
-  useEffect(() => {
-    (async () => {
-      setPasskeysAvailable(await passkeysSupported());
-    })();
-  }, []);
-
-  const passkeysLoginButton = (
-    <Tooltip title="Use Passkey">
-      <Button size="small" aria-label="security key" type="button" onClick={handlePasskeys}>
-        <KeyIcon />
-      </Button>
-    </Tooltip>
-  );
+  const passkeysSupported = usePasskeysSupported();
 
   const handleChangePassword = ({password}: any) => {
     (async () => {
@@ -86,7 +73,13 @@ const LoginForm = ({setFeedback}: Prop) => {
           <TextField variant="outlined" label={t('password')} autoComplete="password" type="password" {...loginForm.register('password')} fullWidth />
           <Stack direction="row" justifyContent="end" sx={{mt: 1}}>
             <ButtonGroup disabled={loggingIn} variant="contained" aria-label="outlined primary button group">
-              {passkeysAvailable && passkeysLoginButton}
+              {passkeysSupported && (
+                <Tooltip title="Use Passkey">
+                  <Button size="small" aria-label="security key" type="button" onClick={handlePasskeys}>
+                    <KeyIcon />
+                  </Button>
+                </Tooltip>
+              )}
               <LoadingButton loading={loggingIn} variant="contained" type="submit">
                 {t('login')}
               </LoadingButton>

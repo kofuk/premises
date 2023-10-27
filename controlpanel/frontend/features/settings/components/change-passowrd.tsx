@@ -2,14 +2,13 @@ import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
-type Props = {
-  updateFeedback: (message: string) => void;
-};
+import Snackbar from '@/components/snackbar';
 
-const ChangePassword = (props: Props) => {
+const ChangePassword = () => {
   const [t] = useTranslation();
 
-  const {updateFeedback} = props;
+  const [feedback, setFeedback] = useState('');
+
   const [canChangePassword, setCanChangePassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -69,11 +68,11 @@ const ChangePassword = (props: Props) => {
           setNewPasswordConfirm('');
           setCanChangePassword(true);
           setPasswordSuccess(true);
-          updateFeedback('');
+          setFeedback('');
         } else {
           setCanChangePassword(true);
           setPasswordSuccess(false);
-          updateFeedback(result['reason']);
+          setFeedback(result['reason']);
         }
       } catch (err) {
         console.error(err);
@@ -88,6 +87,8 @@ const ChangePassword = (props: Props) => {
         handleChangePassword();
       }}
     >
+      <h2>{t('change_password_header')}</h2>
+
       <div className="mb-3 form-floating">
         <input
           type="password"
@@ -137,6 +138,8 @@ const ChangePassword = (props: Props) => {
           {t('change_password_submit')}
         </button>
       </div>
+
+      <Snackbar onClose={() => setFeedback('')} message={feedback} />
     </form>
   );
 };

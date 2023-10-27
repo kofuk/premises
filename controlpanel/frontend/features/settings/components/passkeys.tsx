@@ -4,6 +4,7 @@ import {useTranslation} from 'react-i18next';
 
 import {Delete as DeleteIcon} from '@mui/icons-material';
 
+import Snackbar from '@/components/snackbar';
 import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
 
 interface HardwareKey {
@@ -11,14 +12,10 @@ interface HardwareKey {
   name: string;
 }
 
-type Props = {
-  updateFeedback: (message: string) => void;
-};
-
-const PasswordlessLogin = (props: Props) => {
+const Passkeys = () => {
   const [t] = useTranslation();
 
-  const {updateFeedback} = props;
+  const [feedback, setFeedback] = useState('');
 
   const [keyName, setKeyName] = useState('');
   const [canContinue, setCanContinue] = useState(true);
@@ -29,7 +26,7 @@ const PasswordlessLogin = (props: Props) => {
       try {
         const result = await fetch('/api/hardwarekey').then((resp) => resp.json());
         if (!result['success']) {
-          updateFeedback(result['reason']);
+          setFeedback(result['reason']);
           return;
         }
         setHardwareKeys(result['data']);
@@ -52,7 +49,7 @@ const PasswordlessLogin = (props: Props) => {
           method: 'post'
         }).then((resp) => resp.json());
         if (!beginResp['success']) {
-          updateFeedback(beginResp['reason']);
+          setFeedback(beginResp['reason']);
           return;
         }
 
@@ -90,14 +87,14 @@ const PasswordlessLogin = (props: Props) => {
         }).then((resp) => resp.json());
 
         if (!finishResp['success']) {
-          updateFeedback(finishResp['reason']);
+          setFeedback(finishResp['reason']);
           return;
         }
         setKeyName('');
         refreshHardwareKeys();
       } catch (err) {
         console.error(err);
-        updateFeedback(t('passwordless_login_error'));
+        setFeedback(t('passwordless_login_error'));
       } finally {
         setCanContinue(true);
       }
@@ -123,6 +120,7 @@ const PasswordlessLogin = (props: Props) => {
 
   return (
     <>
+      <h2>{t('passwordless_login')}</h2>
       <div className="mb-3">{t('passwordless_login_description')}</div>
       {hardwareKeys.length === 0 ? null : (
         <>
@@ -175,8 +173,10 @@ const PasswordlessLogin = (props: Props) => {
           </button>
         </div>
       </form>
+
+      <Snackbar onClose={() => setFeedback('')} message={feedback} />
     </>
   );
 };
 
-export default PasswordlessLogin;
+export default Passkeys;

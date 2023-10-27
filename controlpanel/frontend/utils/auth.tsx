@@ -1,4 +1,4 @@
-import React, {ReactNode, useContext} from 'react';
+import React, {ReactNode, useContext, useEffect, useState} from 'react';
 
 import {useSessionData} from '@/api';
 import Loading from '@/components/loading';
@@ -143,7 +143,7 @@ export const useAuth = () => {
   return useContext(AuthContext);
 };
 
-export const passkeysSupported = async (): Promise<boolean> => {
+const passkeysSupported = async (): Promise<boolean> => {
   try {
     const supported = (
       await Promise.all([PublicKeyCredential.isConditionalMediationAvailable(), PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()])
@@ -153,4 +153,15 @@ export const passkeysSupported = async (): Promise<boolean> => {
   } catch (_) {
     return false;
   }
+};
+
+export const usePasskeysSupported = (): boolean => {
+  const [supported, setSupported] = useState(false);
+  useEffect(() => {
+    (async () => {
+      setSupported(await passkeysSupported());
+    })();
+  }, []);
+
+  return supported;
 };
