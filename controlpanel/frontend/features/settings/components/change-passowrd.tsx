@@ -1,6 +1,13 @@
 import React, {useState} from 'react';
 
+import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
+
+import {Check as CheckIcon} from '@mui/icons-material';
+import {LoadingButton} from '@mui/lab';
+import {Stack, TextField, Typography} from '@mui/material';
+import {green} from '@mui/material/colors';
+import {Box} from '@mui/system';
 
 import Snackbar from '@/components/snackbar';
 
@@ -9,46 +16,14 @@ const ChangePassword = () => {
 
   const [feedback, setFeedback] = useState('');
 
-  const [canChangePassword, setCanChangePassword] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState(false);
+  const {register, handleSubmit, formState, watch} = useForm();
+  const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
 
-  const canActivateChangePasswordButton = (curPassword: string, newPassword: string, newPasswordConfirm: string): boolean => {
-    if (curPassword.length === 0) {
-      return false;
-    }
-    if (newPassword.length < 8) {
-      return false;
-    }
-    if (newPassword !== newPasswordConfirm) {
-      return false;
-    }
-    return true;
-  };
-
-  const handleInputCurrentPassword = (val: string) => {
-    setCurrentPassword(val);
-    setCanChangePassword(canActivateChangePasswordButton(val, newPassword, newPasswordConfirm));
-    setPasswordSuccess(false);
-  };
-
-  const handleInputNewPassword = (val: string) => {
-    setNewPassword(val);
-    setCanChangePassword(canActivateChangePasswordButton(currentPassword, val, newPasswordConfirm));
-    setPasswordSuccess(false);
-  };
-
-  const handleInputPasswordConfirm = (val: string) => {
-    setNewPasswordConfirm(val);
-    setCanChangePassword(canActivateChangePasswordButton(currentPassword, newPassword, val));
-    setPasswordSuccess(false);
-  };
-
-  const handleChangePassword = () => {
+  const handleChangePassword = ({currentPassword, newPassword}: any) => {
     (async () => {
-      setCanChangePassword(false);
+      setSubmitting(true);
+      setSuccess(false);
 
       const params = new URLSearchParams();
       params.append('password', currentPassword);
@@ -63,84 +38,90 @@ const ChangePassword = () => {
           body: params.toString()
         }).then((resp) => resp.json());
         if (result['success']) {
-          setCurrentPassword('');
-          setNewPassword('');
-          setNewPasswordConfirm('');
-          setCanChangePassword(true);
-          setPasswordSuccess(true);
+          setSuccess(true);
           setFeedback('');
         } else {
-          setCanChangePassword(true);
-          setPasswordSuccess(false);
+          setSuccess(false);
           setFeedback(result['reason']);
         }
       } catch (err) {
         console.error(err);
+      } finally {
+        setSubmitting(false);
       }
     })();
   };
 
-  return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleChangePassword();
-      }}
-    >
-      <h2>{t('change_password_header')}</h2>
+  const buttonSx = {
+    ...(success && {
+      bgcolor: green[500],
+      '&:hover': {
+        bgcolor: green[700]
+      }
+    })
+  };
 
-      <div className="mb-3 form-floating">
-        <input
-          type="password"
-          autoComplete="current-password"
-          id="changePassword_username"
-          className="form-control"
-          placeholder={t('change_password_current')}
-          onChange={(e) => handleInputCurrentPassword(e.target.value)}
-          value={currentPassword}
-          required={true}
-        />
-        <label htmlFor="changePassword_username">{t('change_password_current')}</label>
-      </div>
-      <div>
-        <div className="mb-3 form-floating">
-          <input
-            type="password"
-            autoComplete="new-password"
-            id="changePassword_password"
-            className="form-control"
-            placeholder={t('change_password_new')}
-            onChange={(e) => handleInputNewPassword(e.target.value)}
-            value={newPassword}
-            required={true}
-          />
-          <label htmlFor="changePassword_password">{t('change_password_new')}</label>
-        </div>
-      </div>
-      <div>
-        <div className="mb-3 form-floating">
-          <input
-            type="password"
-            autoComplete="new-password"
-            id="changePassword_password_confirm"
-            className="form-control"
-            placeholder={t('change_password_confirm')}
-            onChange={(e) => handleInputPasswordConfirm(e.target.value)}
-            value={newPasswordConfirm}
-            required={true}
-          />
-          <label htmlFor="changePassword_password_confirm">{t('change_password_confirm')}</label>
-        </div>
-      </div>
-      <div className="text-end">
-        {passwordSuccess ? <span className="text-success">✓ {t('change_password_success')}</span> : ''}
-        <button type="submit" className="btn btn-primary bg-gradient ms-3" disabled={!canChangePassword}>
-          {t('change_password_submit')}
-        </button>
-      </div>
+  return (
+    <>
+      <Typography variant="h4" sx={{mt: 3}}>
+        {t('change_password_header')}
+      </Typography>
+
+      <form onSubmit={handleSubmit(handleChangePassword)}>
+        <Box sx={{m: 2}}>
+          <Stack spacing={2}>
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label={t('change_password_current')}
+                variant="outlined"
+                type="password"
+                autoComplete="current-password"
+                fullWidth
+                {...register('currentPassword', {
+                  required: true
+                })}
+              />
+              <Box sx={{width: '100%'}} />
+            </Stack>
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label={t('change_password_new')}
+                variant="outlined"
+                type="password"
+                autoComplete="new-password"
+                fullWidth
+                {...register('newPassword', {
+                  required: true
+                })}
+              />
+              <TextField
+                label={t('change_password_confirm')}
+                variant="outlined"
+                type="password"
+                autoComplete="new-password"
+                fullWidth
+                {...register('newPasswordConfirm', {
+                  required: true,
+                  validate: (val: string) => {
+                    if (watch('newPassword') !== val) {
+                      return 'Password do not match';
+                    }
+                  }
+                })}
+              />
+            </Stack>
+          </Stack>
+        </Box>
+
+        <Box sx={{m: 2}}>
+          <LoadingButton type="submit" variant="contained" disabled={!formState.isValid} loading={submitting} sx={buttonSx}>
+            {success ? <CheckIcon /> : t('change_password_submit')}
+          </LoadingButton>
+        </Box>
+      </form>
 
       <Snackbar onClose={() => setFeedback('')} message={feedback} />
-    </form>
+    </>
   );
 };
 

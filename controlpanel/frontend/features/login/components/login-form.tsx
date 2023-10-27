@@ -70,7 +70,7 @@ const LoginForm = ({setFeedback}: Prop) => {
       <form onSubmit={loginForm.handleSubmit(handleLogin)}>
         <Stack spacing={2}>
           <TextField variant="outlined" label={t('username')} autoComplete="username" type="text" fullWidth {...loginForm.register('username')} />
-          <TextField variant="outlined" label={t('password')} autoComplete="password" type="password" {...loginForm.register('password')} fullWidth />
+          <TextField variant="outlined" label={t('password')} autoComplete="password" type="password" fullWidth {...loginForm.register('password')} />
           <Stack direction="row" justifyContent="end" sx={{mt: 1}}>
             <ButtonGroup disabled={loggingIn} variant="contained" aria-label="outlined primary button group">
               {passkeysSupported && (
