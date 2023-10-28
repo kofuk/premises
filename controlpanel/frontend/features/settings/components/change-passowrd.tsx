@@ -10,6 +10,7 @@ import {Stack, TextField, Typography} from '@mui/material';
 import {green} from '@mui/material/colors';
 import {Box} from '@mui/system';
 
+import {changePassword} from '@/api';
 import Snackbar from '@/components/snackbar';
 
 const ChangePassword = () => {
@@ -25,28 +26,12 @@ const ChangePassword = () => {
     (async () => {
       setSubmitting(true);
       setSuccess(false);
-
-      const params = new URLSearchParams();
-      params.append('password', currentPassword);
-      params.append('new-password', newPassword);
-
       try {
-        const result = await fetch('/api/users/change-password', {
-          method: 'post',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: params.toString()
-        }).then((resp) => resp.json());
-        if (result['success']) {
-          setSuccess(true);
-          setFeedback('');
-        } else {
-          setSuccess(false);
-          setFeedback(result['reason']);
-        }
-      } catch (err) {
+        await changePassword({password: currentPassword, newPassword});
+        setSuccess(true);
+      } catch (err: Error) {
         console.error(err);
+        setFeedback(err.message);
       } finally {
         setSubmitting(false);
       }

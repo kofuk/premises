@@ -23,7 +23,7 @@ import {
 } from '@mui/material';
 import {Box} from '@mui/system';
 
-import {usePasskeys} from '@/api';
+import {APIError, getPasskeysRegistrationOptions, registerPasskeys, usePasskeys} from '@/api';
 import Loading from '@/components/loading';
 import Snackbar from '@/components/snackbar';
 import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
@@ -44,15 +44,7 @@ const Passkeys = () => {
       setSubmitting(true);
 
       try {
-        const beginResp = await fetch('/api/hardwarekey/begin', {
-          method: 'post'
-        }).then((resp) => resp.json());
-        if (!beginResp['success']) {
-          setFeedback(beginResp['reason']);
-          return;
-        }
-
-        const options = beginResp.data;
+        const options = await getPasskeysRegistrationOptions();
 
         options.publicKey.challenge = decodeBuffer(options.publicKey.challenge);
         options.publicKey.user.id = decodeBuffer(options.publicKey.user.id);
@@ -64,7 +56,7 @@ const Passkeys = () => {
 
         const cred = await navigator.credentials.create(options);
         if (!cred) {
-          throw 'error';
+          throw new Error('Unable to create CredentialCreationResponse');
         }
 
         const publicKeyCred = cred as PublicKeyCredential;
@@ -72,9 +64,9 @@ const Passkeys = () => {
         const clientDataJson = publicKeyCred.response.clientDataJSON;
         const rawId = publicKeyCred.rawId;
 
-        const finishResp = await fetch('/api/hardwarekey/finish?name=' + encodeURI(keyName), {
-          method: 'post',
-          body: JSON.stringify({
+        await registerPasskeys({
+          name: keyName,
+          credentialCreationResponse: {
             id: cred.id,
             rawId: encodeBuffer(rawId),
             type: publicKeyCred.type,
@@ -82,18 +74,18 @@ const Passkeys = () => {
               attestationObject: encodeBuffer(attestationObject),
               clientDataJSON: encodeBuffer(clientDataJson)
             }
-          })
-        }).then((resp) => resp.json());
+          }
+        });
 
-        if (!finishResp['success']) {
-          setFeedback(finishResp['reason']);
-          return;
-        }
         reset();
         mutate();
       } catch (err: Error) {
         console.error(err);
-        setFeedback(t('passwordless_login_error'));
+        if (err instanceof APIError) {
+          setFeedback(err.message);
+        } else {
+          setFeedback(t('passwordless_login_error'));
+        }
       } finally {
         setSubmitting(false);
       }

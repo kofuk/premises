@@ -1,6 +1,6 @@
 import React, {ReactNode, useContext, useEffect, useState} from 'react';
 
-import {login as apiLogin, useSessionData} from '@/api';
+import {login as apiLogin, getPasskeysLoginOptions, loginPasskeys as loginPasskeysApi, useSessionData} from '@/api';
 import Loading from '@/components/loading';
 import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
 
@@ -41,18 +41,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
   };
 
   const loginPasskeys = async (): Promise<void> => {
-    const beginResp: any = await fetch('/login/hardwarekey/begin', {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    }).then((resp) => resp.json());
-
-    if (!beginResp['success']) {
-      throw new Error(beginResp['reason']);
-    }
-
-    const options = beginResp.data;
+    const options = await getPasskeysLoginOptions();
 
     options.publicKey.challenge = decodeBuffer(options.publicKey.challenge);
     options.publicKey.allowCredentials = [];
@@ -62,24 +51,17 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
     const rawId = publicKeyCred.rawId;
     const {authenticatorData, clientDataJSON, signature, userHandle} = publicKeyCred.response as AuthenticatorAssertionResponse;
 
-    const finishResp: any = await fetch('/login/hardwarekey/finish', {
-      method: 'post',
-      body: JSON.stringify({
-        id: publicKeyCred.id,
-        rawId: encodeBuffer(rawId),
-        type: publicKeyCred.type,
-        response: {
-          authenticatorData: encodeBuffer(authenticatorData),
-          clientDataJSON: encodeBuffer(clientDataJSON),
-          signature: encodeBuffer(signature),
-          userHandle: encodeBuffer(userHandle ?? new ArrayBuffer(0))
-        }
-      })
-    }).then((resp) => resp.json());
-
-    if (!finishResp['success']) {
-      throw new Error(finishResp['reason']);
-    }
+    await loginPasskeysApi({
+      id: publicKeyCred.id,
+      rawId: encodeBuffer(rawId),
+      type: publicKeyCred.type,
+      response: {
+        authenticatorData: encodeBuffer(authenticatorData),
+        clientDataJSON: encodeBuffer(clientDataJSON),
+        signature: encodeBuffer(signature),
+        userHandle: encodeBuffer(userHandle ?? new ArrayBuffer(0))
+      }
+    });
 
     mutate();
   };

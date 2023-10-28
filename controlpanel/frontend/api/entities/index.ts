@@ -34,3 +34,33 @@ export type PasswordCredential = {
 export type SessionState = {
   needsChangePassword: boolean;
 };
+
+export type UpdatePassword = {
+  password: string;
+  newPassword: string;
+};
+
+export type CredentialNameAndCreationResponse = {
+  name: string;
+  credentialCreationResponse: {
+    id: string;
+    rawId: string;
+    type: string;
+    response: {
+      attestationObject: string;
+      clientDataJSON: string;
+    };
+  };
+};
+
+export type CredentialAssertionResponse = {
+  id: string;
+  rawId: string;
+  type: string;
+  response: {
+    authenticatorData: string;
+    clientDataJSON: string;
+    signature: string;
+    userHandle: string;
+  };
+};

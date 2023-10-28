@@ -1,5 +1,7 @@
 package entity
 
+import "github.com/go-webauthn/webauthn/protocol"
+
 type ErrorCode int
 
 const (
@@ -63,4 +65,14 @@ type WorldBackup struct {
 type Passkey struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+type UpdatePassword struct {
+	Password    string `json:"password"`
+	NewPassword string `json:"newPassword"`
+}
+
+type CredentialNameAndCreationResponse struct {
+	Name string                              `json:"name"`
+	Ccr  protocol.CredentialCreationResponse `json:"credentialCreationResponse"`
 }

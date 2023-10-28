@@ -714,19 +714,17 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 	session := sessions.Default(c)
 	userID := session.Get("user_id")
 
-	if err := c.Request.ParseForm(); err != nil {
+	var req entity.UpdatePassword
+	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
-			Reason:    "Invalid form data",
+			Reason:    "Invalid request data",
 		})
 		return
 	}
 
-	password := c.Request.Form.Get("password")
-	newPassword := c.Request.Form.Get("new-password")
-
-	if !isAllowedPassword(newPassword) {
+	if !isAllowedPassword(req.NewPassword) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasswordRule,
@@ -745,7 +743,7 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 		})
 		return
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
@@ -754,7 +752,7 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
 		log.WithError(err).Error("error hashing password")
 		c.JSON(http.StatusOK, entity.ErrorResponse{
@@ -979,9 +977,18 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 	session.Delete("hwkey_registration")
 	session.Save()
 
-	keyName := c.Query("name")
-	if keyName == "" {
-		keyName = "Key"
+	var req entity.CredentialNameAndCreationResponse
+	if err := c.BindJSON(&req); err != nil {
+		log.WithError(err).Error("Request parse error")
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+			Reason:    "Request parse error",
+		})
+		return
+	}
+	if req.Name == "" {
+		req.Name = "Key"
 	}
 
 	sessionData := webauthn.SessionData{}
@@ -1024,7 +1031,18 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 		waUser.registerCredential(c)
 	}
 
-	credData, err := h.webauthn.FinishRegistration(&waUser, sessionData, c.Request)
+	pcc, err := req.Ccr.Parse()
+	if err != nil {
+		log.WithError(err).Error("Failed to parse credential creation response")
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+			Reason:    "Failed to parse credential creation response",
+		})
+		return
+	}
+
+	credData, err := h.webauthn.CreateCredential(&waUser, sessionData, pcc)
 	if err != nil {
 		log.WithError(err).WithField("info", err.(*protocol.Error).DevInfo).Error("Error registration")
 		c.JSON(http.StatusOK, entity.ErrorResponse{
@@ -1039,7 +1057,7 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 	credential := model.Credential{
 		OwnerID:                user.ID,
 		UUID:                   keyUuid,
-		KeyName:                keyName,
+		KeyName:                req.Name,
 		CredentialID:           credData.ID,
 		PublicKey:              credData.PublicKey,
 		AttestationType:        credData.AttestationType,
