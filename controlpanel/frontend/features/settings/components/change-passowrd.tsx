@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 
+import {Helmet} from 'react-helmet-async';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 
@@ -121,6 +122,12 @@ const ChangePassword = () => {
       </form>
 
       <Snackbar onClose={() => setFeedback('')} message={feedback} />
+
+      <Helmet>
+        <title>
+          {t('change_password_header')} - {t('app_name')}
+        </title>
+      </Helmet>
     </>
   );
 };

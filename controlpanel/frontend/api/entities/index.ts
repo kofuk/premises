@@ -20,3 +20,8 @@ export type MCVersion = {
   channel: string;
   releaseDate: string;
 };
+
+export type Passkey = {
+  id: string;
+  name: string;
+};

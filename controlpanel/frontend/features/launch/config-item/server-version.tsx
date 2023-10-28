@@ -32,7 +32,7 @@ const ServerVersion = ({
   const [showAlpha, setShowAlpha] = useState(false);
   const [showBeta, setShowBeta] = useState(false);
 
-  const {mcVersions, isLoading} = useMCVersions();
+  const {data: mcVersions, isLoading} = useMCVersions();
   useEffect(() => {
     if (mcVersions) {
       postUpdateCondition(mcVersions);

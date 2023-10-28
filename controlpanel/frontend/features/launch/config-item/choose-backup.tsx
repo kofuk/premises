@@ -31,7 +31,7 @@ const ChooseBackup = ({
 }: Props) => {
   const [t] = useTranslation();
 
-  const {backups, isLoading} = useBackups();
+  const {data: backups, isLoading} = useBackups();
   useEffect(() => {
     if (backups && backups.length > 0) {
       if (worldName === '') {

@@ -1,5 +1,6 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 
+import {Helmet} from 'react-helmet-async';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 import {TransitionGroup} from 'react-transition-group';
@@ -22,13 +23,10 @@ import {
 } from '@mui/material';
 import {Box} from '@mui/system';
 
+import {usePasskeys} from '@/api';
+import Loading from '@/components/loading';
 import Snackbar from '@/components/snackbar';
 import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
-
-interface HardwareKey {
-  id: string;
-  name: string;
-}
 
 const Passkeys = () => {
   const [t] = useTranslation();
@@ -36,28 +34,10 @@ const Passkeys = () => {
   const [feedback, setFeedback] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
-  const [hardwareKeys, setHardwareKeys] = useState<HardwareKey[]>([]);
 
-  const {register, handleSubmit} = useForm();
+  const {register, handleSubmit, reset} = useForm();
 
-  const refreshHardwareKeys = () => {
-    (async () => {
-      try {
-        const result = await fetch('/api/hardwarekey').then((resp) => resp.json());
-        if (!result['success']) {
-          setFeedback(result['reason']);
-          return;
-        }
-        setHardwareKeys(result['data']);
-      } catch (err) {
-        console.log(err);
-      }
-    })();
-  };
-
-  useEffect(() => {
-    refreshHardwareKeys();
-  }, []);
+  const {data: passkeys, isLoading, mutate, deleteKey} = usePasskeys();
 
   const handleAddKey = ({keyName}: any) => {
     (async () => {
@@ -109,9 +89,9 @@ const Passkeys = () => {
           setFeedback(finishResp['reason']);
           return;
         }
-        setKeyName('');
-        refreshHardwareKeys();
-      } catch (err) {
+        reset();
+        mutate();
+      } catch (err: Error) {
         console.error(err);
         setFeedback(t('passwordless_login_error'));
       } finally {
@@ -124,24 +104,11 @@ const Passkeys = () => {
     setKeyName(val);
   };
 
-  const deleteKey = (id: string) => {
-    (async () => {
-      try {
-        const resp = await fetch('/api/hardwarekey/' + id, {method: 'delete'});
-        if (resp.status === 204) {
-          refreshHardwareKeys();
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    })();
-  };
-
   const createPasskeyList = () => {
     return (
       <List subheader={<ListSubheader>{t('passwordless_login_existing_keys')}</ListSubheader>} sx={{mt: 5}}>
         <TransitionGroup>
-          {hardwareKeys.map((passkey) => (
+          {passkeys.map((passkey) => (
             <Collapse key={passkey.id}>
               <ListItem
                 secondaryAction={
@@ -202,10 +169,16 @@ const Passkeys = () => {
           </Box>
         </form>
 
-        {hardwareKeys.length > 0 ? createPasskeyList() : createNoPasskeyMessage()}
+        {isLoading ? <Loading compact /> : passkeys.length > 0 ? createPasskeyList() : createNoPasskeyMessage()}
       </Box>
 
       <Snackbar onClose={() => setFeedback('')} message={feedback} />
+
+      <Helmet>
+        <title>
+          {t('passwordless_login')} - {t('app_name')}
+        </title>
+      </Helmet>
     </>
   );
 };

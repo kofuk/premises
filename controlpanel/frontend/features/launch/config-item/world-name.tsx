@@ -20,7 +20,7 @@ const WorldName = ({
 }) => {
   const [t] = useTranslation();
 
-  const {backups, isLoading} = useBackups();
+  const {data: backups, isLoading} = useBackups();
   const [duplicateName, setDuplicateName] = useState(false);
   const [invalidName, setInvalidName] = useState(false);
 

@@ -21,7 +21,7 @@ type AuthContextType = {
 const AuthContext = React.createContext<AuthContextType>(null!);
 
 export const AuthProvider = ({children}: {children: ReactNode}) => {
-  const {session, error, isLoading, mutate} = useSessionData();
+  const {data: session, error, isLoading, mutate} = useSessionData();
   if (isLoading) {
     return <Loading />;
   }

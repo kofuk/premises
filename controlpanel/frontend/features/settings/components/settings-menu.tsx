@@ -44,7 +44,9 @@ const SettingsMenu = () => {
       </List>
 
       <Helmet>
-        <title>{t('settings')}</title>
+        <title>
+          {t('settings')} - {t('app_name')}
+        </title>
       </Helmet>
     </Box>
   );

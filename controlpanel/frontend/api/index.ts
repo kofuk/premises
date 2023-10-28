@@ -1,9 +1,19 @@
 import useSWR, {KeyedMutator} from 'swr';
 import useSWRImmutable from 'swr/immutable';
 
-import {MCVersion, SessionData, WorldBackup} from './entities';
+import {MCVersion, Passkey, SessionData, WorldBackup} from './entities';
 
 const domain = process.env.NODE_ENV === 'test' ? 'http://localhost' : '';
+
+export type ImmutableUseResponse<T> = {
+  data: T | undefined;
+  error: Error;
+  isLoading: boolean;
+};
+
+export type MutableUseResponse<T> = ImmutableUseResponse & {
+  mutate: KeyedMutator<T>;
+};
 
 const getSessionData = async (): Promise<SessionData> => {
   const resp = await fetch(`${domain}/api/session-data`).then((resp) => resp.json());
@@ -14,17 +24,10 @@ const getSessionData = async (): Promise<SessionData> => {
   return resp.data;
 };
 
-export type UseSessionDataResponse = {
-  session: SessionData | undefined;
-  error: Error;
-  isLoading: boolean;
-  mutate: KeyedMutator<SessionData>;
-};
-
-export const useSessionData = (): UseSessionDataResponse => {
+export const useSessionData = (): MutableUseResponse<SessionData> => {
   const {data, error, mutate, isLoading} = useSWR('/api/session-data', getSessionData);
   return {
-    session: data,
+    data,
     error,
     isLoading,
     mutate
@@ -40,17 +43,10 @@ const getBackups = async (): Promise<WorldBackup[]> => {
   return resp.data;
 };
 
-export type UseBackupsResponse = {
-  backups: WorldBackup[] | undefined;
-  error: Error;
-  isLoading: boolean;
-  mutate: KeyedMutator<WorldBackup[]>;
-};
-
-export const useBackups = (): UseBackupsResponse => {
+export const useBackups = (): MutableUseResponse<WorldBackup[]> => {
   const {data, error, isLoading, mutate} = useSWR('/api/backups', getBackups);
   return {
-    backups: data,
+    data,
     error,
     isLoading,
     mutate
@@ -72,11 +68,51 @@ export type UseMCVersionsResponse = {
   isLoading: boolean;
 };
 
-export const useMCVersions = (): UseMCVersionsResponse => {
+export const useMCVersions = (): ImmutableUseResponse<MCVersion[]> => {
   const {data, error, isLoading} = useSWRImmutable('/api/mcversions', getMCVersions);
   return {
-    mcVersions: data,
+    data,
     error,
     isLoading
+  };
+};
+
+const getPasskeys = async (): Promise<Passkey[]> => {
+  const resp = await fetch(`${domain}/api/hardwarekey`).then((resp) => resp.json());
+  if (!resp.success) {
+    throw new Error(resp.reason);
+  }
+
+  return resp.data;
+};
+
+export type UsePasskeysResponse = MutableUseResponse<Passkey[]> & {
+  deleteKey: (id: string) => void;
+};
+
+export const usePasskeys = (): UsePasskeysResponse => {
+  const {data, error, isLoading, mutate} = useSWR('/api/hardwarekey', getPasskeys);
+
+  const deleteKey = (id: string) => {
+    mutate(
+      async () => {
+        const resp = await fetch(`${domain}/api/hardwarekey/${id}`, {method: 'delete'});
+        if (resp.status !== 204) {
+          throw new Error('Error deleting key');
+        }
+      },
+      {
+        optimisticData: data && data.filter((key) => key.id != id),
+        populateCache: false
+      }
+    );
+  };
+
+  return {
+    data,
+    error,
+    isLoading,
+    mutate,
+    deleteKey
   };
 };
