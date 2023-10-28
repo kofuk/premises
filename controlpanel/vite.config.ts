@@ -1,5 +1,6 @@
 import react from '@vitejs/plugin-react';
 import {defineConfig} from 'vite';
+import checker from 'vite-plugin-checker';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
@@ -12,5 +13,5 @@ export default defineConfig({
   build: {
     outDir: 'gen'
   },
-  plugins: [react(), tsconfigPaths()]
+  plugins: [react(), tsconfigPaths(), checker({typescript: true})]
 });
