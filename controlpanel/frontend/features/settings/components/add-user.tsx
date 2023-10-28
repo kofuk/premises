@@ -1,7 +1,14 @@
 import React, {useState} from 'react';
 
+import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 
+import {Check as CheckIcon} from '@mui/icons-material';
+import {LoadingButton} from '@mui/lab';
+import {Box, Stack, TextField, Typography} from '@mui/material';
+import {green} from '@mui/material/colors';
+
+import {APIError, addUser} from '@/api';
 import Snackbar from '@/components/snackbar';
 
 const AddUser = () => {
@@ -9,119 +16,98 @@ const AddUser = () => {
 
   const [feedback, setFeedback] = useState('');
 
-  const [canContinue, setCanContinue] = useState(false);
-  const [userName, setUserName] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleAddUser = () => {
-    (async () => {
-      setCanContinue(false);
+  const {register, handleSubmit, formState, watch} = useForm();
 
-      try {
-        const params = new URLSearchParams();
-        params.append('username', userName);
-        params.append('password', password);
+  const handleAddUser = async ({userName, password}: any) => {
+    setSubmitting(true);
+    setSuccess(false);
 
-        const result = await fetch('/api/users/add', {
-          method: 'post',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: params.toString()
-        }).then((resp) => resp.json());
-        if (result['success']) {
-          setCanContinue(false);
-          setUserName('');
-          setPassword('');
-          setPasswordConfirm('');
-          setSuccess(true);
-          return;
-        }
-        setFeedback(result['reason']);
-      } catch (err) {
-        console.error(err);
+    try {
+      await addUser({userName, password});
+      setSuccess(true);
+    } catch (err: unknown) {
+      console.error(err);
+      if (err instanceof APIError) {
+        setFeedback(err.message);
       }
-    })();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleInputUserName = (val: string) => {
-    setUserName(val);
-    setCanContinue(val !== '' && password.length >= 8 && password == passwordConfirm);
-  };
-
-  const handleInputPassword = (val: string) => {
-    setPassword(val);
-    setCanContinue(userName !== '' && val.length >= 8 && val == passwordConfirm);
-  };
-
-  const handleInputPasswordConfirm = (val: string) => {
-    setPasswordConfirm(val);
-    setCanContinue(userName !== '' && password.length >= 8 && password == val);
+  const buttonSx = {
+    ...(success && {
+      bgcolor: green[500],
+      '&:hover': {
+        bgcolor: green[700]
+      }
+    })
   };
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        handleAddUser();
-      }}
-    >
-      <h2>{t('add_user_header')}</h2>
+    <>
+      <Typography variant="h4" sx={{mt: 3}}>
+        {t('add_user_header')}
+      </Typography>
 
-      <div className="mb-3 form-floating">
-        <input
-          type="text"
-          autoComplete="username"
-          id="newUser_username"
-          className="form-control"
-          placeholder={t('username')}
-          onChange={(e) => handleInputUserName(e.target.value)}
-          value={userName}
-          required={true}
-        />
-        <label htmlFor="newUser_username">{t('username')}</label>
-      </div>
-      <div>
-        <div className="mb-3 form-floating">
-          <input
-            type="password"
-            id="newUser_password"
-            autoComplete="new-password"
-            className="form-control"
-            placeholder={t('password')}
-            onChange={(e) => handleInputPassword(e.target.value)}
-            value={password}
-            required={true}
-          />
-          <label htmlFor="newUser_password">{t('password')}</label>
-        </div>
-      </div>
-      <div>
-        <div className="mb-3 form-floating">
-          <input
-            type="password"
-            autoComplete="new-password"
-            id="newUser_password_confirm"
-            className="form-control"
-            placeholder={t('password_confirm')}
-            onChange={(e) => handleInputPasswordConfirm(e.target.value)}
-            value={passwordConfirm}
-            required={true}
-          />
-          <label htmlFor="newUser_password_confirm">{t('password_confirm')}</label>
-        </div>
-      </div>
-      <div className="text-end">
-        {success ? <span className="text-success">✓ {t('add_user_success')}</span> : ''}
-        <button type="submit" className="btn btn-primary bg-gradient ms-3" disabled={!canContinue}>
-          {t('add_user_submit')}
-        </button>
-      </div>
+      <form onSubmit={handleSubmit(handleAddUser)}>
+        <Box sx={{m: 2}}>
+          <Stack spacing={2}>
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label={t('username')}
+                variant="outlined"
+                type="text"
+                autoComplete="username"
+                fullWidth
+                {...register('userName', {
+                  required: true,
+                  validate: (val: string) => val.length <= 32
+                })}
+              />
+              <Box sx={{width: '100%'}} />
+            </Stack>
+            <Stack direction="row" spacing={2}>
+              <TextField
+                label={t('password')}
+                variant="outlined"
+                type="password"
+                autoComplete="new-password"
+                fullWidth
+                {...register('password', {
+                  required: true
+                })}
+              />
+              <TextField
+                label={t('password_confirm')}
+                variant="outlined"
+                type="password"
+                autoComplete="new-password"
+                fullWidth
+                {...register('passwordConfirm', {
+                  required: true,
+                  validate: (val: string) => {
+                    if (watch('password') !== val) {
+                      return 'Password do not match';
+                    }
+                  }
+                })}
+              />
+            </Stack>
+          </Stack>
+        </Box>
 
+        <Box sx={{m: 2}}>
+          <LoadingButton type="submit" variant="contained" disabled={!formState.isValid} loading={submitting} sx={buttonSx}>
+            {success ? <CheckIcon /> : t('add_user_submit')}
+          </LoadingButton>
+        </Box>
+      </form>
       <Snackbar onClose={() => setFeedback('')} message={feedback} />
-    </form>
+    </>
   );
 };
 

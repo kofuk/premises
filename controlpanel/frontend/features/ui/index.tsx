@@ -1,15 +1,12 @@
 import React, {Suspense, useEffect} from 'react';
 import {Outlet, useNavigate} from 'react-router-dom';
 
+import {Box} from '@mui/material';
+
 import Navbar from './components/navbar';
 
 import Loading from '@/components/loading';
 import {useAuth} from '@/utils/auth';
-
-// For bootstrap based screen. We should remove this after transition to styled-component completed.
-import 'bootstrap/js/dist/collapse';
-import 'bootstrap/scss/bootstrap.scss';
-/////
 
 const UI = () => {
   const navigate = useNavigate();
@@ -25,11 +22,11 @@ const UI = () => {
       <>
         <Navbar />
 
-        <div className="container">
+        <Box sx={{maxWidth: 1000, m: '0 auto', p: 2}}>
           <Suspense fallback={<Loading />}>
             <Outlet />
           </Suspense>
-        </div>
+        </Box>
       </>
     )
   );

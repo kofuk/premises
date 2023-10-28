@@ -7,6 +7,10 @@ import ServerConfigPane from './server-config-pane';
 import ServerControlPane from './server-control-pane';
 import StatusBar from './statusbar';
 
+// For bootstrap based screen. We should remove this after migrating to styled-component completed.
+import 'bootstrap/scss/bootstrap.scss';
+/////
+
 const LaunchPage = () => {
   const [t] = useTranslation();
 

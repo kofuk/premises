@@ -50,6 +50,7 @@ export const getPasskeysRegistrationOptions = declareApi<null, CredentialCreatio
 export const registerPasskeys = declareApi<CredentialNameAndCreationResponse, null>('/api/hardwarekey/finish', 'post');
 export const getPasskeysLoginOptions = declareApi<null, CredentialRequestOptions>('/login/hardwarekey/begin', 'post');
 export const loginPasskeys = declareApi<CredentialAssertionResponse, null>('/login/hardwarekey/finish', 'post');
+export const addUser = declareApi<PasswordCredential, null>('/api/users/add', 'post');
 
 export type ImmutableUseResponse<T> = {
   data: T | undefined;

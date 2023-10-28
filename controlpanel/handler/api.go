@@ -784,19 +784,17 @@ func (h *Handler) handleApiUsersAdd(c *gin.Context) {
 	session := sessions.Default(c)
 	userID := session.Get("user_id").(uint)
 
-	if err := c.Request.ParseForm(); err != nil {
+	var req entity.PasswordCredential
+	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
-			Reason:    "Invalid form data",
+			Reason:    "request parse error",
 		})
 		return
 	}
 
-	newUsername := c.Request.Form.Get("username")
-	password := c.Request.Form.Get("password")
-
-	if len(newUsername) == 0 {
+	if len(req.UserName) == 0 || len(req.UserName) > 32 {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
@@ -804,7 +802,7 @@ func (h *Handler) handleApiUsersAdd(c *gin.Context) {
 		})
 		return
 	}
-	if !isAllowedPassword(password) {
+	if !isAllowedPassword(req.Password) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasswordRule,
@@ -813,7 +811,7 @@ func (h *Handler) handleApiUsersAdd(c *gin.Context) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		log.WithError(err).Error("error hashing password")
 		c.JSON(http.StatusOK, entity.ErrorResponse{
@@ -825,7 +823,7 @@ func (h *Handler) handleApiUsersAdd(c *gin.Context) {
 	}
 
 	user := &model.User{
-		Name:          newUsername,
+		Name:          req.UserName,
 		Password:      string(hashedPassword),
 		AddedByUserID: &userID,
 		Initialized:   false,
