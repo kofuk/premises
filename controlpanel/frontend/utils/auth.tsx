@@ -12,7 +12,7 @@ export enum LoginResult {
 type AuthContextType = {
   loggedIn: boolean;
   userName: string | null;
-  login: (username: string, password: string) => Promise<LoginResult>;
+  login: (userName: string, password: string) => Promise<LoginResult>;
   loginPasskeys: () => Promise<void>;
   logout: () => Promise<void>;
   initializePassword: (username: string, newPassword: string) => Promise<void>;
@@ -29,8 +29,8 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
     throw error;
   }
 
-  const login = async (username: string, password: string): Promise<LoginResult> => {
-    const resp = await apiLogin({username, password});
+  const login = async (userName: string, password: string): Promise<LoginResult> => {
+    const resp = await apiLogin({userName, password});
     if (resp.needsChangePassword) {
       return LoginResult.NeedsChangePassword;
     }
@@ -43,8 +43,8 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
   const loginPasskeys = async (): Promise<void> => {
     const options = await getPasskeysLoginOptions();
 
-    options.publicKey.challenge = decodeBuffer(options.publicKey.challenge);
-    options.publicKey.allowCredentials = [];
+    options.publicKey!.challenge = decodeBuffer(options.publicKey!.challenge as unknown as string);
+    options.publicKey!.allowCredentials = [];
     options.mediation = 'conditional';
 
     const publicKeyCred = (await navigator.credentials.get(options)) as PublicKeyCredential;

@@ -18,8 +18,8 @@ const domain = process.env.NODE_ENV === 'test' ? 'http://localhost' : '';
 
 export class APIError extends Error {}
 
-const api = async <T, U>(endpoint: string, method: string = 'get', body: T | undefined) => {
-  const options = {method};
+const api = async <T, U>(endpoint: string, method: string = 'get', body?: T) => {
+  const options = {method} as any;
   if (body) {
     options.body = JSON.stringify(body);
   }
@@ -37,7 +37,7 @@ export default api;
 
 const declareApi =
   <T, U>(endpoint: string, method: string = 'get') =>
-  (body: T | undefined) =>
+  (body?: T) =>
     api<T, U>(endpoint, method, body);
 
 export const login = declareApi<PasswordCredential, SessionState>('/login', 'post');
@@ -57,7 +57,7 @@ export type ImmutableUseResponse<T> = {
   isLoading: boolean;
 };
 
-export type MutableUseResponse<T> = ImmutableUseResponse & {
+export type MutableUseResponse<T> = ImmutableUseResponse<T> & {
   mutate: KeyedMutator<T>;
 };
 
@@ -98,10 +98,15 @@ export const usePasskeys = (): UsePasskeysResponse => {
   const {data, error, isLoading, mutate} = useSWR('/api/hardwarekey', () => getPasskeys());
 
   const deleteKey = (id: string) => {
-    mutate(() => api<null, null>(`/api/hardwarekey/${id}`, 'delete'), {
-      optimisticData: data && data.filter((key) => key.id != id),
-      populateCache: false
-    });
+    mutate(
+      async (): Promise<undefined> => {
+        api<null, null>(`/api/hardwarekey/${id}`, 'delete');
+      },
+      {
+        optimisticData: data && data.filter((key) => key.id != id),
+        populateCache: false
+      }
+    );
   };
 
   return {
