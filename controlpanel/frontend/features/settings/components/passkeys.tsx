@@ -46,11 +46,11 @@ const Passkeys = () => {
       try {
         const options = await getPasskeysRegistrationOptions();
 
-        options.publicKey.challenge = decodeBuffer(options.publicKey.challenge);
-        options.publicKey.user.id = decodeBuffer(options.publicKey.user.id);
-        if (options.publicKey.excludeCredentials) {
-          for (let i = 0; i < options.publicKey.excludeCredentials.length; i++) {
-            options.publicKey.excludeCredentials[i].id = decodeBuffer(options.publicKey.excludeCredentials[i].id);
+        options.publicKey!.challenge = decodeBuffer(options.publicKey!.challenge as unknown as string);
+        options.publicKey!.user.id = decodeBuffer(options.publicKey!.user.id as unknown as string);
+        if (options.publicKey!.excludeCredentials) {
+          for (let i = 0; i < options.publicKey!.excludeCredentials.length; i++) {
+            options.publicKey!.excludeCredentials[i].id = decodeBuffer(options.publicKey!.excludeCredentials[i].id as unknown as string);
           }
         }
 
@@ -79,7 +79,7 @@ const Passkeys = () => {
 
         reset();
         mutate();
-      } catch (err: Error) {
+      } catch (err: unknown) {
         console.error(err);
         if (err instanceof APIError) {
           setFeedback(err.message);
@@ -92,15 +92,11 @@ const Passkeys = () => {
     })();
   };
 
-  const handleInputKeyName = (val: string) => {
-    setKeyName(val);
-  };
-
   const createPasskeyList = () => {
     return (
       <List subheader={<ListSubheader>{t('passwordless_login_existing_keys')}</ListSubheader>} sx={{mt: 5}}>
         <TransitionGroup>
-          {passkeys.map((passkey) => (
+          {passkeys!.map((passkey) => (
             <Collapse key={passkey.id}>
               <ListItem
                 secondaryAction={
@@ -144,12 +140,11 @@ const Passkeys = () => {
               type="text"
               label={t('passwordless_login_add')}
               autoComplete="off"
-              onChange={(e) => handleInputKeyName(e.target.value)}
               disabled={submitting}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton variant="outlined" color="primary" type="submit" disabled={submitting}>
+                    <IconButton color="primary" type="submit" disabled={submitting}>
                       {submitting ? <CircularProgress size={20} /> : <AddIcon />}
                     </IconButton>
                   </InputAdornment>
@@ -161,7 +156,7 @@ const Passkeys = () => {
           </Box>
         </form>
 
-        {isLoading ? <Loading compact /> : passkeys.length > 0 ? createPasskeyList() : createNoPasskeyMessage()}
+        {isLoading ? <Loading compact /> : passkeys!.length > 0 ? createPasskeyList() : createNoPasskeyMessage()}
       </Box>
 
       <Snackbar onClose={() => setFeedback('')} message={feedback} />

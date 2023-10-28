@@ -45,7 +45,7 @@ const LoginForm = ({setFeedback}: Prop) => {
     try {
       await loginPasskeys();
       setLoggingIn(false);
-    } catch (err: Error) {
+    } catch (err: any) {
       console.error(err);
       setLoggingIn(false);
       setFeedback(err.message);

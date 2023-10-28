@@ -52,7 +52,7 @@ const ServerVersion = ({
     if (!versions.find((e) => e.name === serverVersion)) {
       if (versions.length > 0) {
         setServerVersion(versions[0].name);
-      } else if (mcVersions.length > 0) {
+      } else if (mcVersions!.length > 0) {
         setServerVersion(versionsData[0].name);
       }
     }
@@ -90,7 +90,7 @@ const ServerVersion = ({
               checked={showStable}
               onChange={() => {
                 setShowStable(!showStable);
-                postUpdateCondition(mcVersions);
+                postUpdateCondition(mcVersions!);
               }}
             />
             <label className="form-check-label" htmlFor="showStable">
@@ -105,7 +105,7 @@ const ServerVersion = ({
               checked={showSnapshot}
               onChange={() => {
                 setShowSnapshot(!showSnapshot);
-                postUpdateCondition(mcVersions);
+                postUpdateCondition(mcVersions!);
               }}
             />
             <label className="form-check-label" htmlFor="showSnapshot">
@@ -120,7 +120,7 @@ const ServerVersion = ({
               checked={showBeta}
               onChange={() => {
                 setShowBeta(!showBeta);
-                postUpdateCondition(mcVersions);
+                postUpdateCondition(mcVersions!);
               }}
             />
             <label className="form-check-label" htmlFor="showBeta">
@@ -135,7 +135,7 @@ const ServerVersion = ({
               checked={showAlpha}
               onChange={() => {
                 setShowAlpha(!showAlpha);
-                postUpdateCondition(mcVersions);
+                postUpdateCondition(mcVersions!);
               }}
             />
             <label className="form-check-label" htmlFor="showAlpha">

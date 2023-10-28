@@ -29,7 +29,7 @@ const ChangePassword = () => {
       try {
         await changePassword({password: currentPassword, newPassword});
         setSuccess(true);
-      } catch (err: Error) {
+      } catch (err: any) {
         console.error(err);
         setFeedback(err.message);
       } finally {
