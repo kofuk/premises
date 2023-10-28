@@ -83,9 +83,11 @@ const i18nData = {
       set_password_submit: 'Set password',
       passwordless_login: 'Passkeys',
       passwordless_login_description: 'You can login to Control Panel without password, using Passkeys.',
-      passwordless_login_key_name: 'Key name',
+      passwordless_login_existing_keys: 'Existing passkeys',
       passwordless_login_add: 'Add Key',
-      passwordless_login_error: 'Operation was disallowed or timed out'
+      passwordless_login_error: 'Operation was disallowed or timed out',
+      passwordless_login_no_keys: 'No Passkeys',
+      passwordless_login_no_keys_message: 'Passkeys will be listed here when you add one'
     }
   },
   ja: {
@@ -169,9 +171,11 @@ const i18nData = {
       set_password_submit: 'パスワードを設定',
       passwordless_login: 'パスキー',
       passwordless_login_description: 'パスキーを使ってコントロールパネルにパスワードなしでログインできます。',
-      passwordless_login_key_name: 'キーの名前',
+      passwordless_login_existing_keys: '既存のパスキー',
       passwordless_login_add: 'キーを追加',
-      passwordless_login_error: 'パスキーへのアクセスが拒否されたかタイムアウトしました'
+      passwordless_login_error: 'パスキーへのアクセスが拒否されたかタイムアウトしました',
+      passwordless_login_no_keys: 'パスキーがありません',
+      passwordless_login_no_keys_message: 'パスキーを追加するとここに表示されます'
     }
   }
 };

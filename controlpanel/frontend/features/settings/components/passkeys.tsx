@@ -1,8 +1,26 @@
 import React, {useEffect, useState} from 'react';
 
+import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
+import {TransitionGroup} from 'react-transition-group';
 
-import {Delete as DeleteIcon} from '@mui/icons-material';
+import {Add as AddIcon, Delete as DeleteIcon} from '@mui/icons-material';
+import {
+  Alert,
+  AlertTitle,
+  CircularProgress,
+  Collapse,
+  Divider,
+  IconButton,
+  InputAdornment,
+  List,
+  ListItem,
+  ListItemText,
+  ListSubheader,
+  TextField,
+  Typography
+} from '@mui/material';
+import {Box} from '@mui/system';
 
 import Snackbar from '@/components/snackbar';
 import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
@@ -17,9 +35,10 @@ const Passkeys = () => {
 
   const [feedback, setFeedback] = useState('');
 
-  const [keyName, setKeyName] = useState('');
-  const [canContinue, setCanContinue] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [hardwareKeys, setHardwareKeys] = useState<HardwareKey[]>([]);
+
+  const {register, handleSubmit} = useForm();
 
   const refreshHardwareKeys = () => {
     (async () => {
@@ -40,9 +59,9 @@ const Passkeys = () => {
     refreshHardwareKeys();
   }, []);
 
-  const handleAddKey = () => {
+  const handleAddKey = ({keyName}: any) => {
     (async () => {
-      setCanContinue(false);
+      setSubmitting(true);
 
       try {
         const beginResp = await fetch('/api/hardwarekey/begin', {
@@ -96,7 +115,7 @@ const Passkeys = () => {
         console.error(err);
         setFeedback(t('passwordless_login_error'));
       } finally {
-        setCanContinue(true);
+        setSubmitting(false);
       }
     })();
   };
@@ -118,61 +137,73 @@ const Passkeys = () => {
     })();
   };
 
+  const createPasskeyList = () => {
+    return (
+      <List subheader={<ListSubheader>{t('passwordless_login_existing_keys')}</ListSubheader>} sx={{mt: 5}}>
+        <TransitionGroup>
+          {hardwareKeys.map((passkey) => (
+            <Collapse key={passkey.id}>
+              <ListItem
+                secondaryAction={
+                  <IconButton aria-label="delete" onClick={() => deleteKey(passkey.id)}>
+                    <DeleteIcon />
+                  </IconButton>
+                }
+              >
+                <ListItemText primary={passkey.name} />
+              </ListItem>
+              <Divider component="li" />
+            </Collapse>
+          ))}
+        </TransitionGroup>
+      </List>
+    );
+  };
+
+  const createNoPasskeyMessage = () => {
+    return (
+      <Alert severity="info" sx={{mt: 5}}>
+        <AlertTitle>{t('passwordless_login_no_keys')}</AlertTitle>
+        {t('passwordless_login_no_keys_message')}
+      </Alert>
+    );
+  };
+
   return (
     <>
-      <h2>{t('passwordless_login')}</h2>
-      <div className="mb-3">{t('passwordless_login_description')}</div>
-      {hardwareKeys.length === 0 ? null : (
-        <>
-          <table className="table">
-            <thead>
-              <tr>
-                <td></td>
-                <td>{t('passwordless_login_key_name')}</td>
-              </tr>
-            </thead>
-            <tbody>
-              {hardwareKeys.map((e) => (
-                <tr key={e.id}>
-                  <td>
-                    <button
-                      type="button"
-                      className="btn btn-danger bg-gradient"
-                      onClick={(ev) => {
-                        ev.preventDefault();
-                        deleteKey(e.id);
-                      }}
-                    >
-                      <DeleteIcon />
-                    </button>
-                  </td>
-                  <td className="align-middle">{e.name}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleAddKey();
-        }}
-      >
-        <div className="input-group">
-          <input
-            type="text"
-            className="form-control"
-            placeholder={t('passwordless_login_key_name')}
-            onChange={(e) => handleInputKeyName(e.target.value)}
-            value={keyName}
-            disabled={!canContinue}
-          />
-          <button type="submit" className="btn btn-primary bg-gradient" disabled={!canContinue}>
-            {t('passwordless_login_add')}
-          </button>
-        </div>
-      </form>
+      <Typography variant="h4" sx={{mt: 3}}>
+        {t('passwordless_login')}
+      </Typography>
+
+      <Box sx={{m: 2}}>
+        <Typography variant="body1">{t('passwordless_login_description')}</Typography>
+
+        <form onSubmit={handleSubmit(handleAddKey)}>
+          <Box sx={{mt: 3, width: '30%'}}>
+            <TextField
+              variant="standard"
+              type="text"
+              label={t('passwordless_login_add')}
+              autoComplete="off"
+              onChange={(e) => handleInputKeyName(e.target.value)}
+              disabled={submitting}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton variant="outlined" color="primary" type="submit" disabled={submitting}>
+                      {submitting ? <CircularProgress size={20} /> : <AddIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
+              fullWidth
+              {...register('keyName')}
+            />
+          </Box>
+        </form>
+
+        {hardwareKeys.length > 0 ? createPasskeyList() : createNoPasskeyMessage()}
+      </Box>
 
       <Snackbar onClose={() => setFeedback('')} message={feedback} />
     </>
