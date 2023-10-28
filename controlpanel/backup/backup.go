@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/kofuk/go-mega"
+	"github.com/kofuk/premises/controlpanel/entity"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -14,17 +15,6 @@ type MegaCredentialInfo struct {
 	Email      string `json:"email" env:"email"`
 	Password   string `json:"password" env:"password"`
 	FolderName string `json:"folderName" env:"folderName"`
-}
-
-type GenerationInfo struct {
-	Gen       string `json:"gen"`
-	ID        string `json:"id"`
-	Timestamp int    `json:"timestamp"`
-}
-
-type WorldBackup struct {
-	WorldName   string           `json:"worldName"`
-	Generations []GenerationInfo `json:"generations"`
 }
 
 func getFolderRef(m *mega.Mega, parent *mega.Node, name string) (*mega.Node, error) {
@@ -53,7 +43,7 @@ func getCloudWorldsFolder(m *mega.Mega, folderName string) (*mega.Node, error) {
 	return worldsFolder, nil
 }
 
-func GetBackupList(cred *MegaCredentialInfo, folderName string) ([]WorldBackup, error) {
+func GetBackupList(cred *MegaCredentialInfo, folderName string) ([]entity.WorldBackup, error) {
 	if cred.Email == "" {
 		return nil, errors.New("Mega credential is not set")
 	}
@@ -78,7 +68,7 @@ func GetBackupList(cred *MegaCredentialInfo, folderName string) ([]WorldBackup, 
 		return nil, err
 	}
 
-	result := make([]WorldBackup, 0)
+	result := make([]entity.WorldBackup, 0)
 	for _, world := range worlds {
 		if world.GetType() != mega.TypeFolder {
 			continue
@@ -94,7 +84,7 @@ func GetBackupList(cred *MegaCredentialInfo, folderName string) ([]WorldBackup, 
 			return nil, err
 		}
 
-		var generations []GenerationInfo
+		var generations []entity.BackupGeneration
 		for _, backup := range backups {
 			name := backup.GetName()
 			hash := backup.GetHash()
@@ -108,7 +98,7 @@ func GetBackupList(cred *MegaCredentialInfo, folderName string) ([]WorldBackup, 
 			}
 
 			if name != "5" {
-				generations = append(generations, GenerationInfo{Gen: name, ID: hash, Timestamp: timestamp})
+				generations = append(generations, entity.BackupGeneration{Gen: name, ID: hash, Timestamp: timestamp})
 			}
 		}
 
@@ -134,7 +124,7 @@ func GetBackupList(cred *MegaCredentialInfo, folderName string) ([]WorldBackup, 
 			return iGen < jGen
 		})
 
-		result = append(result, WorldBackup{
+		result = append(result, entity.WorldBackup{
 			WorldName:   world.GetName(),
 			Generations: generations,
 		})

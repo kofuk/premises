@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
+	"github.com/kofuk/premises/controlpanel/entity"
 	"github.com/kofuk/premises/controlpanel/model"
 	log "github.com/sirupsen/logrus"
 )
@@ -75,7 +76,11 @@ func (h *Handler) handleLoginHardwarekeyBegin(c *gin.Context) {
 	challenge, err := protocol.CreateChallenge()
 	if err != nil {
 		log.WithError(err).Error("Error creating challenge")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "internal server error",
+		})
 		return
 	}
 
@@ -93,7 +98,10 @@ func (h *Handler) handleLoginHardwarekeyBegin(c *gin.Context) {
 	session.Set("hwkey_challenge", base64.RawURLEncoding.EncodeToString(challenge))
 	session.Save()
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "options": assertion})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[*protocol.CredentialAssertion]{
+		Success: true,
+		Data:    assertion,
+	})
 }
 
 func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
@@ -106,7 +114,11 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 	challenge, ok := session.Get("hwkey_challenge").(string)
 	if !ok {
 		log.Error("Client have no challenge")
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": "bad request"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+			Reason:    "Client have no challenge",
+		})
 		return
 	}
 	session.Delete("hwkey_challenge")
@@ -115,7 +127,12 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 	parsedResponse, err := protocol.ParseCredentialRequestResponse(c.Request)
 	if err != nil {
 		log.WithError(err).Error("Error parsing credential request response")
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": "bad request"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+			Reason:    "Error parsing credential request response",
+		})
+		return
 	}
 
 	// TODO: Improve this logic.
@@ -125,7 +142,11 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 	user := model.User{}
 	if err := h.db.WithContext(c.Request.Context()).Preload("Credentials").Find(&user, userId).Error; err != nil {
 		log.WithError(err).Error("User not found")
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "login.error")})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrCredential,
+			Reason:    "Invalid user",
+		})
 		return
 	}
 
@@ -148,13 +169,21 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 	cred, err := h.webauthn.ValidateLogin(&waUser, sessionData, parsedResponse)
 	if err != nil {
 		log.WithError(err).Error("error validating login")
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "login.error")})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrPasskeyVerify,
+			Reason:    "Error validation login",
+		})
 		return
 	}
 
 	if cred.Authenticator.CloneWarning {
 		log.Error("maybe a cloned authenticator used")
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "login.error")})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrPasskeyVerify,
+			Reason:    "Error validation login",
+		})
 		return
 	}
 
@@ -167,7 +196,11 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 	}
 	if usedCred == nil {
 		log.WithError(err).Error("credential to update did not found")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "Internal server error",
+		})
 		return
 	}
 
@@ -178,7 +211,9 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 
 	session.Set("user_id", uint(userId))
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+		Success: true,
+	})
 }
 
 func (h *Handler) setupWebauthnLoginRoutes(group *gin.RouterGroup) {

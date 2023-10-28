@@ -52,7 +52,7 @@ const Passkeys = () => {
           return;
         }
 
-        const options = beginResp.options;
+        const options = beginResp.data;
 
         options.publicKey.challenge = decodeBuffer(options.publicKey.challenge);
         options.publicKey.user.id = decodeBuffer(options.publicKey.user.id);

@@ -19,6 +19,7 @@ import (
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/controlpanel/entity"
 	"github.com/kofuk/premises/controlpanel/model"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
@@ -142,7 +143,11 @@ func setupRoutes(h *Handler) {
 			entryFile, err := os.Open("gen/index.html")
 			if err != nil {
 				log.WithError(err).Error("Unable to open index.html")
-				c.JSON(http.StatusInternalServerError, gin.H{"success": false})
+				c.JSON(http.StatusOK, entity.ErrorResponse{
+					Success:   false,
+					ErrorCode: entity.ErrInternal,
+					Reason:    "Unable to open index.html",
+				})
 				return
 			}
 			defer entryFile.Close()

@@ -99,7 +99,9 @@ func (h *Handler) handleLogout(c *gin.Context) {
 	session.Delete("user_id")
 	session.Save()
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+		Success: true,
+	})
 }
 
 func isAllowedPassword(password string) bool {
@@ -129,24 +131,40 @@ func (h *Handler) handleLoginResetPassword(c *gin.Context) {
 
 	user := model.User{}
 	if err := h.db.WithContext(c.Request.Context()).Where("name = ?", username).First(&user).Error; err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "login.error")})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrCredential,
+			Reason:    h.L(h.cfg.ControlPanel.Locale, "login.error"),
+		})
 		return
 	}
 
 	if user.ID != user_id {
-		c.JSON(http.StatusOK, gin.H{"success": false})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrCredential,
+			Reason:    h.L(h.cfg.ControlPanel.Locale, "login.error"),
+		})
 		return
 	}
 
 	if !isAllowedPassword(password) {
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "account.password.disallowed")})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrPasswordRule,
+			Reason:    "Disallowed password",
+		})
 		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		log.WithError(err).Error("error registering user")
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": "Error registering user"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "Error registering user",
+		})
 		return
 	}
 	user.Password = string(hashedPassword)
@@ -154,14 +172,21 @@ func (h *Handler) handleLoginResetPassword(c *gin.Context) {
 
 	if err := h.db.WithContext(c.Request.Context()).Save(user).Error; err != nil {
 		log.WithError(err).Error("error updating password")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "Error registering user",
+		})
+		return
 	}
 
 	session.Set("user_id", user.ID)
 	session.Delete("change_password_user_id")
 	session.Save()
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+		Success: true,
+	})
 }
 
 func (h *Handler) handleRobotsTxt(c *gin.Context) {

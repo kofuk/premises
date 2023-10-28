@@ -52,7 +52,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
       throw new Error(beginResp['reason']);
     }
 
-    const options = beginResp['options'];
+    const options = beginResp.data;
 
     options.publicKey.challenge = decodeBuffer(options.publicKey.challenge);
     options.publicKey.allowCredentials = [];

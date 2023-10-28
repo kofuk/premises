@@ -55,7 +55,7 @@ const ReconfigureMenu = (props: Prop) => {
         if (result['success']) {
           backToMenu();
         } else {
-          showError(result['message']);
+          showError(result['reason']);
         }
       } catch (err) {
         console.error(err);

@@ -21,7 +21,7 @@ const QuickUndo = (props: Prop) => {
       try {
         const result = await fetch('/api/quickundo/snapshot', {method: 'POST'}).then((resp) => resp.json());
         if (!result['success']) {
-          showError(result['message']);
+          showError(result['reason']);
           return;
         }
       } catch (err) {
@@ -38,7 +38,7 @@ const QuickUndo = (props: Prop) => {
       try {
         const result = await fetch('/api/quickundo/undo', {method: 'POST'}).then((resp) => resp.json());
         if (!result['success']) {
-          showError(result['message']);
+          showError(result['reason']);
           return;
         }
       } catch (err) {

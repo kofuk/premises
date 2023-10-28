@@ -21,7 +21,7 @@ const Snapshot = (props: Prop) => {
       try {
         const result = await fetch('/api/snapshot', {method: 'POST'}).then((resp) => resp.json());
         if (!result['success']) {
-          showError(result['message']);
+          showError(result['reason']);
           return;
         }
       } catch (err) {

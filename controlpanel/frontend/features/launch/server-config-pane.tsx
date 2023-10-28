@@ -55,7 +55,7 @@ const ServerConfigPane = (props: Prop) => {
           body: data.toString()
         }).then((resp) => resp.json());
         if (!result['success']) {
-          showError(result['message']);
+          showError(result['reason']);
         }
       } catch (err) {
         console.error(err);

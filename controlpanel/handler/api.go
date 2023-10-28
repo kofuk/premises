@@ -48,7 +48,11 @@ func (h *Handler) handleApiSessionData(c *gin.Context) {
 		user := model.User{}
 		if err := h.db.WithContext(c.Request.Context()).Find(&user, userID).Error; err != nil {
 			log.WithError(err).Error("User not found")
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+			c.JSON(http.StatusOK, entity.ErrorResponse{
+				Success:   false,
+				ErrorCode: entity.ErrInternal,
+				Reason:    "internal server error",
+			})
 			return
 		}
 		sessionData.UserName = user.Name
@@ -382,7 +386,11 @@ func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, ga
 func (h *Handler) handleApiLaunch(c *gin.Context) {
 	if err := c.Request.ParseForm(); err != nil {
 		log.WithError(err).Error("Failed to parse form")
-		c.JSON(400, gin.H{"success": false, "message": "Form parse error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+			Reason:    "Form parse error",
+		})
 		return
 	}
 
@@ -390,14 +398,22 @@ func (h *Handler) handleApiLaunch(c *gin.Context) {
 	defer h.serverMutex.Unlock()
 
 	if h.serverRunning {
-		c.JSON(400, gin.H{"success": false, "message": "The server has already running"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrServerRunning,
+			Reason:    "The server has already running",
+		})
 		return
 	}
 	h.serverRunning = true
 
 	gameConfig, err := createConfigFromPostData(c.Request.Form, h.cfg)
 	if err != nil {
-		c.JSON(400, gin.H{"success": false, "message": err.Error()})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInvalidConfig,
+			Reason:    err.Error(),
+		})
 		return
 	}
 
@@ -407,13 +423,19 @@ func (h *Handler) handleApiLaunch(c *gin.Context) {
 
 	go h.LaunchServer(gameConfig, h.cfg, h.serverImpl, memSizeGB, h.redis)
 
-	c.JSON(200, gin.H{"success": true})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+		Success: true,
+	})
 }
 
 func (h *Handler) handleApiReconfigure(c *gin.Context) {
 	if err := c.Request.ParseForm(); err != nil {
 		log.WithError(err).Error("Failed to parse form")
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Form parse error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+			Reason:    "Form parse error",
+		})
 		return
 	}
 
@@ -422,7 +444,11 @@ func (h *Handler) handleApiReconfigure(c *gin.Context) {
 
 	gameConfig, err := createConfigFromPostData(formValues, h.cfg)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": err.Error()})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInvalidConfig,
+			Reason:    err.Error(),
+		})
 		return
 	}
 	// Use previously generated key.
@@ -430,13 +456,17 @@ func (h *Handler) handleApiReconfigure(c *gin.Context) {
 
 	go ReconfigureServer(gameConfig, h.cfg, h.serverImpl, h.redis)
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+		Success: true,
+	})
 }
 
 func (h *Handler) handleApiStop(c *gin.Context) {
 	go StopServer(h.cfg, h.serverImpl, h.redis)
 
-	c.JSON(200, gin.H{"success": true})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+		Success: true,
+	})
 }
 
 func (h *Handler) handleApiBackups(c *gin.Context) {
@@ -453,25 +483,37 @@ func (h *Handler) handleApiBackups(c *gin.Context) {
 	backups, err := backup.GetBackupList(&h.cfg.Mega, h.cfg.Mega.FolderName)
 	if err != nil {
 		log.WithError(err).Error("Failed to retrieve backup list")
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "Failed to retrieve Minecraft versions",
+		})
 		return
 	}
 
-	data := gin.H{"success": true, "data": backups}
+	resp := entity.SuccessfulResponse[[]entity.WorldBackup]{
+		Success: true,
+		Data:    backups,
+	}
 
-	jsonData, err := json.Marshal(data)
+	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		log.WithError(err).Error("Failed to marshal backpu list")
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "Failed to retrieve Minecraft versions",
+		})
 		return
 	}
 
-	if _, err := h.redis.Set(c.Request.Context(), CacheKeyBackups, jsonData, 3*time.Minute).Result(); err != nil {
+	if _, err := h.redis.Set(c.Request.Context(), CacheKeyBackups, jsonResp, 3*time.Minute).Result(); err != nil {
 		log.WithError(err).Error("Failed to store backup list")
 	}
 
+	c.Status(http.StatusOK)
 	c.Header("Content-Type", "application/json")
-	c.Writer.Write(jsonData)
+	c.Writer.Write(jsonResp)
 }
 
 func (h *Handler) handleApiMcversions(c *gin.Context) {
@@ -488,30 +530,46 @@ func (h *Handler) handleApiMcversions(c *gin.Context) {
 	versions, err := mcversions.GetVersions(c.Request.Context())
 	if err != nil {
 		log.WithError(err).Error("Failed to retrieve Minecraft versions")
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "Failed to retrieve Minecraft versions",
+		})
 		return
 	}
 
-	data := gin.H{"success": true, "data": versions}
+	resp := entity.SuccessfulResponse[[]entity.MCVersion]{
+		Success: true,
+		Data:    versions,
+	}
 
-	jsonData, err := json.Marshal(data)
+	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		log.WithError(err).Error("Failed to marshal mcversions")
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "Failed to retrieve Minecraft versions",
+		})
 		return
 	}
 
-	if _, err := h.redis.Set(c.Request.Context(), CacheKeyMCVersions, jsonData, 24*time.Hour).Result(); err != nil {
+	if _, err := h.redis.Set(c.Request.Context(), CacheKeyMCVersions, jsonResp, 24*time.Hour).Result(); err != nil {
 		log.WithError(err).Error("Failed to cache mcversions")
 	}
 
+	c.Status(http.StatusOK)
 	c.Header("Content-Type", "application/json")
-	c.Writer.Write(jsonData)
+	c.Writer.Write(jsonResp)
 }
 
 func (h *Handler) handleApiSystemInfo(c *gin.Context) {
 	if h.cfg.ServerAddr == "" {
-		c.Status(http.StatusTooEarly)
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrServerNotRunning,
+			Reason:    "Server is not running",
+		})
 		return
 	}
 
@@ -535,7 +593,11 @@ func (h *Handler) handleApiSystemInfo(c *gin.Context) {
 
 	data, err := monitor.GetSystemInfoData(c.Request.Context(), h.cfg, h.cfg.ServerAddr, h.redis)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "Failed to retrieve Minecraft versions",
+		})
 		return
 	}
 
@@ -549,13 +611,21 @@ func (h *Handler) handleApiSystemInfo(c *gin.Context) {
 
 func (h *Handler) handleApiWorldInfo(c *gin.Context) {
 	if h.cfg.ServerAddr == "" {
-		c.Status(http.StatusTooEarly)
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrServerNotRunning,
+			Reason:    "Server is not running",
+		})
 		return
 	}
 
 	data, err := monitor.GetWorldInfoData(c.Request.Context(), h.cfg, h.cfg.ServerAddr, h.redis)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "Failed to retrieve Minecraft versions",
+		})
 		return
 	}
 
@@ -565,44 +635,74 @@ func (h *Handler) handleApiWorldInfo(c *gin.Context) {
 
 func (h *Handler) handleApiSnapshot(c *gin.Context) {
 	if h.cfg.ServerAddr == "" {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrServerNotRunning,
+			Reason:    "Server is not running",
+		})
 		return
 	}
 
 	if err := monitor.TakeSnapshot(h.cfg, h.cfg.ServerAddr, h.redis); err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrRemote,
+			Reason:    "Remote server error",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+		Success: true,
+	})
 }
 
 func (h *Handler) handleApiQuickUndoSnapshot(c *gin.Context) {
 	if h.cfg.ServerAddr == "" {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrServerNotRunning,
+			Reason:    "Server is not running",
+		})
 		return
 	}
 
 	if err := monitor.QuickSnapshot(h.cfg, h.cfg.ServerAddr, h.redis); err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrRemote,
+			Reason:    "Remote server error",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+		Success: true,
+	})
 }
 
 func (h *Handler) handleApiQuickUndoUndo(c *gin.Context) {
 	if h.cfg.ServerAddr == "" {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrServerNotRunning,
+			Reason:    "Server is not running",
+		})
 		return
 	}
 
 	if err := monitor.QuickUndo(h.cfg, h.cfg.ServerAddr, h.redis); err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Server is not running"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrRemote,
+			Reason:    "Remote server error",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+		Success: true,
+	})
 }
 
 func setupApiQuickUndoRoutes(h *Handler, group *gin.RouterGroup) {
@@ -615,7 +715,11 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 	userID := session.Get("user_id")
 
 	if err := c.Request.ParseForm(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "Invalid form data"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+			Reason:    "Invalid form data",
+		})
 		return
 	}
 
@@ -623,25 +727,41 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 	newPassword := c.Request.Form.Get("new-password")
 
 	if !isAllowedPassword(newPassword) {
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "account.password.disallowed")})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrPasswordRule,
+			Reason:    h.L(h.cfg.ControlPanel.Locale, "account.password.disallowed"),
+		})
 		return
 	}
 
 	user := model.User{}
 	if err := h.db.WithContext(c.Request.Context()).Find(&user, userID).Error; err != nil {
 		log.WithError(err).Error("User not found")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "internal server error",
+		})
 		return
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "login.error")})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrCredential,
+			Reason:    "Old password is incorrect",
+		})
 		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
-		log.WithError(err).Error("error registering user")
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": "Error registering user"})
+		log.WithError(err).Error("error hashing password")
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "Error updating password",
+		})
 		return
 	}
 	user.Password = string(hashedPassword)
@@ -649,10 +769,17 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 
 	if err := h.db.WithContext(c.Request.Context()).Save(user).Error; err != nil {
 		log.WithError(err).Error("error updating password")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "Error updating password",
+		})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+		Success: true,
+	})
 }
 
 func (h *Handler) handleApiUsersAdd(c *gin.Context) {
@@ -660,26 +787,42 @@ func (h *Handler) handleApiUsersAdd(c *gin.Context) {
 	userID := session.Get("user_id").(uint)
 
 	if err := c.Request.ParseForm(); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "Invalid form data"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+			Reason:    "Invalid form data",
+		})
 		return
 	}
 
 	newUsername := c.Request.Form.Get("username")
 	password := c.Request.Form.Get("password")
 
-	if len(newUsername) == 0 && len(password) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "reason": "username or password is empty"})
+	if len(newUsername) == 0 {
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+			Reason:    "username is empty",
+		})
 		return
 	}
 	if !isAllowedPassword(password) {
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "account.password.disallowed")})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrPasswordRule,
+			Reason:    h.L(h.cfg.ControlPanel.Locale, "account.password.disallowed"),
+		})
 		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		log.WithError(err).Error("error registering user")
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": "Error registering user"})
+		log.WithError(err).Error("error hashing password")
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "Error registering user",
+		})
 		return
 	}
 
@@ -692,11 +835,17 @@ func (h *Handler) handleApiUsersAdd(c *gin.Context) {
 
 	if err := h.db.WithContext(c.Request.Context()).Create(user).Error; err != nil {
 		log.WithError(err).Error("error registering user")
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "account.user.exists")})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrDupUserName,
+			Reason:    "Duplicate user name",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+		Success: true,
+	})
 }
 
 func setupApiUsersRoutes(h *Handler, group *gin.RouterGroup) {
@@ -711,22 +860,25 @@ func (h *Handler) handleApiWebauthnRoot(c *gin.Context) {
 	var credentials []model.Credential
 	if err := h.db.WithContext(c.Request.Context()).Where("owner_id = ?", userID).Find(&credentials).Error; err != nil {
 		log.WithError(err).Error("Error fetching credentials")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "Internal server error",
+		})
 		return
 	}
-	type credentialRespItem struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	}
-	credentialResp := make([]credentialRespItem, 0)
+	credentialResp := make([]entity.Passkey, 0)
 	for _, c := range credentials {
-		credentialResp = append(credentialResp, credentialRespItem{
+		credentialResp = append(credentialResp, entity.Passkey{
 			ID:   c.UUID,
 			Name: c.KeyName,
 		})
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": credentialResp})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[[]entity.Passkey]{
+		Success: true,
+		Data:    credentialResp,
+	})
 }
 
 func (h *Handler) handleApiDeleteWebauthnUuid(c *gin.Context) {
@@ -768,7 +920,11 @@ func (h *Handler) handleApiWebauthnBegin(c *gin.Context) {
 	user := model.User{}
 	if err := h.db.WithContext(c.Request.Context()).Find(&user, userID).Error; err != nil {
 		log.WithError(err).Error("User expected to be found, but didn't")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "internal server error",
+		})
 		return
 	}
 
@@ -779,7 +935,11 @@ func (h *Handler) handleApiWebauthnBegin(c *gin.Context) {
 	var credentials []model.Credential
 	if err := h.db.WithContext(c.Request.Context()).Where("owner_id = ?", userID).Find(&credentials).Error; err != nil {
 		log.WithError(err).Error("Error fetching credentials")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "internal server error",
+		})
 		return
 	}
 	for _, c := range credentials {
@@ -793,21 +953,23 @@ func (h *Handler) handleApiWebauthnBegin(c *gin.Context) {
 	options, sessionData, err := h.webauthn.BeginRegistration(&waUser, registerOptions)
 	if err != nil {
 		log.WithError(err).Error("Error registration")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "internal server error",
+		})
 		return
 	}
 
-	marshaled, err := json.Marshal(sessionData)
-	if err != nil {
-		log.WithError(err).Error("")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
-		return
-	}
+	marshaled, _ := json.Marshal(sessionData)
 
 	session.Set("hwkey_registration", string(marshaled))
 	session.Save()
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "options": options})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[*protocol.CredentialCreation]{
+		Success: true,
+		Data:    options,
+	})
 }
 
 func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
@@ -825,14 +987,22 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 	sessionData := webauthn.SessionData{}
 	if err := json.Unmarshal([]byte(sessionDataMarshaled.(string)), &sessionData); err != nil {
 		log.WithError(err).Error("Can't unmarshal session data")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "internal server error",
+		})
 		return
 	}
 
 	user := model.User{}
 	if err := h.db.WithContext(c.Request.Context()).Find(&user, userID).Error; err != nil {
 		log.WithError(err).Error("User expected to be found, but didn't")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "internal server error",
+		})
 		return
 	}
 
@@ -843,7 +1013,11 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 	var credentials []model.Credential
 	if err := h.db.WithContext(c.Request.Context()).Where("owner_id = ?", userID).Find(&credentials).Error; err != nil {
 		log.WithError(err).Error("Error fetching credentials")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "internal server error",
+		})
 		return
 	}
 	for _, c := range credentials {
@@ -853,7 +1027,11 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 	credData, err := h.webauthn.FinishRegistration(&waUser, sessionData, c.Request)
 	if err != nil {
 		log.WithError(err).WithField("info", err.(*protocol.Error).DevInfo).Error("Error registration")
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "hardwarekey.verify.error")})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrPasskeyVerify,
+			Reason:    "Verification error",
+		})
 		return
 	}
 
@@ -872,22 +1050,36 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 	var exists bool
 	if err := h.db.WithContext(c.Request.Context()).Model(credential).Select("count(*) > 0").Where("owner_id = ? AND credential_id = ?", userID, credential.CredentialID).Find(&exists).Error; err != nil {
 		log.WithError(err).Error("Error fetching public key count")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "internal server error",
+		})
 		return
 	}
 
 	if exists {
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "hardwarekey.already_registered")})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrPasskeyDup,
+			Reason:    "Duplicate key",
+		})
 		return
 	}
 
 	if err := h.db.WithContext(c.Request.Context()).Create(&credential).Error; err != nil {
 		log.WithError(err).Error("Error saving credential")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "internal server error",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+		Success: true,
+	})
 }
 
 func setupApiWebauthnRoutes(h *Handler, group *gin.RouterGroup) {
@@ -902,7 +1094,11 @@ func (h *Handler) middlewareSessionCheck(c *gin.Context) {
 	if c.Request.Method == http.MethodPost || (c.Request.Method == http.MethodGet && c.GetHeader("Upgrade") == "WebSocket") {
 		if c.GetHeader("Origin") != h.cfg.ControlPanel.Origin {
 			log.WithField("origin", c.GetHeader("Origin")).Error("origin not allowed")
-			c.JSON(400, gin.H{"success": false, "message": "Invalid request (origin not allowed)"})
+			c.JSON(http.StatusOK, entity.ErrorResponse{
+				Success:   false,
+				ErrorCode: entity.ErrBadRequest,
+				Reason:    "Origin not allowed",
+			})
 			c.Abort()
 			return
 		}
@@ -911,7 +1107,11 @@ func (h *Handler) middlewareSessionCheck(c *gin.Context) {
 	// 2. Verify that the client is logged in.
 	session := sessions.Default(c)
 	if session.Get("user_id") == nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "message": "Not logged in"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrRequiresAuth,
+			Reason:    "Not logged in",
+		})
 		c.Abort()
 		return
 	}
