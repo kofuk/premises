@@ -25,3 +25,12 @@ export type Passkey = {
   id: string;
   name: string;
 };
+
+export type PasswordCredential = {
+  userName: string;
+  password: string;
+};
+
+export type SessionState = {
+  needsChangePassword: boolean;
+};

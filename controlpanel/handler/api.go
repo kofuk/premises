@@ -36,7 +36,7 @@ const (
 	CacheKeySystemInfoPrefix = "system-info"
 )
 
-func (h *Handler) handleApiCurrentUser(c *gin.Context) {
+func (h *Handler) handleApiSessionData(c *gin.Context) {
 	session := sessions.Default(c)
 	userID, ok := session.Get("user_id").(uint)
 
@@ -54,7 +54,10 @@ func (h *Handler) handleApiCurrentUser(c *gin.Context) {
 		sessionData.UserName = user.Name
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "data": sessionData})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SessionData]{
+		Success: true,
+		Data:    sessionData,
+	})
 }
 
 func (h *Handler) handleApiStatus(c *gin.Context) {
@@ -734,17 +737,28 @@ func (h *Handler) handleApiDeleteWebauthnUuid(c *gin.Context) {
 	var credential model.Credential
 	if err := h.db.WithContext(c.Request.Context()).Where("owner_id = ? AND uuid = ?", userID, keyUuid).First(&credential).Error; err != nil {
 		log.WithError(err).Error("Error fetching credentials")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "internal server error",
+		})
 		return
 	}
 
 	if err := h.db.WithContext(c.Request.Context()).Delete(&credential).Error; err != nil {
 		log.WithError(err).Error("Error fetching credentials")
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "reason": "internal server error"})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+			Reason:    "internal server error",
+		})
 		return
 	}
 
-	c.JSON(http.StatusNoContent, gin.H{"success": true})
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+		Success: true,
+		Data:    nil,
+	})
 }
 
 func (h *Handler) handleApiWebauthnBegin(c *gin.Context) {
@@ -904,7 +918,7 @@ func (h *Handler) middlewareSessionCheck(c *gin.Context) {
 }
 
 func (h *Handler) setupApiRoutes(group *gin.RouterGroup) {
-	group.GET("/session-data", h.handleApiCurrentUser)
+	group.GET("/session-data", h.handleApiSessionData)
 	needsAuth := group.Group("")
 	needsAuth.Use(h.middlewareSessionCheck)
 	needsAuth.GET("/status", h.handleApiStatus)

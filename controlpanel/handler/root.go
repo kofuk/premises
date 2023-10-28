@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/kofuk/premises/controlpanel/entity"
 	"github.com/kofuk/premises/controlpanel/model"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
@@ -40,28 +41,56 @@ func (h *Handler) handleLogin(c *gin.Context) {
 		return
 	}
 
-	username := c.PostForm("username")
-	password := c.PostForm("password")
+	var cred entity.PasswordCredential
+	if err := c.BindJSON(&cred); err != nil {
+		log.WithError(err).Error("Failed to bind data")
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+			Reason:    "Bad request",
+		})
+		return
+	}
 
 	user := model.User{}
-	if err := h.db.WithContext(c.Request.Context()).Where("name = ?", username).First(&user).Error; err != nil {
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "login.error")})
+	if err := h.db.WithContext(c.Request.Context()).Where("name = ?", cred.UserName).First(&user).Error; err != nil {
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrCredential,
+			Reason:    h.L(h.cfg.ControlPanel.Locale, "login.error"),
+		})
 		return
 	}
 
 	session := sessions.Default(c)
-	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) == nil {
+	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(cred.Password)) == nil {
 		if !user.Initialized {
 			session.Set("change_password_user_id", user.ID)
 			session.Save()
-			c.JSON(http.StatusOK, gin.H{"success": true, "needsChangePassword": true})
+
+			c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SessionState]{
+				Success: true,
+				Data: entity.SessionState{
+					NeedsChangePassword: true,
+				},
+			})
 		} else {
 			session.Set("user_id", user.ID)
 			session.Save()
-			c.JSON(http.StatusOK, gin.H{"success": true, "needsChangePassword": false})
+
+			c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SessionState]{
+				Success: true,
+				Data: entity.SessionState{
+					NeedsChangePassword: false,
+				},
+			})
 		}
 	} else {
-		c.JSON(http.StatusOK, gin.H{"success": false, "reason": h.L(h.cfg.ControlPanel.Locale, "login.error")})
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrCredential,
+			Reason:    h.L(h.cfg.ControlPanel.Locale, "login.error"),
+		})
 	}
 }
 

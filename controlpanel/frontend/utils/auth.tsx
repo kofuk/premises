@@ -1,6 +1,6 @@
 import React, {ReactNode, useContext, useEffect, useState} from 'react';
 
-import {useSessionData} from '@/api';
+import {login as apiLogin, useSessionData} from '@/api';
 import Loading from '@/components/loading';
 import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
 
@@ -30,23 +30,8 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
   }
 
   const login = async (username: string, password: string): Promise<LoginResult> => {
-    const params = new URLSearchParams();
-    params.append('username', username);
-    params.append('password', password);
-
-    const resp = await fetch('/login', {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: params.toString()
-    }).then((resp) => resp.json());
-
-    if (!resp['success']) {
-      throw new Error(resp['reason']);
-    }
-
-    if (resp['needsChangePassword']) {
+    const resp = await apiLogin({username, password});
+    if (resp.needsChangePassword) {
       return LoginResult.NeedsChangePassword;
     }
 
