@@ -8,8 +8,8 @@
     "start": "vite",
     "fmt": "prettier --write 'frontend/**/*.{ts,tsx,json}' '*.{ts,js}'",
     "fmt:check": "prettier --check 'frontend/**/*.{ts,tsx,json}' '*.{ts,js}'",
-    "lint": "eslint --fix frontend/ vite.config.ts jest.setup.ts",
-    "lint:check": "eslint frontend/ vite.config.ts jest.setup.ts"
+    "lint": "eslint --fix frontend/ vite.config.ts jest.setup.ts eslint.config.js",
+    "lint:check": "eslint frontend/ vite.config.ts jest.setup.ts eslint.config.js"
   },
   "repository": {
     "type": "git",
@@ -21,6 +21,7 @@
     "url": "https://github.com/kofuk/premises/issues"
   },
   "homepage": "https://github.com/kofuk/premises#readme",
+  "type": "module",
   "devDependencies": {
     "@babel/preset-env": "^7.23.2",
     "@babel/preset-react": "^7.22.15",
