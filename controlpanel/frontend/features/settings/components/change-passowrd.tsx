@@ -37,7 +37,7 @@ const ChangePassword = () => {
 
   return (
     <>
-      <Typography variant="h4" sx={{mt: 3}}>
+      <Typography sx={{mt: 3}} variant="h4">
         {t('change_password_header')}
       </Typography>
 
@@ -46,11 +46,11 @@ const ChangePassword = () => {
           <Stack spacing={2}>
             <Stack direction="row" spacing={2}>
               <TextField
-                label={t('change_password_current')}
-                variant="outlined"
-                type="password"
                 autoComplete="current-password"
                 fullWidth
+                label={t('change_password_current')}
+                type="password"
+                variant="outlined"
                 {...register('currentPassword', {
                   required: true
                 })}
@@ -59,21 +59,21 @@ const ChangePassword = () => {
             </Stack>
             <Stack direction="row" spacing={2}>
               <TextField
-                label={t('change_password_new')}
-                variant="outlined"
-                type="password"
                 autoComplete="new-password"
                 fullWidth
+                label={t('change_password_new')}
+                type="password"
+                variant="outlined"
                 {...register('newPassword', {
                   required: true
                 })}
               />
               <TextField
-                label={t('change_password_confirm')}
-                variant="outlined"
-                type="password"
                 autoComplete="new-password"
                 fullWidth
+                label={t('change_password_confirm')}
+                type="password"
+                variant="outlined"
                 {...register('newPasswordConfirm', {
                   required: true,
                   validate: (val: string) => {
@@ -88,13 +88,13 @@ const ChangePassword = () => {
         </Box>
 
         <Box sx={{m: 2}}>
-          <LoadingButtonWithResult type="submit" variant="contained" disabled={!formState.isValid} loading={submitting} success={success}>
+          <LoadingButtonWithResult disabled={!formState.isValid} loading={submitting} success={success} type="submit" variant="contained">
             {t('change_password_submit')}
           </LoadingButtonWithResult>
         </Box>
       </form>
 
-      <Snackbar onClose={() => setFeedback('')} message={feedback} />
+      <Snackbar message={feedback} onClose={() => setFeedback('')} />
 
       <Helmet>
         <title>

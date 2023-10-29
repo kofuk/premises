@@ -91,9 +91,9 @@ const ReconfigureMenu = (props: Prop) => {
         isFocused={currentStep === stepIndex}
         nextStep={handleNextStep}
         requestFocus={() => handleRequestFocus(stepIndex)}
-        stepNum={stepIndex + 1}
         serverVersion={serverVersion}
         setServerVersion={setServerVersion}
+        stepNum={stepIndex + 1}
       />
     );
   }
@@ -105,9 +105,9 @@ const ReconfigureMenu = (props: Prop) => {
         isFocused={currentStep === stepIndex}
         nextStep={handleNextStep}
         requestFocus={() => handleRequestFocus(stepIndex)}
+        setWorldSource={xSetWorldSource}
         stepNum={stepIndex + 1}
         worldSource={worldSource}
-        setWorldSource={xSetWorldSource}
       />
     );
   }
@@ -118,16 +118,16 @@ const ReconfigureMenu = (props: Prop) => {
       configItems.push(
         <ChooseBackup
           key="chooseBackup"
+          backupGeneration={backupGeneration}
           isFocused={currentStep === stepIndex}
           nextStep={handleNextStep}
           requestFocus={() => handleRequestFocus(stepIndex)}
-          stepNum={stepIndex + 1}
-          worldName={worldName}
-          backupGeneration={backupGeneration}
-          useCachedWorld={useCachedWorld}
-          setWorldName={setWorldName}
           setBackupGeneration={setBackupGeneration}
           setUseCachedWorld={setUseCachedWorld}
+          setWorldName={setWorldName}
+          stepNum={stepIndex + 1}
+          useCachedWorld={useCachedWorld}
+          worldName={worldName}
         />
       );
     }
@@ -140,9 +140,9 @@ const ReconfigureMenu = (props: Prop) => {
           isFocused={currentStep === stepIndex}
           nextStep={handleNextStep}
           requestFocus={() => handleRequestFocus(stepIndex)}
+          setWorldName={setWorldName}
           stepNum={stepIndex + 1}
           worldName={worldName}
-          setWorldName={setWorldName}
         />
       );
     }
@@ -152,13 +152,13 @@ const ReconfigureMenu = (props: Prop) => {
         <ConfigureWorld
           key="configureWorld"
           isFocused={currentStep === stepIndex}
+          levelType={levelType}
           nextStep={handleNextStep}
           requestFocus={() => handleRequestFocus(stepIndex)}
-          stepNum={stepIndex + 1}
-          levelType={levelType}
           seed={seed}
           setLevelType={setLevelType}
           setSeed={setSeed}
+          stepNum={stepIndex + 1}
         />
       );
     }
@@ -174,7 +174,7 @@ const ReconfigureMenu = (props: Prop) => {
       <div className="m-2">
         {configItems}
         <div className="d-md-block mt-3 text-end">
-          <button className="btn btn-primary bg-gradient" type="button" onClick={handleStart} disabled={currentStep !== stepCount}>
+          <button className="btn btn-primary bg-gradient" disabled={currentStep !== stepCount} onClick={handleStart} type="button">
             {t('relaunch_server')}
           </button>
         </div>

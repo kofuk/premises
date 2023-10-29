@@ -58,9 +58,9 @@ const ChooseBackup = ({
         <label className="form-label" htmlFor="worldSelect">
           {t('select_world')}
         </label>
-        <select className="form-select" value={worldName} id="worldSelect" onChange={(e) => handleChangeWorld(e.target.value)}>
+        <select className="form-select" id="worldSelect" onChange={(e) => handleChangeWorld(e.target.value)} value={worldName}>
           {backups?.map((e) => (
-            <option value={e.worldName} key={e.worldName}>
+            <option key={e.worldName} value={e.worldName}>
               {e.worldName.replace(/^[0-9]+-/, '')}
             </option>
           ))}
@@ -73,11 +73,11 @@ const ChooseBackup = ({
         <label className="form-label" htmlFor="backupGenerationSelect">
           {t('backup_generation')}
         </label>
-        <select className="form-select" value={backupGeneration} id="backupGenerationSelect" onChange={(e) => handleChangeGeneration(e.target.value)}>
+        <select className="form-select" id="backupGenerationSelect" onChange={(e) => handleChangeGeneration(e.target.value)} value={backupGeneration}>
           {worldData.generations.map((e) => {
             const dateTime = new Date(e.timestamp);
             return (
-              <option value={e.id} key={e.gen}>
+              <option key={e.gen} value={e.id}>
                 {(e.gen == 'latest' ? 'Latest' : `${e.gen} gen ago`) + ` (${dateTime.toLocaleString()})`}
               </option>
             );
@@ -92,11 +92,11 @@ const ChooseBackup = ({
         {generations}
         <div className="m-2 form-check form-switch">
           <input
-            className="form-check-input"
-            type="checkbox"
-            id="useCachedWorld"
             checked={useCachedWorld}
+            className="form-check-input"
+            id="useCachedWorld"
             onChange={(e) => setUseCachedWorld(e.target.checked)}
+            type="checkbox"
           />
           <label className="form-check-label" htmlFor="useCachedWorld">
             {t('use_cached_world')}
@@ -117,12 +117,12 @@ const ChooseBackup = ({
   const content = !backups || backups?.length === 0 ? createEmptyMessage() : createBackupSelector();
 
   return (
-    <ConfigContainer title={t('config_choose_backup')} isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum}>
+    <ConfigContainer isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum} title={t('config_choose_backup')}>
       {(isLoading && <Loading compact />) || (
         <>
           {content}
           <div className="m-1 text-end">
-            <button type="button" className="btn btn-primary" onClick={nextStep} disabled={backups?.length === 0}>
+            <button className="btn btn-primary" disabled={backups?.length === 0} onClick={nextStep} type="button">
               {t('next')}
             </button>
           </div>

@@ -125,7 +125,7 @@ const Passkeys = () => {
 
   return (
     <>
-      <Typography variant="h4" sx={{mt: 3}}>
+      <Typography sx={{mt: 3}} variant="h4">
         {t('passwordless_login')}
       </Typography>
 
@@ -135,21 +135,21 @@ const Passkeys = () => {
         <form onSubmit={handleSubmit(handleAddKey)}>
           <Box sx={{mt: 3, width: '30%'}}>
             <TextField
-              variant="standard"
-              type="text"
-              label={t('passwordless_login_add')}
-              autoComplete="off"
-              disabled={submitting}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton color="primary" type="submit" disabled={submitting}>
+                    <IconButton color="primary" disabled={submitting} type="submit">
                       {submitting ? <CircularProgress size={20} /> : <AddIcon />}
                     </IconButton>
                   </InputAdornment>
                 )
               }}
+              autoComplete="off"
+              disabled={submitting}
               fullWidth
+              label={t('passwordless_login_add')}
+              type="text"
+              variant="standard"
               {...register('keyName')}
             />
           </Box>
@@ -158,7 +158,7 @@ const Passkeys = () => {
         {isLoading ? <Loading compact /> : passkeys!.length > 0 ? createPasskeyList() : createNoPasskeyMessage()}
       </Box>
 
-      <Snackbar onClose={() => setFeedback('')} message={feedback} />
+      <Snackbar message={feedback} onClose={() => setFeedback('')} />
 
       <Helmet>
         <title>

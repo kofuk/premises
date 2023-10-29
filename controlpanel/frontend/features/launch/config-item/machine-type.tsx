@@ -26,14 +26,14 @@ class Machine {
     return (
       <React.Fragment key={this.name}>
         <input
-          type="radio"
+          autoComplete="off"
+          checked={this.name === selectedValue}
           className="btn-check"
           id={`machineType_${this.name}`}
           name="machine-type"
-          autoComplete="off"
-          value={this.name}
-          checked={this.name === selectedValue}
           onChange={() => clickHandler(this.name)}
+          type="radio"
+          value={this.name}
         />
         <label className="btn btn-outline-primary" htmlFor={`machineType_${this.name}`} title={this.getLabel()}>
           {this.memSize} GB
@@ -70,12 +70,12 @@ const MachineType = ({
   };
 
   return (
-    <ConfigContainer title={t('config_machine_type')} isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum}>
+    <ConfigContainer isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum} title={t('config_machine_type')}>
       <div className="btn-group ms-3" role="group">
         {machines.map((e) => e.createReactElement(machineType, handleClick))}
       </div>
       <div className="m-1 text-end">
-        <button type="button" className="btn btn-primary" onClick={nextStep}>
+        <button className="btn btn-primary" onClick={nextStep} type="button">
           {t('next')}
         </button>
       </div>

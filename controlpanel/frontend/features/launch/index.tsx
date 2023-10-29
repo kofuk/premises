@@ -89,12 +89,12 @@ const LaunchPage = () => {
         <div className={`toast ${showNotificationToast ? 'show' : ''}`}>
           <div className="toast-header">
             <strong className="me-auto">{t('notification_toast_title')}</strong>
-            <button type="button" className="btn-close" data-bs-dismiss="toast" aria-label="Close" onClick={closeNotificationToast}></button>
+            <button aria-label="Close" className="btn-close" data-bs-dismiss="toast" onClick={closeNotificationToast} type="button"></button>
           </div>
           <div className="toast-body">
             {t('notification_toast_description')}
             <div className="text-end">
-              <button type="button" className="btn btn-primary btn-sm" onClick={requestNotification}>
+              <button className="btn btn-primary btn-sm" onClick={requestNotification} type="button">
                 {t('notification_allow')}
               </button>
             </div>

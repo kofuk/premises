@@ -22,7 +22,7 @@ const CopyableListItem = ({title, children}: Prop) => {
       <ListItem
         secondaryAction={
           <Tooltip title={t('copy')}>
-            <IconButton edge="end" aria-label="copy" onClick={handleCopy}>
+            <IconButton aria-label="copy" edge="end" onClick={handleCopy}>
               <ContentCopyIcon />
             </IconButton>
           </Tooltip>

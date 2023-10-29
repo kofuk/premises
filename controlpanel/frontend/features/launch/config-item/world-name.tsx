@@ -56,26 +56,26 @@ const WorldName = ({
   }
 
   return (
-    <ConfigContainer title={t('config_world_name')} isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum}>
+    <ConfigContainer isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum} title={t('config_world_name')}>
       {(isLoading && <Loading compact />) || (
         <>
           <label className="form-label" htmlFor="newWorldName">
             {t('world_name')}
           </label>
           <input
-            type="text"
             className="form-control"
             id="newWorldName"
-            value={worldName}
             onChange={(e) => {
               handleChange(e.target.value);
             }}
+            type="text"
+            value={worldName}
           />
           {alert}
         </>
       )}
       <div className="m-1 text-end">
-        <button type="button" className="btn btn-primary" onClick={nextStep} disabled={worldName.length === 0 || duplicateName || invalidName}>
+        <button className="btn btn-primary" disabled={worldName.length === 0 || duplicateName || invalidName} onClick={nextStep} type="button">
           {t('next')}
         </button>
       </div>

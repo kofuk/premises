@@ -38,7 +38,7 @@ const AddUser = () => {
 
   return (
     <>
-      <Typography variant="h4" sx={{mt: 3}}>
+      <Typography sx={{mt: 3}} variant="h4">
         {t('add_user_header')}
       </Typography>
 
@@ -47,11 +47,11 @@ const AddUser = () => {
           <Stack spacing={2}>
             <Stack direction="row" spacing={2}>
               <TextField
-                label={t('username')}
-                variant="outlined"
-                type="text"
                 autoComplete="username"
                 fullWidth
+                label={t('username')}
+                type="text"
+                variant="outlined"
                 {...register('userName', {
                   required: true,
                   validate: (val: string) => val.length <= 32
@@ -61,21 +61,21 @@ const AddUser = () => {
             </Stack>
             <Stack direction="row" spacing={2}>
               <TextField
-                label={t('password')}
-                variant="outlined"
-                type="password"
                 autoComplete="new-password"
                 fullWidth
+                label={t('password')}
+                type="password"
+                variant="outlined"
                 {...register('password', {
                   required: true
                 })}
               />
               <TextField
-                label={t('password_confirm')}
-                variant="outlined"
-                type="password"
                 autoComplete="new-password"
                 fullWidth
+                label={t('password_confirm')}
+                type="password"
+                variant="outlined"
                 {...register('passwordConfirm', {
                   required: true,
                   validate: (val: string) => {
@@ -90,13 +90,13 @@ const AddUser = () => {
         </Box>
 
         <Box sx={{m: 2}}>
-          <LoadingButtonWithResult type="submit" variant="contained" disabled={!formState.isValid} loading={submitting} success={success}>
+          <LoadingButtonWithResult disabled={!formState.isValid} loading={submitting} success={success} type="submit" variant="contained">
             {t('add_user_submit')}
           </LoadingButtonWithResult>
         </Box>
       </form>
 
-      <Snackbar onClose={() => setFeedback('')} message={feedback} />
+      <Snackbar message={feedback} onClose={() => setFeedback('')} />
 
       <Helmet>
         <title>

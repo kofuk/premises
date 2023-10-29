@@ -9,10 +9,10 @@ const AddUserPage = React.lazy(() => import('../components/add-user'));
 const SettingsRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<SettingsMenuPage />} />
-      <Route path="/change-password" element={<ChangePasswordPage />} />
-      <Route path="/passkeys" element={<PasskeysPage />} />
-      <Route path="/add-user" element={<AddUserPage />} />
+      <Route element={<SettingsMenuPage />} path="/" />
+      <Route element={<ChangePasswordPage />} path="/change-password" />
+      <Route element={<PasskeysPage />} path="/passkeys" />
+      <Route element={<AddUserPage />} path="/add-user" />
     </Routes>
   );
 };

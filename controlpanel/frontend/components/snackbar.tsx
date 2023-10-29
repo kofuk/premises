@@ -6,16 +6,16 @@ import {IconButton, Snackbar as MuiSnackbar} from '@mui/material';
 const Snackbar = ({message, onClose}: {message: string; onClose: () => void}) => {
   return (
     <MuiSnackbar
-      anchorOrigin={{vertical: 'top', horizontal: 'center'}}
-      open={message.length > 0}
-      autoHideDuration={10000}
-      onClose={onClose}
-      message={message}
       action={
-        <IconButton aria-label="close" color="inherit" sx={{p: 0.5}} onClick={onClose}>
+        <IconButton aria-label="close" color="inherit" onClick={onClose} sx={{p: 0.5}}>
           <CloseIcon />
         </IconButton>
       }
+      anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+      autoHideDuration={10000}
+      message={message}
+      onClose={onClose}
+      open={message.length > 0}
     />
   );
 };

@@ -14,7 +14,7 @@ describe('LoadingButtonWithResult', () => {
       const success = ((i >> 2) & 1) == 1;
 
       rerender(
-        <LoadingButtonWithResult type="button" disabled={disabled} loading={loading} success={success}>
+        <LoadingButtonWithResult disabled={disabled} loading={loading} success={success} type="button">
           inner text
         </LoadingButtonWithResult>
       );

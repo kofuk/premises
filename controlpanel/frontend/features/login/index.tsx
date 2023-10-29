@@ -26,7 +26,7 @@ const LoginPage = () => {
   return (
     <>
       <LoginFormCard title={t('title_login')}>
-        <Snackbar onClose={() => setFeedback('')} message={feedback} />
+        <Snackbar message={feedback} onClose={() => setFeedback('')} />
         <LoginForm setFeedback={setFeedback} />
       </LoginFormCard>
       <Helmet>

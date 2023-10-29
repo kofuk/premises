@@ -16,9 +16,9 @@ const ConfigContainer = ({
   return (
     <div className="d-flex flex-row m-2">
       <div className="my-2">
-        <svg width="30" height="30" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" version="1.1">
-          <circle cx="50" cy="50" r="50" fill={isFocused ? 'blue' : 'gray'} />
-          <text x="50" y="45" textAnchor="middle" dominantBaseline="central" fontFamily="sans-serif" fontSize="50" fill="white">
+        <svg height="30" version="1.1" viewBox="0 0 100 100" width="30" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" fill={isFocused ? 'blue' : 'gray'} r="50" />
+          <text dominantBaseline="central" fill="white" fontFamily="sans-serif" fontSize="50" textAnchor="middle" x="50" y="45">
             {stepNum}
           </text>
         </svg>

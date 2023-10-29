@@ -67,32 +67,32 @@ const ServerVersion = ({
       .filter((e) => showBeta || e.channel !== 'beta')
       .filter((e) => showAlpha || e.channel !== 'alpha')
       .map((e) => (
-        <option value={e.name} key={e.name}>
+        <option key={e.name} value={e.name}>
           {e.name}
         </option>
       ));
   return (
-    <ConfigContainer title={t('config_server_version')} isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum}>
+    <ConfigContainer isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum} title={t('config_server_version')}>
       {(isLoading && <Loading compact />) || (
         <>
           <select
-            className="form-select"
             aria-label={t('config_server_version')}
-            value={serverVersion}
+            className="form-select"
             onChange={(e) => handleChange(e.target.value)}
+            value={serverVersion}
           >
             {versions}
           </select>
           <div className="m-1 form-check form-switch">
             <input
-              className="form-check-input"
-              type="checkbox"
-              id="showStable"
               checked={showStable}
+              className="form-check-input"
+              id="showStable"
               onChange={() => {
                 setShowStable(!showStable);
                 postUpdateCondition(mcVersions!);
               }}
+              type="checkbox"
             />
             <label className="form-check-label" htmlFor="showStable">
               {t('version_show_stable')}
@@ -100,14 +100,14 @@ const ServerVersion = ({
           </div>
           <div className="m-1 form-check form-switch">
             <input
-              className="form-check-input"
-              type="checkbox"
-              id="showSnapshot"
               checked={showSnapshot}
+              className="form-check-input"
+              id="showSnapshot"
               onChange={() => {
                 setShowSnapshot(!showSnapshot);
                 postUpdateCondition(mcVersions!);
               }}
+              type="checkbox"
             />
             <label className="form-check-label" htmlFor="showSnapshot">
               {t('version_show_snapshot')}
@@ -115,14 +115,14 @@ const ServerVersion = ({
           </div>
           <div className="m-1 form-check form-switch">
             <input
-              className="form-check-input"
-              type="checkbox"
-              id="showSnapshot"
               checked={showBeta}
+              className="form-check-input"
+              id="showSnapshot"
               onChange={() => {
                 setShowBeta(!showBeta);
                 postUpdateCondition(mcVersions!);
               }}
+              type="checkbox"
             />
             <label className="form-check-label" htmlFor="showBeta">
               {t('version_show_beta')}
@@ -130,14 +130,14 @@ const ServerVersion = ({
           </div>
           <div className="m-1 form-check form-switch">
             <input
-              className="form-check-input"
-              type="checkbox"
-              id="showSnapshot"
               checked={showAlpha}
+              className="form-check-input"
+              id="showSnapshot"
               onChange={() => {
                 setShowAlpha(!showAlpha);
                 postUpdateCondition(mcVersions!);
               }}
+              type="checkbox"
             />
             <label className="form-check-label" htmlFor="showAlpha">
               {t('version_show_alpha')}
@@ -146,7 +146,7 @@ const ServerVersion = ({
         </>
       )}
       <div className="m-1 text-end">
-        <button type="button" className="btn btn-primary" onClick={nextStep} disabled={isLoading}>
+        <button className="btn btn-primary" disabled={isLoading} onClick={nextStep} type="button">
           {t('next')}
         </button>
       </div>

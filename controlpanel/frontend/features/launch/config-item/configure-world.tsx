@@ -23,7 +23,7 @@ class LevelTypeInfo {
 
   createReactElement = (): React.ReactElement => {
     return (
-      <option value={this.levelType} key={this.levelType}>
+      <option key={this.levelType} value={this.levelType}>
         {this.label}
       </option>
     );
@@ -55,25 +55,25 @@ const ConfigureWorld = ({
   ];
 
   return (
-    <ConfigContainer title={t('config_configure_world')} isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum}>
+    <ConfigContainer isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum} title={t('config_configure_world')}>
       <div className="m-2">
         <label className="form-label" htmlFor="seed">
           {t('seed')}
         </label>
-        <input className="form-control" value={seed} id="seed" onChange={(e) => setSeed(e.target.value)} />
+        <input className="form-control" id="seed" onChange={(e) => setSeed(e.target.value)} value={seed} />
       </div>
 
       <div className="m-2">
         <label className="form-label" htmlFor="selectLevelType">
           {t('world_type')}
         </label>
-        <select className="form-select" value={levelType} id="selectLeveltype" onChange={(e) => setLevelType(e.target.value as LevelType)}>
+        <select className="form-select" id="selectLeveltype" onChange={(e) => setLevelType(e.target.value as LevelType)} value={levelType}>
           {levelTypes.map((e) => e.createReactElement())}
         </select>
       </div>
 
       <div className="m-1 text-end">
-        <button type="button" className="btn btn-primary" onClick={nextStep}>
+        <button className="btn btn-primary" onClick={nextStep} type="button">
           {t('next')}
         </button>
       </div>

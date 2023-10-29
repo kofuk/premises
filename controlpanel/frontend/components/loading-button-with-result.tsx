@@ -24,7 +24,7 @@ const LoadingButtonWithResult = ({type, variant, disabled, loading, success, chi
   };
 
   return (
-    <LoadingButton type={type} variant={variant} disabled={disabled} loading={loading} sx={sx}>
+    <LoadingButton disabled={disabled} loading={loading} sx={sx} type={type} variant={variant}>
       {success ? <CheckIcon /> : children}
     </LoadingButton>
   );

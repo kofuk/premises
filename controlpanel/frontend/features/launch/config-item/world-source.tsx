@@ -25,16 +25,16 @@ const WorldSource = ({
   };
 
   return (
-    <ConfigContainer title={t('config_world_source')} isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum}>
+    <ConfigContainer isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum} title={t('config_world_source')}>
       <div className="form-check">
         <input
-          className="form-check-input"
-          type="radio"
-          name="worldSource"
-          value="backups"
-          id="worldSourceBackups"
           checked={worldSource === WorldLocation.Backups}
+          className="form-check-input"
+          id="worldSourceBackups"
+          name="worldSource"
           onChange={(e) => handleChange(e.target.value)}
+          type="radio"
+          value="backups"
         />
         <label className="form-check-label" htmlFor="worldSourceBackups">
           {t('use_backups')}
@@ -42,13 +42,13 @@ const WorldSource = ({
       </div>
       <div className="form-check">
         <input
-          className="form-check-input"
-          type="radio"
-          name="worldSource"
-          value="newWorld"
-          id="worldSourceNewWorld"
           checked={worldSource === WorldLocation.NewWorld}
+          className="form-check-input"
+          id="worldSourceNewWorld"
+          name="worldSource"
           onChange={(e) => handleChange(e.target.value)}
+          type="radio"
+          value="newWorld"
         />
         <label className="form-check-label" htmlFor="worldSourceNewWorld">
           {t('generate_world')}
@@ -56,7 +56,7 @@ const WorldSource = ({
       </div>
 
       <div className="m-1 text-end">
-        <button type="button" className="btn btn-primary" onClick={nextStep}>
+        <button className="btn btn-primary" onClick={nextStep} type="button">
           {t('next')}
         </button>
       </div>

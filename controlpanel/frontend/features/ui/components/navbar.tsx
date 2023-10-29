@@ -39,17 +39,17 @@ const NavBar = () => {
   return (
     <RoundedAppBar>
       <Toolbar variant="dense">
-        <Typography variant="h6" color="inherit" component="div" sx={{flexGrow: 1}}>
+        <Typography color="inherit" component="div" sx={{flexGrow: 1}} variant="h6">
           {t('app_name')}
         </Typography>
 
         <Tooltip title={t('settings')}>
-          <IconButton size="large" color="inherit" onClick={() => navigate('/settings')}>
+          <IconButton color="inherit" onClick={() => navigate('/settings')} size="large">
             <SettingsIcon />
           </IconButton>
         </Tooltip>
         <Tooltip title={t('logout')}>
-          <IconButton size="large" color="inherit" onClick={handleLogout}>
+          <IconButton color="inherit" onClick={handleLogout} size="large">
             <LogoutIcon />
           </IconButton>
         </Tooltip>

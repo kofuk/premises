@@ -39,7 +39,7 @@ const Snapshot = (props: Prop) => {
       </button>
       <div className="m-2">{t('snapshot_description')}</div>
       <div className="text-center">
-        <button type="button" className="btn btn-lg btn-primary" onClick={handleSnapshot} disabled={isRequesting}>
+        <button className="btn btn-lg btn-primary" disabled={isRequesting} onClick={handleSnapshot} type="button">
           {isRequesting ? <div className="spinner-border spinner-border-sm me-2" role="status"></div> : <></>}
           {isRequesting ? t('requesting') : t('take_snapshot')}
         </button>

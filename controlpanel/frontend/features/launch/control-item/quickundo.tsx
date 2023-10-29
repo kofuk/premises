@@ -64,11 +64,11 @@ const QuickUndo = (props: Prop) => {
         このスナップショットはサーバの再設定後も保持されるため、ワールドのデータを別のワールドのデータで上書きしないよう注意してください。
       </div>
       <div className="text-center">
-        <button type="button" className="btn btn-lg btn-primary" onClick={handleSnapshot} disabled={isRequesting}>
+        <button className="btn btn-lg btn-primary" disabled={isRequesting} onClick={handleSnapshot} type="button">
           {isRequesting ? <div className="spinner-border spinner-border-sm me-2" role="status"></div> : <></>}
           {isRequesting ? t('requesting') : t('take_snapshot')}
         </button>
-        <button type="button" className="btn btn-lg btn-primary" onClick={handleUndo} disabled={isRequesting}>
+        <button className="btn btn-lg btn-primary" disabled={isRequesting} onClick={handleUndo} type="button">
           スナップショットに戻す
         </button>
       </div>

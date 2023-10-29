@@ -73,7 +73,7 @@ const WorldInfo = (props: Prop) => {
       </button>
       <div className="m-2">{mainContents}</div>
       <div className="m-1">
-        <button type="button" className="btn btn-sm btn-outline-secondary" onClick={refreshInfo} disabled={refreshing}>
+        <button className="btn btn-sm btn-outline-secondary" disabled={refreshing} onClick={refreshInfo} type="button">
           {refreshing ? <div className="spinner-border spinner-border-sm me-1" role="status"></div> : <RefreshIcon />}
           {t('refresh')}
         </button>

@@ -55,64 +55,64 @@ const ServerControlPane = (props: Prop) => {
 
   if (mode === Modes.MainMenu) {
     controlItems.push(
-      <div className="list-group" key="mainMenu">
+      <div key="mainMenu" className="list-group">
         <button
-          type="button"
           className="list-group-item list-group-item-action"
           onClick={() => {
             setMode(Modes.WorldInfo);
           }}
+          type="button"
         >
           {t('menu_world_info')}
         </button>
         <button
-          type="button"
           className="list-group-item list-group-item-action"
           onClick={() => {
             setMode(Modes.Reconfigure);
           }}
+          type="button"
         >
           {t('menu_reconfigure')}
         </button>
         <button
-          type="button"
           className="list-group-item list-group-item-action"
           onClick={() => {
             setMode(Modes.Snapshot);
           }}
+          type="button"
         >
           {t('menu_snapshot')}
         </button>
         <button
-          type="button"
           className="list-group-item list-group-item-action"
           onClick={() => {
             setMode(Modes.QuickUndo);
           }}
+          type="button"
         >
           QuickUndo
         </button>
         <button
-          type="button"
           className="list-group-item list-group-item-action"
           onClick={() => {
             setMode(Modes.SystemInfo);
           }}
+          type="button"
         >
           {t('menu_system_info')}
         </button>
       </div>
     );
   } else if (mode === Modes.Reconfigure) {
-    controlItems.push(<ReconfigureMenu backToMenu={handleBackToMenu} showError={showError} key="reconfigure" />);
+    controlItems.push(<ReconfigureMenu key="reconfigure" backToMenu={handleBackToMenu} showError={showError} />);
   } else if (mode === Modes.Snapshot) {
-    controlItems.push(<Snapshot backToMenu={handleBackToMenu} showError={showError} key="snapshot" />);
+    controlItems.push(<Snapshot key="snapshot" backToMenu={handleBackToMenu} showError={showError} />);
   } else if (mode === Modes.QuickUndo) {
-    controlItems.push(<QuickUndo backToMenu={handleBackToMenu} showError={showError} key="quickundo" />);
+    controlItems.push(<QuickUndo key="quickundo" backToMenu={handleBackToMenu} showError={showError} />);
   } else if (mode === Modes.SystemInfo) {
-    controlItems.push(<SystemInfo backToMenu={handleBackToMenu} key="systemInfo" />);
+    controlItems.push(<SystemInfo key="systemInfo" backToMenu={handleBackToMenu} />);
   } else if (mode === Modes.WorldInfo) {
-    controlItems.push(<WorldInfo backToMenu={handleBackToMenu} key="worldInfo" />);
+    controlItems.push(<WorldInfo key="worldInfo" backToMenu={handleBackToMenu} />);
   }
 
   return (
@@ -123,21 +123,21 @@ const ServerControlPane = (props: Prop) => {
           <div className="d-md-block mt-3 text-end">
             <button
               className="btn btn-danger bg-gradient"
-              type="button"
               onClick={(e: React.MouseEvent) => {
                 e.preventDefault();
                 fetch('/api/stop', {method: 'post'});
               }}
+              type="button"
             >
               <StopIcon /> {t('stop_server')}
             </button>
           </div>
         </form>
 
-        <LineChart data={cpuUsage} width={800} height={400}>
+        <LineChart data={cpuUsage} height={400} width={800}>
           <YAxis domain={[0, 100]}></YAxis>
           <Tooltip />
-          <Line dataKey="cpuUsage" stroke="#00f" isAnimationActive={false} dot={false} />
+          <Line dataKey="cpuUsage" dot={false} isAnimationActive={false} stroke="#00f" />
         </LineChart>
       </div>
     </div>

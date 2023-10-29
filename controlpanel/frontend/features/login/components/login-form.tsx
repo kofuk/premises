@@ -69,18 +69,18 @@ const LoginForm = ({setFeedback}: Prop) => {
     <>
       <form onSubmit={loginForm.handleSubmit(handleLogin)}>
         <Stack spacing={2}>
-          <TextField variant="outlined" label={t('username')} autoComplete="username" type="text" fullWidth {...loginForm.register('username')} />
-          <TextField variant="outlined" label={t('password')} autoComplete="password" type="password" fullWidth {...loginForm.register('password')} />
+          <TextField autoComplete="username" fullWidth label={t('username')} type="text" variant="outlined" {...loginForm.register('username')} />
+          <TextField autoComplete="password" fullWidth label={t('password')} type="password" variant="outlined" {...loginForm.register('password')} />
           <Stack direction="row" justifyContent="end" sx={{mt: 1}}>
-            <ButtonGroup disabled={loggingIn} variant="contained" aria-label="outlined primary button group">
+            <ButtonGroup aria-label="outlined primary button group" disabled={loggingIn} variant="contained">
               {passkeysSupported && (
                 <Tooltip title="Use Passkey">
-                  <Button size="small" aria-label="security key" type="button" onClick={handlePasskeys}>
+                  <Button aria-label="security key" onClick={handlePasskeys} size="small" type="button">
                     <KeyIcon />
                   </Button>
                 </Tooltip>
               )}
-              <LoadingButton loading={loggingIn} variant="contained" type="submit">
+              <LoadingButton loading={loggingIn} type="submit" variant="contained">
                 {t('login')}
               </LoadingButton>
             </ButtonGroup>
@@ -93,18 +93,18 @@ const LoginForm = ({setFeedback}: Prop) => {
           <DialogContent>
             <Stack spacing={2}>
               <TextField
+                autoComplete="new-password"
                 label={t('change_password_new')}
                 type="password"
-                autoComplete="new-password"
                 {...resetPasswdForm.register('password', {
                   required: true
                 })}
                 fullWidth
               />
               <TextField
+                autoComplete="new-password"
                 label={t('change_password_confirm')}
                 type="password"
-                autoComplete="new-password"
                 {...resetPasswdForm.register('passwordConfirm', {
                   required: true,
                   validate: (val: string) => {
