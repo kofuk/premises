@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 
+import {Helmet} from 'react-helmet-async';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 
@@ -95,7 +96,14 @@ const AddUser = () => {
           </LoadingButtonWithResult>
         </Box>
       </form>
+
       <Snackbar onClose={() => setFeedback('')} message={feedback} />
+
+      <Helmet>
+        <title>
+          {t('add_user_header')} - {t('app_name')}
+        </title>
+      </Helmet>
     </>
   );
 };
