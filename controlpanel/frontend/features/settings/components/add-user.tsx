@@ -3,12 +3,10 @@ import React, {useState} from 'react';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 
-import {Check as CheckIcon} from '@mui/icons-material';
-import {LoadingButton} from '@mui/lab';
 import {Box, Stack, TextField, Typography} from '@mui/material';
-import {green} from '@mui/material/colors';
 
 import {APIError, addUser} from '@/api';
+import LoadingButtonWithResult from '@/components/loading-button-with-result';
 import Snackbar from '@/components/snackbar';
 
 const AddUser = () => {
@@ -36,15 +34,6 @@ const AddUser = () => {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const buttonSx = {
-    ...(success && {
-      bgcolor: green[500],
-      '&:hover': {
-        bgcolor: green[700]
-      }
-    })
   };
 
   return (
@@ -101,9 +90,9 @@ const AddUser = () => {
         </Box>
 
         <Box sx={{m: 2}}>
-          <LoadingButton type="submit" variant="contained" disabled={!formState.isValid} loading={submitting} sx={buttonSx}>
-            {success ? <CheckIcon /> : t('add_user_submit')}
-          </LoadingButton>
+          <LoadingButtonWithResult type="submit" variant="contained" disabled={!formState.isValid} loading={submitting} success={success}>
+            {t('add_user_submit')}
+          </LoadingButtonWithResult>
         </Box>
       </form>
       <Snackbar onClose={() => setFeedback('')} message={feedback} />

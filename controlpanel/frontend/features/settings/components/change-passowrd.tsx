@@ -4,13 +4,11 @@ import {Helmet} from 'react-helmet-async';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 
-import {Check as CheckIcon} from '@mui/icons-material';
-import {LoadingButton} from '@mui/lab';
 import {Stack, TextField, Typography} from '@mui/material';
-import {green} from '@mui/material/colors';
 import {Box} from '@mui/system';
 
 import {changePassword} from '@/api';
+import LoadingButtonWithResult from '@/components/loading-button-with-result';
 import Snackbar from '@/components/snackbar';
 
 const ChangePassword = () => {
@@ -36,15 +34,6 @@ const ChangePassword = () => {
         setSubmitting(false);
       }
     })();
-  };
-
-  const buttonSx = {
-    ...(success && {
-      bgcolor: green[500],
-      '&:hover': {
-        bgcolor: green[700]
-      }
-    })
   };
 
   return (
@@ -100,9 +89,9 @@ const ChangePassword = () => {
         </Box>
 
         <Box sx={{m: 2}}>
-          <LoadingButton type="submit" variant="contained" disabled={!formState.isValid} loading={submitting} sx={buttonSx}>
-            {success ? <CheckIcon /> : t('change_password_submit')}
-          </LoadingButton>
+          <LoadingButtonWithResult type="submit" variant="contained" disabled={!formState.isValid} loading={submitting} success={success}>
+            {t('change_password_submit')}
+          </LoadingButtonWithResult>
         </Box>
       </form>
 
