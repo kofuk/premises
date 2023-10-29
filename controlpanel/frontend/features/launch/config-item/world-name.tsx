@@ -3,7 +3,7 @@ import React, {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 
 import {useBackups} from '@/api';
-import Loading from '@/components/loading';
+import {Loading} from '@/components';
 import ConfigContainer from '@/features/launch/config-item/config-container';
 import {ItemProp} from '@/features/launch/config-item/prop';
 

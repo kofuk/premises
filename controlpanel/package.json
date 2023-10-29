@@ -6,10 +6,10 @@
     "test": "jest",
     "build": "vite build",
     "start": "vite",
-    "fmt": "prettier --write 'frontend/**/*.{ts,tsx,json}' *.{ts,js}",
-    "fmt:check": "prettier --check 'frontend/**/*.{ts,tsx,json}' *.{ts,js}",
-    "lint": "eslint --fix frontend/ vite.config.ts",
-    "lint:check": "eslint frontend/ vite.config.ts"
+    "fmt": "prettier --write 'frontend/**/*.{ts,tsx,json}' '*.{ts,js}'",
+    "fmt:check": "prettier --check 'frontend/**/*.{ts,tsx,json}' '*.{ts,js}'",
+    "lint": "eslint --fix frontend/ vite.config.ts jest.setup.ts",
+    "lint:check": "eslint frontend/ vite.config.ts jest.setup.ts"
   },
   "repository": {
     "type": "git",

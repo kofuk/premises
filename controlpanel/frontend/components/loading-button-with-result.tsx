@@ -5,11 +5,11 @@ import {LoadingButton} from '@mui/lab';
 import {green} from '@mui/material/colors';
 
 type Props = {
-  type: any;
-  variant: any;
-  disabled: boolean;
-  loading: boolean;
-  success: boolean;
+  type?: any;
+  variant?: any;
+  disabled?: boolean;
+  loading?: boolean;
+  success?: boolean;
   children: React.ReactNode;
 };
 

@@ -6,7 +6,7 @@ import ConfigContainer from './config-container';
 import {ItemProp} from './prop';
 
 import {useBackups} from '@/api';
-import Loading from '@/components/loading';
+import {Loading} from '@/components';
 
 type Props = ItemProp & {
   worldName: string;

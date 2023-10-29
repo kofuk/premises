@@ -3,7 +3,7 @@ import {BrowserRouter as Router} from 'react-router-dom';
 
 import {HelmetProvider} from 'react-helmet-async';
 
-import Loading from './components/loading';
+import {Loading} from './components';
 import AppRoutes from './routes';
 import {AuthProvider} from './utils/auth';
 

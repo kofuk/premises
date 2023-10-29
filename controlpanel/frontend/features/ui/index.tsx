@@ -5,7 +5,7 @@ import {Box} from '@mui/material';
 
 import Navbar from './components/navbar';
 
-import Loading from '@/components/loading';
+import {Loading} from '@/components';
 import {useAuth} from '@/utils/auth';
 
 const UI = () => {

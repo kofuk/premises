@@ -2,16 +2,11 @@ import React from 'react';
 
 import {render, screen, waitFor} from '@testing-library/react';
 import nock from 'nock';
-import fetch from 'node-fetch';
 
 import {AuthProvider, useAuth} from '../auth';
 import '@testing-library/jest-dom';
 
 describe('AuthProvider', () => {
-  beforeEach(() => {
-    global.fetch = fetch as any as typeof global.fetch;
-  });
-
   it('renders component after initialized', async () => {
     nock('http://localhost')
       .get('/api/session-data')

@@ -7,8 +7,7 @@ import {useTranslation} from 'react-i18next';
 import {Box, Stack, TextField, Typography} from '@mui/material';
 
 import {APIError, addUser} from '@/api';
-import LoadingButtonWithResult from '@/components/loading-button-with-result';
-import Snackbar from '@/components/snackbar';
+import {LoadingButtonWithResult, Snackbar} from '@/components';
 
 const AddUser = () => {
   const [t] = useTranslation();

@@ -8,8 +8,7 @@ import {Stack, TextField, Typography} from '@mui/material';
 import {Box} from '@mui/system';
 
 import {changePassword} from '@/api';
-import LoadingButtonWithResult from '@/components/loading-button-with-result';
-import Snackbar from '@/components/snackbar';
+import {LoadingButtonWithResult, Snackbar} from '@/components';
 
 const ChangePassword = () => {
   const [t] = useTranslation();

@@ -24,8 +24,7 @@ import {
 import {Box} from '@mui/system';
 
 import {APIError, getPasskeysRegistrationOptions, registerPasskeys, usePasskeys} from '@/api';
-import Loading from '@/components/loading';
-import Snackbar from '@/components/snackbar';
+import {Loading, Snackbar} from '@/components';
 import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
 
 const Passkeys = () => {

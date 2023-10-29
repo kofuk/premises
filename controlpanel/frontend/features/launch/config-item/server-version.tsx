@@ -2,10 +2,11 @@ import React, {useEffect, useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
+import ConfigContainer from './config-container';
+import {ItemProp} from './prop';
+
 import {useMCVersions} from '@/api';
-import Loading from '@/components/loading';
-import ConfigContainer from '@/features/launch/config-item/config-container';
-import {ItemProp} from '@/features/launch/config-item/prop';
+import {Loading} from '@/components';
 
 type McVersion = {
   name: string;

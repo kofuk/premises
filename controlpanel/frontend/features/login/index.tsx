@@ -7,7 +7,7 @@ import {useTranslation} from 'react-i18next';
 import LoginForm from './components/login-form';
 import LoginFormCard from './components/login-form-card';
 
-import Snackbar from '@/components/snackbar';
+import {Snackbar} from '@/components';
 import {useAuth} from '@/utils/auth';
 
 const LoginPage = () => {

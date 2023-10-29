@@ -1,7 +1,7 @@
 import React, {ReactNode, useContext, useEffect, useState} from 'react';
 
 import {login as apiLogin, getPasskeysLoginOptions, loginPasskeys as loginPasskeysApi, useSessionData} from '@/api';
-import Loading from '@/components/loading';
+import {Loading} from '@/components';
 import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
 
 export enum LoginResult {

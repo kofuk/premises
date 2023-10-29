@@ -5,7 +5,7 @@ import {useTranslation} from 'react-i18next';
 import {ArrowBack as ArrowBackIcon} from '@mui/icons-material';
 import {List} from '@mui/material';
 
-import CopyableListItem from '@/components/copyable-list-item';
+import {CopyableListItem} from '@/components';
 
 type Prop = {
   backToMenu: () => void;

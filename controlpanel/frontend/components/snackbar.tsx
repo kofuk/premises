@@ -1,11 +1,11 @@
 import React from 'react';
 
 import CloseIcon from '@mui/icons-material/Close';
-import {IconButton, Snackbar as OriginalSnackbar} from '@mui/material';
+import {IconButton, Snackbar as MuiSnackbar} from '@mui/material';
 
 const Snackbar = ({message, onClose}: {message: string; onClose: () => void}) => {
   return (
-    <OriginalSnackbar
+    <MuiSnackbar
       anchorOrigin={{vertical: 'top', horizontal: 'center'}}
       open={message.length > 0}
       autoHideDuration={10000}
