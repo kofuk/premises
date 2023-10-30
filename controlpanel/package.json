@@ -40,7 +40,7 @@
     "@types/react": "^18.2.31",
     "@types/react-dom": "^18.2.13",
     "@types/react-test-renderer": "^18.0.5",
-    "@types/webappsec-credential-management": "^0.6.5",
+    "@types/webappsec-credential-management": "^0.6.6",
     "@typescript-eslint/eslint-plugin": "^6.7.5",
     "@typescript-eslint/parser": "^6.7.5",
     "@vitejs/plugin-react": "^4.1.0",
