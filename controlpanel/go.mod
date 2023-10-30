@@ -8,7 +8,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-webauthn/webauthn v0.8.6
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.4.0
 	github.com/gorilla/securecookie v1.1.1
 	github.com/joho/godotenv v1.5.1
 	github.com/kofuk/go-mega v0.0.0-20220314143053-5929f3eeeac4
