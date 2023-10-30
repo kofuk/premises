@@ -8,7 +8,7 @@ require (
 	github.com/klauspost/compress v1.17.2
 	github.com/kofuk/go-mega v0.0.0-20220314143053-5929f3eeeac4
 	github.com/mackerelio/go-osstat v0.2.4
-	github.com/nicksnyder/go-i18n/v2 v2.2.1
+	github.com/nicksnyder/go-i18n/v2 v2.2.2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
 	github.com/ulikunitz/xz v0.5.11
