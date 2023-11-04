@@ -1,12 +1,10 @@
 package gameconfig
 
 import (
-	"context"
 	"encoding/base32"
 	"errors"
 
 	"github.com/gorilla/securecookie"
-	"github.com/kofuk/premises/controlpanel/mcversions"
 	"golang.org/x/exp/slices"
 )
 
@@ -45,16 +43,9 @@ func New() *GameConfig {
 	return &result
 }
 
-func (gc *GameConfig) SetServerVersion(version string) error {
-	dlUrl, err := mcversions.GetDownloadUrl(context.TODO(), version)
-	if err != nil {
-		return err
-	}
-
+func (gc *GameConfig) SetServer(version, downloadURL string) {
 	gc.Server.Version = version
-	gc.Server.DownloadUrl = dlUrl
-
-	return nil
+	gc.Server.DownloadUrl = downloadURL
 }
 
 var (

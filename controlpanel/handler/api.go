@@ -23,7 +23,6 @@ import (
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/entity"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
-	"github.com/kofuk/premises/controlpanel/mcversions"
 	"github.com/kofuk/premises/controlpanel/model"
 	"github.com/kofuk/premises/controlpanel/monitor"
 	log "github.com/sirupsen/logrus"
@@ -171,14 +170,16 @@ func isValidMemSize(memSize int) bool {
 	return memSize == 1 || memSize == 2 || memSize == 4 || memSize == 8 || memSize == 16 || memSize == 32 || memSize == 64
 }
 
-func createConfigFromPostData(values url.Values, cfg *config.Config) (*gameconfig.GameConfig, error) {
+func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Values, cfg *config.Config) (*gameconfig.GameConfig, error) {
 	if !values.Has("server-version") {
 		return nil, errors.New("Server version is not set")
 	}
 	result := gameconfig.New()
-	if err := result.SetServerVersion(values.Get("server-version")); err != nil {
+	serverDownloadURL, err := h.MCVersions.GetDownloadURL(ctx, values.Get("server-version"))
+	if err != nil {
 		return nil, err
 	}
+	result.SetServer(values.Get("server-version"), serverDownloadURL)
 
 	if !values.Has("machine-type") {
 		return nil, errors.New("Machine type is not set")
@@ -405,9 +406,8 @@ func (h *Handler) handleApiLaunch(c *gin.Context) {
 		})
 		return
 	}
-	h.serverRunning = true
 
-	gameConfig, err := createConfigFromPostData(c.Request.Form, h.cfg)
+	gameConfig, err := h.createConfigFromPostData(c.Request.Context(), c.Request.Form, h.cfg)
 	if err != nil {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
@@ -416,6 +416,8 @@ func (h *Handler) handleApiLaunch(c *gin.Context) {
 		})
 		return
 	}
+
+	h.serverRunning = true
 
 	machineType := c.PostForm("machine-type")
 	h.serverState.machineType = machineType
@@ -442,7 +444,7 @@ func (h *Handler) handleApiReconfigure(c *gin.Context) {
 	formValues := c.Request.Form
 	formValues.Set("machine-type", h.serverState.machineType)
 
-	gameConfig, err := createConfigFromPostData(formValues, h.cfg)
+	gameConfig, err := h.createConfigFromPostData(c.Request.Context(), formValues, h.cfg)
 	if err != nil {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
@@ -517,17 +519,7 @@ func (h *Handler) handleApiBackups(c *gin.Context) {
 }
 
 func (h *Handler) handleApiMcversions(c *gin.Context) {
-	if val, err := h.redis.Get(c.Request.Context(), CacheKeyMCVersions).Result(); err == nil {
-		c.Header("Content-Type", "application/json")
-		c.Writer.Write([]byte(val))
-		return
-	} else if err != redis.Nil {
-		log.WithError(err).Error("Error retrieving mcversions cache")
-	}
-
-	log.WithField("cache_key", CacheKeyMCVersions).Info("cache miss")
-
-	versions, err := mcversions.GetVersions(c.Request.Context())
+	versions, err := h.MCVersions.GetVersions(c.Request.Context())
 	if err != nil {
 		log.WithError(err).Error("Failed to retrieve Minecraft versions")
 		c.JSON(http.StatusOK, entity.ErrorResponse{
@@ -538,29 +530,33 @@ func (h *Handler) handleApiMcversions(c *gin.Context) {
 		return
 	}
 
-	resp := entity.SuccessfulResponse[[]entity.MCVersion]{
-		Success: true,
-		Data:    versions,
-	}
+	versionsEntity := make([]entity.MCVersion, 0)
+	for _, ver := range versions {
+		channel := ""
+		if ver.Type == "release" {
+			channel = "stable"
+		} else if ver.Type == "snapshot" {
+			channel = "snapshot"
+		} else if ver.Type == "old_beta" {
+			channel = "beta"
+		} else if ver.Type == "old_alpha" {
+			channel = "alpha"
+		} else {
+			channel = "unknown"
+		}
 
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		log.WithError(err).Error("Failed to marshal mcversions")
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInternal,
-			Reason:    "Failed to retrieve Minecraft versions",
+		versionsEntity = append(versionsEntity, entity.MCVersion{
+			Name:        ver.ID,
+			IsStable:    ver.Type == "release",
+			Channel:     channel,
+			ReleaseDate: ver.ReleaseTime,
 		})
-		return
 	}
 
-	if _, err := h.redis.Set(c.Request.Context(), CacheKeyMCVersions, jsonResp, 24*time.Hour).Result(); err != nil {
-		log.WithError(err).Error("Failed to cache mcversions")
-	}
-
-	c.Status(http.StatusOK)
-	c.Header("Content-Type", "application/json")
-	c.Writer.Write(jsonResp)
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[[]entity.MCVersion]{
+		Success: true,
+		Data:    versionsEntity,
+	})
 }
 
 func (h *Handler) handleApiSystemInfo(c *gin.Context) {

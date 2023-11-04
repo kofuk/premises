@@ -18,8 +18,10 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
+	"github.com/kofuk/premises/controlpanel/caching"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/entity"
+	"github.com/kofuk/premises/controlpanel/mcversions"
 	"github.com/kofuk/premises/controlpanel/model"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
@@ -66,6 +68,8 @@ type Handler struct {
 	i18nData      *i18n.Bundle
 	serverMutex   sync.Mutex
 	serverRunning bool
+	Cacher        caching.Cacher
+	MCVersions    mcversions.MCVersionProvider
 }
 
 func createDatabaseClient(cfg *config.Config) (*gorm.DB, error) {
@@ -231,6 +235,10 @@ func NewHandler(cfg *config.Config, i18nData *i18n.Bundle, bindAddr string) (*Ha
 	if err := prepareDependencies(cfg, h); err != nil {
 		return nil, err
 	}
+
+	cacher := caching.New(caching.NewRedis(h.redis))
+	h.Cacher = cacher
+	h.MCVersions = mcversions.New(cacher)
 
 	setupSessions(h)
 
