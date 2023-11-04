@@ -2,10 +2,12 @@ package cleanup
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/kofuk/premises/runner/commands/mclauncher/config"
 	"github.com/kofuk/premises/runner/exterior"
@@ -79,7 +81,7 @@ func copyLogData() {
 	}
 	defer logFile.Close()
 
-	out, err := os.Create("/premises-dev/exteriord.log")
+	out, err := os.Create(fmt.Sprintf("/premises-dev/exteriord-%s.log", time.Now().Format("2006-01-02T15-04-05")))
 	if err != nil {
 		log.WithError(err).Error("Error creating copy file")
 		return
