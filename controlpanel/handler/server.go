@@ -2,16 +2,21 @@ package handler
 
 import (
 	"encoding/json"
+	"net"
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/kofuk/premises/controlpanel/cloudflare"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
 	"github.com/kofuk/premises/controlpanel/monitor"
 	log "github.com/sirupsen/logrus"
 )
+
+type IPAddressSet struct {
+	V4 net.IP
+	V6 net.IP
+}
 
 type GameServer interface {
 	SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Client, memSizeGB int) bool
@@ -22,8 +27,7 @@ type GameServer interface {
 	ImageExists() bool
 	SaveImage(rdb *redis.Client) bool
 	DeleteImage(rdb *redis.Client) bool
-	UpdateDNS(rdb *redis.Client) bool
-	RevertDNS(rdb *redis.Client) bool
+	GetIPAddresses(rdb *redis.Client) *IPAddressSet
 }
 
 type ConohaServer struct {
@@ -401,13 +405,13 @@ success:
 	return true
 }
 
-func (s *ConohaServer) UpdateDNS(rdb *redis.Client) bool {
+func (s *ConohaServer) GetIPAddresses(rdb *redis.Client) *IPAddressSet {
 	locale := s.cfg.ControlPanel.Locale
 
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
-		return false
+		return nil
 	}
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
@@ -420,7 +424,7 @@ func (s *ConohaServer) UpdateDNS(rdb *redis.Client) bool {
 	vms, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
 		log.WithField("vm_status", vms.Status).Info("Unable to get VM detail")
-		return false
+		return nil
 	}
 	log.Info("Getting VM information...Done")
 
@@ -430,75 +434,10 @@ func (s *ConohaServer) UpdateDNS(rdb *redis.Client) bool {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	ip4Addr := vms.GetIPAddress(4)
-	ip6Addr := vms.GetIPAddress(6)
-	log.WithField("ip_addr_4", ip4Addr).WithField("ip_addr_6", ip6Addr).Info("Got IP addresses")
-
-	s.cfg.ServerAddr = ip4Addr
-
-	log.Info("Updating DNS record (v4)...")
-	if err := cloudflare.UpdateDNS(s.cfg, ip4Addr, 4); err != nil {
-		log.WithError(err).Error("Failed to update DNS (v4)")
-		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   s.h.L(locale, "vm.dns.error"),
-			HasError: true,
-		}); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
-		}
-		return false
-	}
-	log.Info("Updating DNS record (v4)...Done")
-
-	log.Info("Updating DNS record (v6)...")
-	if err := cloudflare.UpdateDNS(s.cfg, ip6Addr, 6); err != nil {
-		log.WithError(err).Error("Failed to update DNS (v6)")
-		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   s.h.L(locale, "vm.dns.error"),
-			HasError: true,
-		}); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
-		}
-		return false
-	}
-	log.Info("Updating DNS record (v6)...Done")
-
-	return true
-}
-
-func (s *ConohaServer) RevertDNS(rdb *redis.Client) bool {
-	locale := s.cfg.ControlPanel.Locale
-
-	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: s.h.L(locale, "vm.dns.reverting"),
-	}); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
+	result := IPAddressSet{
+		V4: net.ParseIP(vms.GetIPAddress(4)),
+		V6: net.ParseIP(vms.GetIPAddress(6)),
 	}
 
-	log.Info("Updating DNS record (v4)...")
-	if err := cloudflare.UpdateDNS(s.cfg, "127.0.0.1", 4); err != nil {
-		log.WithError(err).Error("Failed to update DNS (v4)")
-		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   s.h.L(locale, "vm.dns.error"),
-			HasError: true,
-		}); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
-		}
-		return true
-	}
-	log.Info("Updating DNS record (v4)...Done")
-
-	log.Info("Updating DNS record (v6)...")
-	if err := cloudflare.UpdateDNS(s.cfg, "::1", 6); err != nil {
-		log.WithError(err).Error("Failed to update DNS (v6)")
-		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   s.h.L(locale, "vm.dns.error"),
-			HasError: true,
-		}); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
-		}
-		return true
-	}
-	log.Info("Updating DNS record (v6)...Done")
-
-	return true
+	return &result
 }

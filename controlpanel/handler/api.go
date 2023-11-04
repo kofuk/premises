@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -21,6 +22,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/kofuk/premises/controlpanel/backup"
 	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/entity"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
 	"github.com/kofuk/premises/controlpanel/model"
@@ -257,14 +259,14 @@ func (h *Handler) notifyNonRecoverableFailure(cfg *config.Config, rdb *redis.Cli
 	}
 }
 
-func (h *Handler) monitorServer(cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
+func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsProvider *dns.DNSProvider) {
+	locale := h.cfg.ControlPanel.Locale
+
 	defer func() {
 		h.serverMutex.Lock()
 		defer h.serverMutex.Unlock()
 		h.serverRunning = false
 	}()
-
-	locale := cfg.ControlPanel.Locale
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
 		Status: h.L(locale, "monitor.connecting"),
@@ -272,27 +274,34 @@ func (h *Handler) monitorServer(cfg *config.Config, gameServer GameServer, rdb *
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	if err := monitor.MonitorServer(cfg, cfg.ServerAddr, rdb); err != nil {
+	if err := monitor.MonitorServer(h.cfg, h.cfg.ServerAddr, rdb); err != nil {
 		log.WithError(err).Error("Failed to monitor server")
 	}
 
 	if !gameServer.StopVM(rdb) {
-		h.notifyNonRecoverableFailure(cfg, rdb, "Failed to stop VM")
+		h.notifyNonRecoverableFailure(h.cfg, rdb, "Failed to stop VM")
 		return
 	}
 	if !gameServer.SaveImage(rdb) {
-		h.notifyNonRecoverableFailure(cfg, rdb, "Failed to save image")
+		h.notifyNonRecoverableFailure(h.cfg, rdb, "Failed to save image")
 		return
 	}
 	if !gameServer.DeleteVM() {
-		h.notifyNonRecoverableFailure(cfg, rdb, "Failed to delete VM")
+		h.notifyNonRecoverableFailure(h.cfg, rdb, "Failed to delete VM")
 		return
 	}
 
 	rdb.Del(context.Background(), "monitor-key").Result()
 
-	if h.cfg.Cloudflare.Token != "" {
-		gameServer.RevertDNS(rdb)
+	if dnsProvider != nil {
+		if err := monitor.PublishEvent(rdb, monitor.StatusData{
+			Status: h.L(locale, "vm.dns.reverting"),
+		}); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
+		}
+
+		dnsProvider.UpdateV4(context.Background(), net.ParseIP("127.0.0.1"))
+		dnsProvider.UpdateV6(context.Background(), net.ParseIP("::1"))
 	}
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
@@ -303,10 +312,20 @@ func (h *Handler) monitorServer(cfg *config.Config, gameServer GameServer, rdb *
 	}
 }
 
-func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer, memSizeGB int, rdb *redis.Client) {
-	locale := cfg.ControlPanel.Locale
+func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer GameServer, memSizeGB int, rdb *redis.Client) {
+	locale := h.cfg.ControlPanel.Locale
 
-	if err := monitor.GenerateTLSKey(cfg, rdb); err != nil {
+	var dnsProvider *dns.DNSProvider
+	if h.cfg.Cloudflare.Token != "" {
+		cloudflareDNS, err := dns.NewCloudflareDNS(h.cfg.Cloudflare.Token, h.cfg.Cloudflare.ZoneID)
+		if err != nil {
+			log.WithError(err).Error("Failed to initialize DNS provider")
+		} else {
+			dnsProvider = dns.New(cloudflareDNS, h.cfg.Cloudflare.GameDomainName)
+		}
+	}
+
+	if err := monitor.GenerateTLSKey(h.cfg, rdb); err != nil {
 		log.WithError(err).Error("Failed to generate TLS key")
 		if err := monitor.PublishEvent(rdb, monitor.StatusData{
 			Status:   h.L(locale, "monitor.tls_keygen.error"),
@@ -319,7 +338,7 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Co
 		return
 	}
 
-	cfg.MonitorKey = gameConfig.AuthKey
+	h.cfg.MonitorKey = gameConfig.AuthKey
 	rdb.Set(context.Background(), "monitor-key", gameConfig.AuthKey, 0).Result()
 
 	if err := monitor.PublishEvent(rdb, monitor.StatusData{
@@ -342,17 +361,37 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Co
 		return
 	}
 
-	if h.cfg.Cloudflare.Token != "" {
-		if !gameServer.UpdateDNS(rdb) {
+	if dnsProvider != nil {
+		ipAddresses := gameServer.GetIPAddresses(rdb)
+		if ipAddresses != nil {
 			if err := monitor.PublishEvent(rdb, monitor.StatusData{
-				Status:   h.L(locale, "vm.dns.error"),
-				HasError: true,
-				Shutdown: false,
+				Status: h.L(locale, "vm.dns.updating"),
 			}); err != nil {
 				log.WithError(err).Error("Failed to write status data to Redis channel")
 			}
-			h.serverRunning = false
-			return
+
+			if err := dnsProvider.UpdateV4(context.Background(), ipAddresses.V4); err != nil {
+				log.WithError(err).Error("Failed to update IPv4 address")
+
+				if err := monitor.PublishEvent(rdb, monitor.StatusData{
+					Status:   h.L(locale, "vm.dns.error"),
+					HasError: true,
+					Shutdown: false,
+				}); err != nil {
+					log.WithError(err).Error("Failed to write status data to Redis channel")
+				}
+			}
+			if err := dnsProvider.UpdateV6(context.Background(), ipAddresses.V6); err != nil {
+				log.WithError(err).Error("Failed to update IPv6 address")
+
+				if err := monitor.PublishEvent(rdb, monitor.StatusData{
+					Status:   h.L(locale, "vm.dns.error"),
+					HasError: true,
+					Shutdown: false,
+				}); err != nil {
+					log.WithError(err).Error("Failed to write status data to Redis channel")
+				}
+			}
 		}
 	}
 
@@ -369,7 +408,7 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, cfg *config.Co
 		return
 	}
 
-	h.monitorServer(cfg, gameServer, rdb)
+	h.monitorServer(gameServer, rdb, dnsProvider)
 }
 
 func StopServer(cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
@@ -423,7 +462,7 @@ func (h *Handler) handleApiLaunch(c *gin.Context) {
 	h.serverState.machineType = machineType
 	memSizeGB, _ := strconv.Atoi(strings.Replace(machineType, "g", "", 1))
 
-	go h.LaunchServer(gameConfig, h.cfg, h.serverImpl, memSizeGB, h.redis)
+	go h.LaunchServer(gameConfig, h.serverImpl, memSizeGB, h.redis)
 
 	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,

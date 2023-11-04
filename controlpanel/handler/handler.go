@@ -20,6 +20,7 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/kofuk/premises/controlpanel/caching"
 	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/entity"
 	"github.com/kofuk/premises/controlpanel/mcversions"
 	"github.com/kofuk/premises/controlpanel/model"
@@ -197,11 +198,27 @@ func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Cli
 			gameServer.DeleteImage(rdb)
 		}
 
-		gameServer.UpdateDNS(rdb)
+		var dnsProvider *dns.DNSProvider
+		if h.cfg.Cloudflare.Token != "" {
+			cloudflareDNS, err := dns.NewCloudflareDNS(h.cfg.Cloudflare.Token, h.cfg.Cloudflare.ZoneID)
+			if err != nil {
+				log.WithError(err).Error("Failed to initialize DNS provider")
+			} else {
+				dnsProvider = dns.New(cloudflareDNS, h.cfg.Cloudflare.GameDomainName)
+			}
+		}
+
+		if dnsProvider != nil {
+			ipAddresses := gameServer.GetIPAddresses(rdb)
+			if ipAddresses != nil {
+				dnsProvider.UpdateV4(context.Background(), ipAddresses.V4)
+				dnsProvider.UpdateV6(context.Background(), ipAddresses.V6)
+			}
+		}
 
 		h.serverRunning = true
 		log.Info("Start monitoring server")
-		go h.monitorServer(cfg, gameServer, rdb)
+		go h.monitorServer(gameServer, rdb, dnsProvider)
 	} else {
 		if !gameServer.ImageExists() && !gameServer.SaveImage(rdb) {
 			return errors.New("Invalid state")
