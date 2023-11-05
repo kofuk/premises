@@ -1,13 +1,11 @@
 import React from 'react';
 
 type Prop = {
-  isError: boolean;
   message: string;
 };
 
-const StatusBar = ({isError, message}: Prop) => {
-  const appearance = isError ? 'alert-danger' : 'alert-success';
-  return <div className={`alert ${appearance}`}>{message}</div>;
+const StatusBar = ({message}: Prop) => {
+  return <div className={`alert alert-success`}>{message}</div>;
 };
 
 export default StatusBar;

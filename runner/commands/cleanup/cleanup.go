@@ -1,7 +1,6 @@
 package cleanup
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -9,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kofuk/premises/runner/commands/mclauncher/config"
 	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/exterior/entity"
 	"github.com/kofuk/premises/runner/systemutil"
 	log "github.com/sirupsen/logrus"
 )
@@ -52,18 +51,13 @@ func unmountData() {
 	}
 }
 
-func notifyStatus(finished bool) {
-	statusData := config.StatusData{
-		Type:     config.StatusTypeLegacyEvent,
-		Status:   "サーバを終了する準備をしています…",
-		Shutdown: finished,
-		HasError: false,
-	}
-	statusJson, _ := json.Marshal(statusData)
-
-	if err := exterior.SendMessage(exterior.Message{
-		Type:     "serverStatus",
-		UserData: string(statusJson),
+func notifyStatus(eventCode entity.EventCode) {
+	if err := exterior.SendMessage("serverStatus", entity.Event{
+		Type: entity.EventStatus,
+		Status: &entity.StatusExtra{
+			EventCode: eventCode,
+			LegacyMsg: "サーバを終了する準備をしています…",
+		},
 	}); err != nil {
 		log.WithError(err).Error("Unable to write send message")
 	}
@@ -99,7 +93,7 @@ func copyLogData() {
 }
 
 func CleanUp() {
-	notifyStatus(false)
+	notifyStatus(entity.EventClean)
 
 	log.Info("Removing config files...")
 	removeFilesIgnoreError(
@@ -119,5 +113,5 @@ func CleanUp() {
 	log.Info("Copying log file if it is dev runner")
 	copyLogData()
 
-	notifyStatus(true)
+	notifyStatus(entity.EventShutdown)
 }

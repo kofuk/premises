@@ -13,9 +13,37 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/controlpanel/entity"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
+	"github.com/kofuk/premises/controlpanel/streaming"
 	log "github.com/sirupsen/logrus"
 )
+
+type EventType string
+type EventCode int
+type InfoCode int
+
+type StatusExtra struct {
+	EventCode EventCode `json:"eventCode"`
+	Progress  int       `json:"progress"`
+	LegacyMsg string    `json:"message"`
+}
+
+type SysstatExtra struct {
+	CPUUsage float64 `json:"cpuUsage"`
+}
+
+type InfoExtra struct {
+	InfoCode  InfoCode `json:"infoCode"`
+	LegacyMsg string   `json:"message"`
+}
+
+type Event struct {
+	Type    EventType     `json:"type"`
+	Status  *StatusExtra  `json:"status,omitempty"`
+	Sysstat *SysstatExtra `json:"sysstat,omitempty"`
+	Info    *InfoExtra    `json:"info,omitempty"`
+}
 
 type StatusData struct {
 	Type     string  `json:"type"`
@@ -23,23 +51,6 @@ type StatusData struct {
 	Shutdown bool    `json:"shutdown"`
 	HasError bool    `json:"hasError"`
 	CPUUsage float64 `json:"cpuUsage"`
-}
-
-func PublishEvent(rdb *redis.Client, status StatusData) error {
-	jsonData, err := json.Marshal(status)
-	if err != nil {
-		return err
-	}
-
-	if _, err := rdb.Pipelined(context.Background(), func(p redis.Pipeliner) error {
-		p.Set(context.Background(), "last-status:default", jsonData, -1)
-		p.Publish(context.Background(), "status:default", string(jsonData))
-		return nil
-	}); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func publishSystemStatEvent(redis *redis.Client, status StatusData) error {
@@ -54,7 +65,7 @@ func publishSystemStatEvent(redis *redis.Client, status StatusData) error {
 	return nil
 }
 
-func MonitorServer(cfg *config.Config, addr string, rdb *redis.Client) error {
+func MonitorServer(strmProvider *streaming.Streaming, cfg *config.Config, addr string, rdb *redis.Client) error {
 	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
 	if err != nil {
 		return err
@@ -65,6 +76,9 @@ func MonitorServer(cfg *config.Config, addr string, rdb *redis.Client) error {
 	client := http.Client{
 		Transport: transport,
 	}
+
+	stdStream := strmProvider.GetStream(streaming.StandardStream)
+	sysstatStream := strmProvider.GetStream(streaming.SysstatStream)
 
 	connLost := false
 	startTime := time.Now()
@@ -81,11 +95,11 @@ out:
 			log.WithError(err).Error("Failed to connect to status server")
 
 			if connLost {
-				if err := PublishEvent(rdb, StatusData{
-					Status:   "Connection lost. Will reconnect...",
-					HasError: true,
-					Shutdown: false,
-				}); err != nil {
+				if err := strmProvider.PublishEvent(
+					context.Background(),
+					stdStream,
+					streaming.NewStandardMessage(entity.EvConnLost, entity.PageLoading, "Connection lost. Will reconnect..."),
+				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
 
@@ -102,7 +116,7 @@ out:
 
 		connLost = false
 
-		receiveEvent := func(reader *bufio.Reader) (*StatusData, error) {
+		receiveEvent := func(reader *bufio.Reader) (*Event, error) {
 			var line []byte
 
 			for {
@@ -118,36 +132,54 @@ out:
 				break
 			}
 
-			var status StatusData
-			if err := json.Unmarshal(line, &status); err != nil {
+			var event Event
+			if err := json.Unmarshal(line, &event); err != nil {
 				return nil, err
 			}
 
-			return &status, nil
+			return &event, nil
 		}
 
 		respReader := bufio.NewReader(resp.Body)
 
 	conn:
 		for {
-			status, err := receiveEvent(respReader)
+			event, err := receiveEvent(respReader)
 			if err != nil {
 				log.WithError(err).Error("Failed to receive event data")
 				break conn
 			}
-			if status.Shutdown {
-				resp.Body.Close()
-				break out
-			}
 
-			// TODO: Remove Type=="" case later
-			if status.Type == "" || status.Type == "legacyEvent" {
-				if err := PublishEvent(rdb, *status); err != nil {
+			if event.Type == "status" {
+				if event.Status == nil {
+					log.WithField("event", event).Error("Invalid event message (has no Status)")
+					continue
+				}
+
+				if event.Status.EventCode == 1 {
+					// Shutdown
+					break out
+				}
+
+				if err := strmProvider.PublishEvent(
+					context.Background(),
+					stdStream,
+					streaming.NewStandardMessage(entity.EventCode(event.Status.EventCode), entity.PageRunning, event.Status.LegacyMsg),
+				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
-			} else if status.Type == "systemStat" {
-				if err := publishSystemStatEvent(rdb, *status); err != nil {
-					log.WithError(err).Error("Failed to write system stat to Redis channel")
+			} else if event.Type == "sysstat" {
+				if event.Sysstat == nil {
+					log.WithField("event", event).Error("Invalid event message (has no Sysstat)")
+					continue
+				}
+
+				if err := strmProvider.PublishEvent(
+					context.Background(),
+					sysstatStream,
+					streaming.NewSysstatMessage(event.Sysstat.CPUUsage),
+				); err != nil {
+					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
 			}
 		}
@@ -163,13 +195,7 @@ out:
 	return nil
 
 err:
-	if err := PublishEvent(rdb, StatusData{
-		Status:   "Server did not respond in 10 minutes. I'm tired of waiting :P",
-		HasError: true,
-		Shutdown: false,
-	}); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
-	}
+	log.Error("Server did not respond in 10 minutes. Shutting down...")
 
 	return nil
 }

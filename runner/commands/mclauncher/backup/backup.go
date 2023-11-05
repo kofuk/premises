@@ -14,6 +14,8 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/kofuk/go-mega"
 	"github.com/kofuk/premises/runner/commands/mclauncher/config"
+	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/exterior/entity"
 	log "github.com/sirupsen/logrus"
 	"github.com/ulikunitz/xz"
 )
@@ -209,7 +211,15 @@ func doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
 				if showNext {
 					percentage := totalUploaded * 100 / size
 					if percentage != prevPercentage {
-						ctx.NotifyStatus(fmt.Sprintf(ctx.L("world.uploading.pct"), int(percentage)), false)
+						if err := exterior.SendMessage("serverStatus", entity.Event{
+							Type: entity.EventStatus,
+							Status: &entity.StatusExtra{
+								EventCode: entity.EventWorldUpload,
+								LegacyMsg: fmt.Sprintf(ctx.L("world.uploading.pct"), int(percentage)),
+							},
+						}); err != nil {
+							log.Error(err)
+						}
 					}
 					prevPercentage = percentage
 
@@ -335,7 +345,15 @@ func DownloadWorldData(ctx *config.PMCMContext) error {
 				if showNext {
 					percentage := totalUploaded * 100 / size
 					if percentage != prevPercentage {
-						ctx.NotifyStatus(fmt.Sprintf(ctx.L("world.downloading.pct"), int(percentage)), false)
+						if err := exterior.SendMessage("serverStatus", entity.Event{
+							Type: entity.EventStatus,
+							Status: &entity.StatusExtra{
+								EventCode: entity.EventWorldDownload,
+								LegacyMsg: fmt.Sprintf(ctx.L("world.downloading.pct"), int(percentage)),
+							},
+						}); err != nil {
+							log.Error(err)
+						}
 					}
 					prevPercentage = percentage
 

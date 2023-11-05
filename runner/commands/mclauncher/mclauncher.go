@@ -16,6 +16,8 @@ import (
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
 	"github.com/kofuk/premises/runner/commands/mclauncher/serverprop"
 	"github.com/kofuk/premises/runner/commands/mclauncher/statusapi"
+	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/exterior/entity"
 	"github.com/kofuk/premises/runner/metadata"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
@@ -73,14 +75,20 @@ func downloadWorldIfNeeded(ctx *config.PMCMContext) error {
 			log.WithError(err).Error("Failed to remove last world hash")
 		}
 
-		ctx.NotifyStatus(ctx.L("world.downloading"), false)
+		if err := exterior.SendMessage("serverStatus", entity.Event{
+			Type: entity.EventStatus,
+			Status: &entity.StatusExtra{
+				EventCode: entity.EventWorldDownload,
+				LegacyMsg: ctx.L("world.downloading"),
+			},
+		}); err != nil {
+			log.WithError(err).Error("Unable to write send message")
+		}
 		if err := backup.DownloadWorldData(ctx); err != nil {
 			return err
 		}
 		return nil
 	}
-
-	ctx.NotifyStatus(ctx.L("world.download.not_needed"), false)
 
 	return nil
 }
@@ -144,39 +152,78 @@ func Run() {
 	srv := new(gamesrv.ServerInstance)
 	go statusapi.LaunchStatusServer(ctx, srv)
 
-	ctx.NotifyStatus(ctx.L("mc.downloading"), srv.StartupFailed)
+	if err := exterior.SendMessage("serverStatus", entity.Event{
+		Type: entity.EventStatus,
+		Status: &entity.StatusExtra{
+			EventCode: entity.EventGameDownload,
+			LegacyMsg: ctx.L("mc.downloading"),
+		},
+	}); err != nil {
+		log.WithError(err).Error("Unable to write send message")
+	}
 	if err := downloadServerJarIfNeeded(ctx); err != nil {
 		log.WithError(err).Error("Couldn't download server.jar")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("mc.download.error"), srv.StartupFailed)
+		if err := exterior.SendMessage("serverStatus", entity.Event{
+			Type: entity.EventStatus,
+			Status: &entity.StatusExtra{
+				EventCode: entity.EventGameErr,
+				LegacyMsg: ctx.L("mc.download.error"),
+			},
+		}); err != nil {
+			log.WithError(err).Error("Unable to write send message")
+		}
 		goto out
 	}
 
 	if err := generateServerProps(ctx, srv); err != nil {
 		log.WithError(err).Error("Couldn't generate server.properties")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("serverprops.generate.error"), srv.StartupFailed)
 		goto out
 	}
 
 	if strings.Contains(ctx.Cfg.Server.Version, "/") {
 		log.Error("ServerName can't contain /")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("mc.invalid_server_name"), srv.StartupFailed)
+		if err := exterior.SendMessage("serverStatus", entity.Event{
+			Type: entity.EventStatus,
+			Status: &entity.StatusExtra{
+				EventCode: entity.EventGameErr,
+				LegacyMsg: ctx.L("mc.invalid_server_name"),
+			},
+		}); err != nil {
+			log.WithError(err).Error("Unable to write send message")
+		}
 		goto out
 	}
 
 	if err := downloadWorldIfNeeded(ctx); err != nil {
 		log.WithError(err).Error("Failed to download world data")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("world.download.error"), srv.StartupFailed)
+		if err := exterior.SendMessage("serverStatus", entity.Event{
+			Type: entity.EventStatus,
+			Status: &entity.StatusExtra{
+				EventCode: entity.EventWorldErr,
+				LegacyMsg: ctx.L("world.download.error"),
+			},
+		}); err != nil {
+			log.WithError(err).Error("Unable to write send message")
+		}
 		goto out
 	}
 
 	if err := gamesrv.LaunchServer(ctx, srv); err != nil {
 		log.WithError(err).Error("Failed to launch Minecraft server")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("game.launch.error"), srv.StartupFailed)
+		if err := exterior.SendMessage("serverStatus", entity.Event{
+			Type: entity.EventStatus,
+			Status: &entity.StatusExtra{
+				EventCode: entity.EventLaunchErr,
+				LegacyMsg: ctx.L("game.launch.error"),
+			},
+		}); err != nil {
+			log.WithError(err).Error("Unable to write send message")
+		}
 		goto out
 	}
 
@@ -189,30 +236,69 @@ func Run() {
 
 	srv.IsGameFinished = true
 
-	ctx.NotifyStatus(ctx.L("world.processing"), srv.StartupFailed)
+	if err := exterior.SendMessage("serverStatus", entity.Event{
+		Type: entity.EventStatus,
+		Status: &entity.StatusExtra{
+			EventCode: entity.EventWorldPrepare,
+			LegacyMsg: ctx.L("world.processing"),
+		},
+	}); err != nil {
+		log.WithError(err).Error("Unable to write send message")
+	}
 	if err := backup.PrepareUploadData(ctx, backup.UploadOptions{}); err != nil {
 		log.WithError(err).Error("Failed to create world archive")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("world.archive.error"), srv.StartupFailed)
+		if err := exterior.SendMessage("serverStatus", entity.Event{
+			Type: entity.EventStatus,
+			Status: &entity.StatusExtra{
+				EventCode: entity.EventWorldErr,
+				LegacyMsg: ctx.L("world.archive.error"),
+			},
+		}); err != nil {
+			log.WithError(err).Error("Unable to write send message")
+		}
 		goto out
 	}
 
-	ctx.NotifyStatus(ctx.L("world.uploading"), srv.StartupFailed)
+	if err := exterior.SendMessage("serverStatus", entity.Event{
+		Type: entity.EventStatus,
+		Status: &entity.StatusExtra{
+			EventCode: entity.EventWorldUpload,
+			LegacyMsg: ctx.L("world.uploading"),
+		},
+	}); err != nil {
+		log.WithError(err).Error("Unable to write send message")
+	}
 	if err := backup.UploadWorldData(ctx, backup.UploadOptions{}); err != nil {
 		log.WithError(err).Error("Failed to upload world data")
 		srv.StartupFailed = true
-		ctx.NotifyStatus(ctx.L("world.upload.error"), srv.StartupFailed)
+		if err := exterior.SendMessage("serverStatus", entity.Event{
+			Type: entity.EventStatus,
+			Status: &entity.StatusExtra{
+				EventCode: entity.EventWorldErr,
+				LegacyMsg: ctx.L("world.upload.error"),
+			},
+		}); err != nil {
+			log.WithError(err).Error("Unable to write send message")
+		}
 		goto out
 	}
 
 out:
 	if srv.RestartRequested {
 		log.Info("Restart...")
-		ctx.NotifyStatus(ctx.L("process.restarting"), srv.StartupFailed)
 
 		os.Exit(100)
 	} else if srv.Crashed && !srv.ShouldStop {
-		ctx.NotifyStatus(ctx.L("game.crashed"), srv.StartupFailed)
+		if err := exterior.SendMessage("serverStatus", entity.Event{
+			Type: entity.EventStatus,
+			Status: &entity.StatusExtra{
+				EventCode: entity.EventCrashed,
+				LegacyMsg: ctx.L("game.crashed"),
+			},
+		}); err != nil {
+			log.WithError(err).Error("Unable to write send message")
+		}
 
 		// User may reconfigure the server
 		for {
@@ -221,7 +307,5 @@ out:
 				goto out
 			}
 		}
-	} else {
-		ctx.NotifyStatus(ctx.L("game.stopped"), srv.StartupFailed)
 	}
 }

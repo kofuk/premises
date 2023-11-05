@@ -11,30 +11,29 @@ import StatusBar from './statusbar';
 import 'bootstrap/scss/bootstrap.scss';
 /////
 
+const PAGE_LAUNCH = 1;
+
 const LaunchPage = () => {
   const [t] = useTranslation();
 
   const [useNotification, setUseNotification] = useState(false);
-  const [isServerShutdown, setIsServerShutdown] = useState(true);
-  const [isError, setIsError] = useState(false);
   const [message, setMessage] = useState(t('connecting'));
   const [prevStatus, setPrevStatus] = useState('');
+  const [page, setPage] = useState(PAGE_LAUNCH);
 
   useEffect(() => {
     const eventSource = new EventSource('/api/status');
     eventSource.addEventListener('error', () => {
-      setIsError(true);
       setMessage(t('reconnecting'));
     });
     eventSource.addEventListener('statuschanged', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);
-      setIsServerShutdown(event.shutdown);
-      setIsError(event.hasError);
-      setMessage(event.status);
+      setMessage(event.message);
+      setPage(event.pageCode);
 
       //TODO: temporary implementation
       if (useNotification) {
-        if (event.status !== prevStatus && prevStatus !== '' && (event.status === '実行中' || event.status === 'Running')) {
+        if (event.message !== prevStatus && prevStatus !== '' && (event.message === '実行中' || event.message === 'Running')) {
           new Notification(t('notification_title'), {body: t('notification_body')});
         }
       }
@@ -56,7 +55,6 @@ const LaunchPage = () => {
   }, []);
 
   const showError = (message: string) => {
-    setIsError(true);
     setMessage(message);
   };
 
@@ -79,10 +77,10 @@ const LaunchPage = () => {
     })();
   };
 
-  const mainPane: React.ReactElement = isServerShutdown ? <ServerConfigPane showError={showError} /> : <ServerControlPane showError={showError} />;
+  const mainPane: React.ReactElement = page == PAGE_LAUNCH ? <ServerConfigPane showError={showError} /> : <ServerControlPane showError={showError} />;
   return (
     <>
-      <StatusBar isError={isError} message={message} />
+      <StatusBar message={message} />
       {mainPane}
 
       <div className="toast-container position-absolute top-0 end-0 pe-1 pt-5 mt-3">

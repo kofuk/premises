@@ -6,7 +6,6 @@ import {Line, LineChart, Tooltip, YAxis} from 'recharts';
 import {Stop as StopIcon} from '@mui/icons-material';
 
 import QuickUndo from '@/features/launch/control-item/quickundo';
-import Snapshot from '@/features/launch/control-item/snapshot';
 import SystemInfo from '@/features/launch/control-item/system-info';
 import WorldInfo from '@/features/launch/control-item/world-info';
 import ReconfigureMenu from '@/features/launch/reconfigure-menu';
@@ -14,7 +13,6 @@ import ReconfigureMenu from '@/features/launch/reconfigure-menu';
 enum Modes {
   MainMenu,
   Reconfigure,
-  Snapshot,
   QuickUndo,
   SystemInfo,
   WorldInfo
@@ -77,15 +75,6 @@ const ServerControlPane = (props: Prop) => {
         <button
           className="list-group-item list-group-item-action"
           onClick={() => {
-            setMode(Modes.Snapshot);
-          }}
-          type="button"
-        >
-          {t('menu_snapshot')}
-        </button>
-        <button
-          className="list-group-item list-group-item-action"
-          onClick={() => {
             setMode(Modes.QuickUndo);
           }}
           type="button"
@@ -105,8 +94,6 @@ const ServerControlPane = (props: Prop) => {
     );
   } else if (mode === Modes.Reconfigure) {
     controlItems.push(<ReconfigureMenu key="reconfigure" backToMenu={handleBackToMenu} showError={showError} />);
-  } else if (mode === Modes.Snapshot) {
-    controlItems.push(<Snapshot key="snapshot" backToMenu={handleBackToMenu} showError={showError} />);
   } else if (mode === Modes.QuickUndo) {
     controlItems.push(<QuickUndo key="quickundo" backToMenu={handleBackToMenu} showError={showError} />);
   } else if (mode === Modes.SystemInfo) {

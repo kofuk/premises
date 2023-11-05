@@ -1,11 +1,10 @@
 package systemstat
 
 import (
-	"encoding/json"
 	"time"
 
-	"github.com/kofuk/premises/runner/commands/mclauncher/config"
 	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/exterior/entity"
 	"github.com/kofuk/premises/runner/systemutil"
 	log "github.com/sirupsen/logrus"
 )
@@ -25,18 +24,13 @@ func Run() {
 			continue
 		}
 
-		statusData := config.StatusData{
-			Type:     config.StatusTypeSystemStat,
-			Shutdown: false,
-			HasError: false,
-			CPUUsage: usage,
+		data := entity.Event{
+			Type: entity.EventSysstat,
+			Sysstat: &entity.SysstatExtra{
+				CPUUsage: usage,
+			},
 		}
-		statusJson, _ := json.Marshal(statusData)
-
-		if err := exterior.SendMessage(exterior.Message{
-			Type:     "systemStat",
-			UserData: string(statusJson),
-		}); err != nil {
+		if err := exterior.SendMessage("systemStat", data); err != nil {
 			log.Error(err)
 		}
 	}
