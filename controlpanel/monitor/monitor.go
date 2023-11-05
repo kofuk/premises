@@ -73,7 +73,7 @@ out:
 				if err := strmProvider.PublishEvent(
 					context.Background(),
 					stdStream,
-					streaming.NewStandardMessage(entity.EvConnLost, entity.PageLoading, "Connection lost. Will reconnect..."),
+					streaming.NewStandardMessage(entity.EvConnLost, entity.PageLoading),
 				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
@@ -138,7 +138,7 @@ out:
 				if err := strmProvider.PublishEvent(
 					context.Background(),
 					stdStream,
-					streaming.NewStandardMessageWithProgress(entity.EventCode(event.Status.EventCode), event.Status.Progress, entity.PageRunning, event.Status.LegacyMsg),
+					streaming.NewStandardMessageWithProgress(entity.EventCode(event.Status.EventCode), event.Status.Progress, entity.PageRunning),
 				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}

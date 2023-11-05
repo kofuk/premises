@@ -292,7 +292,6 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 				Type: entity.EventStatus,
 				Status: &entity.StatusExtra{
 					EventCode: entity.EventLoading,
-					LegacyMsg: ctx.L("game.loading"),
 				},
 			}); err != nil {
 				log.WithError(err).Error("Unable to write send message")
@@ -302,7 +301,6 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 				Type: entity.EventStatus,
 				Status: &entity.StatusExtra{
 					EventCode: entity.EventRunning,
-					LegacyMsg: ctx.L("game.running"),
 				},
 			}); err != nil {
 				log.WithError(err).Error("Unable to write send message")
@@ -316,7 +314,6 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 				Type: entity.EventStatus,
 				Status: &entity.StatusExtra{
 					EventCode: entity.EventStopping,
-					LegacyMsg: ctx.L("game.stopping"),
 				},
 			}); err != nil {
 				log.WithError(err).Error("Unable to write send message")

@@ -216,7 +216,6 @@ func doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
 							Status: &entity.StatusExtra{
 								EventCode: entity.EventWorldUpload,
 								Progress:  int(percentage),
-								LegacyMsg: fmt.Sprintf(ctx.L("world.uploading.pct"), int(percentage)),
 							},
 						}); err != nil {
 							log.Error(err)
@@ -351,7 +350,6 @@ func DownloadWorldData(ctx *config.PMCMContext) error {
 							Status: &entity.StatusExtra{
 								EventCode: entity.EventWorldDownload,
 								Progress:  int(percentage),
-								LegacyMsg: fmt.Sprintf(ctx.L("world.downloading.pct"), int(percentage)),
 							},
 						}); err != nil {
 							log.Error(err)
