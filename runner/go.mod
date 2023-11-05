@@ -11,12 +11,10 @@ require (
 	github.com/kofuk/go-mega v0.0.0-20220314143053-5929f3eeeac4
 	github.com/kofuk/premises/common v0.0.0-00010101000000-000000000000
 	github.com/mackerelio/go-osstat v0.2.4
-	github.com/nicksnyder/go-i18n/v2 v2.2.2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
 	github.com/ulikunitz/xz v0.5.11
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/text v0.13.0
 )
 
 require (
