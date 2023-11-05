@@ -10,7 +10,6 @@ import (
 type Config struct {
 	AllocSize int    `json:"allocSize"`
 	AuthKey   string `json:"authKey"`
-	Locale    string `json:"locale"`
 	Server    struct {
 		Version     string `json:"name"`
 		DownloadUrl string `json:"downloadUrl"`

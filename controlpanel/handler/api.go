@@ -239,7 +239,6 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Value
 	result.SetWhitelist(cfg.Game.Whitelist)
 	result.SetMegaCredential(cfg.Mega.Email, cfg.Mega.Password)
 	result.SetMotd(cfg.Game.Motd)
-	result.SetLocale(cfg.ControlPanel.Locale)
 	result.SetFolderName(cfg.Mega.FolderName)
 
 	return result, nil
