@@ -5,9 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-
-	"github.com/nicksnyder/go-i18n/v2/i18n"
-	log "github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -42,31 +39,6 @@ type PMCMContext struct {
 	StatusChannels []chan string
 	ChannelMutex   sync.Mutex
 	LastStatus     string
-	Localize       *i18n.Bundle
-}
-
-func (ctx *PMCMContext) L(msgId string) string {
-	if ctx.Localize == nil {
-		log.Error("i18n data is not initizlied")
-		return msgId
-	}
-	locale := ctx.Cfg.Locale
-	if locale == "" {
-		locale = "en"
-	}
-	localizer := i18n.NewLocalizer(ctx.Localize, locale)
-	msg, err := localizer.Localize(&i18n.LocalizeConfig{MessageID: msgId})
-	if err != nil {
-		log.WithError(err).Error("Error loading localized message. Fallback to \"en\"")
-		localizer := i18n.NewLocalizer(ctx.Localize, "en")
-		msg, err := localizer.Localize(&i18n.LocalizeConfig{MessageID: msgId})
-		if err != nil {
-			log.WithError(err).Error("Error loading localized message (fallback)")
-			return msgId
-		}
-		return msg
-	}
-	return msg
 }
 
 type StatusType string

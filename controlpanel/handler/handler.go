@@ -25,7 +25,6 @@ import (
 	"github.com/kofuk/premises/controlpanel/mcversions"
 	"github.com/kofuk/premises/controlpanel/model"
 	"github.com/kofuk/premises/controlpanel/streaming"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -45,7 +44,6 @@ type Handler struct {
 	webauthn      *webauthn.WebAuthn
 	serverState   serverState
 	serverImpl    GameServer
-	i18nData      *i18n.Bundle
 	serverMutex   sync.Mutex
 	serverRunning bool
 	Cacher        caching.Cacher
@@ -131,7 +129,6 @@ func setupRoutes(h *Handler) {
 				c.JSON(http.StatusOK, entity.ErrorResponse{
 					Success:   false,
 					ErrorCode: entity.ErrInternal,
-					Reason:    "Unable to open index.html",
 				})
 				return
 			}
@@ -221,7 +218,7 @@ func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Cli
 	return nil
 }
 
-func NewHandler(cfg *config.Config, i18nData *i18n.Bundle, bindAddr string) (*Handler, error) {
+func NewHandler(cfg *config.Config, bindAddr string) (*Handler, error) {
 	if cfg.Debug.Web {
 		gin.SetMode(gin.DebugMode)
 	} else {
@@ -235,7 +232,6 @@ func NewHandler(cfg *config.Config, i18nData *i18n.Bundle, bindAddr string) (*Ha
 		cfg:           cfg,
 		engine:        engine,
 		bind:          bindAddr,
-		i18nData:      i18nData,
 		serverRunning: false,
 	}
 
