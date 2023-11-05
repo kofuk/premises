@@ -29,7 +29,7 @@ const LaunchPage = () => {
     });
     eventSource.addEventListener('statuschanged', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);
-      setMessage(event.message);
+      setMessage(t(`status.code_${event.eventCode}`));
       setProgress(event.progress);
       setPage(event.pageCode);
 
