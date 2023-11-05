@@ -13,9 +13,9 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/kofuk/go-mega"
+	entity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/config"
 	"github.com/kofuk/premises/runner/exterior"
-	"github.com/kofuk/premises/runner/exterior/entity"
 	log "github.com/sirupsen/logrus"
 	"github.com/ulikunitz/xz"
 )

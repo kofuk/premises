@@ -7,7 +7,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/kofuk/premises/runner/exterior/entity"
+	entity "github.com/kofuk/premises/common/entity/runner"
 )
 
 func SendMessage(msgType string, userData any) error {

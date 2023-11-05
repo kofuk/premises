@@ -56,6 +56,33 @@ jobs:
           path: ./runner/premises-runner
           retention-days: 1
 
+  test-common:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./common
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version-file: common/go.mod
+          cache-dependency-path: |
+            common/go.sum
+      - name: Check format
+        run: |
+          set -euo pipefail
+          test "$(go fmt ./... | tee /dev/stderr | wc -l)" -eq 0
+      - name: Run test
+        run: go test -v -cover -coverprofile=coverprofile ./...
+      - name: Create coverage report
+        run: go tool cover -html=coverprofile -o coverage.html
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: common-coverage
+          path: ./common/coverage.html
+          retention-days: 1
+
   test-controlpanel-frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -163,6 +190,7 @@ jobs:
       - check-format-e2e
       - build-runner
       - build-controlpanel
+      - test-common
     steps:
       - run: echo ok
 

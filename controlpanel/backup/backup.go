@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/kofuk/go-mega"
-	"github.com/kofuk/premises/controlpanel/entity"
+	entity "github.com/kofuk/premises/common/entity/web"
 	log "github.com/sirupsen/logrus"
 )
 

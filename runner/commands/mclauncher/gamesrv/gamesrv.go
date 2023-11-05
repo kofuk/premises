@@ -14,10 +14,10 @@ import (
 	"github.com/gorcon/rcon"
 	log "github.com/sirupsen/logrus"
 
+	entity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/backup"
 	"github.com/kofuk/premises/runner/commands/mclauncher/config"
 	"github.com/kofuk/premises/runner/exterior"
-	"github.com/kofuk/premises/runner/exterior/entity"
 )
 
 type ServerInstance struct {

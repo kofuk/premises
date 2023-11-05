@@ -1,4 +1,4 @@
-package entity
+package web
 
 import "github.com/go-webauthn/webauthn/protocol"
 
