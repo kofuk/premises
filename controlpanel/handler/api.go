@@ -53,7 +53,6 @@ func (h *Handler) handleApiSessionData(c *gin.Context) {
 			c.JSON(http.StatusOK, entity.ErrorResponse{
 				Success:   false,
 				ErrorCode: entity.ErrInternal,
-				Reason:    "internal server error",
 			})
 			return
 		}
@@ -307,7 +306,7 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
 			errStream,
-			streaming.NewErrorMessage(entity.ErrRunnerStop, h.L(h.cfg.ControlPanel.Locale, "monitor.unrecoverable")),
+			streaming.NewErrorMessage(entity.ErrRunnerStop),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
@@ -318,7 +317,7 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
 			errStream,
-			streaming.NewErrorMessage(entity.ErrRunnerStop, h.L(h.cfg.ControlPanel.Locale, "monitor.unrecoverable")),
+			streaming.NewErrorMessage(entity.ErrRunnerStop),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
@@ -329,7 +328,7 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
 			errStream,
-			streaming.NewErrorMessage(entity.ErrRunnerStop, h.L(h.cfg.ControlPanel.Locale, "monitor.unrecoverable")),
+			streaming.NewErrorMessage(entity.ErrRunnerStop),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
@@ -354,8 +353,6 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 }
 
 func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer GameServer, memSizeGB int, rdb *redis.Client) {
-	locale := h.cfg.ControlPanel.Locale
-
 	var dnsProvider *dns.DNSProvider
 	if h.cfg.Cloudflare.Token != "" {
 		cloudflareDNS, err := dns.NewCloudflareDNS(h.cfg.Cloudflare.Token, h.cfg.Cloudflare.ZoneID)
@@ -375,7 +372,7 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
 			errStream,
-			streaming.NewErrorMessage(entity.ErrRunnerPrepare, h.L(locale, "monitor.tls_keygen.error")),
+			streaming.NewErrorMessage(entity.ErrRunnerPrepare),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
@@ -398,7 +395,7 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
 			errStream,
-			streaming.NewErrorMessage(entity.ErrRunnerPrepare, h.L(locale, "vm.start.error")),
+			streaming.NewErrorMessage(entity.ErrRunnerPrepare),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
@@ -415,7 +412,7 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 				if err := h.Streaming.PublishEvent(
 					context.Background(),
 					errStream,
-					streaming.NewErrorMessage(entity.ErrDNS, h.L(locale, "vm.dns.error")),
+					streaming.NewErrorMessage(entity.ErrDNS),
 				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
@@ -426,7 +423,7 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 				if err := h.Streaming.PublishEvent(
 					context.Background(),
 					errStream,
-					streaming.NewErrorMessage(entity.ErrDNS, h.L(locale, "vm.dns.error")),
+					streaming.NewErrorMessage(entity.ErrDNS),
 				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
@@ -438,7 +435,7 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
 			errStream,
-			streaming.NewErrorMessage(entity.ErrRunnerPrepare, h.L(locale, "vm.image.delete.error")),
+			streaming.NewErrorMessage(entity.ErrRunnerPrepare),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
@@ -468,7 +465,6 @@ func (h *Handler) handleApiLaunch(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
-			Reason:    "Form parse error",
 		})
 		return
 	}
@@ -480,7 +476,6 @@ func (h *Handler) handleApiLaunch(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrServerRunning,
-			Reason:    "The server has already running",
 		})
 		return
 	}
@@ -490,7 +485,6 @@ func (h *Handler) handleApiLaunch(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInvalidConfig,
-			Reason:    err.Error(),
 		})
 		return
 	}
@@ -514,7 +508,6 @@ func (h *Handler) handleApiReconfigure(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
-			Reason:    "Form parse error",
 		})
 		return
 	}
@@ -527,7 +520,6 @@ func (h *Handler) handleApiReconfigure(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInvalidConfig,
-			Reason:    err.Error(),
 		})
 		return
 	}
@@ -566,7 +558,6 @@ func (h *Handler) handleApiBackups(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "Failed to retrieve Minecraft versions",
 		})
 		return
 	}
@@ -582,7 +573,6 @@ func (h *Handler) handleApiBackups(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "Failed to retrieve Minecraft versions",
 		})
 		return
 	}
@@ -603,7 +593,6 @@ func (h *Handler) handleApiMcversions(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "Failed to retrieve Minecraft versions",
 		})
 		return
 	}
@@ -642,7 +631,6 @@ func (h *Handler) handleApiSystemInfo(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrServerNotRunning,
-			Reason:    "Server is not running",
 		})
 		return
 	}
@@ -670,7 +658,6 @@ func (h *Handler) handleApiSystemInfo(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "Failed to retrieve Minecraft versions",
 		})
 		return
 	}
@@ -688,7 +675,6 @@ func (h *Handler) handleApiWorldInfo(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrServerNotRunning,
-			Reason:    "Server is not running",
 		})
 		return
 	}
@@ -698,7 +684,6 @@ func (h *Handler) handleApiWorldInfo(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "Failed to retrieve Minecraft versions",
 		})
 		return
 	}
@@ -712,7 +697,6 @@ func (h *Handler) handleApiQuickUndoSnapshot(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrServerNotRunning,
-			Reason:    "Server is not running",
 		})
 		return
 	}
@@ -721,7 +705,6 @@ func (h *Handler) handleApiQuickUndoSnapshot(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
-			Reason:    "Remote server error",
 		})
 		return
 	}
@@ -736,7 +719,6 @@ func (h *Handler) handleApiQuickUndoUndo(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrServerNotRunning,
-			Reason:    "Server is not running",
 		})
 		return
 	}
@@ -745,7 +727,6 @@ func (h *Handler) handleApiQuickUndoUndo(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
-			Reason:    "Remote server error",
 		})
 		return
 	}
@@ -769,7 +750,6 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
-			Reason:    "Invalid request data",
 		})
 		return
 	}
@@ -778,7 +758,6 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasswordRule,
-			Reason:    h.L(h.cfg.ControlPanel.Locale, "account.password.disallowed"),
 		})
 		return
 	}
@@ -789,7 +768,6 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "internal server error",
 		})
 		return
 	}
@@ -797,7 +775,6 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
-			Reason:    "Old password is incorrect",
 		})
 		return
 	}
@@ -808,7 +785,6 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "Error updating password",
 		})
 		return
 	}
@@ -820,7 +796,6 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "Error updating password",
 		})
 		return
 	}
@@ -839,7 +814,6 @@ func (h *Handler) handleApiUsersAdd(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
-			Reason:    "request parse error",
 		})
 		return
 	}
@@ -848,7 +822,6 @@ func (h *Handler) handleApiUsersAdd(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
-			Reason:    "username is empty",
 		})
 		return
 	}
@@ -856,7 +829,6 @@ func (h *Handler) handleApiUsersAdd(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasswordRule,
-			Reason:    h.L(h.cfg.ControlPanel.Locale, "account.password.disallowed"),
 		})
 		return
 	}
@@ -867,7 +839,6 @@ func (h *Handler) handleApiUsersAdd(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "Error registering user",
 		})
 		return
 	}
@@ -884,7 +855,6 @@ func (h *Handler) handleApiUsersAdd(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrDupUserName,
-			Reason:    "Duplicate user name",
 		})
 		return
 	}
@@ -909,7 +879,6 @@ func (h *Handler) handleApiWebauthnRoot(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "Internal server error",
 		})
 		return
 	}
@@ -938,7 +907,6 @@ func (h *Handler) handleApiDeleteWebauthnUuid(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "internal server error",
 		})
 		return
 	}
@@ -948,7 +916,6 @@ func (h *Handler) handleApiDeleteWebauthnUuid(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "internal server error",
 		})
 		return
 	}
@@ -969,7 +936,6 @@ func (h *Handler) handleApiWebauthnBegin(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "internal server error",
 		})
 		return
 	}
@@ -984,7 +950,6 @@ func (h *Handler) handleApiWebauthnBegin(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "internal server error",
 		})
 		return
 	}
@@ -1002,7 +967,6 @@ func (h *Handler) handleApiWebauthnBegin(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "internal server error",
 		})
 		return
 	}
@@ -1031,7 +995,6 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
-			Reason:    "Request parse error",
 		})
 		return
 	}
@@ -1045,7 +1008,6 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "internal server error",
 		})
 		return
 	}
@@ -1056,7 +1018,6 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "internal server error",
 		})
 		return
 	}
@@ -1071,7 +1032,6 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "internal server error",
 		})
 		return
 	}
@@ -1085,7 +1045,6 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
-			Reason:    "Failed to parse credential creation response",
 		})
 		return
 	}
@@ -1096,7 +1055,6 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasskeyVerify,
-			Reason:    "Verification error",
 		})
 		return
 	}
@@ -1119,7 +1077,6 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "internal server error",
 		})
 		return
 	}
@@ -1128,7 +1085,6 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasskeyDup,
-			Reason:    "Duplicate key",
 		})
 		return
 	}
@@ -1138,7 +1094,6 @@ func (h *Handler) handleApiWebauthnFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "internal server error",
 		})
 		return
 	}
@@ -1163,7 +1118,6 @@ func (h *Handler) middlewareSessionCheck(c *gin.Context) {
 			c.JSON(http.StatusOK, entity.ErrorResponse{
 				Success:   false,
 				ErrorCode: entity.ErrBadRequest,
-				Reason:    "Origin not allowed",
 			})
 			c.Abort()
 			return
@@ -1176,7 +1130,6 @@ func (h *Handler) middlewareSessionCheck(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRequiresAuth,
-			Reason:    "Not logged in",
 		})
 		c.Abort()
 		return

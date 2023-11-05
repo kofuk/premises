@@ -59,10 +59,9 @@ func NewStandardMessageWithProgress(eventCode entity.EventCode, progress int, pa
 	}
 }
 
-func NewErrorMessage(eventCode entity.ErrorCode, legacyMsg string) Message {
+func NewErrorMessage(eventCode entity.ErrorCode) Message {
 	return &entity.ErrorMessage{
 		ErrorCode: eventCode,
-		LegacyMsg: legacyMsg,
 	}
 }
 

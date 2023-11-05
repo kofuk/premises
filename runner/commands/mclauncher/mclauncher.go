@@ -1,8 +1,6 @@
 package mclauncher
 
 import (
-	"embed"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -19,29 +17,8 @@ import (
 	"github.com/kofuk/premises/runner/commands/mclauncher/statusapi"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/metadata"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/text/language"
 )
-
-//go:embed i18n/*.json
-var i18nData embed.FS
-
-func LoadI18nData(ctx *config.PMCMContext) error {
-	bundle := i18n.NewBundle(language.English)
-	bundle.RegisterUnmarshalFunc("json", json.Unmarshal)
-	ents, err := i18nData.ReadDir("i18n")
-	if err != nil {
-		return err
-	}
-	for _, ent := range ents {
-		if _, err := bundle.LoadMessageFileFS(i18nData, "i18n/"+ent.Name()); err != nil {
-			return err
-		}
-	}
-	ctx.Localize = bundle
-	return nil
-}
 
 func generateServerProps(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) error {
 	serverProps := serverprop.New()
@@ -142,10 +119,6 @@ func Run() {
 
 	if err := config.LoadConfig(ctx); err != nil {
 		log.Fatal(err)
-	}
-
-	if err := LoadI18nData(ctx); err != nil {
-		log.WithError(err).Error("Failed to load i18n data")
 	}
 
 	srv := new(gamesrv.ServerInstance)

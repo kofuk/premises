@@ -25,7 +25,6 @@ const (
 type ErrorResponse struct {
 	Success   bool      `json:"success"`
 	ErrorCode ErrorCode `json:"errorCode"`
-	Reason    string    `json:"reason"`
 }
 
 type SuccessfulResponse[T any] struct {
@@ -106,7 +105,6 @@ type StandardMessage struct {
 
 type ErrorMessage struct {
 	ErrorCode ErrorCode `json:"errorCode"`
-	LegacyMsg string    `json:"message"`
 }
 
 type SysstatMessage struct {

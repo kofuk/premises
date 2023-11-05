@@ -79,7 +79,6 @@ func (h *Handler) handleLoginHardwarekeyBegin(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "internal server error",
 		})
 		return
 	}
@@ -117,7 +116,6 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
-			Reason:    "Client have no challenge",
 		})
 		return
 	}
@@ -130,7 +128,6 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
-			Reason:    "Error parsing credential request response",
 		})
 		return
 	}
@@ -145,7 +142,6 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
-			Reason:    "Invalid user",
 		})
 		return
 	}
@@ -172,7 +168,6 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasskeyVerify,
-			Reason:    "Error validation login",
 		})
 		return
 	}
@@ -182,7 +177,6 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasskeyVerify,
-			Reason:    "Error validation login",
 		})
 		return
 	}
@@ -199,7 +193,6 @@ func (h *Handler) handleLoginHardwarekeyFinish(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "Internal server error",
 		})
 		return
 	}

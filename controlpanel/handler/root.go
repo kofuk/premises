@@ -8,32 +8,9 @@ import (
 	"github.com/gin-gonic/gin"
 	entity "github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/model"
-	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
-
-const (
-	robotsTxt = `User-agent: *
-Disallow: /
-`
-)
-
-func (h *Handler) L(locale, msgId string) string {
-	localizer := i18n.NewLocalizer(h.i18nData, locale)
-	msg, err := localizer.Localize(&i18n.LocalizeConfig{MessageID: msgId})
-	if err != nil {
-		log.WithError(err).Error("Error loading localized message. Fallback to \"en\"")
-		localizer := i18n.NewLocalizer(h.i18nData, "en")
-		msg, err := localizer.Localize(&i18n.LocalizeConfig{MessageID: msgId})
-		if err != nil {
-			log.WithError(err).Error("Error loading localized message (fallback)")
-			return msgId
-		}
-		return msg
-	}
-	return msg
-}
 
 func (h *Handler) handleLogin(c *gin.Context) {
 	if c.GetHeader("Origin") != h.cfg.ControlPanel.Origin {
@@ -47,7 +24,6 @@ func (h *Handler) handleLogin(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
-			Reason:    "Bad request",
 		})
 		return
 	}
@@ -57,7 +33,6 @@ func (h *Handler) handleLogin(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
-			Reason:    h.L(h.cfg.ControlPanel.Locale, "login.error"),
 		})
 		return
 	}
@@ -89,7 +64,6 @@ func (h *Handler) handleLogin(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
-			Reason:    h.L(h.cfg.ControlPanel.Locale, "login.error"),
 		})
 	}
 }
@@ -134,7 +108,6 @@ func (h *Handler) handleLoginResetPassword(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
-			Reason:    h.L(h.cfg.ControlPanel.Locale, "login.error"),
 		})
 		return
 	}
@@ -143,7 +116,6 @@ func (h *Handler) handleLoginResetPassword(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
-			Reason:    h.L(h.cfg.ControlPanel.Locale, "login.error"),
 		})
 		return
 	}
@@ -152,7 +124,6 @@ func (h *Handler) handleLoginResetPassword(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasswordRule,
-			Reason:    "Disallowed password",
 		})
 		return
 	}
@@ -163,7 +134,6 @@ func (h *Handler) handleLoginResetPassword(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "Error registering user",
 		})
 		return
 	}
@@ -175,7 +145,6 @@ func (h *Handler) handleLoginResetPassword(c *gin.Context) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-			Reason:    "Error registering user",
 		})
 		return
 	}
@@ -187,10 +156,6 @@ func (h *Handler) handleLoginResetPassword(c *gin.Context) {
 	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,
 	})
-}
-
-func (h *Handler) handleRobotsTxt(c *gin.Context) {
-	c.Writer.Write([]byte(robotsTxt))
 }
 
 func (h *Handler) setupRootRoutes(group *gin.RouterGroup) {
