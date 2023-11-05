@@ -31,28 +31,6 @@ import (
 	"gorm.io/gorm"
 )
 
-const htmlContent = `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Premises</title>
-    <meta name="viewport" content="width=device-width" />
-  </head>
-  <body>
-    <div id="app"></div>
-<script type="module">
-  import RefreshRuntime from 'http://localhost:5173/@react-refresh'
-  RefreshRuntime.injectIntoGlobalHook(window)
-  window.$RefreshReg$ = () => {}
-  window.$RefreshSig$ = () => (type) => type
-  window.__vite_plugin_react_preamble_installed__ = true
-</script>
-<script type="module" src="http://localhost:5173/@vite/client"></script>
-<script type="module" src="http://localhost:5173/main.js"></script>
-  </body>
-</html>
-`
-
 type serverState struct {
 	selectedWorld string
 	machineType   string

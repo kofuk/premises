@@ -164,7 +164,7 @@ out:
 				if err := strmProvider.PublishEvent(
 					context.Background(),
 					stdStream,
-					streaming.NewStandardMessage(entity.EventCode(event.Status.EventCode), entity.PageRunning, event.Status.LegacyMsg),
+					streaming.NewStandardMessageWithProgress(entity.EventCode(event.Status.EventCode), event.Status.Progress, entity.PageRunning, event.Status.LegacyMsg),
 				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}

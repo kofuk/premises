@@ -52,6 +52,15 @@ func NewStandardMessage(eventCode entity.EventCode, pageCode entity.PageCode, le
 	}
 }
 
+func NewStandardMessageWithProgress(eventCode entity.EventCode, progress int, pageCode entity.PageCode, legacyMsg string) Message {
+	return &entity.StandardMessage{
+		EventCode: eventCode,
+		Progress:  progress,
+		PageCode:  pageCode,
+		LegacyMsg: legacyMsg,
+	}
+}
+
 func NewErrorMessage(eventCode entity.ErrorCode, legacyMsg string) Message {
 	return &entity.ErrorMessage{
 		ErrorCode: eventCode,
