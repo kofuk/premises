@@ -3,9 +3,9 @@ import React, {useEffect, useState} from 'react';
 import {Helmet} from 'react-helmet-async';
 import {useTranslation} from 'react-i18next';
 
+import StatusBar from './components/statusbar';
 import ServerConfigPane from './server-config-pane';
 import ServerControlPane from './server-control-pane';
-import StatusBar from './statusbar';
 
 // For bootstrap based screen. We should remove this after migrating to styled-component completed.
 import 'bootstrap/scss/bootstrap.scss';
@@ -18,6 +18,7 @@ const LaunchPage = () => {
 
   const [useNotification, setUseNotification] = useState(false);
   const [message, setMessage] = useState(t('connecting'));
+  const [progress, setProgress] = useState(0);
   const [prevStatus, setPrevStatus] = useState('');
   const [page, setPage] = useState(PAGE_LAUNCH);
 
@@ -29,6 +30,7 @@ const LaunchPage = () => {
     eventSource.addEventListener('statuschanged', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);
       setMessage(event.message);
+      setProgress(event.progress);
       setPage(event.pageCode);
 
       //TODO: temporary implementation
@@ -80,7 +82,7 @@ const LaunchPage = () => {
   const mainPane: React.ReactElement = page == PAGE_LAUNCH ? <ServerConfigPane showError={showError} /> : <ServerControlPane showError={showError} />;
   return (
     <>
-      <StatusBar message={message} />
+      <StatusBar message={message} progress={progress} />
       {mainPane}
 
       <div className="toast-container position-absolute top-0 end-0 pe-1 pt-5 mt-3">
