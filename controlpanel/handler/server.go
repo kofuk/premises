@@ -9,7 +9,6 @@ import (
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
-	"github.com/kofuk/premises/controlpanel/monitor"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,12 +21,12 @@ type GameServer interface {
 	SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Client, memSizeGB int) bool
 	VMExists() bool
 	VMRunning() bool
-	StopVM(rdb *redis.Client) bool
+	StopVM() bool
 	DeleteVM() bool
 	ImageExists() bool
-	SaveImage(rdb *redis.Client) bool
-	DeleteImage(rdb *redis.Client) bool
-	GetIPAddresses(rdb *redis.Client) *IPAddressSet
+	SaveImage() bool
+	DeleteImage() bool
+	GetIPAddresses() *IPAddressSet
 }
 
 type ConohaServer struct {
@@ -70,14 +69,6 @@ func (s *ConohaServer) getToken() (string, error) {
 }
 
 func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Client, memSizeGB int) bool {
-	locale := s.cfg.ControlPanel.Locale
-
-	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: s.h.L(locale, "vm.gathering_info"),
-	}); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
-	}
-
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
@@ -119,11 +110,6 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Clien
 	log.Info("Generating startup script...Done")
 
 	log.Info("Creating VM...")
-	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: s.h.L(locale, "vm.creating"),
-	}); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
-	}
 	if _, err := conoha.CreateVM(s.cfg, s.cfg.Conoha.NameTag, token, imageID, flavorID, startupScript); err != nil {
 		log.WithError(err).Error("Failed to create VM")
 		return false
@@ -150,12 +136,6 @@ func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Clien
 		log.WithError(err).Error("Timeout creating VM")
 		if err == nil {
 			log.Error("Building VM didn't completed")
-		}
-		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   s.h.L(locale, "vm.get_detail.error"),
-			HasError: true,
-		}); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 		return false
 	}
@@ -212,19 +192,11 @@ func (s *ConohaServer) VMRunning() bool {
 	return detail.Status == "ACTIVE"
 }
 
-func (s *ConohaServer) StopVM(rdb *redis.Client) bool {
-	locale := s.cfg.ControlPanel.Locale
-
+func (s *ConohaServer) StopVM() bool {
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
 		return false
-	}
-
-	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: s.h.L(locale, "vm.stopping"),
-	}); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	log.Info("Getting VM information...")
@@ -308,19 +280,11 @@ func (s *ConohaServer) ImageExists() bool {
 	return true
 }
 
-func (s *ConohaServer) SaveImage(rdb *redis.Client) bool {
-	locale := s.cfg.ControlPanel.Locale
-
+func (s *ConohaServer) SaveImage() bool {
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
 		return false
-	}
-
-	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: s.h.L(locale, "vm.image.saving"),
-	}); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	log.Info("Getting VM information...")
@@ -354,19 +318,11 @@ func (s *ConohaServer) SaveImage(rdb *redis.Client) bool {
 	return true
 }
 
-func (s *ConohaServer) DeleteImage(rdb *redis.Client) bool {
-	locale := s.cfg.ControlPanel.Locale
-
+func (s *ConohaServer) DeleteImage() bool {
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
 		return false
-	}
-
-	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: s.h.L(locale, "vm.cleaning_up"),
-	}); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	log.Info("Getting image information...")
@@ -390,13 +346,6 @@ func (s *ConohaServer) DeleteImage(rdb *redis.Client) bool {
 			}
 			time.Sleep(3 * time.Second)
 		}
-
-		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   s.h.L(locale, "vm.image.delete.error"),
-			HasError: true,
-		}); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
-		}
 		return false
 	}
 success:
@@ -405,19 +354,11 @@ success:
 	return true
 }
 
-func (s *ConohaServer) GetIPAddresses(rdb *redis.Client) *IPAddressSet {
-	locale := s.cfg.ControlPanel.Locale
-
+func (s *ConohaServer) GetIPAddresses() *IPAddressSet {
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
 		return nil
-	}
-
-	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: s.h.L(locale, "vm.ip.waiting"),
-	}); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	log.Info("Getting VM information...")
@@ -427,12 +368,6 @@ func (s *ConohaServer) GetIPAddresses(rdb *redis.Client) *IPAddressSet {
 		return nil
 	}
 	log.Info("Getting VM information...Done")
-
-	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: s.h.L(locale, "vm.dns.updating"),
-	}); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
-	}
 
 	result := IPAddressSet{
 		V4: net.ParseIP(vms.GetIPAddress(4)),

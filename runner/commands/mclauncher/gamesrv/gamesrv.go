@@ -16,6 +16,8 @@ import (
 
 	"github.com/kofuk/premises/runner/commands/mclauncher/backup"
 	"github.com/kofuk/premises/runner/commands/mclauncher/config"
+	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/exterior/entity"
 )
 
 type ServerInstance struct {
@@ -286,15 +288,39 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 		}
 		fmt.Println(string(line))
 		if serverLoadingRegexp.Match(line) {
-			ctx.NotifyStatus(ctx.L("game.loading"), false)
+			if err := exterior.SendMessage("serverStatus", entity.Event{
+				Type: entity.EventStatus,
+				Status: &entity.StatusExtra{
+					EventCode: entity.EventLoading,
+					LegacyMsg: ctx.L("game.loading"),
+				},
+			}); err != nil {
+				log.WithError(err).Error("Unable to write send message")
+			}
 		} else if serverLoadedRegexp.Match(line) {
-			ctx.NotifyStatus(ctx.L("game.running"), false)
+			if err := exterior.SendMessage("serverStatus", entity.Event{
+				Type: entity.EventStatus,
+				Status: &entity.StatusExtra{
+					EventCode: entity.EventRunning,
+					LegacyMsg: ctx.L("game.running"),
+				},
+			}); err != nil {
+				log.WithError(err).Error("Unable to write send message")
+			}
 
 			if err := SaveLastServerVersion(ctx); err != nil {
 				log.WithError(err).Error("Error saving last server versoin")
 			}
 		} else if serverStoppingRegexp.Match(line) {
-			ctx.NotifyStatus(ctx.L("game.stopping"), false)
+			if err := exterior.SendMessage("serverStatus", entity.Event{
+				Type: entity.EventStatus,
+				Status: &entity.StatusExtra{
+					EventCode: entity.EventStopping,
+					LegacyMsg: ctx.L("game.stopping"),
+				},
+			}); err != nil {
+				log.WithError(err).Error("Unable to write send message")
+			}
 		}
 	}
 }

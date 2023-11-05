@@ -17,6 +17,9 @@ const (
 	ErrPasskeyVerify                         // 10
 	ErrPasskeyDup                            // 11
 	ErrRequiresAuth                          // 12
+	ErrRunnerPrepare                         // 13
+	ErrRunnerStop                            // 14
+	ErrDNS                                   // 15
 )
 
 type ErrorResponse struct {
@@ -75,4 +78,37 @@ type UpdatePassword struct {
 type CredentialNameAndCreationResponse struct {
 	Name string                              `json:"name"`
 	Ccr  protocol.CredentialCreationResponse `json:"credentialCreationResponse"`
+}
+
+type EventCode int
+
+const (
+	EvStopped      EventCode = iota + 100 // 101
+	EvCreateRunner                        // 102
+	EvWaitConn                            // 103
+	EvConnLost                            // 104
+	EvStopRunner                          // 105
+)
+
+type PageCode int
+
+const (
+	PageLaunch  PageCode = iota + 1 // 1
+	PageLoading                     // 2
+	PageRunning                     // 3
+)
+
+type StandardMessage struct {
+	EventCode EventCode `json:"eventCode"`
+	PageCode  PageCode  `json:"pageCode"`
+	LegacyMsg string    `json:"message"`
+}
+
+type ErrorMessage struct {
+	ErrorCode ErrorCode `json:"errorCode"`
+	LegacyMsg string    `json:"message"`
+}
+
+type SysstatMessage struct {
+	CPUUsage float64 `json:"cpuUsage"`
 }

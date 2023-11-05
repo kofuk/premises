@@ -1,13 +1,12 @@
 package serversetup
 
 import (
-	"encoding/json"
 	"os"
 	"os/exec"
 	"os/user"
 
-	"github.com/kofuk/premises/runner/commands/mclauncher/config"
 	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/exterior/entity"
 	"github.com/kofuk/premises/runner/systemutil"
 	log "github.com/sirupsen/logrus"
 )
@@ -43,17 +42,12 @@ func isDevEnv() bool {
 }
 
 func (self *ServerSetup) notifyStatus() {
-	statusData := config.StatusData{
-		Type:     config.StatusTypeLegacyEvent,
-		Status:   "サーバを初期化しています…",
-		Shutdown: false,
-		HasError: false,
-	}
-	statusJson, _ := json.Marshal(statusData)
-
-	if err := exterior.SendMessage(exterior.Message{
-		Type:     "serverStatus",
-		UserData: string(statusJson),
+	if err := exterior.SendMessage("serverStatus", entity.Event{
+		Type: entity.EventStatus,
+		Status: &entity.StatusExtra{
+			EventCode: entity.EventSysInit,
+			LegacyMsg: "サーバを初期化しています…",
+		},
 	}); err != nil {
 		log.Error(err)
 	}

@@ -27,6 +27,7 @@ import (
 	"github.com/kofuk/premises/controlpanel/gameconfig"
 	"github.com/kofuk/premises/controlpanel/model"
 	"github.com/kofuk/premises/controlpanel/monitor"
+	"github.com/kofuk/premises/controlpanel/streaming"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -69,55 +70,63 @@ func (h *Handler) handleApiStatus(c *gin.Context) {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
-	c.Writer.Header().Set("Content-Type", "text/event-stream")
-	c.Writer.Header().Set("Cache-Control", "no-store")
-	c.Writer.Header().Set("X-Accel-Buffering", "no")
-
-	writeEvent := func(status string) error {
+	writeEvent := func(status []byte) error {
 		if _, err := c.Writer.WriteString("event: statuschanged\n"); err != nil {
 			return err
 		}
 
-		if _, err := c.Writer.Write([]byte("data: " + status + "\n\n")); err != nil {
+		data := []byte("data: ")
+		data = append(data, status...)
+		data = append(data, []byte("\n\n")...)
+
+		if _, err := c.Writer.Write(data); err != nil {
 			return err
 		}
 		c.Writer.Flush()
 		return nil
 	}
 
-	lastStatus, err := h.redis.Get(c.Request.Context(), "last-status:default").Result()
-	if err != nil && err != redis.Nil {
-		log.WithError(err).Error("Failed to read from Redis")
+	stream := h.Streaming.GetStream(streaming.StandardStream)
+
+	subscription, lastStatus, err := h.Streaming.SubscribeEvent(c.Request.Context(), stream)
+	if err != nil {
+		log.WithError(err).Error("Failed to connect to stream")
+		c.Status(http.StatusInternalServerError)
+		return
 	}
-	if err != redis.Nil {
+	defer subscription.Close()
+
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-store")
+	c.Writer.Header().Set("X-Accel-Buffering", "no")
+
+	if lastStatus != nil {
 		if err := writeEvent(lastStatus); err != nil {
 			log.WithError(err).Error("Failed to write data")
 			return
 		}
 	}
 
-	subscription := h.redis.Subscribe(c.Request.Context(), "status:default")
-	defer subscription.Close()
 	eventChannel := subscription.Channel()
 
-end:
+out:
 	for {
 		select {
 		case status := <-eventChannel:
-			if err := writeEvent(status.Payload); err != nil {
+			if err := writeEvent([]byte(status.Payload)); err != nil {
 				log.WithError(err).Error("Failed to write server-sent event")
-				break end
+				break out
 			}
 
 		case <-ticker.C:
 			if _, err := c.Writer.WriteString(": uhaha\n"); err != nil {
 				log.WithError(err).Error("Failed to write keep-alive message")
-				break end
+				break out
 			}
 			c.Writer.Flush()
 
 		case <-c.Request.Context().Done():
-			break end
+			break out
 		}
 	}
 }
@@ -130,19 +139,32 @@ func (h *Handler) handleApiSystemStat(c *gin.Context) {
 	c.Writer.Header().Set("Cache-Control", "no-store")
 	c.Writer.Header().Set("X-Accel-Buffering", "no")
 
-	writeEvent := func(status string) error {
+	writeEvent := func(status []byte) error {
 		if _, err := c.Writer.WriteString("event: systemstat\n"); err != nil {
 			return err
 		}
 
-		if _, err := c.Writer.Write([]byte("data: " + status + "\n\n")); err != nil {
+		data := []byte("data: ")
+		data = append(data, status...)
+		data = append(data, []byte("\n\n")...)
+
+		if _, err := c.Writer.Write(data); err != nil {
 			return err
 		}
 		c.Writer.Flush()
 		return nil
 	}
 
-	subscription := h.redis.Subscribe(c.Request.Context(), "systemstat:default")
+	stream := h.Streaming.GetStream(streaming.SysstatStream)
+
+	subscription, _, err := h.Streaming.SubscribeEvent(c.Request.Context(), stream)
+	if err != nil {
+		log.WithError(err).Error("Failed to connect to stream")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	defer subscription.Close()
+
 	defer subscription.Close()
 	eventChannel := subscription.Channel()
 
@@ -150,7 +172,7 @@ end:
 	for {
 		select {
 		case status := <-eventChannel:
-			if err := writeEvent(status.Payload); err != nil {
+			if err := writeEvent([]byte(status.Payload)); err != nil {
 				log.WithError(err).Error("Failed to write server-sent event")
 				break end
 			}
@@ -224,15 +246,7 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Value
 	return result, nil
 }
 
-func (h *Handler) notifyNonRecoverableFailure(cfg *config.Config, rdb *redis.Client, detail string) {
-	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status:   h.L(cfg.ControlPanel.Locale, "monitor.unrecoverable"),
-		HasError: true,
-		Shutdown: true,
-	}); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
-	}
-
+func (h *Handler) notifyNonRecoverableFailure(cfg *config.Config, detail string) {
 	if cfg.ControlPanel.AlertWebhookUrl != "" {
 		payload := struct {
 			Text     string `json:"text"`
@@ -268,46 +282,75 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 		h.serverRunning = false
 	}()
 
-	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status: h.L(locale, "monitor.connecting"),
-	}); err != nil {
+	stdStream := h.Streaming.GetStream(streaming.StandardStream)
+	errStream := h.Streaming.GetStream(streaming.ErrorStream)
+
+	if err := h.Streaming.PublishEvent(
+		context.Background(),
+		stdStream,
+		streaming.NewStandardMessage(entity.EvWaitConn, entity.PageLoading, h.L(locale, "monitor.waiting")),
+	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	if err := monitor.MonitorServer(h.cfg, h.cfg.ServerAddr, rdb); err != nil {
+	if err := monitor.MonitorServer(h.Streaming, h.cfg, h.cfg.ServerAddr, rdb); err != nil {
 		log.WithError(err).Error("Failed to monitor server")
 	}
 
-	if !gameServer.StopVM(rdb) {
-		h.notifyNonRecoverableFailure(h.cfg, rdb, "Failed to stop VM")
+	if err := h.Streaming.PublishEvent(
+		context.Background(),
+		stdStream,
+		streaming.NewStandardMessage(entity.EvStopRunner, entity.PageLoading, h.L(locale, "vm.stopping")),
+	); err != nil {
+		log.WithError(err).Error("Failed to write status data to Redis channel")
+	}
+
+	if !gameServer.StopVM() {
+		if err := h.Streaming.PublishEvent(
+			context.Background(),
+			errStream,
+			streaming.NewErrorMessage(entity.ErrRunnerStop, h.L(h.cfg.ControlPanel.Locale, "monitor.unrecoverable")),
+		); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
+		}
+		h.notifyNonRecoverableFailure(h.cfg, "Failed to stop VM")
 		return
 	}
-	if !gameServer.SaveImage(rdb) {
-		h.notifyNonRecoverableFailure(h.cfg, rdb, "Failed to save image")
+	if !gameServer.SaveImage() {
+		if err := h.Streaming.PublishEvent(
+			context.Background(),
+			errStream,
+			streaming.NewErrorMessage(entity.ErrRunnerStop, h.L(h.cfg.ControlPanel.Locale, "monitor.unrecoverable")),
+		); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
+		}
+		h.notifyNonRecoverableFailure(h.cfg, "Failed to save image")
 		return
 	}
 	if !gameServer.DeleteVM() {
-		h.notifyNonRecoverableFailure(h.cfg, rdb, "Failed to delete VM")
+		if err := h.Streaming.PublishEvent(
+			context.Background(),
+			errStream,
+			streaming.NewErrorMessage(entity.ErrRunnerStop, h.L(h.cfg.ControlPanel.Locale, "monitor.unrecoverable")),
+		); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
+		}
+		h.notifyNonRecoverableFailure(h.cfg, "Failed to delete VM")
 		return
 	}
 
 	rdb.Del(context.Background(), "monitor-key").Result()
 
 	if dnsProvider != nil {
-		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status: h.L(locale, "vm.dns.reverting"),
-		}); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
-		}
-
 		dnsProvider.UpdateV4(context.Background(), net.ParseIP("127.0.0.1"))
 		dnsProvider.UpdateV6(context.Background(), net.ParseIP("::1"))
 	}
 
-	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status:   h.L(locale, "monitor.stopped"),
-		Shutdown: true,
-	}); err != nil {
+	if err := h.Streaming.PublishEvent(
+		context.Background(),
+		stdStream,
+		streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch, h.L(locale, "monitor.stopped")),
+	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 }
@@ -325,13 +368,17 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 		}
 	}
 
+	stdStream := h.Streaming.GetStream(streaming.StandardStream)
+	errStream := h.Streaming.GetStream(streaming.ErrorStream)
+
 	if err := monitor.GenerateTLSKey(h.cfg, rdb); err != nil {
 		log.WithError(err).Error("Failed to generate TLS key")
-		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   h.L(locale, "monitor.tls_keygen.error"),
-			HasError: true,
-			Shutdown: true,
-		}); err != nil {
+
+		if err := h.Streaming.PublishEvent(
+			context.Background(),
+			errStream,
+			streaming.NewErrorMessage(entity.ErrRunnerPrepare, h.L(locale, "monitor.tls_keygen.error")),
+		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 		h.serverRunning = false
@@ -341,20 +388,20 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 	h.cfg.MonitorKey = gameConfig.AuthKey
 	rdb.Set(context.Background(), "monitor-key", gameConfig.AuthKey, 0).Result()
 
-	if err := monitor.PublishEvent(rdb, monitor.StatusData{
-		Status:   h.L(locale, "monitor.waiting"),
-		HasError: false,
-		Shutdown: false,
-	}); err != nil {
+	if err := h.Streaming.PublishEvent(
+		context.Background(),
+		stdStream,
+		streaming.NewStandardMessage(entity.EvCreateRunner, entity.PageLoading, h.L(locale, "monitor.waiting")),
+	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
 	if !gameServer.SetUp(gameConfig, rdb, memSizeGB) {
-		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   h.L(locale, "vm.start.error"),
-			HasError: true,
-			Shutdown: false,
-		}); err != nil {
+		if err := h.Streaming.PublishEvent(
+			context.Background(),
+			errStream,
+			streaming.NewErrorMessage(entity.ErrRunnerPrepare, h.L(locale, "vm.start.error")),
+		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 		h.serverRunning = false
@@ -362,45 +409,39 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 	}
 
 	if dnsProvider != nil {
-		ipAddresses := gameServer.GetIPAddresses(rdb)
+		ipAddresses := gameServer.GetIPAddresses()
 		if ipAddresses != nil {
-			if err := monitor.PublishEvent(rdb, monitor.StatusData{
-				Status: h.L(locale, "vm.dns.updating"),
-			}); err != nil {
-				log.WithError(err).Error("Failed to write status data to Redis channel")
-			}
-
 			if err := dnsProvider.UpdateV4(context.Background(), ipAddresses.V4); err != nil {
 				log.WithError(err).Error("Failed to update IPv4 address")
 
-				if err := monitor.PublishEvent(rdb, monitor.StatusData{
-					Status:   h.L(locale, "vm.dns.error"),
-					HasError: true,
-					Shutdown: false,
-				}); err != nil {
+				if err := h.Streaming.PublishEvent(
+					context.Background(),
+					errStream,
+					streaming.NewErrorMessage(entity.ErrDNS, h.L(locale, "vm.dns.error")),
+				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
 			}
 			if err := dnsProvider.UpdateV6(context.Background(), ipAddresses.V6); err != nil {
 				log.WithError(err).Error("Failed to update IPv6 address")
 
-				if err := monitor.PublishEvent(rdb, monitor.StatusData{
-					Status:   h.L(locale, "vm.dns.error"),
-					HasError: true,
-					Shutdown: false,
-				}); err != nil {
+				if err := h.Streaming.PublishEvent(
+					context.Background(),
+					errStream,
+					streaming.NewErrorMessage(entity.ErrDNS, h.L(locale, "vm.dns.error")),
+				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
 			}
 		}
 	}
 
-	if !gameServer.DeleteImage(rdb) {
-		if err := monitor.PublishEvent(rdb, monitor.StatusData{
-			Status:   h.L(locale, "vm.image.delete.error"),
-			HasError: true,
-			Shutdown: false,
-		}); err != nil {
+	if !gameServer.DeleteImage() {
+		if err := h.Streaming.PublishEvent(
+			context.Background(),
+			errStream,
+			streaming.NewErrorMessage(entity.ErrRunnerPrepare, h.L(locale, "vm.image.delete.error")),
+		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 
@@ -666,30 +707,6 @@ func (h *Handler) handleApiWorldInfo(c *gin.Context) {
 
 	c.Header("Content-Type", "application/json")
 	c.Writer.Write(data)
-}
-
-func (h *Handler) handleApiSnapshot(c *gin.Context) {
-	if h.cfg.ServerAddr == "" {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrServerNotRunning,
-			Reason:    "Server is not running",
-		})
-		return
-	}
-
-	if err := monitor.TakeSnapshot(h.cfg, h.cfg.ServerAddr, h.redis); err != nil {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrRemote,
-			Reason:    "Remote server error",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
-		Success: true,
-	})
 }
 
 func (h *Handler) handleApiQuickUndoSnapshot(c *gin.Context) {
@@ -1181,7 +1198,6 @@ func (h *Handler) setupApiRoutes(group *gin.RouterGroup) {
 	needsAuth.GET("/mcversions", h.handleApiMcversions)
 	needsAuth.GET("/systeminfo", h.handleApiSystemInfo)
 	needsAuth.GET("/worldinfo", h.handleApiWorldInfo)
-	needsAuth.POST("/snapshot", h.handleApiSnapshot)
 	setupApiQuickUndoRoutes(h, needsAuth.Group("/quickundo"))
 	setupApiUsersRoutes(h, needsAuth.Group("/users"))
 	setupApiWebauthnRoutes(h, needsAuth.Group("/hardwarekey"))

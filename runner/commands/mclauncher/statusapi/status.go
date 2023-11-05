@@ -7,12 +7,12 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"time"
 
-	"github.com/kofuk/premises/runner/commands/mclauncher/backup"
 	"github.com/kofuk/premises/runner/commands/mclauncher/config"
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
 	"github.com/kofuk/premises/runner/commands/privileged"
+	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/exterior/entity"
 	"github.com/kofuk/premises/runner/systemutil"
 	log "github.com/sirupsen/logrus"
 )
@@ -22,73 +22,6 @@ type createSnapshotResp struct {
 	Success bool                    `json:"success"`
 	Message string                  `json:"message"`
 	Result  privileged.SnapshotInfo `json:"result"`
-}
-
-func uploadSnapshot(ctx *config.PMCMContext, ssi *privileged.SnapshotInfo) {
-	options := backup.UploadOptions{
-		TmpFileName: "ss@" + ssi.ID + ".tar.zst",
-		SourceDir:   ssi.Path,
-	}
-
-	ctx.NotifyStatus(ctx.L("snapshot.processing"), false)
-	if err := backup.PrepareUploadData(ctx, options); err != nil {
-		ctx.NotifyStatus(ctx.L("snapshot.process.error"), false)
-		goto out
-	}
-
-	ctx.NotifyStatus(ctx.L("world.uploading"), false)
-	if err := backup.UploadWorldData(ctx, options); err != nil {
-		ctx.NotifyStatus(ctx.L("world.upload.error"), false)
-		goto out
-	}
-out:
-
-	if err := requestDeleteSnapshot(ssi); err != nil {
-		ctx.NotifyStatus(ctx.L("snapshot.clean.error"), false)
-	} else {
-		log.Info("Successfully cleaned snapshot")
-	}
-
-	ctx.NotifyStatus(ctx.L("game.running"), false)
-}
-
-func requestSnapshot() (*privileged.SnapshotInfo, error) {
-	reqMsg := &privileged.RequestMsg{
-		Version: 1,
-		Func:    "snapshots/create",
-	}
-	reqData, err := json.Marshal(reqMsg)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest(http.MethodPost, "http://localhost:8522", bytes.NewBuffer(reqData))
-	if err != nil {
-		return nil, err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	respData, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var respMsg createSnapshotResp
-	if err := json.Unmarshal(respData, &respMsg); err != nil {
-		return nil, err
-	}
-
-	if respMsg.Version != 1 {
-		return nil, errors.New("Unsupported version")
-	}
-
-	if !respMsg.Success {
-		return nil, errors.New(respMsg.Message)
-	}
-
-	return &respMsg.Result, nil
 }
 
 func requestQuickSnapshot() (*privileged.SnapshotInfo, error) {
@@ -198,25 +131,6 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 		srv.Stop()
 	})
 
-	http.HandleFunc("/snapshot", func(w http.ResponseWriter, r *http.Request) {
-		if err := srv.SaveAll(); err != nil {
-			log.WithError(err).Error("Failed to run save-all")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		ssi, err := requestSnapshot()
-		if err != nil {
-			log.WithError(err).Error("Failed to create snapshot")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusCreated)
-
-		go uploadSnapshot(ctx, ssi)
-	})
-
 	http.HandleFunc("/quickss", func(w http.ResponseWriter, r *http.Request) {
 		if err := srv.SaveAll(); err != nil {
 			log.WithError(err).Error("Failed to run save-all")
@@ -227,25 +141,35 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 		_, err := requestQuickSnapshot()
 		if err != nil {
 			log.WithError(err).Error("Failed to create snapshot")
-			w.WriteHeader(http.StatusInternalServerError)
+
+			if err := exterior.SendMessage("serverStatus", entity.Event{
+				Type: entity.EventInfo,
+				Info: &entity.InfoExtra{
+					InfoCode:  entity.InfoSnapshotError,
+					LegacyMsg: "スナップショットを取得できませんでした",
+				},
+			}); err != nil {
+				log.WithError(err).Error("Unable to write send message")
+			}
+
 			return
 		}
 
-		srv.SendChat("スナップショットを取得しました！")
+		if err := exterior.SendMessage("serverStatus", entity.Event{
+			Type: entity.EventInfo,
+			Info: &entity.InfoExtra{
+				InfoCode:  entity.InfoSnapshotDone,
+				LegacyMsg: "スナップショットを取得しました！",
+			},
+		}); err != nil {
+			log.WithError(err).Error("Unable to write send message")
+		}
 
 		w.WriteHeader(http.StatusCreated)
 	})
 
 	http.HandleFunc("/quickundo", func(w http.ResponseWriter, r *http.Request) {
-		go func() {
-			srv.SendChat("3秒後にサーバを再起動します")
-			time.Sleep(time.Second)
-			srv.SendChat("2…")
-			time.Sleep(time.Second)
-			srv.SendChat("1…")
-			time.Sleep(time.Second)
-			srv.QuickUndo()
-		}()
+		go srv.QuickUndo()
 
 		w.WriteHeader(http.StatusCreated)
 	})

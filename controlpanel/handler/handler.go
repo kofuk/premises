@@ -24,6 +24,7 @@ import (
 	"github.com/kofuk/premises/controlpanel/entity"
 	"github.com/kofuk/premises/controlpanel/mcversions"
 	"github.com/kofuk/premises/controlpanel/model"
+	"github.com/kofuk/premises/controlpanel/streaming"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
@@ -71,6 +72,7 @@ type Handler struct {
 	serverRunning bool
 	Cacher        caching.Cacher
 	MCVersions    mcversions.MCVersionProvider
+	Streaming     *streaming.Streaming
 }
 
 func createDatabaseClient(cfg *config.Config) (*gorm.DB, error) {
@@ -183,7 +185,19 @@ func setupSessions(h *Handler) {
 }
 
 func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Client, h *Handler) error {
+	locale := h.cfg.ControlPanel.Locale
+
+	stdStream := h.Streaming.GetStream(streaming.StandardStream)
+
 	if !gameServer.VMExists() {
+		if err := h.Streaming.PublishEvent(
+			context.Background(),
+			stdStream,
+			streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch, h.L(locale, "monitor.stopped")),
+		); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
+		}
+
 		return nil
 	}
 	if gameServer.VMRunning() {
@@ -195,7 +209,7 @@ func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Cli
 
 		if gameServer.ImageExists() {
 			log.Info("Server seems to be running, but remote image exists")
-			gameServer.DeleteImage(rdb)
+			gameServer.DeleteImage()
 		}
 
 		var dnsProvider *dns.DNSProvider
@@ -209,7 +223,7 @@ func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Cli
 		}
 
 		if dnsProvider != nil {
-			ipAddresses := gameServer.GetIPAddresses(rdb)
+			ipAddresses := gameServer.GetIPAddresses()
 			if ipAddresses != nil {
 				dnsProvider.UpdateV4(context.Background(), ipAddresses.V4)
 				dnsProvider.UpdateV6(context.Background(), ipAddresses.V6)
@@ -220,7 +234,7 @@ func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Cli
 		log.Info("Start monitoring server")
 		go h.monitorServer(gameServer, rdb, dnsProvider)
 	} else {
-		if !gameServer.ImageExists() && !gameServer.SaveImage(rdb) {
+		if !gameServer.ImageExists() && !gameServer.SaveImage() {
 			return errors.New("Invalid state")
 		}
 		if !gameServer.DeleteVM() {
@@ -256,6 +270,7 @@ func NewHandler(cfg *config.Config, i18nData *i18n.Bundle, bindAddr string) (*Ha
 	cacher := caching.New(caching.NewRedis(h.redis))
 	h.Cacher = cacher
 	h.MCVersions = mcversions.New(cacher)
+	h.Streaming = streaming.New(h.redis)
 
 	setupSessions(h)
 
