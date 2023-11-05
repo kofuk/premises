@@ -100,6 +100,7 @@ const (
 
 type StandardMessage struct {
 	EventCode EventCode `json:"eventCode"`
+	Progress  int       `json:"progress"`
 	PageCode  PageCode  `json:"pageCode"`
 	LegacyMsg string    `json:"message"`
 }
