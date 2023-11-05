@@ -9,6 +9,10 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: gomod
+    directory: /common
+    schedule:
+      interval: weekly
+  - package-ecosystem: gomod
     directory: /controlpanel
     schedule:
       interval: weekly

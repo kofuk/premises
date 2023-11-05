@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/kofuk/premises/controlpanel/entity"
+	entity "github.com/kofuk/premises/common/entity/web"
 )
 
 type Streaming struct {

@@ -3,8 +3,8 @@ package systemstat
 import (
 	"time"
 
+	entity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
-	"github.com/kofuk/premises/runner/exterior/entity"
 	"github.com/kofuk/premises/runner/systemutil"
 	log "github.com/sirupsen/logrus"
 )

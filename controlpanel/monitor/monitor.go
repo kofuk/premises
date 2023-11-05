@@ -12,38 +12,13 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	runnerEntity "github.com/kofuk/premises/common/entity/runner"
+	entity "github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/config"
-	"github.com/kofuk/premises/controlpanel/entity"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
 	"github.com/kofuk/premises/controlpanel/streaming"
 	log "github.com/sirupsen/logrus"
 )
-
-type EventType string
-type EventCode int
-type InfoCode int
-
-type StatusExtra struct {
-	EventCode EventCode `json:"eventCode"`
-	Progress  int       `json:"progress"`
-	LegacyMsg string    `json:"message"`
-}
-
-type SysstatExtra struct {
-	CPUUsage float64 `json:"cpuUsage"`
-}
-
-type InfoExtra struct {
-	InfoCode  InfoCode `json:"infoCode"`
-	LegacyMsg string   `json:"message"`
-}
-
-type Event struct {
-	Type    EventType     `json:"type"`
-	Status  *StatusExtra  `json:"status,omitempty"`
-	Sysstat *SysstatExtra `json:"sysstat,omitempty"`
-	Info    *InfoExtra    `json:"info,omitempty"`
-}
 
 type StatusData struct {
 	Type     string  `json:"type"`
@@ -116,7 +91,7 @@ out:
 
 		connLost = false
 
-		receiveEvent := func(reader *bufio.Reader) (*Event, error) {
+		receiveEvent := func(reader *bufio.Reader) (*runnerEntity.Event, error) {
 			var line []byte
 
 			for {
@@ -132,7 +107,7 @@ out:
 				break
 			}
 
-			var event Event
+			var event runnerEntity.Event
 			if err := json.Unmarshal(line, &event); err != nil {
 				return nil, err
 			}
@@ -156,8 +131,7 @@ out:
 					continue
 				}
 
-				if event.Status.EventCode == 1 {
-					// Shutdown
+				if event.Status.EventCode == runnerEntity.EventShutdown {
 					break out
 				}
 

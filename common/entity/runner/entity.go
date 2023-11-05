@@ -1,4 +1,4 @@
-package entity
+package runner
 
 type Message struct {
 	Type     string `json:"type"`
