@@ -16,27 +16,29 @@ const (
 type EventCode int
 
 const (
-	EventShutdown EventCode = iota + 1 // 1
-	EventSysInit
-	EventGameDownload
-	EventGameErr
-	EventWorldDownload
-	EventWorldPrepare
-	EventWorldUpload
-	EventWorldErr
-	EventLaunchErr
-	EventLoading
-	EventRunning
-	EventStopping
-	EventCrashed
-	EventClean
+	EventShutdown      EventCode = iota + 1 // 1
+	EventSysInit                            // 2
+	EventGameDownload                       // 3
+	EventWorldDownload                      // 4
+	EventWorldPrepare                       // 5
+	EventWorldUpload                        // 6
+	EventLoading                            // 7
+	EventRunning                            // 8
+	EventStopping                           // 9
+	EventCrashed                            // 10
+	EventClean                              // 11
+
+	// Event codes below should be provided UI to retry.
+	EventGameErr   // 12
+	EventWorldErr  // 13
+	EventLaunchErr // 14
 )
 
 type InfoCode int
 
 const (
-	InfoSnapshotDone InfoCode = iota + 1
-	InfoSnapshotError
+	InfoSnapshotDone  InfoCode = iota + 1 // 1
+	InfoSnapshotError                     // 2
 )
 
 type StatusExtra struct {
