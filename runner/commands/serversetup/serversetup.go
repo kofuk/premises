@@ -46,7 +46,6 @@ func (self *ServerSetup) notifyStatus() {
 		Type: entity.EventStatus,
 		Status: &entity.StatusExtra{
 			EventCode: entity.EventSysInit,
-			LegacyMsg: "サーバを初期化しています…",
 		},
 	}); err != nil {
 		log.Error(err)

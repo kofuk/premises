@@ -44,20 +44,18 @@ func (self Stream) GetChannelID() string {
 
 type Message any
 
-func NewStandardMessage(eventCode entity.EventCode, pageCode entity.PageCode, legacyMsg string) Message {
+func NewStandardMessage(eventCode entity.EventCode, pageCode entity.PageCode) Message {
 	return &entity.StandardMessage{
 		EventCode: eventCode,
 		PageCode:  pageCode,
-		LegacyMsg: legacyMsg,
 	}
 }
 
-func NewStandardMessageWithProgress(eventCode entity.EventCode, progress int, pageCode entity.PageCode, legacyMsg string) Message {
+func NewStandardMessageWithProgress(eventCode entity.EventCode, progress int, pageCode entity.PageCode) Message {
 	return &entity.StandardMessage{
 		EventCode: eventCode,
 		Progress:  progress,
 		PageCode:  pageCode,
-		LegacyMsg: legacyMsg,
 	}
 }
 

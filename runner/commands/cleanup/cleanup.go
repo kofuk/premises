@@ -56,7 +56,6 @@ func notifyStatus(eventCode entity.EventCode) {
 		Type: entity.EventStatus,
 		Status: &entity.StatusExtra{
 			EventCode: eventCode,
-			LegacyMsg: "サーバを終了する準備をしています…",
 		},
 	}); err != nil {
 		log.WithError(err).Error("Unable to write send message")

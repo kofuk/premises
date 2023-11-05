@@ -274,8 +274,6 @@ func (h *Handler) notifyNonRecoverableFailure(cfg *config.Config, detail string)
 }
 
 func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsProvider *dns.DNSProvider) {
-	locale := h.cfg.ControlPanel.Locale
-
 	defer func() {
 		h.serverMutex.Lock()
 		defer h.serverMutex.Unlock()
@@ -288,7 +286,7 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 	if err := h.Streaming.PublishEvent(
 		context.Background(),
 		stdStream,
-		streaming.NewStandardMessage(entity.EvWaitConn, entity.PageLoading, h.L(locale, "monitor.waiting")),
+		streaming.NewStandardMessage(entity.EvWaitConn, entity.PageLoading),
 	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
@@ -300,7 +298,7 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 	if err := h.Streaming.PublishEvent(
 		context.Background(),
 		stdStream,
-		streaming.NewStandardMessage(entity.EvStopRunner, entity.PageLoading, h.L(locale, "vm.stopping")),
+		streaming.NewStandardMessage(entity.EvStopRunner, entity.PageLoading),
 	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
@@ -349,7 +347,7 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 	if err := h.Streaming.PublishEvent(
 		context.Background(),
 		stdStream,
-		streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch, h.L(locale, "monitor.stopped")),
+		streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch),
 	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
@@ -391,7 +389,7 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 	if err := h.Streaming.PublishEvent(
 		context.Background(),
 		stdStream,
-		streaming.NewStandardMessage(entity.EvCreateRunner, entity.PageLoading, h.L(locale, "monitor.waiting")),
+		streaming.NewStandardMessage(entity.EvCreateRunner, entity.PageLoading),
 	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}

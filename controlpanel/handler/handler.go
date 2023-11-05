@@ -163,15 +163,13 @@ func setupSessions(h *Handler) {
 }
 
 func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Client, h *Handler) error {
-	locale := h.cfg.ControlPanel.Locale
-
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
 
 	if !gameServer.VMExists() {
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
 			stdStream,
-			streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch, h.L(locale, "monitor.stopped")),
+			streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}

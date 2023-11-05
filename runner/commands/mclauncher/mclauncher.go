@@ -79,7 +79,6 @@ func downloadWorldIfNeeded(ctx *config.PMCMContext) error {
 			Type: entity.EventStatus,
 			Status: &entity.StatusExtra{
 				EventCode: entity.EventWorldDownload,
-				LegacyMsg: ctx.L("world.downloading"),
 			},
 		}); err != nil {
 			log.WithError(err).Error("Unable to write send message")
@@ -156,7 +155,6 @@ func Run() {
 		Type: entity.EventStatus,
 		Status: &entity.StatusExtra{
 			EventCode: entity.EventGameDownload,
-			LegacyMsg: ctx.L("mc.downloading"),
 		},
 	}); err != nil {
 		log.WithError(err).Error("Unable to write send message")
@@ -168,7 +166,6 @@ func Run() {
 			Type: entity.EventStatus,
 			Status: &entity.StatusExtra{
 				EventCode: entity.EventGameErr,
-				LegacyMsg: ctx.L("mc.download.error"),
 			},
 		}); err != nil {
 			log.WithError(err).Error("Unable to write send message")
@@ -189,7 +186,6 @@ func Run() {
 			Type: entity.EventStatus,
 			Status: &entity.StatusExtra{
 				EventCode: entity.EventGameErr,
-				LegacyMsg: ctx.L("mc.invalid_server_name"),
 			},
 		}); err != nil {
 			log.WithError(err).Error("Unable to write send message")
@@ -204,7 +200,6 @@ func Run() {
 			Type: entity.EventStatus,
 			Status: &entity.StatusExtra{
 				EventCode: entity.EventWorldErr,
-				LegacyMsg: ctx.L("world.download.error"),
 			},
 		}); err != nil {
 			log.WithError(err).Error("Unable to write send message")
@@ -219,7 +214,6 @@ func Run() {
 			Type: entity.EventStatus,
 			Status: &entity.StatusExtra{
 				EventCode: entity.EventLaunchErr,
-				LegacyMsg: ctx.L("game.launch.error"),
 			},
 		}); err != nil {
 			log.WithError(err).Error("Unable to write send message")
@@ -240,7 +234,6 @@ func Run() {
 		Type: entity.EventStatus,
 		Status: &entity.StatusExtra{
 			EventCode: entity.EventWorldPrepare,
-			LegacyMsg: ctx.L("world.processing"),
 		},
 	}); err != nil {
 		log.WithError(err).Error("Unable to write send message")
@@ -252,7 +245,6 @@ func Run() {
 			Type: entity.EventStatus,
 			Status: &entity.StatusExtra{
 				EventCode: entity.EventWorldErr,
-				LegacyMsg: ctx.L("world.archive.error"),
 			},
 		}); err != nil {
 			log.WithError(err).Error("Unable to write send message")
@@ -264,7 +256,6 @@ func Run() {
 		Type: entity.EventStatus,
 		Status: &entity.StatusExtra{
 			EventCode: entity.EventWorldUpload,
-			LegacyMsg: ctx.L("world.uploading"),
 		},
 	}); err != nil {
 		log.WithError(err).Error("Unable to write send message")
@@ -276,7 +267,6 @@ func Run() {
 			Type: entity.EventStatus,
 			Status: &entity.StatusExtra{
 				EventCode: entity.EventWorldErr,
-				LegacyMsg: ctx.L("world.upload.error"),
 			},
 		}); err != nil {
 			log.WithError(err).Error("Unable to write send message")
@@ -294,7 +284,6 @@ out:
 			Type: entity.EventStatus,
 			Status: &entity.StatusExtra{
 				EventCode: entity.EventCrashed,
-				LegacyMsg: ctx.L("game.crashed"),
 			},
 		}); err != nil {
 			log.WithError(err).Error("Unable to write send message")

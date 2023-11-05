@@ -46,7 +46,6 @@ const (
 type StatusExtra struct {
 	EventCode EventCode `json:"eventCode"`
 	Progress  int       `json:"progress"`
-	LegacyMsg string    `json:"message"`
 }
 
 type SysstatExtra struct {
