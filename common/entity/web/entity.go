@@ -83,11 +83,11 @@ type CredentialNameAndCreationResponse struct {
 type EventCode int
 
 const (
-	EvStopped      EventCode = iota + 100 // 101
-	EvCreateRunner                        // 102
-	EvWaitConn                            // 103
-	EvConnLost                            // 104
-	EvStopRunner                          // 105
+	EvStopped      EventCode = iota + 100 // 100
+	EvCreateRunner                        // 101
+	EvWaitConn                            // 102
+	EvConnLost                            // 103
+	EvStopRunner                          // 104
 )
 
 type PageCode int

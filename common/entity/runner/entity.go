@@ -27,11 +27,13 @@ const (
 	EventStopping                           // 9
 	EventCrashed                            // 10
 	EventClean                              // 11
+)
 
-	// Event codes below should be provided UI to retry.
-	EventGameErr   // 12
-	EventWorldErr  // 13
-	EventLaunchErr // 14
+// Event codes that should be provided UI to retry.
+const (
+	EventGameErr   EventCode = iota + 50 // 50
+	EventWorldErr                        // 51
+	EventLaunchErr                       // 52
 )
 
 type InfoCode int
