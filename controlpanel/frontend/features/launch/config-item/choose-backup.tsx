@@ -36,6 +36,7 @@ const ChooseBackup = ({
     if (backups && backups.length > 0) {
       if (worldName === '') {
         setWorldName(backups[0].worldName);
+        setBackupGeneration(backups[0].generations[0].id);
       }
     }
   }, [backups]);

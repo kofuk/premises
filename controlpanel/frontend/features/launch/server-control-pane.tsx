@@ -18,14 +18,8 @@ enum Modes {
   WorldInfo
 }
 
-type Prop = {
-  showError: (message: string) => void;
-};
-
-const ServerControlPane = (props: Prop) => {
+const ServerControlPane = () => {
   const [t] = useTranslation();
-
-  const {showError} = props;
 
   const [mode, setMode] = useState(Modes.MainMenu);
   const [cpuUsage, setCpuUsage] = useState(
@@ -93,9 +87,9 @@ const ServerControlPane = (props: Prop) => {
       </div>
     );
   } else if (mode === Modes.Reconfigure) {
-    controlItems.push(<ReconfigureMenu key="reconfigure" backToMenu={handleBackToMenu} showError={showError} />);
+    controlItems.push(<ReconfigureMenu key="reconfigure" backToMenu={handleBackToMenu} />);
   } else if (mode === Modes.QuickUndo) {
-    controlItems.push(<QuickUndo key="quickundo" backToMenu={handleBackToMenu} showError={showError} />);
+    controlItems.push(<QuickUndo key="quickundo" backToMenu={handleBackToMenu} />);
   } else if (mode === Modes.SystemInfo) {
     controlItems.push(<SystemInfo key="systemInfo" backToMenu={handleBackToMenu} />);
   } else if (mode === Modes.WorldInfo) {

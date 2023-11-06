@@ -56,10 +56,6 @@ const LaunchPage = () => {
     }
   }, []);
 
-  const showError = (message: string) => {
-    setMessage(message);
-  };
-
   const closeNotificationToast = () => {
     setShowNotificationToast(false);
   };
@@ -79,7 +75,7 @@ const LaunchPage = () => {
     })();
   };
 
-  const mainPane: React.ReactElement = page == PAGE_LAUNCH ? <ServerConfigPane showError={showError} /> : <ServerControlPane showError={showError} />;
+  const mainPane: React.ReactElement = page == PAGE_LAUNCH ? <ServerConfigPane /> : <ServerControlPane />;
   return (
     <>
       <StatusBar message={message} progress={progress} />

@@ -11,14 +11,8 @@ import ServerVersion from '@/features/launch/config-item/server-version';
 import WorldName from '@/features/launch/config-item/world-name';
 import WorldSource, {WorldLocation} from '@/features/launch/config-item/world-source';
 
-type Prop = {
-  showError: (message: string) => void;
-};
-
-const ServerConfigPane = (props: Prop) => {
+const ServerConfigPane = () => {
   const [t] = useTranslation();
-
-  const {showError} = props;
 
   const [machineType, setMachineType] = useState('4g');
   const [serverVersion, setServerVersion] = useState('');
@@ -55,7 +49,7 @@ const ServerConfigPane = (props: Prop) => {
           body: data.toString()
         }).then((resp) => resp.json());
         if (!result['success']) {
-          showError(result['reason']);
+          throw new Error(t(`error.code_${result['errorCode']}`));
         }
       } catch (err) {
         console.error(err);

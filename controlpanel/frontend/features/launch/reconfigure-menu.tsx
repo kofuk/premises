@@ -12,13 +12,10 @@ import WorldSource, {WorldLocation} from '@/features/launch/config-item/world-so
 
 type Prop = {
   backToMenu: () => void;
-  showError: (message: string) => void;
 };
 
-const ReconfigureMenu = (props: Prop) => {
+const ReconfigureMenu = ({backToMenu}: Prop) => {
   const [t] = useTranslation();
-
-  const {backToMenu, showError} = props;
 
   const [serverVersion, setServerVersion] = useState('');
   const [worldSource, setWorldSource] = useState(WorldLocation.Backups);
@@ -55,7 +52,7 @@ const ReconfigureMenu = (props: Prop) => {
         if (result['success']) {
           backToMenu();
         } else {
-          showError(result['reason']);
+          throw new Error(t(`error.code_${result['errorCode']}`));
         }
       } catch (err) {
         console.error(err);
@@ -168,7 +165,7 @@ const ReconfigureMenu = (props: Prop) => {
 
   return (
     <div className="m-2">
-      <button className="btn btn-outline-primary" onClick={props.backToMenu}>
+      <button className="btn btn-outline-primary" onClick={backToMenu}>
         <ArrowBackIcon /> {t('back')}
       </button>
       <div className="m-2">

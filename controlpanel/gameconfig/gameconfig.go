@@ -3,6 +3,7 @@ package gameconfig
 import (
 	"encoding/base32"
 	"errors"
+	"fmt"
 
 	"github.com/gorilla/securecookie"
 	"golang.org/x/exp/slices"
@@ -75,9 +76,13 @@ func (gc *GameConfig) GenerateAuthKey() string {
 	return result
 }
 
-func (gc *GameConfig) SetWorld(worldName string, generationId string) {
+func (gc *GameConfig) SetWorld(worldName string, generationId string) error {
+	if worldName == "" || generationId == "" {
+		return fmt.Errorf("Either worldName or generationId is empty")
+	}
 	gc.World.Name = worldName
 	gc.World.GenerationId = generationId
+	return nil
 }
 
 func (gc *GameConfig) GenerateWorld(worldName, seed string) {

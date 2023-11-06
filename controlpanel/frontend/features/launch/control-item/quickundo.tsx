@@ -6,13 +6,11 @@ import {ArrowBack as ArrowBackIcon} from '@mui/icons-material';
 
 type Prop = {
   backToMenu: () => void;
-  showError: (message: string) => void;
 };
 
-const QuickUndo = (props: Prop) => {
+const QuickUndo = ({backToMenu}: Prop) => {
   const [t] = useTranslation();
 
-  const {backToMenu, showError} = props;
   const [isRequesting, setIsRequesting] = useState(false);
 
   const handleSnapshot = () => {
@@ -21,8 +19,7 @@ const QuickUndo = (props: Prop) => {
       try {
         const result = await fetch('/api/quickundo/snapshot', {method: 'POST'}).then((resp) => resp.json());
         if (!result['success']) {
-          showError(result['reason']);
-          return;
+          throw new Error(t(`error.code_${result['errorCode']}`));
         }
       } catch (err) {
         console.error(err);
@@ -38,8 +35,7 @@ const QuickUndo = (props: Prop) => {
       try {
         const result = await fetch('/api/quickundo/undo', {method: 'POST'}).then((resp) => resp.json());
         if (!result['success']) {
-          showError(result['reason']);
-          return;
+          throw new Error(t(`error.code_${result['reason']}`));
         }
       } catch (err) {
         console.error(err);
