@@ -42,7 +42,7 @@
     "@types/react-test-renderer": "^18.0.5",
     "@types/webappsec-credential-management": "^0.6.6",
     "@typescript-eslint/eslint-plugin": "^6.9.1",
-    "@typescript-eslint/parser": "^6.7.5",
+    "@typescript-eslint/parser": "^6.9.1",
     "@vitejs/plugin-react": "^4.1.0",
     "babel-jest": "^29.7.0",
     "bootstrap": "^5.3.2",
