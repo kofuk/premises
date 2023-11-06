@@ -1,4 +1,4 @@
-import * as base64url from '../base64url';
+import * as base64url from './base64url';
 
 describe('base64url', () => {
   describe('decode', () => {

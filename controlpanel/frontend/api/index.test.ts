@@ -1,7 +1,7 @@
 import nock from 'nock';
 import fetch from 'node-fetch';
 
-import api, {APIError} from '../../api';
+import api, {APIError} from '.';
 
 describe('api', () => {
   beforeEach(() => {

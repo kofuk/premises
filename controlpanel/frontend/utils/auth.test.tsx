@@ -3,7 +3,7 @@ import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import nock from 'nock';
 
-import {AuthProvider, useAuth} from '../auth';
+import {AuthProvider, useAuth} from './auth';
 import '@testing-library/jest-dom';
 
 describe('AuthProvider', () => {
