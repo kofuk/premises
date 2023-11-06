@@ -2,7 +2,7 @@ import React from 'react';
 
 import {render, screen} from '@testing-library/react';
 
-import LoadingButtonWithResult from '../loading-button-with-result';
+import LoadingButtonWithResult from './loading-button-with-result';
 
 describe('LoadingButtonWithResult', () => {
   it('renders state change', async () => {

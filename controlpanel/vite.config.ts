@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react';
-import {defineConfig} from 'vite';
 import checker from 'vite-plugin-checker';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import {defineConfig} from 'vitest/config';
 
 export default defineConfig({
   server: {
@@ -12,6 +12,11 @@ export default defineConfig({
   },
   build: {
     outDir: 'gen'
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./test-setup.ts']
   },
   plugins: [react(), tsconfigPaths(), checker({typescript: true})]
 });
