@@ -180,6 +180,15 @@ func Run() {
 		goto out
 	}
 
+	if err := exterior.SendMessage("serverStatus", entity.Event{
+		Type: entity.EventStatus,
+		Status: &entity.StatusExtra{
+			EventCode: entity.EventWorldPrepare,
+		},
+	}); err != nil {
+		log.WithError(err).Error("Unable to write send message")
+	}
+
 	if err := gamesrv.LaunchServer(ctx, srv); err != nil {
 		log.WithError(err).Error("Failed to launch Minecraft server")
 		srv.StartupFailed = true
