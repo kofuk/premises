@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 
+import {useSnackbar} from 'notistack';
 import {Helmet} from 'react-helmet-async';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
@@ -7,12 +8,12 @@ import {useTranslation} from 'react-i18next';
 import {Box, Stack, TextField, Typography} from '@mui/material';
 
 import {APIError, addUser} from '@/api';
-import {LoadingButtonWithResult, Snackbar} from '@/components';
+import {LoadingButtonWithResult} from '@/components';
 
 const AddUser = () => {
   const [t] = useTranslation();
 
-  const [feedback, setFeedback] = useState('');
+  const {enqueueSnackbar} = useSnackbar();
 
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -29,7 +30,7 @@ const AddUser = () => {
     } catch (err: unknown) {
       console.error(err);
       if (err instanceof APIError) {
-        setFeedback(err.message);
+        enqueueSnackbar(err.message, {variant: 'error'});
       }
     } finally {
       setSubmitting(false);
@@ -95,8 +96,6 @@ const AddUser = () => {
           </LoadingButtonWithResult>
         </Box>
       </form>
-
-      <Snackbar message={feedback} onClose={() => setFeedback('')} />
 
       <Helmet>
         <title>

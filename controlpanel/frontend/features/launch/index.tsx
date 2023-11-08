@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 
+import {useSnackbar} from 'notistack';
 import {Helmet} from 'react-helmet-async';
 import {useTranslation} from 'react-i18next';
 
@@ -26,7 +27,7 @@ const LaunchPage = () => {
   const [page, setPage] = useState(PAGE_LAUNCH);
 
   useEffect(() => {
-    const eventSource = new EventSource('/api/status');
+    const eventSource = new EventSource('/api/streaming/events');
     eventSource.addEventListener('error', () => {
       setMessage(t('reconnecting'));
     });
@@ -44,6 +45,23 @@ const LaunchPage = () => {
       }
 
       setPrevStatus(event.status);
+    });
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
+
+  const {enqueueSnackbar} = useSnackbar();
+
+  useEffect(() => {
+    const eventSource = new EventSource('/api/streaming/error');
+    eventSource.addEventListener('error', () => {
+      setMessage(t('reconnecting'));
+    });
+    eventSource.addEventListener('trigger', (ev: MessageEvent) => {
+      const event = JSON.parse(ev.data);
+      enqueueSnackbar(t(`error.code_${event.errorCode}`), {variant: 'error'});
     });
 
     return () => {

@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 
+import {useSnackbar} from 'notistack';
 import {Helmet} from 'react-helmet-async';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
@@ -8,16 +9,15 @@ import {Stack, TextField, Typography} from '@mui/material';
 import {Box} from '@mui/system';
 
 import {changePassword} from '@/api';
-import {LoadingButtonWithResult, Snackbar} from '@/components';
+import {LoadingButtonWithResult} from '@/components';
 
 const ChangePassword = () => {
   const [t] = useTranslation();
 
-  const [feedback, setFeedback] = useState('');
-
   const {register, handleSubmit, formState, watch} = useForm();
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const {enqueueSnackbar} = useSnackbar();
 
   const handleChangePassword = ({currentPassword, newPassword}: any) => {
     (async () => {
@@ -28,7 +28,7 @@ const ChangePassword = () => {
         setSuccess(true);
       } catch (err: any) {
         console.error(err);
-        setFeedback(err.message);
+        enqueueSnackbar(err.message, {variant: 'error'});
       } finally {
         setSubmitting(false);
       }
@@ -93,8 +93,6 @@ const ChangePassword = () => {
           </LoadingButtonWithResult>
         </Box>
       </form>
-
-      <Snackbar message={feedback} onClose={() => setFeedback('')} />
 
       <Helmet>
         <title>

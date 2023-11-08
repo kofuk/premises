@@ -1,19 +1,15 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {Helmet} from 'react-helmet-async';
 import {useTranslation} from 'react-i18next';
 
 import LoginForm from './components/login-form';
-import LoginFormCard from './components/login-form-card';
 
-import {Snackbar} from '@/components';
 import {useAuth} from '@/utils/auth';
 
 const LoginPage = () => {
   const [t] = useTranslation();
-
-  const [feedback, setFeedback] = useState('');
 
   const navigate = useNavigate();
   const {loggedIn} = useAuth();
@@ -25,10 +21,7 @@ const LoginPage = () => {
 
   return (
     <>
-      <LoginFormCard title={t('title_login')}>
-        <Snackbar message={feedback} onClose={() => setFeedback('')} />
-        <LoginForm setFeedback={setFeedback} />
-      </LoginFormCard>
+      <LoginForm />
       <Helmet>
         <title>{t('title_login')}</title>
       </Helmet>

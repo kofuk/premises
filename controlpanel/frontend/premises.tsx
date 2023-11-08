@@ -1,6 +1,7 @@
 import React, {Suspense} from 'react';
 import {BrowserRouter as Router} from 'react-router-dom';
 
+import {SnackbarProvider} from 'notistack';
 import {HelmetProvider} from 'react-helmet-async';
 
 import {Loading} from './components';
@@ -13,11 +14,13 @@ const Premises = () => {
   return (
     <HelmetProvider>
       <AuthProvider>
-        <Router>
-          <Suspense fallback={<Loading />}>
-            <AppRoutes />
-          </Suspense>
-        </Router>
+        <SnackbarProvider anchorOrigin={{horizontal: 'right', vertical: 'top'}}>
+          <Router>
+            <Suspense fallback={<Loading />}>
+              <AppRoutes />
+            </Suspense>
+          </Router>
+        </SnackbarProvider>
       </AuthProvider>
     </HelmetProvider>
   );

@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 
+import {useSnackbar} from 'notistack';
 import {Helmet} from 'react-helmet-async';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
@@ -24,17 +25,16 @@ import {
 import {Box} from '@mui/system';
 
 import {APIError, getPasskeysRegistrationOptions, registerPasskeys, usePasskeys} from '@/api';
-import {Loading, Snackbar} from '@/components';
+import {Loading} from '@/components';
 import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
 
 const Passkeys = () => {
   const [t] = useTranslation();
 
-  const [feedback, setFeedback] = useState('');
-
   const [submitting, setSubmitting] = useState(false);
 
   const {register, handleSubmit, reset} = useForm();
+  const {enqueueSnackbar} = useSnackbar();
 
   const {data: passkeys, isLoading, mutate, deleteKey} = usePasskeys();
 
@@ -81,9 +81,9 @@ const Passkeys = () => {
       } catch (err: unknown) {
         console.error(err);
         if (err instanceof APIError) {
-          setFeedback(err.message);
+          enqueueSnackbar(err.message, {variant: 'error'});
         } else {
-          setFeedback(t('passwordless_login_error'));
+          enqueueSnackbar(t('passwordless_login_error'), {variant: 'error'});
         }
       } finally {
         setSubmitting(false);
@@ -157,8 +157,6 @@ const Passkeys = () => {
 
         {isLoading ? <Loading compact /> : passkeys!.length > 0 ? createPasskeyList() : createNoPasskeyMessage()}
       </Box>
-
-      <Snackbar message={feedback} onClose={() => setFeedback('')} />
 
       <Helmet>
         <title>

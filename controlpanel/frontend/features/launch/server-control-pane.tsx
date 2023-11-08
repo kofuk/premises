@@ -29,7 +29,7 @@ const ServerControlPane = () => {
   );
 
   useEffect(() => {
-    const eventSource = new EventSource('/api/systemstat');
+    const eventSource = new EventSource('/api/streaming/sysstat');
     eventSource.addEventListener('systemstat', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);
       setCpuUsage((current) => [...current.slice(1, 101), event]);

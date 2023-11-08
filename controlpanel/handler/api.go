@@ -65,67 +65,67 @@ func (h *Handler) handleApiSessionData(c *gin.Context) {
 	})
 }
 
-func (h *Handler) handleApiStatus(c *gin.Context) {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
+func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName string, sendLatest bool) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
 
-	writeEvent := func(status []byte) error {
-		if _, err := c.Writer.WriteString("event: statuschanged\n"); err != nil {
-			return err
-		}
-
-		data := []byte("data: ")
-		data = append(data, status...)
-		data = append(data, []byte("\n\n")...)
-
-		if _, err := c.Writer.Write(data); err != nil {
-			return err
-		}
-		c.Writer.Flush()
-		return nil
-	}
-
-	stream := h.Streaming.GetStream(streaming.StandardStream)
-
-	subscription, lastStatus, err := h.Streaming.SubscribeEvent(c.Request.Context(), stream)
-	if err != nil {
-		log.WithError(err).Error("Failed to connect to stream")
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	defer subscription.Close()
-
-	c.Writer.Header().Set("Content-Type", "text/event-stream")
-	c.Writer.Header().Set("Cache-Control", "no-store")
-	c.Writer.Header().Set("X-Accel-Buffering", "no")
-
-	if lastStatus != nil {
-		if err := writeEvent(lastStatus); err != nil {
-			log.WithError(err).Error("Failed to write data")
-			return
-		}
-	}
-
-	eventChannel := subscription.Channel()
-
-out:
-	for {
-		select {
-		case status := <-eventChannel:
-			if err := writeEvent([]byte(status.Payload)); err != nil {
-				log.WithError(err).Error("Failed to write server-sent event")
-				break out
+		writeEvent := func(message []byte) error {
+			if _, err := c.Writer.WriteString("event: " + eventName + "\n"); err != nil {
+				return err
 			}
 
-		case <-ticker.C:
-			if _, err := c.Writer.WriteString(": uhaha\n"); err != nil {
-				log.WithError(err).Error("Failed to write keep-alive message")
-				break out
+			data := []byte("data: ")
+			data = append(data, message...)
+			data = append(data, []byte("\n\n")...)
+
+			if _, err := c.Writer.Write(data); err != nil {
+				return err
 			}
 			c.Writer.Flush()
+			return nil
+		}
 
-		case <-c.Request.Context().Done():
-			break out
+		subscription, lastStatus, err := h.Streaming.SubscribeEvent(c.Request.Context(), stream)
+		if err != nil {
+			log.WithError(err).Error("Failed to connect to stream")
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		defer subscription.Close()
+
+		c.Writer.Header().Set("Content-Type", "text/event-stream")
+		c.Writer.Header().Set("Cache-Control", "no-store")
+		c.Writer.Header().Set("X-Accel-Buffering", "no")
+
+		if sendLatest && lastStatus != nil {
+			if err := writeEvent(lastStatus); err != nil {
+				log.WithError(err).Error("Failed to write data")
+				return
+			}
+		}
+
+		eventChannel := subscription.Channel()
+
+	out:
+		for {
+			select {
+			case status := <-eventChannel:
+				if err := writeEvent([]byte(status.Payload)); err != nil {
+					log.WithError(err).Error("Failed to write server-sent event")
+					break out
+				}
+
+			case <-ticker.C:
+				if _, err := c.Writer.WriteString(": uhaha\n"); err != nil {
+					log.WithError(err).Error("Failed to write keep-alive message")
+					break out
+				}
+				c.Writer.Flush()
+
+			case <-c.Request.Context().Done():
+				break out
+			}
 		}
 	}
 }
@@ -1136,7 +1136,9 @@ func (h *Handler) setupApiRoutes(group *gin.RouterGroup) {
 	group.GET("/session-data", h.handleApiSessionData)
 	needsAuth := group.Group("")
 	needsAuth.Use(h.middlewareSessionCheck)
-	needsAuth.GET("/status", h.handleApiStatus)
+	needsAuth.GET("/streaming/events", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.StandardStream), "statuschanged", true))
+	needsAuth.GET("/streaming/error", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.ErrorStream), "trigger", false))
+	needsAuth.GET("/streaming/sysstat", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.SysstatStream), "systemstat", false))
 	needsAuth.GET("/systemstat", h.handleApiSystemStat)
 	needsAuth.POST("/launch", h.handleApiLaunch)
 	needsAuth.POST("/reconfigure", h.handleApiReconfigure)
