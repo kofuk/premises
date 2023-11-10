@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {useTranslation} from 'react-i18next';
@@ -6,6 +6,8 @@ import styled from 'styled-components';
 
 import {Logout as LogoutIcon, Settings as SettingsIcon} from '@mui/icons-material';
 import {IconButton, Toolbar, Tooltip, Typography} from '@mui/material';
+
+import StatusLabel from './status-label';
 
 import {useAuth} from '@/utils/auth';
 
@@ -19,6 +21,12 @@ const RoundedAppBar = styled.div`
   border-radius: 100px;
   box-shadow: 2px 5px 5px rgba(0, 0, 0, 0.3);
   z-index: 1;
+`;
+
+const WideOnly = styled.span`
+  @media screen and (max-width: 900px) {
+    display: none;
+  }
 `;
 
 const NavBar = () => {
@@ -36,13 +44,33 @@ const NavBar = () => {
     })();
   };
 
+  const [message, setMessage] = useState(t('connecting'));
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const eventSource = new EventSource('/api/streaming/events');
+    eventSource.addEventListener('error', () => {
+      setMessage(t('reconnecting'));
+    });
+    eventSource.addEventListener('statuschanged', (ev: MessageEvent) => {
+      const event = JSON.parse(ev.data);
+      setMessage(t(`status.code_${event.eventCode}`));
+      setProgress(event.progress);
+    });
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
+
   return (
     <RoundedAppBar>
       <Toolbar variant="dense">
         <Typography color="inherit" component="div" sx={{flexGrow: 1}} variant="h6">
-          {t('app_name')}
+          <WideOnly>{t('app_name')}</WideOnly>
         </Typography>
 
+        <StatusLabel message={message} progress={progress} />
         <Tooltip title={t('settings')}>
           <IconButton color="inherit" onClick={() => navigate('/settings')} size="large">
             <SettingsIcon />
