@@ -1,23 +1,27 @@
 import React from 'react';
 
-import styled from 'styled-components';
+import {Typography} from '@mui/material';
 
 type Prop = {
   message: string;
   progress: number;
 };
 
-const StatusContainer = styled.div<{progress: number}>`
-  background: ${(props) => 'linear-gradient(90deg, #6aa5eb 0%, #6aa5eb ' + props.progress + '%, #93c0f5 ' + props.progress + '%, #93c0f5 100%)'};
-  color: black;
-  width: 500px;
-  padding: 5px 30px;
-  border-radius: 1000px;
-  border: solid 1px #99c1f0;
-`;
-
 const StatusLabel = ({message, progress}: Prop) => {
-  return <StatusContainer progress={progress}>{message}</StatusContainer>;
+  const sx = {
+    background: `linear-gradient(90deg, #6aa5eb 0%, #6aa5eb ${progress}%, #93c0f5 ${progress}%, #93c0f5 100%)`,
+    color: 'black',
+    width: 500,
+    padding: '5px 30px',
+    borderRadius: 1000,
+    border: 'solid 1px #99c1f0'
+  };
+
+  return (
+    <Typography component="div" sx={sx}>
+      {message}
+    </Typography>
+  );
 };
 
 export default StatusLabel;
