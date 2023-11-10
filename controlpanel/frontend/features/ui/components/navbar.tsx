@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {useNavigate} from 'react-router-dom';
 
 import {useTranslation} from 'react-i18next';
@@ -10,6 +10,7 @@ import {IconButton, Toolbar, Tooltip, Typography} from '@mui/material';
 import StatusLabel from './status-label';
 
 import {useAuth} from '@/utils/auth';
+import {useRunnerStatus} from '@/utils/runner-status';
 
 const RoundedAppBar = styled.div`
   position: sticky;
@@ -44,24 +45,7 @@ const NavBar = () => {
     })();
   };
 
-  const [message, setMessage] = useState(t('connecting'));
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const eventSource = new EventSource('/api/streaming/events');
-    eventSource.addEventListener('error', () => {
-      setMessage(t('reconnecting'));
-    });
-    eventSource.addEventListener('statuschanged', (ev: MessageEvent) => {
-      const event = JSON.parse(ev.data);
-      setMessage(t(`status.code_${event.eventCode}`));
-      setProgress(event.progress);
-    });
-
-    return () => {
-      eventSource.close();
-    };
-  }, []);
+  const {message, progress} = useRunnerStatus();
 
   return (
     <RoundedAppBar>

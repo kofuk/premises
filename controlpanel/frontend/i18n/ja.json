@@ -14,6 +14,7 @@
   "error.code_13": "サーバーの構築中にエラーが発生しました",
   "error.code_14": "サーバーの停止中にエラーが発生しました",
   "error.code_15": "DNS の更新中にエラーが発生しました",
+  "status.code_0": "接続しています…",
   "status.code_1": "サーバーが停止しています",
   "status.code_2": "サーバーを初期化しています…",
   "status.code_3": "Minecraft をダウンロードしています…",
