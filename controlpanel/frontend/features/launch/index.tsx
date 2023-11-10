@@ -5,7 +5,6 @@ import {Helmet} from 'react-helmet-async';
 import {useTranslation} from 'react-i18next';
 
 import LoadingPage from './components/loading-page';
-import StatusBar from './components/statusbar';
 import ServerConfigPane from './server-config-pane';
 import ServerControlPane from './server-control-pane';
 
@@ -21,20 +20,16 @@ const LaunchPage = () => {
   const [t] = useTranslation();
 
   const [useNotification, setUseNotification] = useState(false);
-  const [message, setMessage] = useState(t('connecting'));
-  const [progress, setProgress] = useState(0);
   const [prevStatus, setPrevStatus] = useState('');
   const [page, setPage] = useState(PAGE_LAUNCH);
 
   useEffect(() => {
     const eventSource = new EventSource('/api/streaming/events');
     eventSource.addEventListener('error', () => {
-      setMessage(t('reconnecting'));
+      enqueueSnackbar(t('reconnecting'), {variant: 'error'});
     });
     eventSource.addEventListener('statuschanged', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);
-      setMessage(t(`status.code_${event.eventCode}`));
-      setProgress(event.progress);
       setPage(event.pageCode);
 
       //TODO: temporary implementation
@@ -57,7 +52,7 @@ const LaunchPage = () => {
   useEffect(() => {
     const eventSource = new EventSource('/api/streaming/error');
     eventSource.addEventListener('error', () => {
-      setMessage(t('reconnecting'));
+      enqueueSnackbar(t('reconnecting'), {variant: 'error'});
     });
     eventSource.addEventListener('trigger', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);
@@ -110,7 +105,6 @@ const LaunchPage = () => {
   const mainPane: React.ReactElement = createMainPane(page);
   return (
     <>
-      <StatusBar message={message} progress={progress} />
       {mainPane}
 
       <div className="toast-container position-absolute top-0 end-0 pe-1 pt-5 mt-3">
