@@ -8,7 +8,6 @@ type Prop = {
 };
 
 const StatusContainer = styled.div<{progress: number}>`
-  /*background-color: #93c0f5;*/
   background: ${(props) => 'linear-gradient(90deg, #6aa5eb 0%, #6aa5eb ' + props.progress + '%, #93c0f5 ' + props.progress + '%, #93c0f5 100%)'};
   color: black;
   width: 500px;
