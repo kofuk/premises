@@ -1,5 +1,9 @@
 package runner
 
+import (
+	"github.com/kofuk/premises/common/entity"
+)
+
 type Message struct {
 	Type     string `json:"type"`
 	UserData string `json:"user_data"`
@@ -13,39 +17,36 @@ const (
 	EventInfo    EventType = "info"
 )
 
-type EventCode int
-
 const (
-	EventShutdown      EventCode = iota + 1 // 1
-	EventSysInit                            // 2
-	EventGameDownload                       // 3
-	EventWorldDownload                      // 4
-	EventWorldPrepare                       // 5
-	EventWorldUpload                        // 6
-	EventLoading                            // 7
-	EventRunning                            // 8
-	EventStopping                           // 9
-	EventCrashed                            // 10
-	EventClean                              // 11
+	EventShutdown      entity.EventCode = iota + 1 // 1
+	EventSysInit                                   // 2
+	EventGameDownload                              // 3
+	EventWorldDownload                             // 4
+	EventWorldPrepare                              // 5
+	EventWorldUpload                               // 6
+	EventLoading                                   // 7
+	EventRunning                                   // 8
+	EventStopping                                  // 9
+	EventCrashed                                   // 10
+	EventClean                                     // 11
 )
 
 // Event codes that should be provided UI to retry.
 const (
-	EventGameErr   EventCode = iota + 50 // 50
-	EventWorldErr                        // 51
-	EventLaunchErr                       // 52
+	EventGameErr   entity.EventCode = iota + 50 // 50
+	EventWorldErr                               // 51
+	EventLaunchErr                              // 52
 )
 
-type InfoCode int
-
 const (
-	InfoSnapshotDone  InfoCode = iota + 1 // 1
-	InfoSnapshotError                     // 2
+	InfoSnapshotDone  entity.InfoCode = iota + 1 // 1
+	InfoSnapshotError                            // 2
+	InfoNoSnapshot                            // 3
 )
 
 type StatusExtra struct {
-	EventCode EventCode `json:"eventCode"`
-	Progress  int       `json:"progress"`
+	EventCode entity.EventCode `json:"eventCode"`
+	Progress  int              `json:"progress"`
 }
 
 type SysstatExtra struct {
@@ -53,8 +54,8 @@ type SysstatExtra struct {
 }
 
 type InfoExtra struct {
-	InfoCode  InfoCode `json:"infoCode"`
-	LegacyMsg string   `json:"message"`
+	InfoCode  entity.InfoCode `json:"infoCode"`
+	IsError   bool            `json:"isError"`
 }
 
 type Event struct {

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	entityTypes "github.com/kofuk/premises/common/entity"
 	runnerEntity "github.com/kofuk/premises/common/entity/runner"
 	entity "github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/config"
@@ -40,6 +41,13 @@ func publishSystemStatEvent(redis *redis.Client, status StatusData) error {
 	return nil
 }
 
+func GetPageCodeByEventCode(event entityTypes.EventCode) entity.PageCode {
+	if event == runnerEntity.EventRunning {
+		return entity.PageRunning
+	}
+	return entity.PageLoading
+}
+
 func MonitorServer(strmProvider *streaming.Streaming, cfg *config.Config, addr string, rdb *redis.Client) error {
 	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
 	if err != nil {
@@ -53,6 +61,7 @@ func MonitorServer(strmProvider *streaming.Streaming, cfg *config.Config, addr s
 	}
 
 	stdStream := strmProvider.GetStream(streaming.StandardStream)
+	infoStream := strmProvider.GetStream(streaming.InfoStream)
 	sysstatStream := strmProvider.GetStream(streaming.SysstatStream)
 
 	connLost := false
@@ -125,7 +134,7 @@ out:
 				break conn
 			}
 
-			if event.Type == "status" {
+			if event.Type == runnerEntity.EventStatus {
 				if event.Status == nil {
 					log.WithField("event", event).Error("Invalid event message (has no Status)")
 					continue
@@ -135,19 +144,14 @@ out:
 					break out
 				}
 
-				page := entity.PageLoading
-				if event.Status.EventCode == runnerEntity.EventRunning {
-					page = entity.PageRunning
-				}
-
 				if err := strmProvider.PublishEvent(
 					context.Background(),
 					stdStream,
-					streaming.NewStandardMessageWithProgress(entity.EventCode(event.Status.EventCode), event.Status.Progress, page),
+					streaming.NewStandardMessageWithProgress(event.Status.EventCode, event.Status.Progress, GetPageCodeByEventCode(event.Status.EventCode)),
 				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
-			} else if event.Type == "sysstat" {
+			} else if event.Type == runnerEntity.EventSysstat {
 				if event.Sysstat == nil {
 					log.WithField("event", event).Error("Invalid event message (has no Sysstat)")
 					continue
@@ -157,6 +161,19 @@ out:
 					context.Background(),
 					sysstatStream,
 					streaming.NewSysstatMessage(event.Sysstat.CPUUsage),
+				); err != nil {
+					log.WithError(err).Error("Failed to write status data to Redis channel")
+				}
+			} else if event.Type == runnerEntity.EventInfo {
+				if event.Info == nil {
+					log.WithField("event", event).Error("Invalid event message (has no Info)")
+					continue
+				}
+
+				if err := strmProvider.PublishEvent(
+					context.Background(),
+					infoStream,
+					streaming.NewInfoMessage(event.Info.InfoCode, event.Info.IsError),
 				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
@@ -365,7 +382,7 @@ func QuickUndo(cfg *config.Config, addr string, rdb *redis.Client) error {
 		return err
 	}
 
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusOK {
 		return errors.New("Error processing quick undo")
 	}
 

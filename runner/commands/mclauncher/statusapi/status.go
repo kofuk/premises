@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	entity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/config"
@@ -145,8 +146,8 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 			if err := exterior.SendMessage("serverStatus", entity.Event{
 				Type: entity.EventInfo,
 				Info: &entity.InfoExtra{
-					InfoCode:  entity.InfoSnapshotError,
-					LegacyMsg: "スナップショットを取得できませんでした",
+					InfoCode: entity.InfoSnapshotError,
+					IsError:  true,
 				},
 			}); err != nil {
 				log.WithError(err).Error("Unable to write send message")
@@ -158,8 +159,8 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 		if err := exterior.SendMessage("serverStatus", entity.Event{
 			Type: entity.EventInfo,
 			Info: &entity.InfoExtra{
-				InfoCode:  entity.InfoSnapshotDone,
-				LegacyMsg: "スナップショットを取得しました！",
+				InfoCode: entity.InfoSnapshotDone,
+				IsError:  false,
 			},
 		}); err != nil {
 			log.WithError(err).Error("Unable to write send message")
@@ -169,9 +170,24 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 	})
 
 	http.HandleFunc("/quickundo", func(w http.ResponseWriter, r *http.Request) {
-		go srv.QuickUndo()
+		go func() {
+			if _, err := os.Stat(filepath.Join(ctx.LocateWorldData("ss@quick0/world"))); err != nil {
+				if err := exterior.SendMessage("serverStatus", entity.Event{
+					Type: entity.EventInfo,
+					Info: &entity.InfoExtra{
+						InfoCode: entity.InfoNoSnapshot,
+						IsError:  true,
+					},
+				}); err != nil {
+					log.WithError(err).Error("Unable to write send message")
+				}
+				return
+			}
 
-		w.WriteHeader(http.StatusCreated)
+			if err := srv.QuickUndo(); err != nil {
+				log.WithError(err).Error("Unable to quick-undo")
+			}
+		}()
 	})
 
 	http.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {

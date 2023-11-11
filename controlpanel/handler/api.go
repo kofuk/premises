@@ -276,7 +276,7 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 	}()
 
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
-	errStream := h.Streaming.GetStream(streaming.ErrorStream)
+	infoStream := h.Streaming.GetStream(streaming.InfoStream)
 
 	if err := h.Streaming.PublishEvent(
 		context.Background(),
@@ -301,8 +301,8 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 	if !gameServer.StopVM() {
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
-			errStream,
-			streaming.NewErrorMessage(entity.ErrRunnerStop),
+			infoStream,
+			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
@@ -312,8 +312,8 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 	if !gameServer.SaveImage() {
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
-			errStream,
-			streaming.NewErrorMessage(entity.ErrRunnerStop),
+			infoStream,
+			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
@@ -323,8 +323,8 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 	if !gameServer.DeleteVM() {
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
-			errStream,
-			streaming.NewErrorMessage(entity.ErrRunnerStop),
+			infoStream,
+			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
@@ -360,15 +360,15 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 	}
 
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
-	errStream := h.Streaming.GetStream(streaming.ErrorStream)
+	infoStream := h.Streaming.GetStream(streaming.InfoStream)
 
 	if err := monitor.GenerateTLSKey(h.cfg, rdb); err != nil {
 		log.WithError(err).Error("Failed to generate TLS key")
 
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
-			errStream,
-			streaming.NewErrorMessage(entity.ErrRunnerPrepare),
+			infoStream,
+			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
@@ -390,8 +390,8 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 	if !gameServer.SetUp(gameConfig, rdb, memSizeGB) {
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
-			errStream,
-			streaming.NewErrorMessage(entity.ErrRunnerPrepare),
+			infoStream,
+			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
@@ -407,8 +407,8 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 
 				if err := h.Streaming.PublishEvent(
 					context.Background(),
-					errStream,
-					streaming.NewErrorMessage(entity.ErrDNS),
+					infoStream,
+					streaming.NewInfoMessage(entity.InfoErrDNS, true),
 				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
@@ -418,8 +418,8 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 
 				if err := h.Streaming.PublishEvent(
 					context.Background(),
-					errStream,
-					streaming.NewErrorMessage(entity.ErrDNS),
+					infoStream,
+					streaming.NewInfoMessage(entity.InfoErrDNS, true),
 				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
@@ -430,8 +430,8 @@ func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer Gam
 	if !gameServer.DeleteImage() {
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
-			errStream,
-			streaming.NewErrorMessage(entity.ErrRunnerPrepare),
+			infoStream,
+			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
@@ -720,6 +720,7 @@ func (h *Handler) handleApiQuickUndoUndo(c *gin.Context) {
 	}
 
 	if err := monitor.QuickUndo(h.cfg, h.cfg.ServerAddr, h.redis); err != nil {
+		log.WithError(err).Error("Unable to quick-undo")
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
@@ -1137,7 +1138,7 @@ func (h *Handler) setupApiRoutes(group *gin.RouterGroup) {
 	needsAuth := group.Group("")
 	needsAuth.Use(h.middlewareSessionCheck)
 	needsAuth.GET("/streaming/events", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.StandardStream), "statuschanged", true))
-	needsAuth.GET("/streaming/error", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.ErrorStream), "trigger", false))
+	needsAuth.GET("/streaming/info", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.InfoStream), "notify", false))
 	needsAuth.GET("/streaming/sysstat", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.SysstatStream), "systemstat", false))
 	needsAuth.GET("/systemstat", h.handleApiSystemStat)
 	needsAuth.POST("/launch", h.handleApiLaunch)

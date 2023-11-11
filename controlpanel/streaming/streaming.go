@@ -6,7 +6,8 @@ import (
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
-	entity "github.com/kofuk/premises/common/entity/web"
+	"github.com/kofuk/premises/common/entity"
+	webEntity "github.com/kofuk/premises/common/entity/web"
 )
 
 type Streaming struct {
@@ -28,7 +29,7 @@ type StreamType int
 
 const (
 	StandardStream StreamType = iota
-	ErrorStream
+	InfoStream
 	SysstatStream
 )
 
@@ -44,29 +45,30 @@ func (self Stream) GetChannelID() string {
 
 type Message any
 
-func NewStandardMessage(eventCode entity.EventCode, pageCode entity.PageCode) Message {
-	return &entity.StandardMessage{
+func NewStandardMessage(eventCode entity.EventCode, pageCode webEntity.PageCode) Message {
+	return &webEntity.StandardMessage{
 		EventCode: eventCode,
 		PageCode:  pageCode,
 	}
 }
 
-func NewStandardMessageWithProgress(eventCode entity.EventCode, progress int, pageCode entity.PageCode) Message {
-	return &entity.StandardMessage{
+func NewStandardMessageWithProgress(eventCode entity.EventCode, progress int, pageCode webEntity.PageCode) Message {
+	return &webEntity.StandardMessage{
 		EventCode: eventCode,
 		Progress:  progress,
 		PageCode:  pageCode,
 	}
 }
 
-func NewErrorMessage(eventCode entity.ErrorCode) Message {
-	return &entity.ErrorMessage{
-		ErrorCode: eventCode,
+func NewInfoMessage(infoCode entity.InfoCode, isError bool) Message {
+	return &webEntity.InfoMessage{
+		InfoCode: infoCode,
+		IsError:  isError,
 	}
 }
 
 func NewSysstatMessage(cpuUsage float64) Message {
-	return &entity.SysstatMessage{
+	return &webEntity.SysstatMessage{
 		CPUUsage: cpuUsage,
 	}
 }

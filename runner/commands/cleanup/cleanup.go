@@ -8,7 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	entity "github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/common/entity"
+	runnerEntity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/systemutil"
 	log "github.com/sirupsen/logrus"
@@ -52,9 +53,9 @@ func unmountData() {
 }
 
 func notifyStatus(eventCode entity.EventCode) {
-	if err := exterior.SendMessage("serverStatus", entity.Event{
-		Type: entity.EventStatus,
-		Status: &entity.StatusExtra{
+	if err := exterior.SendMessage("serverStatus", runnerEntity.Event{
+		Type: runnerEntity.EventStatus,
+		Status: &runnerEntity.StatusExtra{
 			EventCode: eventCode,
 		},
 	}); err != nil {
@@ -92,7 +93,7 @@ func copyLogData() {
 }
 
 func CleanUp() {
-	notifyStatus(entity.EventClean)
+	notifyStatus(runnerEntity.EventClean)
 
 	log.Info("Removing config files...")
 	removeFilesIgnoreError(
@@ -112,5 +113,5 @@ func CleanUp() {
 	log.Info("Copying log file if it is dev runner")
 	copyLogData()
 
-	notifyStatus(entity.EventShutdown)
+	notifyStatus(runnerEntity.EventShutdown)
 }

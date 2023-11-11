@@ -1,6 +1,9 @@
 package web
 
-import "github.com/go-webauthn/webauthn/protocol"
+import (
+	"github.com/go-webauthn/webauthn/protocol"
+	"github.com/kofuk/premises/common/entity"
+)
 
 type ErrorCode int
 
@@ -17,9 +20,12 @@ const (
 	ErrPasskeyVerify                         // 10
 	ErrPasskeyDup                            // 11
 	ErrRequiresAuth                          // 12
-	ErrRunnerPrepare                         // 13
-	ErrRunnerStop                            // 14
-	ErrDNS                                   // 15
+)
+
+const (
+	InfoErrRunnerPrepare entity.InfoCode = iota + 100 // 100
+	InfoErrRunnerStop                                 // 101
+	InfoErrDNS                                        // 102
 )
 
 type ErrorResponse struct {
@@ -79,14 +85,12 @@ type CredentialNameAndCreationResponse struct {
 	Ccr  protocol.CredentialCreationResponse `json:"credentialCreationResponse"`
 }
 
-type EventCode int
-
 const (
-	EvStopped      EventCode = iota + 100 // 100
-	EvCreateRunner                        // 101
-	EvWaitConn                            // 102
-	EvConnLost                            // 103
-	EvStopRunner                          // 104
+	EvStopped      entity.EventCode = iota + 100 // 100
+	EvCreateRunner                               // 101
+	EvWaitConn                                   // 102
+	EvConnLost                                   // 103
+	EvStopRunner                                 // 104
 )
 
 type PageCode int
@@ -98,13 +102,14 @@ const (
 )
 
 type StandardMessage struct {
-	EventCode EventCode `json:"eventCode"`
-	Progress  int       `json:"progress"`
-	PageCode  PageCode  `json:"pageCode"`
+	EventCode entity.EventCode `json:"eventCode"`
+	Progress  int              `json:"progress"`
+	PageCode  PageCode         `json:"pageCode"`
 }
 
-type ErrorMessage struct {
-	ErrorCode ErrorCode `json:"errorCode"`
+type InfoMessage struct {
+	InfoCode entity.InfoCode `json:"infoCode"`
+	IsError  bool            `json:"isError"`
 }
 
 type SysstatMessage struct {

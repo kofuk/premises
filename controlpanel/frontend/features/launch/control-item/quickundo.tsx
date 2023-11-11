@@ -35,7 +35,7 @@ const QuickUndo = ({backToMenu}: Prop) => {
       try {
         const result = await fetch('/api/quickundo/undo', {method: 'POST'}).then((resp) => resp.json());
         if (!result['success']) {
-          throw new Error(t(`error.code_${result['reason']}`));
+          throw new Error(t(`error.code_${result['errorCode']}`));
         }
       } catch (err) {
         console.error(err);

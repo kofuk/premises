@@ -28,13 +28,14 @@ const StatusCollector = () => {
   const {enqueueSnackbar} = useSnackbar();
 
   useEffect(() => {
-    const eventSource = new EventSource('/api/streaming/error');
+    const eventSource = new EventSource('/api/streaming/info');
     eventSource.addEventListener('error', () => {
       enqueueSnackbar(t('reconnecting'), {variant: 'error'});
     });
-    eventSource.addEventListener('trigger', (ev: MessageEvent) => {
+    eventSource.addEventListener('notify', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);
-      enqueueSnackbar(t(`error.code_${event.errorCode}`), {variant: 'error'});
+      const variant = event.isError ? 'error' : 'success';
+      enqueueSnackbar(t(`info.code_${event.infoCode}`), {variant});
     });
 
     return () => {
