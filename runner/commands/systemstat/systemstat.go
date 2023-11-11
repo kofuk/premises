@@ -28,6 +28,7 @@ func Run() {
 			Type: entity.EventSysstat,
 			Sysstat: &entity.SysstatExtra{
 				CPUUsage: usage,
+				Time:     time.Now().UnixMilli(),
 			},
 		}
 		if err := exterior.SendMessage("systemStat", data); err != nil {

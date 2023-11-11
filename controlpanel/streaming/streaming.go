@@ -79,9 +79,10 @@ func NewInfoMessage(infoCode entity.InfoCode, isError bool) Message {
 	}
 }
 
-func NewSysstatMessage(cpuUsage float64) Message {
+func NewSysstatMessage(cpuUsage float64, time int64) Message {
 	return &webEntity.SysstatMessage{
 		CPUUsage: cpuUsage,
+		Time:     time,
 	}
 }
 

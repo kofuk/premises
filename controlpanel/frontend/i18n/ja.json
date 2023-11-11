@@ -119,5 +119,6 @@
   "passwordless_login_add": "キーを追加",
   "passwordless_login_error": "パスキーへのアクセスが拒否されたかタイムアウトしました",
   "passwordless_login_no_keys": "パスキーがありません",
-  "passwordless_login_no_keys_message": "パスキーを追加するとここに表示されます"
+  "passwordless_login_no_keys_message": "パスキーを追加するとここに表示されます",
+  "cpu_usage": "CPU 使用率"
 }

@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
-import {Line, LineChart, Tooltip, YAxis} from 'recharts';
+import {Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts';
 
 import {Stop as StopIcon} from '@mui/icons-material';
 
@@ -24,7 +24,7 @@ const ServerControlPane = () => {
   const [mode, setMode] = useState(Modes.MainMenu);
   const [cpuUsage, setCpuUsage] = useState(
     [...Array(100)].map((_) => {
-      return {cpuUsage: 0};
+      return {cpuUsage: 0, time: 0};
     })
   );
 
@@ -32,7 +32,7 @@ const ServerControlPane = () => {
     const eventSource = new EventSource('/api/streaming/sysstat');
     eventSource.addEventListener('systemstat', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);
-      setCpuUsage((current) => [...current.slice(1, 101), event]);
+      setCpuUsage((current) => [event, ...current.slice(0, 100)]);
     });
     return () => {
       eventSource.close();
@@ -115,11 +115,19 @@ const ServerControlPane = () => {
           </div>
         </form>
 
-        <LineChart data={cpuUsage} height={400} width={800}>
-          <YAxis domain={[0, 100]}></YAxis>
-          <Tooltip />
-          <Line dataKey="cpuUsage" dot={false} isAnimationActive={false} stroke="#00f" />
-        </LineChart>
+        <ResponsiveContainer height={450} width={'100%'}>
+          <AreaChart data={cpuUsage} margin={{bottom: 40}}>
+            <XAxis angle={-45} dataKey="time" textAnchor="end" tickFormatter={(time) => (time === 0 ? '' : new Date(time).toLocaleTimeString())} />
+            <YAxis domain={[0, 100]}></YAxis>
+            <Tooltip
+              formatter={(value: number, _name, _props) => [`${Math.floor(value * 10) / 10}%`, t('cpu_usage')]}
+              isAnimationActive={false}
+              labelFormatter={(time) => (time === 0 ? '' : new Date(time).toLocaleTimeString())}
+              wrapperStyle={{opacity: 0.8}}
+            />
+            <Area dataKey="cpuUsage" dot={false} isAnimationActive={false} stroke="#00f" />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
