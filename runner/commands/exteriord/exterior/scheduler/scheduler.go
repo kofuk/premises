@@ -4,31 +4,31 @@ import (
 	"log"
 
 	"github.com/google/uuid"
-	"golang.org/x/exp/slices"
 )
 
-type TaskId string
+type TaskID string
 
 type Task struct {
-	taskId      TaskId
+	taskID      TaskID
 	description string
 	fn          func()
-	deps        []TaskId
+	deps        []TaskID
 	started     bool
 }
 
 type Scheduler struct {
-	tasks map[TaskId]*Task
+	tasks         map[TaskID]*Task
+	competedTasks map[TaskID]struct{}
 }
 
-func (self *Task) Id() TaskId {
-	return self.taskId
+func (self *Task) ID() TaskID {
+	return self.taskID
 }
 
-func NewTask(fn func(), description string, deps ...TaskId) *Task {
-	taskId := TaskId(uuid.New().String())
+func NewTask(fn func(), description string, deps ...TaskID) *Task {
+	taskID := TaskID(uuid.New().String())
 	task := Task{
-		taskId:      taskId,
+		taskID:      taskID,
 		description: description,
 		fn:          fn,
 	}
@@ -42,42 +42,46 @@ func NewTask(fn func(), description string, deps ...TaskId) *Task {
 
 func NewScheduler() *Scheduler {
 	return &Scheduler{
-		tasks: make(map[TaskId]*Task),
+		tasks:         make(map[TaskID]*Task),
+		competedTasks: make(map[TaskID]struct{}),
 	}
 }
 
-func (self *Task) runTask(notifyComplete chan TaskId) {
+func (self *Task) runTask(notifyComplete chan TaskID) {
 	self.fn()
-	notifyComplete <- self.taskId
+	notifyComplete <- self.taskID
 }
 
 func (self *Scheduler) RegisterTasks(tasks ...*Task) {
 	for _, task := range tasks {
-		self.tasks[task.taskId] = task
+		self.tasks[task.taskID] = task
 	}
 }
 
 func (self *Scheduler) Run() {
-	notifyComplete := make(chan TaskId)
+	notifyComplete := make(chan TaskID)
 
 	completedTasks := 0
 
 	for completedTasks != len(self.tasks) {
 		for _, task := range self.tasks {
-			if !task.started && len(task.deps) == 0 {
+			uncompletedDepsCount := 0
+			for _, depID := range task.deps {
+				if _, ok := self.competedTasks[depID]; !ok {
+					uncompletedDepsCount++
+				}
+			}
+
+			if !task.started && uncompletedDepsCount == 0 {
 				log.Println("Starting", task.description)
 				go task.runTask(notifyComplete)
 				task.started = true
 			}
 		}
 
-		taskId := <-notifyComplete
+		taskID := <-notifyComplete
 		completedTasks++
 
-		for _, dep := range self.tasks {
-			dep.deps = slices.DeleteFunc(dep.deps, func(e TaskId) bool {
-				return e == taskId
-			})
-		}
+		self.competedTasks[taskID] = struct{}{}
 	}
 }

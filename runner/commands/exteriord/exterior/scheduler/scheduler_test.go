@@ -22,16 +22,16 @@ func Test_Scheduler_Run(t *testing.T) {
 		num.Add(1)
 		curNum := int(num.Load())
 		assert.True(t, curNum == 2 || curNum == 3)
-	}, "Task 2-1", task1.Id())
+	}, "Task 2-1", task1.ID())
 	task22 := NewTask(func() {
 		num.Add(1)
 		curNum := int(num.Load())
 		assert.True(t, curNum == 2 || curNum == 3)
-	}, "Task 2-2", task1.Id())
+	}, "Task 2-2", task1.ID())
 	task3 := NewTask(func() {
 		num.Add(1)
 		assert.Equal(t, 4, int(num.Load()))
-	}, "Task 3", task21.Id(), task22.Id())
+	}, "Task 3", task21.ID(), task22.ID())
 
 	scheduler := NewScheduler()
 	scheduler.RegisterTasks(task1, task21, task22, task3)
