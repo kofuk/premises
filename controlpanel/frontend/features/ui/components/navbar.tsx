@@ -1,8 +1,8 @@
 import React from 'react';
 import {useNavigate} from 'react-router-dom';
 
+import styled from '@emotion/styled';
 import {useTranslation} from 'react-i18next';
-import styled from 'styled-components';
 
 import {Logout as LogoutIcon, Settings as SettingsIcon} from '@mui/icons-material';
 import {IconButton, Toolbar, Tooltip, Typography} from '@mui/material';
