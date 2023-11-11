@@ -5,7 +5,7 @@ import {Box} from '@mui/material';
 
 import Navbar from './components/navbar';
 
-import {Loading} from '@/components';
+import {Loading, StatusCollector} from '@/components';
 import {useAuth} from '@/utils/auth';
 
 const UI = () => {
@@ -27,6 +27,8 @@ const UI = () => {
             <Outlet />
           </Suspense>
         </Box>
+
+        <StatusCollector />
       </>
     )
   );

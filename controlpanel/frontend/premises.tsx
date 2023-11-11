@@ -4,7 +4,7 @@ import {BrowserRouter as Router} from 'react-router-dom';
 import {SnackbarProvider} from 'notistack';
 import {HelmetProvider} from 'react-helmet-async';
 
-import {Loading, StatusCollector} from './components';
+import {Loading} from './components';
 import AppRoutes from './routes';
 import {AuthProvider} from './utils/auth';
 import {RunnerStatusProvider} from './utils/runner-status';
@@ -17,7 +17,6 @@ const Premises = () => {
       <AuthProvider>
         <SnackbarProvider anchorOrigin={{horizontal: 'right', vertical: 'top'}}>
           <RunnerStatusProvider>
-            <StatusCollector />
             <Router>
               <Suspense fallback={<Loading />}>
                 <AppRoutes />
