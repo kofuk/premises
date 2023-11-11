@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"sync"
 	"time"
 
@@ -269,9 +270,10 @@ func LaunchInteractiveRcon() {
 }
 
 var (
-	serverLoadingRegexp  = regexp.MustCompile("^Starting ([a-z]+\\.)+Main$")
-	serverLoadedRegexp   = regexp.MustCompile("\\]: Done \\([0-9]*\\.[0-9]*s\\)! For help, type \"help\"")
-	serverStoppingRegexp = regexp.MustCompile("\\]: Stopping the server")
+	serverLoadingRegexp         = regexp.MustCompile("^Starting ([a-z]+\\.)+Main$")
+	serverLoadingProgressRegexp = regexp.MustCompile("\\]: Preparing spawn area: ([0-9]+)%")
+	serverLoadedRegexp          = regexp.MustCompile("\\]: Done \\([0-9]*\\.[0-9]*s\\)! For help, type \"help\"")
+	serverStoppingRegexp        = regexp.MustCompile("\\]: Stopping the server")
 )
 
 func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
@@ -292,6 +294,22 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 				Type: entity.EventStatus,
 				Status: &entity.StatusExtra{
 					EventCode: entity.EventLoading,
+				},
+			}); err != nil {
+				log.WithError(err).Error("Unable to write send message")
+			}
+		} else if serverLoadingProgressRegexp.Match(line) {
+			matches := serverLoadingProgressRegexp.FindSubmatch(line)
+			if matches == nil {
+				continue
+			}
+			progress, _ := strconv.Atoi(string(matches[1]))
+			progress %= 101
+			if err := exterior.SendMessage("serverStatus", entity.Event{
+				Type: entity.EventStatus,
+				Status: &entity.StatusExtra{
+					EventCode: entity.EventLoading,
+					Progress:  progress,
 				},
 			}); err != nil {
 				log.WithError(err).Error("Unable to write send message")
