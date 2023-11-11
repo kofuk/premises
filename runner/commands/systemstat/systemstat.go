@@ -15,7 +15,7 @@ func Run() {
 		log.WithError(err).Fatal("Failed to initialize CPU usage")
 	}
 
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(time.Second)
 
 	for range ticker.C {
 		usage, err := cpuStat.Percent()
