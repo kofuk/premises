@@ -188,6 +188,11 @@ out:
 		startTime = time.Now()
 	}
 
+	// The server is about to shutdown, we no longer need sysstat history.
+	if err := strmProvider.ClearHistory(context.Background(), sysstatStream); err != nil {
+		log.WithError(err).Error("Unable to clear sysstat history")
+	}
+
 	return nil
 
 err:

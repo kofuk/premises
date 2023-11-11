@@ -122,3 +122,11 @@ func (self *Streaming) SubscribeEvent(ctx context.Context, stream *Stream) (*red
 
 	return subscription, historyBytes, nil
 }
+
+func (self *Streaming) ClearHistory(ctx context.Context, stream *Stream) error {
+	channelID := stream.GetChannelID()
+	if _, err := self.rdb.Del(ctx, "status-history:"+channelID).Result(); err != nil {
+		return err
+	}
+	return nil
+}
