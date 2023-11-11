@@ -25,12 +25,24 @@ type Stream struct {
 	streamType StreamType
 }
 
-type StreamType int
+type StreamType struct {
+	id           int
+	historyCount int
+}
 
-const (
-	StandardStream StreamType = iota
-	InfoStream
-	SysstatStream
+var (
+	StandardStream = StreamType{
+		id:           1,
+		historyCount: 1,
+	}
+	InfoStream = StreamType{
+		id:           2,
+		historyCount: 0,
+	}
+	SysstatStream = StreamType{
+		id:           3,
+		historyCount: 100,
+	}
 )
 
 func (self *Streaming) GetStream(streamType StreamType) *Stream {
@@ -40,7 +52,7 @@ func (self *Streaming) GetStream(streamType StreamType) *Stream {
 }
 
 func (self Stream) GetChannelID() string {
-	return fmt.Sprintf("%d:%d", self.runnerID, self.streamType)
+	return fmt.Sprintf("%d:%d", self.runnerID, self.streamType.id)
 }
 
 type Message any
@@ -81,7 +93,10 @@ func (self *Streaming) PublishEvent(ctx context.Context, stream *Stream, message
 
 	if _, err := self.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
 		channelID := stream.GetChannelID()
-		p.Set(ctx, "last-status:"+channelID, data, -1)
+		if stream.streamType.historyCount > 0 {
+			p.LPush(ctx, "status-history:"+channelID, data)
+			p.LTrim(ctx, "status-history:"+channelID, 0, int64(stream.streamType.historyCount)-1)
+		}
 		p.Publish(ctx, "status:"+channelID, data)
 		return nil
 	}); err != nil {
@@ -90,14 +105,20 @@ func (self *Streaming) PublishEvent(ctx context.Context, stream *Stream, message
 	return nil
 }
 
-func (self *Streaming) SubscribeEvent(ctx context.Context, stream *Stream) (*redis.PubSub, []byte, error) {
+func (self *Streaming) SubscribeEvent(ctx context.Context, stream *Stream) (*redis.PubSub, [][]byte, error) {
 	channelID := stream.GetChannelID()
-	lastStatus, err := self.rdb.Get(ctx, fmt.Sprintf("last-status:"+channelID)).Result()
-	if err != nil && err != redis.Nil {
+
+	statusHistory, err := self.rdb.LRange(ctx, "status-history:"+channelID, 0, -1).Result()
+	if err != nil {
 		return nil, nil, err
+	}
+
+	historyBytes := make([][]byte, len(statusHistory))
+	for i, entry := range statusHistory {
+		historyBytes[len(historyBytes)-1-i] = []byte(entry)
 	}
 
 	subscription := self.rdb.Subscribe(ctx, "status:"+channelID)
 
-	return subscription, []byte(lastStatus), nil
+	return subscription, historyBytes, nil
 }
