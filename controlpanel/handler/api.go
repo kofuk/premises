@@ -65,7 +65,7 @@ func (h *Handler) handleApiSessionData(c *gin.Context) {
 	})
 }
 
-func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName string, sendLatest bool) func(c *gin.Context) {
+func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName string) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
@@ -86,7 +86,7 @@ func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName st
 			return nil
 		}
 
-		subscription, lastStatus, err := h.Streaming.SubscribeEvent(c.Request.Context(), stream)
+		subscription, statusHistory, err := h.Streaming.SubscribeEvent(c.Request.Context(), stream)
 		if err != nil {
 			log.WithError(err).Error("Failed to connect to stream")
 			c.Status(http.StatusInternalServerError)
@@ -98,8 +98,8 @@ func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName st
 		c.Writer.Header().Set("Cache-Control", "no-store")
 		c.Writer.Header().Set("X-Accel-Buffering", "no")
 
-		if sendLatest && lastStatus != nil {
-			if err := writeEvent(lastStatus); err != nil {
+		for _, entry := range statusHistory {
+			if err := writeEvent(entry); err != nil {
 				log.WithError(err).Error("Failed to write data")
 				return
 			}
@@ -1137,9 +1137,9 @@ func (h *Handler) setupApiRoutes(group *gin.RouterGroup) {
 	group.GET("/session-data", h.handleApiSessionData)
 	needsAuth := group.Group("")
 	needsAuth.Use(h.middlewareSessionCheck)
-	needsAuth.GET("/streaming/events", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.StandardStream), "statuschanged", true))
-	needsAuth.GET("/streaming/info", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.InfoStream), "notify", false))
-	needsAuth.GET("/streaming/sysstat", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.SysstatStream), "systemstat", false))
+	needsAuth.GET("/streaming/events", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.StandardStream), "statuschanged"))
+	needsAuth.GET("/streaming/info", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.InfoStream), "notify"))
+	needsAuth.GET("/streaming/sysstat", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.SysstatStream), "systemstat"))
 	needsAuth.GET("/systemstat", h.handleApiSystemStat)
 	needsAuth.POST("/launch", h.handleApiLaunch)
 	needsAuth.POST("/reconfigure", h.handleApiReconfigure)
