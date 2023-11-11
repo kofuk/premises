@@ -135,10 +135,15 @@ out:
 					break out
 				}
 
+				page := entity.PageLoading
+				if event.Status.EventCode == runnerEntity.EventRunning {
+					page = entity.PageRunning
+				}
+
 				if err := strmProvider.PublishEvent(
 					context.Background(),
 					stdStream,
-					streaming.NewStandardMessageWithProgress(entity.EventCode(event.Status.EventCode), event.Status.Progress, entity.PageRunning),
+					streaming.NewStandardMessageWithProgress(entity.EventCode(event.Status.EventCode), event.Status.Progress, page),
 				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
