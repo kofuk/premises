@@ -3,8 +3,9 @@ package outbound
 import (
 	"crypto/subtle"
 	"crypto/tls"
-	"io"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"time"
 
 	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
@@ -71,21 +72,12 @@ func (self *Server) HandleProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.URL.Scheme = "http"
-	r.URL.Host = "127.0.0.1:9000"
-	r.RequestURI = ""
-
-	resp, err := http.DefaultClient.Do(r)
+	remoteUrl, err := url.Parse("http://127.0.0.1:9000")
 	if err != nil {
-		log.WithError(err).Error("Unable to proxy incoming request")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		log.Fatal(err)
 	}
 
-	w.WriteHeader(resp.StatusCode)
-	io.Copy(w, resp.Body)
-
-	io.ReadAll(resp.Body)
+	httputil.NewSingleHostReverseProxy(remoteUrl).ServeHTTP(w, r)
 }
 
 func (self *Server) Start() error {
