@@ -2,7 +2,6 @@ package exteriord
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,6 +11,7 @@ import (
 	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
 	"github.com/kofuk/premises/runner/commands/exteriord/outbound"
 	"github.com/kofuk/premises/runner/commands/exteriord/proc"
+	log "github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -45,14 +45,14 @@ func Run() {
 	ob := outbound.NewServer("0.0.0.0:8521", authKey, msgRouter)
 	go func() {
 		if err := ob.Start(); err != nil {
-			log.Println("Unable to start outbound server:", err)
+			log.WithError(err).Error("Unable to start outbound server")
 		}
 	}()
 
 	interior := interior.NewServer("127.0.0.1:2000", msgRouter)
 	go func() {
 		if err := interior.Start(); err != nil {
-			log.Println("Unable to start interior server:", err)
+			log.WithError(err).Println("Unable to start interior server")
 		}
 	}()
 

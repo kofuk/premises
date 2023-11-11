@@ -4,11 +4,11 @@ import (
 	"crypto/subtle"
 	"crypto/tls"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
+	log "github.com/sirupsen/logrus"
 )
 
 type Server struct {
@@ -28,7 +28,7 @@ func NewServer(addr string, authKey string, msgRouter *msgrouter.MsgRouter) *Ser
 
 func (self *Server) HandleMonitor(w http.ResponseWriter, r *http.Request) {
 	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Auth-Key")), []byte(self.authKey)) == 0 {
-		log.Println("Connection is closed because it has no valid auth key")
+		log.Error("Connection is closed because it has no valid auth key")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -66,7 +66,7 @@ L:
 
 func (self *Server) HandleProxy(w http.ResponseWriter, r *http.Request) {
 	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Auth-Key")), []byte(self.authKey)) == 0 {
-		log.Println("Connection is closed because it has no valid auth key")
+		log.Error("Connection is closed because it has no valid auth key")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -77,7 +77,7 @@ func (self *Server) HandleProxy(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := http.DefaultClient.Do(r)
 	if err != nil {
-		log.Println("Unable to proxy incoming request:", err)
+		log.WithError(err).Error("Unable to proxy incoming request")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
