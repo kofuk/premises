@@ -1,10 +1,10 @@
 import React from 'react';
 import {Route, Routes} from 'react-router-dom';
 
-const SettingsMenuPage = React.lazy(() => import('../components/settings-menu'));
-const ChangePasswordPage = React.lazy(() => import('../components/change-passowrd'));
-const PasskeysPage = React.lazy(() => import('../components/passkeys'));
-const AddUserPage = React.lazy(() => import('../components/add-user'));
+import AddUserPage from '../components/add-user';
+import ChangePasswordPage from '../components/change-passowrd';
+import PasskeysPage from '../components/passkeys';
+import SettingsMenuPage from '../components/settings-menu';
 
 const SettingsRoutes = () => {
   return (
