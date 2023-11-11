@@ -41,7 +41,7 @@ const (
 const (
 	InfoSnapshotDone  entity.InfoCode = iota + 1 // 1
 	InfoSnapshotError                            // 2
-	InfoNoSnapshot                            // 3
+	InfoNoSnapshot                               // 3
 )
 
 type StatusExtra struct {
@@ -51,11 +51,12 @@ type StatusExtra struct {
 
 type SysstatExtra struct {
 	CPUUsage float64 `json:"cpuUsage"`
+	Time     int64   `json:"time"`
 }
 
 type InfoExtra struct {
-	InfoCode  entity.InfoCode `json:"infoCode"`
-	IsError   bool            `json:"isError"`
+	InfoCode entity.InfoCode `json:"infoCode"`
+	IsError  bool            `json:"isError"`
 }
 
 type Event struct {

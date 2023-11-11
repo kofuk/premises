@@ -160,7 +160,7 @@ out:
 				if err := strmProvider.PublishEvent(
 					context.Background(),
 					sysstatStream,
-					streaming.NewSysstatMessage(event.Sysstat.CPUUsage),
+					streaming.NewSysstatMessage(event.Sysstat.CPUUsage, event.Sysstat.Time),
 				); err != nil {
 					log.WithError(err).Error("Failed to write status data to Redis channel")
 				}
