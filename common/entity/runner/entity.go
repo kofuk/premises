@@ -20,17 +20,18 @@ const (
 )
 
 const (
-	EventShutdown      entity.EventCode = iota + 1 // 1
-	EventSysInit                                   // 2
-	EventGameDownload                              // 3
-	EventWorldDownload                             // 4
-	EventWorldPrepare                              // 5
-	EventWorldUpload                               // 6
-	EventLoading                                   // 7
-	EventRunning                                   // 8
-	EventStopping                                  // 9
-	EventCrashed                                   // 10
-	EventClean                                     // 11
+	NoEvent            entity.EventCode = iota // 0
+	EventShutdown                              // 1
+	EventSysInit                               // 2
+	EventGameDownload                          // 3
+	EventWorldDownload                         // 4
+	EventWorldPrepare                          // 5
+	EventWorldUpload                           // 6
+	EventLoading                               // 7
+	EventRunning                               // 8
+	EventStopping                              // 9
+	EventCrashed                               // 10
+	EventClean                                 // 11
 )
 
 // Event codes that should be provided UI to retry.
