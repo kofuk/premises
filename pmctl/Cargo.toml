@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 bcrypt = "0.15.0"
-clap = { version = "4.4.7", features = ["derive"] }
+clap = { version = "4.4.8", features = ["derive"] }
 postgres = "0.19.7"
