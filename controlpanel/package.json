@@ -31,7 +31,7 @@
     "@mui/lab": "^5.0.0-alpha.148",
     "@mui/material": "^5.14.14",
     "@testing-library/jest-dom": "^6.1.4",
-    "@testing-library/react": "^14.0.0",
+    "@testing-library/react": "^14.1.2",
     "@types/bootstrap": "^5.2.8",
     "@types/jest": "^29.5.8",
     "@types/node-fetch": "^2.6.9",
