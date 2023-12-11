@@ -9,7 +9,7 @@ jobs:
         working-directory: ./runner
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: runner/go.mod
           cache-dependency-path: |
@@ -38,7 +38,7 @@ jobs:
         working-directory: ./runner
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: runner/go.mod
           cache-dependency-path: |
@@ -63,7 +63,7 @@ jobs:
         working-directory: ./common
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: common/go.mod
           cache-dependency-path: |
@@ -117,7 +117,7 @@ jobs:
         working-directory: ./controlpanel
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version-file: controlpanel/go.mod
           cache-dependency-path: |
