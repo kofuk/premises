@@ -204,7 +204,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y tar
       - name: Download runner
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: runner
       - name: Make binaries executable
@@ -242,7 +242,7 @@ jobs:
       packages: write
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: control-panel-image
       - uses: docker/login-action@v3
