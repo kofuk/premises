@@ -23,7 +23,7 @@ jobs:
       - name: Create coverage report
         run: go tool cover -html=coverprofile -o coverage.html
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: runner-coverage
           path: ./runner/coverage.html
@@ -50,7 +50,7 @@ jobs:
       - name: Build
         run: make
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: runner
           path: ./runner/premises-runner
@@ -77,7 +77,7 @@ jobs:
       - name: Create coverage report
         run: go tool cover -html=coverprofile -o coverage.html
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: common-coverage
           path: ./common/coverage.html
@@ -131,7 +131,7 @@ jobs:
       - name: Create coverage report
         run: go tool cover -html=coverprofile -o coverage.html
       - name: Upload coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: controlpanel-coverage
           path: ./controlpanel/coverage.html
@@ -157,7 +157,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: control-panel-image
           path: image.tar
