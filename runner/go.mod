@@ -5,7 +5,7 @@ go 1.21.3
 replace github.com/kofuk/premises/common => ../common/
 
 require (
-	github.com/google/uuid v1.4.0
+	github.com/google/uuid v1.5.0
 	github.com/gorcon/rcon v1.3.4
 	github.com/klauspost/compress v1.17.4
 	github.com/kofuk/go-mega v0.0.0-20220314143053-5929f3eeeac4
