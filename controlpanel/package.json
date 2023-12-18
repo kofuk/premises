@@ -29,7 +29,7 @@
     "@fontsource/roboto": "^5.0.8",
     "@mui/icons-material": "^5.14.19",
     "@mui/lab": "^5.0.0-alpha.148",
-    "@mui/material": "^5.14.14",
+    "@mui/material": "^5.15.0",
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^14.1.2",
     "@types/bootstrap": "^5.2.10",
