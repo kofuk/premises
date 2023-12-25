@@ -5,7 +5,7 @@ go 1.21.3
 replace github.com/kofuk/premises/common => ../common/
 
 require (
-	github.com/cloudflare/cloudflare-go v0.83.0
+	github.com/cloudflare/cloudflare-go v0.84.0
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-contrib/static v0.0.1
 	github.com/gin-gonic/gin v1.9.1
