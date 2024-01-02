@@ -222,13 +222,13 @@ jobs:
       - uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: premises-runner.tar.gz
-          destination: premises-artifacts
+          destination: premises
           parent: false
           process_gcloudignore: false
       - uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: version.txt
-          destination: premises-artifacts
+          destination: premises
           parent: false
           process_gcloudignore: false
 

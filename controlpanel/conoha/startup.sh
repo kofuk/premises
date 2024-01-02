@@ -12,13 +12,13 @@ atomic_copy() {
 do_remote_update() {
     cd '/tmp'
 
-    remote_version="$(curl 'https://storage.googleapis.com/premises-artifacts/version.txt')"
+    remote_version="$(curl 'https://storage.googleapis.com/premises/version.txt')"
 
     current_version="$("${PREMISES_BASEDIR}/bin/premises-runner" --version || true)"
 
     [ "${current_version}" = "${remote_version}" ] && exit 0
 
-    curl 'https://storage.googleapis.com/premises-artifacts/premises-runner.tar.gz' | tar -xz
+    curl 'https://storage.googleapis.com/premises/premises-runner.tar.gz' | tar -xz
     atomic_copy 'premises-runner' "${PREMISES_BASEDIR}/bin/premises-runner"
 }
 
