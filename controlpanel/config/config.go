@@ -1,9 +1,5 @@
 package config
 
-import (
-	"github.com/kofuk/premises/controlpanel/backup"
-)
-
 type Config struct {
 	Debug struct {
 		Web bool `env:"web"`
@@ -24,7 +20,14 @@ type Config struct {
 		ZoneID         string `env:"zoneId"`
 		GameDomainName string `env:"gameDomain"`
 	} `env:"cloudflare"`
-	Mega backup.MegaCredentialInfo `env:"mega"`
+	S3 struct {
+		Endpoint string `env:"endpoint"`
+		Bucket   string `env:"bucket"`
+	} `env:"s3"`
+	AWS struct {
+		AccessKey string `env:"accessKey"`
+		SecretKey string `env:"secretKey"`
+	} `env:"aws"`
 	Game struct {
 		Motd      string   `env:"motd"`
 		Operators []string `env:"operators"`

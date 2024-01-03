@@ -29,7 +29,15 @@ type GameConfig struct {
 	Motd      string   `json:"motd"`
 	Operators []string `json:"operators"`
 	Whitelist []string `json:"whitelist"`
-	Mega      struct {
+	AWS       struct {
+		AccessKey string
+		SecretKey string
+	} `json:"aws"`
+	S3 struct {
+		Endpoint string `json:"endpoint"`
+		Bucket   string `json:"bucket"`
+	} `json:"s3"`
+	Mega struct {
 		Email      string `json:"email"`
 		Password   string `json:"password"`
 		FolderName string `json:"folderName"`
