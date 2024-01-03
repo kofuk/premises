@@ -77,9 +77,12 @@ const ChooseBackup = ({
         <select className="form-select" id="backupGenerationSelect" onChange={(e) => handleChangeGeneration(e.target.value)} value={backupGeneration}>
           {worldData.generations.map((e) => {
             const dateTime = new Date(e.timestamp);
+            const label = e.gen.match(/[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+/)
+              ? dateTime.toLocaleString()
+              : `${e.gen} (${dateTime.toLocaleString()})`;
             return (
               <option key={e.gen} value={e.id}>
-                {`${e.gen} (${dateTime.toLocaleString()})`}
+                {label}
               </option>
             );
           })}
