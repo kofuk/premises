@@ -79,7 +79,7 @@ const ChooseBackup = ({
             const dateTime = new Date(e.timestamp);
             return (
               <option key={e.gen} value={e.id}>
-                {(e.gen == 'latest' ? 'Latest' : `${e.gen} gen ago`) + ` (${dateTime.toLocaleString()})`}
+                {`${e.gen} (${dateTime.toLocaleString()})`}
               </option>
             );
           })}

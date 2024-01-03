@@ -104,7 +104,7 @@ func (self *BackupProvider) GetWorlds(ctx context.Context) ([]entity.WorldBackup
 
 	for _, world := range worlds {
 		sort.Slice(world.Generations, func(i, j int) bool {
-			return world.Generations[i].Timestamp < world.Generations[j].Timestamp
+			return world.Generations[i].Timestamp > world.Generations[j].Timestamp
 		})
 	}
 
