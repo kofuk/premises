@@ -11,3 +11,15 @@ services:
       - POSTGRES_USER=premises
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=premises
+  minio:
+    image: 'quay.io/minio/minio'
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      - MINIO_ACCESS_KEY=premises
+      - MINIO_SECRET_KEY=password
+    entrypoint: /bin/bash
+    command:
+      - '-c'
+      - 'mkdir -p /data/premises && minio server /data --console-address :9001'
