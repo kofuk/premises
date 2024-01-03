@@ -10,7 +10,7 @@ Premises consists of the following 2 parts:
 ## Features
 
 - Launch Minecraft server from Web.
-- Save world data on Mega and select world to load.
+- Save world data on S3 and select world to load.
 - Monitor server status in real time.
 - Monitor CPU usage of server in real time.
 - Instantly take snapshot of running world and restore it.
