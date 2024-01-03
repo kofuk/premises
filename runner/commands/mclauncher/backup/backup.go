@@ -1,18 +1,23 @@
 package backup
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/klauspost/compress/zstd"
-	"github.com/kofuk/go-mega"
 	entity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/config"
 	"github.com/kofuk/premises/runner/exterior"
@@ -24,61 +29,144 @@ const (
 	preserveHistoryCount = 5
 )
 
-func makeBackupName(archiveVersion int) string {
-	verStr := "latest"
-	if archiveVersion != 0 {
-		verStr = strconv.Itoa(archiveVersion)
-	}
-	return fmt.Sprintf("%s.tar.zst", verStr)
+type BackupProvider struct {
+	s3Client *s3.Client
+	bucket   string
 }
 
-func makeBackupGanerationName(ver int) string {
-	if ver == 0 {
-		return "latest"
-	} else {
-		return strconv.Itoa(ver)
+func New(awsAccessKey, awsSecretKey, s3Endpoint, bucket string) *BackupProvider {
+	if strings.HasPrefix(s3Endpoint, "http://localhost:") {
+		// When S3 endpoint is localhost, it should be a development environment on Docker.
+		// We implicitly rewrite the address so that we can access S3 host.
+		s3Endpoint = strings.Replace(s3Endpoint, "http://localhost", "http://host.docker.internal", 1)
+	}
+	config := aws.Config{
+		Credentials:  credentials.NewStaticCredentialsProvider(awsAccessKey, awsSecretKey, ""),
+		BaseEndpoint: &s3Endpoint,
+	}
+
+	s3Client := s3.NewFromConfig(config, func(options *s3.Options) {
+		options.UsePathStyle = true
+	})
+
+	return &BackupProvider{
+		s3Client: s3Client,
+		bucket:   bucket,
 	}
 }
 
-func makeSureCloudFolderExists(m *mega.Mega, parent *mega.Node, name string) (*mega.Node, error) {
-	children, err := m.FS.GetChildren(parent)
+func makeBackupName() string {
+	return fmt.Sprintf("%s.tar.zst", time.Now().Format(time.DateTime))
+}
+
+func (self *BackupProvider) DownloadWorldData(ctx *config.PMCMContext) error {
+	log.Info("Downloading world archive...")
+	resp, err := self.s3Client.GetObject(context.Background(), &s3.GetObjectInput{
+		Bucket: &self.bucket,
+		Key:    &ctx.Cfg.World.GenerationId,
+	})
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("Unable to download %s: %w", ctx.Cfg.World.GenerationId, err)
 	}
-	for _, folder := range children {
-		if folder.GetName() == name {
-			return folder, nil
+	defer resp.Body.Close()
+
+	progress := make(chan int)
+	defer close(progress)
+	go func() {
+		ticker := time.NewTicker(time.Second)
+		showNext := true
+		var total int64
+		for {
+			select {
+			case <-ticker.C:
+				showNext = true
+			case chunkSize, ok := <-progress:
+				if !ok {
+					return
+				}
+
+				total += int64(chunkSize)
+
+				if showNext {
+					percentage := total * 100 / *resp.ContentLength
+					if err := exterior.SendMessage("serverStatus", entity.Event{
+						Type: entity.EventStatus,
+						Status: &entity.StatusExtra{
+							EventCode: entity.EventWorldDownload,
+							Progress:  int(percentage),
+						},
+					}); err != nil {
+						log.Error(err)
+					}
+
+					showNext = false
+				}
+			}
 		}
-	}
-	result, err := m.CreateDir(name, parent)
+	}()
+
+	ext := getFileExtension(ctx.Cfg.World.GenerationId)
+	file, err := os.Create(ctx.LocateDataFile("world" + ext))
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return result, nil
+	defer file.Close()
+
+	_, err = io.Copy(&ProgressWriter{
+		writer: file,
+		notify: progress,
+	}, resp.Body)
+	if err != nil {
+		return err
+	}
+	log.Info("Downloading world archive...Done")
+
+	return nil
 }
 
-func getNodeByName(nodes []*mega.Node, name string) *mega.Node {
-	for _, node := range nodes {
-		if node.GetName() == name {
-			return node
-		}
+func (self *BackupProvider) UploadWorldData(ctx *config.PMCMContext, options UploadOptions) error {
+	if options.SourceDir == "" {
+		options.SourceDir = ctx.LocateWorldData("")
+	}
+	if options.TmpFileName == "" {
+		options.TmpFileName = "world.tar.zst"
+	}
+
+	return self.doUploadWorldData(ctx, &options)
+}
+
+func SaveLastWorldHash(ctx *config.PMCMContext, hash string) error {
+	file, err := os.Create(ctx.LocateDataFile("last_world"))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	if _, err := file.WriteString(hash); err != nil {
+		return err
 	}
 	return nil
 }
 
-func getNodeByBackupGeneration(nodes []*mega.Node, gen int) *mega.Node {
-	genName := makeBackupGanerationName(gen)
-	zstName := genName + ".tar.zst"
-	xzName := genName + ".tar.xz"
-	zipName := genName + ".zip"
-
-	for _, node := range nodes {
-		name := node.GetName()
-		if name == zstName || name == xzName || name == zipName {
-			return node
-		}
+func RemoveLastWorldHash(ctx *config.PMCMContext) error {
+	if err := os.Remove(ctx.LocateDataFile("last_world")); err != nil {
+		return err
 	}
 	return nil
+}
+
+func GetLastWorldHash(ctx *config.PMCMContext) (string, bool, error) {
+	file, err := os.Open(ctx.LocateDataFile("last_world"))
+	if err != nil && os.IsNotExist(err) {
+		return "", false, nil
+	} else if err != nil {
+		return "", false, err
+	}
+	defer file.Close()
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return "", false, err
+	}
+	return string(data), true, nil
 }
 
 func getFileExtension(name string) string {
@@ -89,100 +177,12 @@ func getFileExtension(name string) string {
 	return name[index:]
 }
 
-func getNodeByHash(nodes []*mega.Node, hash string) *mega.Node {
-	for _, node := range nodes {
-		if node.GetHash() == hash {
-			return node
-		}
-	}
-	return nil
-}
-
-func rotateWorldArchives(ctx *config.PMCMContext, m *mega.Mega, parent *mega.Node) error {
-	nodes, err := m.FS.GetChildren(parent)
-	if err != nil {
-		return err
-	}
-
-	// Find the first empty slot.
-	emptySlot := -1
-	for i := 0; i < preserveHistoryCount; i++ {
-		if getNodeByBackupGeneration(nodes, i) == nil {
-			emptySlot = i
-			break
-		}
-	}
-
-	if emptySlot == -1 {
-		if oldest := getNodeByBackupGeneration(nodes, preserveHistoryCount); oldest != nil {
-			if err := m.Delete(oldest, true); err != nil {
-				return err
-			}
-		}
-		emptySlot = preserveHistoryCount
-	}
-
-	for i := emptySlot - 1; i >= 0; i-- {
-		if targetNode := getNodeByBackupGeneration(nodes, i); targetNode != nil {
-			newName := makeBackupGanerationName(i + 1)
-			ext := getFileExtension(targetNode.GetName())
-			if err := m.Rename(targetNode, newName+ext); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func getCloudWorldFolder(ctx *config.PMCMContext, m *mega.Mega, name string) (*mega.Node, error) {
-	dataRoot, err := makeSureCloudFolderExists(m, m.FS.GetRoot(), "premises")
-	if err != nil {
-		return nil, err
-	}
-
-	worldsFolder, err := makeSureCloudFolderExists(m, dataRoot, ctx.Cfg.Mega.FolderName)
-	if err != nil {
-		return nil, err
-	}
-	worldFolder, err := makeSureCloudFolderExists(m, worldsFolder, name)
-	if err != nil {
-		return nil, err
-	}
-	return worldFolder, nil
-}
-
 type UploadOptions struct {
 	TmpFileName string
 	SourceDir   string
 }
 
-func doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
-	if ctx.Cfg.Mega.Email == "" {
-		log.Error("Cannot sync world archive because Mega credential is not set.")
-		return nil
-	}
-
-	m := mega.New()
-	if err := m.Login(ctx.Cfg.Mega.Email, ctx.Cfg.Mega.Password); err != nil {
-		return err
-	}
-	defer func() {
-		if err := m.Logout(); err != nil {
-			log.WithError(err).Warn("Failed to logout from Mega")
-		}
-	}()
-
-	worldsFolder, err := getCloudWorldFolder(ctx, m, ctx.Cfg.World.Name)
-	if err != nil {
-		return err
-	}
-
-	log.Info("Rotating world archives...")
-	if err := rotateWorldArchives(ctx, m, worldsFolder); err != nil {
-		return err
-	}
-	log.Info("Rotating world archives...Done")
-
+func (self *BackupProvider) doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
 	archivePath := ctx.LocateDataFile(options.TmpFileName)
 	fileInfo, err := os.Stat(archivePath)
 	if err != nil {
@@ -191,6 +191,7 @@ func doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
 
 	size := fileInfo.Size()
 	progress := make(chan int)
+	defer close(progress)
 
 	go func() {
 		ticker := time.NewTicker(time.Second)
@@ -230,9 +231,27 @@ func doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
 	}()
 
 	log.Info("Uploading world archive...")
-	node, err := m.UploadFile(archivePath, worldsFolder, makeBackupName(0), &progress)
+	file, err := os.Open(archivePath)
 	if err != nil {
 		return err
+	}
+
+	if _, err := file.Seek(0, 0); err != nil {
+		return err
+	}
+
+	key := fmt.Sprintf("%s/%s", ctx.Cfg.World.Name, makeBackupName())
+	_, err = self.s3Client.PutObject(context.Background(), &s3.PutObjectInput{
+		Bucket: &self.bucket,
+		Key:    &key,
+		Body: &ProgressReader{
+			reader: file,
+			notify: progress,
+		},
+		ContentLength: aws.Int64(fileInfo.Size()),
+	}, s3.WithAPIOptions(v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware))
+	if err != nil {
+		return fmt.Errorf("Unable to upload %s: %w", key, err)
 	}
 	log.Info("Uploading world archive...Done")
 
@@ -240,135 +259,41 @@ func doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
 		return err
 	}
 
-	if err := SaveLastWorldHash(ctx, node.GetHash()); err != nil {
+	if err := SaveLastWorldHash(ctx, key); err != nil {
 		log.WithError(err).Warn("Error saving last world hash")
 	}
 
 	return nil
 }
 
-func UploadWorldData(ctx *config.PMCMContext, options UploadOptions) error {
-	if options.SourceDir == "" {
-		options.SourceDir = ctx.LocateWorldData("")
-	}
-	if options.TmpFileName == "" {
-		options.TmpFileName = "world.tar.zst"
-	}
-
-	return doUploadWorldData(ctx, &options)
-}
-
-func SaveLastWorldHash(ctx *config.PMCMContext, hash string) error {
-	file, err := os.Create(ctx.LocateDataFile("last_world"))
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	if _, err := file.WriteString(hash); err != nil {
-		return err
-	}
-	return nil
-}
-
-func RemoveLastWorldHash(ctx *config.PMCMContext) error {
-	if err := os.Remove(ctx.LocateDataFile("last_world")); err != nil {
-		return err
-	}
-	return nil
-}
-
-func GetLastWorldHash(ctx *config.PMCMContext) (string, bool, error) {
-	file, err := os.Open(ctx.LocateDataFile("last_world"))
-	if err != nil && os.IsNotExist(err) {
-		return "", false, nil
-	} else if err != nil {
-		return "", false, err
-	}
-	defer file.Close()
-	data, err := io.ReadAll(file)
-	if err != nil {
-		return "", false, err
-	}
-	return string(data), true, nil
-}
-
-func DownloadWorldData(ctx *config.PMCMContext) error {
-	if ctx.Cfg.Mega.Email == "" {
-		log.Error("Cannot sync world archive because Mega credential is not set.")
-		return nil
-	}
-
-	m := mega.New()
-	if err := m.Login(ctx.Cfg.Mega.Email, ctx.Cfg.Mega.Password); err != nil {
-		return err
-	}
-	defer func() {
-		if err := m.Logout(); err != nil {
-			log.WithError(err).Warn("Failed to logout from Mega")
-		}
-	}()
-
-	worldFolder, err := getCloudWorldFolder(ctx, m, ctx.Cfg.World.Name)
-	if err != nil {
-		return err
-	}
-	nodes, err := m.FS.GetChildren(worldFolder)
+func (self *BackupProvider) RemoveOldBackups(ctx *config.PMCMContext) error {
+	resp, err := self.s3Client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{
+		Bucket: &self.bucket,
+		Prefix: aws.String(fmt.Sprintf("%s/", ctx.Cfg.World.Name)),
+	})
 	if err != nil {
 		return err
 	}
 
-	archive := getNodeByHash(nodes, ctx.Cfg.World.GenerationId)
-	if archive == nil {
-		log.WithField("gen_id", ctx.Cfg.World.GenerationId).Error("Can't find specified world archive; will start as-is.")
-		return nil
+	objs := resp.Contents
+	sort.Slice(objs, func(i, j int) bool {
+		return objs[i].LastModified.Unix() > objs[j].LastModified.Unix()
+	})
+
+	var objectIds []types.ObjectIdentifier
+	for _, obj := range objs[5:] {
+		objectIds = append(objectIds, types.ObjectIdentifier{
+			Key: obj.Key,
+		})
 	}
-
-	size := archive.GetSize()
-	progress := make(chan int)
-
-	go func() {
-		ticker := time.NewTicker(time.Second)
-		showNext := true
-		var prevPercentage int64
-		var totalUploaded int64
-		for {
-			select {
-			case <-ticker.C:
-				showNext = true
-			case chunkSize, ok := <-progress:
-				if !ok {
-					return
-				}
-
-				totalUploaded += int64(chunkSize)
-
-				if showNext {
-					percentage := totalUploaded * 100 / size
-					if percentage != prevPercentage {
-						if err := exterior.SendMessage("serverStatus", entity.Event{
-							Type: entity.EventStatus,
-							Status: &entity.StatusExtra{
-								EventCode: entity.EventWorldDownload,
-								Progress:  int(percentage),
-							},
-						}); err != nil {
-							log.Error(err)
-						}
-					}
-					prevPercentage = percentage
-
-					showNext = false
-				}
-			}
-		}
-	}()
-
-	log.Info("Downloading world archive...")
-	ext := getFileExtension(archive.GetName())
-	if err := m.DownloadFile(archive, ctx.LocateDataFile("world"+ext), &progress); err != nil {
+	if _, err := self.s3Client.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{
+		Bucket: &self.bucket,
+		Delete: &types.Delete{
+			Objects: objectIds,
+		},
+	}); err != nil {
 		return err
 	}
-	log.Info("Downloading world archive...Done")
 
 	return nil
 }

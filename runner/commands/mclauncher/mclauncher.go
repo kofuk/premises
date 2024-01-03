@@ -60,7 +60,7 @@ func downloadWorldIfNeeded(ctx *config.PMCMContext) error {
 		}); err != nil {
 			log.WithError(err).Error("Unable to write send message")
 		}
-		if err := backup.DownloadWorldData(ctx); err != nil {
+		if err := backup.New(ctx.Cfg.AWS.AccessKey, ctx.Cfg.AWS.SecretKey, ctx.Cfg.S3.Endpoint, ctx.Cfg.S3.Bucket).DownloadWorldData(ctx); err != nil {
 			return err
 		}
 		return nil
@@ -242,7 +242,7 @@ func Run() {
 	}); err != nil {
 		log.WithError(err).Error("Unable to write send message")
 	}
-	if err := backup.UploadWorldData(ctx, backup.UploadOptions{}); err != nil {
+	if err := backup.New(ctx.Cfg.AWS.AccessKey, ctx.Cfg.AWS.SecretKey, ctx.Cfg.S3.Endpoint, ctx.Cfg.S3.Bucket).UploadWorldData(ctx, backup.UploadOptions{}); err != nil {
 		log.WithError(err).Error("Failed to upload world data")
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
@@ -254,6 +254,9 @@ func Run() {
 			log.WithError(err).Error("Unable to write send message")
 		}
 		goto out
+	}
+	if err := backup.New(ctx.Cfg.AWS.AccessKey, ctx.Cfg.AWS.SecretKey, ctx.Cfg.S3.Endpoint, ctx.Cfg.S3.Bucket).RemoveOldBackups(ctx); err != nil {
+		log.WithError(err).Error("Unable to delete outdated backups")
 	}
 
 out:
