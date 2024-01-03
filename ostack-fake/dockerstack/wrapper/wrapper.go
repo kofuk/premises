@@ -93,7 +93,10 @@ func createContainer(ctx context.Context, docker *docker.Client, imageID, nameTa
 				},
 			},
 		},
-		CapAdd:     strslice.StrSlice{"MKNOD"},
+		CapAdd: strslice.StrSlice{"MKNOD"},
+		ExtraHosts: []string{
+			"host.docker.internal:host-gateway",
+		},
 		Privileged: true,
 	}
 
@@ -211,7 +214,7 @@ func CreateImage(ctx context.Context, docker *docker.Client, serverId, imageName
 	imageId := uuid.New().String()
 
 	buildResp, err := docker.ImageBuild(ctx, buildContext, types.ImageBuildOptions{
-		Tags: []string{fmt.Sprintf("premises.kofuk.org/dev-runner:%s", serverId)},
+		Tags:           []string{fmt.Sprintf("premises.kofuk.org/dev-runner:%s", serverId)},
 		SuppressOutput: true,
 		Remove:         true,
 		Dockerfile:     "Dockerfile",
