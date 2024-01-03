@@ -37,11 +37,6 @@ type GameConfig struct {
 		Endpoint string `json:"endpoint"`
 		Bucket   string `json:"bucket"`
 	} `json:"s3"`
-	Mega struct {
-		Email      string `json:"email"`
-		Password   string `json:"password"`
-		FolderName string `json:"folderName"`
-	} `json:"mega"`
 }
 
 func New() *GameConfig {
@@ -153,15 +148,6 @@ func (gc *GameConfig) SetWhitelist(wlist []string) {
 	}
 }
 
-func (gc *GameConfig) SetMegaCredential(email, password string) {
-	gc.Mega.Email = email
-	gc.Mega.Password = password
-}
-
 func (gc *GameConfig) SetLocale(locale string) {
 	gc.Locale = locale
-}
-
-func (gc *GameConfig) SetFolderName(name string) {
-	gc.Mega.FolderName = name
 }
