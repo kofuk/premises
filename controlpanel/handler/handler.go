@@ -19,6 +19,7 @@ import (
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
 	entity "github.com/kofuk/premises/common/entity/web"
+	"github.com/kofuk/premises/controlpanel/backup"
 	"github.com/kofuk/premises/controlpanel/caching"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/dns"
@@ -49,6 +50,7 @@ type Handler struct {
 	Cacher        caching.Cacher
 	MCVersions    mcversions.MCVersionProvider
 	Streaming     *streaming.Streaming
+	backup        *backup.BackupProvider
 }
 
 func createDatabaseClient(cfg *config.Config) (*gorm.DB, error) {
@@ -98,6 +100,8 @@ func prepareDependencies(cfg *config.Config, h *Handler) error {
 	h.webauthn = wauthn
 
 	h.serverImpl = NewConohaServer(h.cfg, h)
+
+	h.backup = backup.New(h.cfg.AWS.AccessKey, h.cfg.AWS.SecretKey, h.cfg.S3.Endpoint, h.cfg.S3.Bucket)
 
 	return nil
 }

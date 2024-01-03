@@ -21,7 +21,6 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	"github.com/google/uuid"
 	entity "github.com/kofuk/premises/common/entity/web"
-	"github.com/kofuk/premises/controlpanel/backup"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
@@ -234,9 +233,11 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Value
 
 	result.SetOperators(cfg.Game.Operators)
 	result.SetWhitelist(cfg.Game.Whitelist)
-	result.SetMegaCredential(cfg.Mega.Email, cfg.Mega.Password)
+	result.AWS.AccessKey = cfg.AWS.AccessKey
+	result.AWS.SecretKey = cfg.AWS.SecretKey
+	result.S3.Endpoint = cfg.S3.Endpoint
+	result.S3.Bucket = cfg.S3.Bucket
 	result.SetMotd(cfg.Game.Motd)
-	result.SetFolderName(cfg.Mega.FolderName)
 
 	return result, nil
 }
@@ -590,7 +591,7 @@ func (h *Handler) handleApiBackups(c *gin.Context) {
 
 	log.WithField("cache_key", CacheKeyBackups).Info("cache miss")
 
-	backups, err := backup.GetBackupList(&h.cfg.Mega, h.cfg.Mega.FolderName)
+	backups, err := h.backup.GetWorlds(c.Request.Context())
 	if err != nil {
 		log.WithError(err).Error("Failed to retrieve backup list")
 		c.JSON(http.StatusOK, entity.ErrorResponse{
