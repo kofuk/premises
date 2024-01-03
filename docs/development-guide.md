@@ -5,10 +5,6 @@
 Since I develop Premises on Linux computer, support for Mac OS and Windows and so on is not tested (or is not implemented).
 If you are a Mac Os or Windows user, and want to run Premises locally, I strongly recommend to use Linux VM or WSL.
 
-Currently, we can't run storage component (saving game data on Mega) locally.
-In other words, components other than storage are working locally.
-(We have a plan to replace storage from Mega to another. After that, storage component should work locally.)
-
 1. Launch PostgreSQL and Redis using Docker Compose in /dev directory.
 ```shell
 $ docker compose up -d
