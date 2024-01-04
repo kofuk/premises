@@ -1,0 +1,22 @@
+{
+    "latest": {
+        "release": "1.20.1",
+        "snapshot": "1.20.1-rc1"
+    },
+    "versions": [
+        {
+            "id": "1.20.1",
+            "type": "release",
+            "url": "https://storage.googleapis.com/premises/devtools/mcserver-fake/1.20.1.json",
+            "time": "2023-01-04T04:31:20+00:00",
+            "releaseTime": "2022-12-30T10:35:10+00:00"
+        },
+        {
+            "id": "1.20.1-rc1",
+            "type": "snapshot",
+            "url": "https://storage.googleapis.com/premises/devtools/mcserver-fake/1.20.1-rc1.json",
+            "time": "2023-01-04T04:31:20+00:00",
+            "releaseTime": "2022-12-20T05:35:10+00:00"
+        }
+    ]
+}

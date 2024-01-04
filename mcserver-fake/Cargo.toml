@@ -1,5 +1,5 @@
 [package]
-name = "mcserver-mock"
+name = "mcserver-fake"
 version = "0.1.0"
 edition = "2021"
 

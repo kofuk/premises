@@ -1,0 +1,36 @@
+name: Build mcserver-fake
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'mcserver-fake/**'
+
+jobs:
+  build-mcserver-fake:
+    runs-on: ubuntu-latest
+    container:
+      image: rust:alpine
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build mcserver-fake
+        run: |
+          cd mcserver-fake
+          cargo build --release
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+      - name: Publish mcserver-fake
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: target/release/mcserver-fake
+          destination: premises/devtools/mcserver-fake
+          parent: false
+          process_gcloudignore: false
+      - name: Publish metadata
+        uses: google-github-actions/upload-cloud-storage@v2
+        with:
+          path: mcserver-fake/resources/
+          destination: premises/devtools/mcserver-fake
+          parent: false
+          process_gcloudignore: false
