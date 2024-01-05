@@ -47,7 +47,7 @@ func New(awsAccessKey, awsSecretKey, s3Endpoint, bucket string) *BackupProvider 
 		Credentials:  credentials.NewStaticCredentialsProvider(awsAccessKey, awsSecretKey, ""),
 		BaseEndpoint: &s3Endpoint,
 		Logger: logging.LoggerFunc(func(classification logging.Classification, format string, v ...interface{}) {
-			log.WithField("source", "aws-sdk").Info(v...)
+			log.WithField("source", "aws-sdk").Debug(v...)
 		}),
 		ClientLogMode: aws.LogRequestWithBody | aws.LogResponseWithBody,
 	}

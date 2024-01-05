@@ -18,6 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go/logging"
 	"github.com/klauspost/compress/zstd"
 	entity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/config"
@@ -64,6 +65,10 @@ func New(awsAccessKey, awsSecretKey, s3Endpoint, bucket string) *BackupProvider 
 	config := aws.Config{
 		Credentials:  credentials.NewStaticCredentialsProvider(awsAccessKey, awsSecretKey, ""),
 		BaseEndpoint: &s3Endpoint,
+		Logger: logging.LoggerFunc(func(classification logging.Classification, format string, v ...interface{}) {
+			log.WithField("source", "aws-sdk").Debug(v...)
+		}),
+		ClientLogMode: aws.LogRequestWithBody | aws.LogResponseWithBody,
 	}
 
 	s3Client := s3.NewFromConfig(config, func(options *s3.Options) {
