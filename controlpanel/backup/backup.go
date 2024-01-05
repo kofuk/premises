@@ -3,14 +3,18 @@ package backup
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	v4Signer "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/smithy-go/logging"
 	entity "github.com/kofuk/premises/common/entity/web"
+	log "github.com/sirupsen/logrus"
 )
 
 type BackupProvider struct {
@@ -18,14 +22,44 @@ type BackupProvider struct {
 	bucket   string
 }
 
+type noAcceptEncodingSigner struct {
+	signer s3.HTTPSignerV4
+}
+
+func newNoAcceptEncodingSigner(signer s3.HTTPSignerV4) *noAcceptEncodingSigner {
+	return &noAcceptEncodingSigner{
+		signer: signer,
+	}
+}
+
+func (self *noAcceptEncodingSigner) SignHTTP(ctx context.Context, credentials aws.Credentials, r *http.Request, payloadHash string, service string, region string, signingTime time.Time, optFns ...func(*v4Signer.SignerOptions)) error {
+	acceptEncoding := r.Header.Get("Accept-Encoding")
+	r.Header.Del("Accept-Encoding")
+	err := self.signer.SignHTTP(ctx, credentials, r, payloadHash, service, region, signingTime, optFns...)
+	if acceptEncoding != "" {
+		r.Header.Set("Accept-Encoding", acceptEncoding)
+	}
+	return err
+}
+
 func New(awsAccessKey, awsSecretKey, s3Endpoint, bucket string) *BackupProvider {
 	config := aws.Config{
 		Credentials:  credentials.NewStaticCredentialsProvider(awsAccessKey, awsSecretKey, ""),
 		BaseEndpoint: &s3Endpoint,
+		Logger: logging.LoggerFunc(func(classification logging.Classification, format string, v ...interface{}) {
+			log.WithField("source", "aws-sdk").Info(v...)
+		}),
+		ClientLogMode: aws.LogRequestWithBody | aws.LogResponseWithBody,
 	}
 
 	s3Client := s3.NewFromConfig(config, func(options *s3.Options) {
 		options.UsePathStyle = true
+		defSigner := v4Signer.NewSigner(func(so *v4Signer.SignerOptions) {
+			so.Logger = options.Logger
+			so.LogSigning = options.ClientLogMode.IsSigning()
+			so.DisableURIPathEscaping = true
+		})
+		options.HTTPSignerV4 = newNoAcceptEncodingSigner(defSigner)
 	})
 
 	return &BackupProvider{

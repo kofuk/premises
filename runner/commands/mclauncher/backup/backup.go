@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,7 +14,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	v4Signer "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
@@ -34,6 +35,26 @@ type BackupProvider struct {
 	bucket   string
 }
 
+type noAcceptEncodingSigner struct {
+	signer s3.HTTPSignerV4
+}
+
+func newNoAcceptEncodingSigner(signer s3.HTTPSignerV4) *noAcceptEncodingSigner {
+	return &noAcceptEncodingSigner{
+		signer: signer,
+	}
+}
+
+func (self *noAcceptEncodingSigner) SignHTTP(ctx context.Context, credentials aws.Credentials, r *http.Request, payloadHash string, service string, region string, signingTime time.Time, optFns ...func(*v4Signer.SignerOptions)) error {
+	acceptEncoding := r.Header.Get("Accept-Encoding")
+	r.Header.Del("Accept-Encoding")
+	err := self.signer.SignHTTP(ctx, credentials, r, payloadHash, service, region, signingTime, optFns...)
+	if acceptEncoding != "" {
+		r.Header.Set("Accept-Encoding", acceptEncoding)
+	}
+	return err
+}
+
 func New(awsAccessKey, awsSecretKey, s3Endpoint, bucket string) *BackupProvider {
 	if strings.HasPrefix(s3Endpoint, "http://localhost:") {
 		// When S3 endpoint is localhost, it should be a development environment on Docker.
@@ -47,6 +68,12 @@ func New(awsAccessKey, awsSecretKey, s3Endpoint, bucket string) *BackupProvider 
 
 	s3Client := s3.NewFromConfig(config, func(options *s3.Options) {
 		options.UsePathStyle = true
+		defSigner := v4Signer.NewSigner(func(so *v4Signer.SignerOptions) {
+			so.Logger = options.Logger
+			so.LogSigning = options.ClientLogMode.IsSigning()
+			so.DisableURIPathEscaping = true
+		})
+		options.HTTPSignerV4 = newNoAcceptEncodingSigner(defSigner)
 	})
 
 	return &BackupProvider{
@@ -249,7 +276,7 @@ func (self *BackupProvider) doUploadWorldData(ctx *config.PMCMContext, options *
 			notify: progress,
 		},
 		ContentLength: aws.Int64(fileInfo.Size()),
-	}, s3.WithAPIOptions(v4.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware))
+	}, s3.WithAPIOptions(v4Signer.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware))
 	if err != nil {
 		return fmt.Errorf("Unable to upload %s: %w", key, err)
 	}
@@ -276,6 +303,11 @@ func (self *BackupProvider) RemoveOldBackups(ctx *config.PMCMContext) error {
 	}
 
 	objs := resp.Contents
+	if len(objs) <= 5 {
+		// We don't need to delete old backups. Exiting...
+		return nil
+	}
+
 	sort.Slice(objs, func(i, j int) bool {
 		return objs[i].LastModified.Unix() > objs[j].LastModified.Unix()
 	})
