@@ -1,8 +1,7 @@
-import React, {ReactNode, useContext, useEffect, useState} from 'react';
+import React, {ReactNode, useContext} from 'react';
 
-import {login as apiLogin, getPasskeysLoginOptions, loginPasskeys as loginPasskeysApi, useSessionData} from '@/api';
+import {login as apiLogin, useSessionData} from '@/api';
 import {Loading} from '@/components';
-import {decodeBuffer, encodeBuffer} from '@/utils/base64url';
 
 export enum LoginResult {
   LoggedIn,
@@ -13,7 +12,6 @@ type AuthContextType = {
   loggedIn: boolean;
   userName: string | null;
   login: (userName: string, password: string) => Promise<LoginResult>;
-  loginPasskeys: () => Promise<void>;
   logout: () => Promise<void>;
   initializePassword: (username: string, newPassword: string) => Promise<void>;
 };
@@ -38,32 +36,6 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
     mutate();
 
     return LoginResult.LoggedIn;
-  };
-
-  const loginPasskeys = async (): Promise<void> => {
-    const options = await getPasskeysLoginOptions();
-
-    options.publicKey!.challenge = decodeBuffer(options.publicKey!.challenge as unknown as string);
-    options.publicKey!.allowCredentials = [];
-    options.mediation = 'conditional';
-
-    const publicKeyCred = (await navigator.credentials.get(options)) as PublicKeyCredential;
-    const rawId = publicKeyCred.rawId;
-    const {authenticatorData, clientDataJSON, signature, userHandle} = publicKeyCred.response as AuthenticatorAssertionResponse;
-
-    await loginPasskeysApi({
-      id: publicKeyCred.id,
-      rawId: encodeBuffer(rawId),
-      type: publicKeyCred.type,
-      response: {
-        authenticatorData: encodeBuffer(authenticatorData),
-        clientDataJSON: encodeBuffer(clientDataJSON),
-        signature: encodeBuffer(signature),
-        userHandle: encodeBuffer(userHandle ?? new ArrayBuffer(0))
-      }
-    });
-
-    mutate();
   };
 
   const logout = async () => {
@@ -98,7 +70,6 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
     loggedIn: !!session && session.loggedIn,
     userName: (session && session.userName) || null,
     login,
-    loginPasskeys,
     logout,
     initializePassword
   };
@@ -108,27 +79,4 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
 
 export const useAuth = () => {
   return useContext(AuthContext);
-};
-
-const passkeysSupported = async (): Promise<boolean> => {
-  try {
-    const supported = (
-      await Promise.all([PublicKeyCredential.isConditionalMediationAvailable(), PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()])
-    ).every((v) => v);
-
-    return supported;
-  } catch (_) {
-    return false;
-  }
-};
-
-export const usePasskeysSupported = (): boolean => {
-  const [supported, setSupported] = useState(false);
-  useEffect(() => {
-    (async () => {
-      setSupported(await passkeysSupported());
-    })();
-  }, []);
-
-  return supported;
 };

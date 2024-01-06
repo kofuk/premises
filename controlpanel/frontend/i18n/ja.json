@@ -8,9 +8,7 @@
   "error.code_7": "設定が正しくないため、処理できません",
   "error.code_8": "パスワードは 8 文字以上でアルファベットと数字を含む必要があります",
   "error.code_9": "同じ名前のユーザーが既に存在します",
-  "error.code_10": "パスキーを確認できません",
-  "error.code_11": "同じキーが既に登録されています",
-  "error.code_12": "ログインが必要です",
+  "error.code_10": "ログインが必要です",
   "status.code_0": "接続しています…",
   "status.code_1": "サーバーが停止しています",
   "status.code_2": "サーバーを初期化しています…",
@@ -113,12 +111,5 @@
   "add_user_submit": "追加",
   "set_password_title": "パスワードを設定",
   "set_password_submit": "パスワードを設定",
-  "passwordless_login": "パスキー",
-  "passwordless_login_description": "パスキーを使ってコントロールパネルにパスワードなしでログインできます。",
-  "passwordless_login_existing_keys": "既存のパスキー",
-  "passwordless_login_add": "キーを追加",
-  "passwordless_login_error": "パスキーへのアクセスが拒否されたかタイムアウトしました",
-  "passwordless_login_no_keys": "パスキーがありません",
-  "passwordless_login_no_keys_message": "パスキーを追加するとここに表示されます",
   "cpu_usage": "CPU 使用率"
 }

@@ -8,9 +8,7 @@
   "error.code_7": "Invalid configuration",
   "error.code_8": "Password must be alphanumeric and equal to or longer than 8 characters",
   "error.code_9": "A user with the same name exists",
-  "error.code_10": "Error verifying Passkey",
-  "error.code_11": "The key has already been registered",
-  "error.code_12": "Authentication required",
+  "error.code_10": "Authentication required",
   "status.code_0": "Connecting…",
   "status.code_1": "Server is stopped",
   "status.code_2": "Initializing server…",
@@ -113,12 +111,5 @@
   "add_user_submit": "Add",
   "set_password_title": "Set Password",
   "set_password_submit": "Set password",
-  "passwordless_login": "Passkeys",
-  "passwordless_login_description": "You can login to Control Panel without password, using Passkeys.",
-  "passwordless_login_existing_keys": "Existing passkeys",
-  "passwordless_login_add": "Add Key",
-  "passwordless_login_error": "Operation was disallowed or timed out",
-  "passwordless_login_no_keys": "No Passkeys",
-  "passwordless_login_no_keys_message": "Passkeys will be listed here when you add one",
   "cpu_usage": "CPU Usage"
 }

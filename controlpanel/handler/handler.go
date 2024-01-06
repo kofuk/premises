@@ -16,8 +16,6 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"github.com/go-webauthn/webauthn/protocol"
-	"github.com/go-webauthn/webauthn/webauthn"
 	entity "github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/backup"
 	"github.com/kofuk/premises/controlpanel/caching"
@@ -42,7 +40,6 @@ type Handler struct {
 	engine        *gin.Engine
 	db            *gorm.DB
 	redis         *redis.Client
-	webauthn      *webauthn.WebAuthn
 	serverState   serverState
 	serverImpl    GameServer
 	serverMutex   sync.Mutex
@@ -60,7 +57,6 @@ func createDatabaseClient(cfg *config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 	db.AutoMigrate(&model.User{})
-	db.AutoMigrate(&model.Credential{})
 
 	return db, nil
 }
@@ -81,23 +77,6 @@ func prepareDependencies(cfg *config.Config, h *Handler) error {
 	h.db = db
 
 	h.redis = createRedisClient(cfg)
-
-	origin, err := url.Parse(h.cfg.ControlPanel.Origin)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to parse origin URL")
-	}
-	wauthn, err := webauthn.New(&webauthn.Config{
-		RPDisplayName: "Premises",
-		RPID:          origin.Hostname(),
-		RPOrigin:      h.cfg.ControlPanel.Origin,
-		AuthenticatorSelection: protocol.AuthenticatorSelection{
-			UserVerification: protocol.VerificationPreferred,
-		},
-	})
-	if err != nil {
-		return err
-	}
-	h.webauthn = wauthn
 
 	h.serverImpl = NewConohaServer(h.cfg, h)
 
@@ -143,7 +122,6 @@ func setupRoutes(h *Handler) {
 	}
 
 	h.setupRootRoutes(h.engine.Group(""))
-	h.setupWebauthnLoginRoutes(h.engine.Group("/login/hardwarekey"))
 	h.setupApiRoutes(h.engine.Group("/api"))
 }
 

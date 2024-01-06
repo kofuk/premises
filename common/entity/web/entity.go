@@ -1,7 +1,6 @@
 package web
 
 import (
-	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/kofuk/premises/common/entity"
 )
 
@@ -17,9 +16,7 @@ const (
 	ErrInvalidConfig                         // 7
 	ErrPasswordRule                          // 8
 	ErrDupUserName                           // 9
-	ErrPasskeyVerify                         // 10
-	ErrPasskeyDup                            // 11
-	ErrRequiresAuth                          // 12
+	ErrRequiresAuth                          // 10
 )
 
 const (
@@ -70,19 +67,9 @@ type WorldBackup struct {
 	Generations []BackupGeneration `json:"generations"`
 }
 
-type Passkey struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
 type UpdatePassword struct {
 	Password    string `json:"password"`
 	NewPassword string `json:"newPassword"`
-}
-
-type CredentialNameAndCreationResponse struct {
-	Name string                              `json:"name"`
-	Ccr  protocol.CredentialCreationResponse `json:"credentialCreationResponse"`
 }
 
 const (

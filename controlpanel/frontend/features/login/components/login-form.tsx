@@ -4,25 +4,10 @@ import {useSnackbar} from 'notistack';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 
-import KeyIcon from '@mui/icons-material/Key';
 import {LoadingButton} from '@mui/lab';
-import {
-  Box,
-  Button,
-  ButtonGroup,
-  Card,
-  CardContent,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Stack,
-  TextField,
-  Tooltip,
-  Typography
-} from '@mui/material';
+import {Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography} from '@mui/material';
 
-import {LoginResult, useAuth, usePasskeysSupported} from '@/utils/auth';
+import {LoginResult, useAuth} from '@/utils/auth';
 
 const LoginForm = () => {
   const [t] = useTranslation();
@@ -33,7 +18,7 @@ const LoginForm = () => {
   const [loggingIn, setLoggingIn] = useState(false);
   const [openResetPasswordDialog, setOpenResetPasswordDialog] = useState(false);
 
-  const {login, loginPasskeys, initializePassword} = useAuth();
+  const {login, initializePassword} = useAuth();
 
   const {enqueueSnackbar} = useSnackbar();
 
@@ -53,19 +38,6 @@ const LoginForm = () => {
       }
     })();
   };
-
-  const handlePasskeys = async () => {
-    try {
-      await loginPasskeys();
-      setLoggingIn(false);
-    } catch (err: any) {
-      console.error(err);
-      setLoggingIn(false);
-      enqueueSnackbar(err.message, {variant: 'error'});
-    }
-  };
-
-  const passkeysSupported = usePasskeysSupported();
 
   const handleChangePassword = ({password}: any) => {
     (async () => {
@@ -97,18 +69,9 @@ const LoginForm = () => {
                 {...loginForm.register('password')}
               />
               <Stack direction="row" justifyContent="end" sx={{mt: 1}}>
-                <ButtonGroup aria-label="outlined primary button group" disabled={loggingIn} variant="contained">
-                  {passkeysSupported && (
-                    <Tooltip title="Use Passkey">
-                      <Button aria-label="security key" onClick={handlePasskeys} size="small" type="button">
-                        <KeyIcon />
-                      </Button>
-                    </Tooltip>
-                  )}
-                  <LoadingButton loading={loggingIn} type="submit" variant="contained">
-                    {t('login')}
-                  </LoadingButton>
-                </ButtonGroup>
+                <LoadingButton loading={loggingIn} type="submit" variant="contained">
+                  {t('login')}
+                </LoadingButton>
               </Stack>
             </Stack>
           </form>

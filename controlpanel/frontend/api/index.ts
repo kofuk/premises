@@ -2,17 +2,7 @@ import {t} from 'i18next';
 import useSWR, {KeyedMutator} from 'swr';
 import useSWRImmutable from 'swr/immutable';
 
-import {
-  CredentialAssertionResponse,
-  CredentialNameAndCreationResponse,
-  MCVersion,
-  Passkey,
-  PasswordCredential,
-  SessionData,
-  SessionState,
-  UpdatePassword,
-  WorldBackup
-} from './entities';
+import {MCVersion, PasswordCredential, SessionData, SessionState, UpdatePassword, WorldBackup} from './entities';
 
 const domain = process.env.NODE_ENV === 'test' ? 'http://localhost' : '';
 
@@ -44,12 +34,7 @@ export const login = declareApi<PasswordCredential, SessionState>('/login', 'pos
 export const getSessionData = declareApi<null, SessionData>('/api/session-data');
 export const getBackups = declareApi<null, WorldBackup[]>('/api/backups');
 export const getMCVersions = declareApi<null, MCVersion[]>('/api/mcversions');
-export const getPasskeys = declareApi<null, Passkey[]>('/api/hardwarekey');
 export const changePassword = declareApi<UpdatePassword, null>('/api/users/change-password', 'post');
-export const getPasskeysRegistrationOptions = declareApi<null, CredentialCreationOptions>('/api/hardwarekey/begin', 'post');
-export const registerPasskeys = declareApi<CredentialNameAndCreationResponse, null>('/api/hardwarekey/finish', 'post');
-export const getPasskeysLoginOptions = declareApi<null, CredentialRequestOptions>('/login/hardwarekey/begin', 'post');
-export const loginPasskeys = declareApi<CredentialAssertionResponse, null>('/login/hardwarekey/finish', 'post');
 export const addUser = declareApi<PasswordCredential, null>('/api/users/add', 'post');
 
 export type ImmutableUseResponse<T> = {
@@ -88,33 +73,5 @@ export const useMCVersions = (): ImmutableUseResponse<MCVersion[]> => {
     data,
     error,
     isLoading
-  };
-};
-
-export type UsePasskeysResponse = MutableUseResponse<Passkey[]> & {
-  deleteKey: (id: string) => void;
-};
-
-export const usePasskeys = (): UsePasskeysResponse => {
-  const {data, error, isLoading, mutate} = useSWR('/api/hardwarekey', () => getPasskeys());
-
-  const deleteKey = (id: string) => {
-    mutate(
-      async (): Promise<undefined> => {
-        api<null, null>(`/api/hardwarekey/${id}`, 'delete');
-      },
-      {
-        optimisticData: data && data.filter((key) => key.id != id),
-        populateCache: false
-      }
-    );
-  };
-
-  return {
-    data,
-    error,
-    isLoading,
-    mutate,
-    deleteKey
   };
 };
