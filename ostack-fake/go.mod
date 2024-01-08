@@ -4,7 +4,7 @@ go 1.21.1
 
 require (
 	github.com/docker/docker v24.0.7+incompatible
-	github.com/docker/go-connections v0.4.0
+	github.com/docker/go-connections v0.5.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/google/uuid v1.5.0
 )
