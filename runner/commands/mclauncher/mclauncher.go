@@ -47,7 +47,7 @@ func downloadWorldIfNeeded(ctx *config.PMCMContext) error {
 		return err
 	}
 
-	if !ctx.Cfg.World.UseCache || !exists || ctx.Cfg.World.GenerationId != lastWorldHash {
+	if !exists || ctx.Cfg.World.GenerationId != lastWorldHash {
 		if err := backup.RemoveLastWorldHash(ctx); err != nil {
 			log.WithError(err).Error("Failed to remove last world hash")
 		}

@@ -14,7 +14,6 @@ type GameConfig struct {
 		Seed           string `json:"seed"`
 		LevelType      string `json:"levelType"`
 		Difficulty     string `json:"difficulty"`
-		UseCache       bool   `json:"useCache"`
 	} `json:"world"`
 	Motd      string   `json:"motd"`
 	Operators []string `json:"operators"`

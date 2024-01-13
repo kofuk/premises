@@ -97,10 +97,6 @@ func (c *Config) SetDifficulty(difficulty string) error {
 	return nil
 }
 
-func (c *Config) UseCache(useCache bool) {
-	c.C.World.UseCache = useCache
-}
-
 func addToSlice[T comparable](to []T, elm T) []T {
 	for _, v := range to {
 		if v == elm {

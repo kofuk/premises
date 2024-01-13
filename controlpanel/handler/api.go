@@ -218,7 +218,6 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Value
 		if err := result.SetWorld(values.Get("world-name"), values.Get("backup-generation")); err != nil {
 			return nil, err
 		}
-		result.UseCache(values.Get("use-cache") == "true")
 	} else {
 		if !values.Has("world-name") {
 			return nil, errors.New("World name is not set")

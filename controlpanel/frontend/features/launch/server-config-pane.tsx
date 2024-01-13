@@ -19,7 +19,6 @@ const ServerConfigPane = () => {
   const [worldSource, setWorldSource] = useState(WorldLocation.Backups);
   const [worldName, setWorldName] = useState('');
   const [backupGeneration, setBackupGeneration] = useState('');
-  const [useCachedWorld, setUseCachedWorld] = useState(true);
   const [seed, setSeed] = useState('');
   const [levelType, setLevelType] = useState(LevelType.Default);
   const [currentStep, setCurrentStep] = useState(0);
@@ -33,7 +32,6 @@ const ServerConfigPane = () => {
       if (worldSource === WorldLocation.Backups) {
         data.append('world-name', worldName);
         data.append('backup-generation', backupGeneration);
-        data.append('use-cache', useCachedWorld.toString());
       } else {
         data.append('world-name', worldName);
         data.append('seed', seed);
@@ -131,10 +129,8 @@ const ServerConfigPane = () => {
           nextStep={handleNextStep}
           requestFocus={() => handleRequestFocus(stepIndex)}
           setBackupGeneration={setBackupGeneration}
-          setUseCachedWorld={setUseCachedWorld}
           setWorldName={setWorldName}
           stepNum={stepIndex + 1}
-          useCachedWorld={useCachedWorld}
           worldName={worldName}
         />
       );

@@ -12,10 +12,8 @@ import {Loading} from '@/components';
 type Props = ItemProp & {
   worldName: string;
   backupGeneration: string;
-  useCachedWorld: boolean;
   setWorldName: (val: string) => void;
   setBackupGeneration: (val: string) => void;
-  setUseCachedWorld: (val: boolean) => void;
 };
 
 const ChooseBackup = ({
@@ -27,8 +25,6 @@ const ChooseBackup = ({
   backupGeneration,
   setWorldName,
   setBackupGeneration,
-  useCachedWorld,
-  setUseCachedWorld
 }: Props) => {
   const [t] = useTranslation();
 
@@ -104,18 +100,6 @@ const ChooseBackup = ({
       <>
         {worlds}
         {generations}
-        <div className="m-2 form-check form-switch">
-          <input
-            checked={useCachedWorld}
-            className="form-check-input"
-            id="useCachedWorld"
-            onChange={(e) => setUseCachedWorld(e.target.checked)}
-            type="checkbox"
-          />
-          <label className="form-check-label" htmlFor="useCachedWorld">
-            {t('use_cached_world')}
-          </label>
-        </div>
       </>
     );
   };
