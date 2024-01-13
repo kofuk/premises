@@ -44,13 +44,13 @@ func Test_calculateMemSizeForGame(t *testing.T) {
 	}{
 		{
 			name:          "too small",
-			size:          1023,
+			size:          2047,
 			shouldBeError: true,
 		},
 		{
 			name:         "standard",
-			size:         1024,
-			expectedSize: 512,
+			size:         2048,
+			expectedSize: 1024,
 		},
 	}
 	for _, tt := range testcases {

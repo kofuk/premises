@@ -32,10 +32,10 @@ var (
 )
 
 func calculateMemSizeForGame(availableSizeMiB int) (int, error) {
-	if availableSizeMiB < 1024 {
+	if availableSizeMiB < 2048 {
 		return 0, MemoryTooSmall
 	}
-	return availableSizeMiB - 512, nil
+	return availableSizeMiB - 1024, nil
 }
 
 func (c *Config) SetAllocFromAvailableMemSize(memSizeMiB int) error {
