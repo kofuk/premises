@@ -112,5 +112,6 @@
   "add_user_submit": "Add",
   "set_password_title": "Set Password",
   "set_password_submit": "Set password",
-  "cpu_usage": "CPU Usage"
+  "cpu_usage": "CPU Usage",
+  "use_latest_backup": "Use latest backup"
 }

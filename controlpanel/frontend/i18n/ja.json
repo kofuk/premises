@@ -112,5 +112,6 @@
   "add_user_submit": "追加",
   "set_password_title": "パスワードを設定",
   "set_password_submit": "パスワードを設定",
-  "cpu_usage": "CPU 使用率"
+  "cpu_usage": "CPU 使用率",
+  "use_latest_backup": "最新のバックアップを使う"
 }

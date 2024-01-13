@@ -3,6 +3,8 @@ import React, {useEffect} from 'react';
 import {useSnackbar} from 'notistack';
 import {useTranslation} from 'react-i18next';
 
+import {FormControlLabel, Switch} from '@mui/material';
+
 import ConfigContainer from './config-container';
 import {ItemProp} from './prop';
 
@@ -16,16 +18,7 @@ type Props = ItemProp & {
   setBackupGeneration: (val: string) => void;
 };
 
-const ChooseBackup = ({
-  isFocused,
-  nextStep,
-  requestFocus,
-  stepNum,
-  worldName,
-  backupGeneration,
-  setWorldName,
-  setBackupGeneration,
-}: Props) => {
+const ChooseBackup = ({isFocused, nextStep, requestFocus, stepNum, worldName, backupGeneration, setWorldName, setBackupGeneration}: Props) => {
   const [t] = useTranslation();
 
   const {enqueueSnackbar} = useSnackbar();
@@ -35,7 +28,6 @@ const ChooseBackup = ({
     if (backups && backups.length > 0) {
       if (worldName === '') {
         setWorldName(backups[0].worldName);
-        setBackupGeneration(backups[0].generations[0].id);
       }
     }
   }, [backups]);
@@ -51,7 +43,6 @@ const ChooseBackup = ({
     const generations = backups?.find((e) => e.worldName === worldName)!.generations;
     if (generations) {
       setWorldName(worldName);
-      setBackupGeneration(generations[0].id);
     }
   };
 
@@ -99,7 +90,16 @@ const ChooseBackup = ({
     return (
       <>
         {worlds}
-        {generations}
+        <FormControlLabel
+          control={
+            <Switch
+              checked={backupGeneration === '@/latest'}
+              onChange={(e) => handleChangeGeneration(e.target.checked ? '@/latest' : worldData!.generations[0].id)}
+            />
+          }
+          label={t('use_latest_backup')}
+        />
+        {backupGeneration !== '@/latest' && generations}
       </>
     );
   };

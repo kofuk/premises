@@ -2,6 +2,7 @@ package backup
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -109,6 +110,22 @@ func (self *BackupService) DownloadWorldData(ctx *config.PMCMContext) error {
 	log.Info("Downloading world archive...Done")
 
 	return nil
+}
+
+func (self *BackupService) GetLatestKey(world string) (string, error) {
+	objs, err := self.s3.ListObjects(context.Background(), self.bucket, s3wrap.WithPrefix(world+"/"))
+	if err != nil {
+		return "", err
+	}
+	if len(objs) == 0 {
+		return "", errors.New("No backup found for world")
+	}
+
+	sort.Slice(objs, func(i, j int) bool {
+		return objs[i].Timestamp.Unix() > objs[j].Timestamp.Unix()
+	})
+
+	return objs[0].Key, nil
 }
 
 func (self *BackupService) UploadWorldData(ctx *config.PMCMContext, options UploadOptions) error {

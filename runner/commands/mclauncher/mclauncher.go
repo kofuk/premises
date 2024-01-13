@@ -42,6 +42,16 @@ func downloadWorldIfNeeded(ctx *config.PMCMContext) error {
 		return nil
 	}
 
+	backupService := backup.New(ctx.Cfg.AWS.AccessKey, ctx.Cfg.AWS.SecretKey, ctx.Cfg.S3.Endpoint, ctx.Cfg.S3.Bucket)
+
+	if ctx.Cfg.World.GenerationId == "@/latest" {
+		genId, err := backupService.GetLatestKey(ctx.Cfg.World.Name)
+		if err != nil {
+			return err
+		}
+		ctx.Cfg.World.GenerationId = genId
+	}
+
 	lastWorldHash, exists, err := backup.GetLastWorldHash(ctx)
 	if err != nil {
 		return err
@@ -60,7 +70,8 @@ func downloadWorldIfNeeded(ctx *config.PMCMContext) error {
 		}); err != nil {
 			log.WithError(err).Error("Unable to write send message")
 		}
-		if err := backup.New(ctx.Cfg.AWS.AccessKey, ctx.Cfg.AWS.SecretKey, ctx.Cfg.S3.Endpoint, ctx.Cfg.S3.Bucket).DownloadWorldData(ctx); err != nil {
+
+		if err := backupService.DownloadWorldData(ctx); err != nil {
 			return err
 		}
 		return nil

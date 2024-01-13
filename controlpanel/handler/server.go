@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
-	"github.com/kofuk/premises/common/entity/runner"
 	log "github.com/sirupsen/logrus"
 )
 

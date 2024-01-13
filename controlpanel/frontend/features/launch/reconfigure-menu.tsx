@@ -20,7 +20,7 @@ const ReconfigureMenu = ({backToMenu}: Prop) => {
   const [serverVersion, setServerVersion] = useState('');
   const [worldSource, setWorldSource] = useState(WorldLocation.Backups);
   const [worldName, setWorldName] = useState('');
-  const [backupGeneration, setBackupGeneration] = useState('');
+  const [backupGeneration, setBackupGeneration] = useState('@/latest');
   const [seed, setSeed] = useState('');
   const [levelType, setLevelType] = useState(LevelType.Default);
   const [currentStep, setCurrentStep] = useState(0);
