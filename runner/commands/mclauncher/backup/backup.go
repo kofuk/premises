@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,14 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	v4Signer "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/aws/smithy-go/logging"
 	"github.com/klauspost/compress/zstd"
 	entity "github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/common/s3wrap"
 	"github.com/kofuk/premises/runner/commands/mclauncher/config"
 	"github.com/kofuk/premises/runner/exterior"
 	log "github.com/sirupsen/logrus"
@@ -31,59 +25,23 @@ const (
 	preserveHistoryCount = 5
 )
 
-type BackupProvider struct {
-	s3Client *s3.Client
-	bucket   string
+type BackupService struct {
+	s3     *s3wrap.Client
+	bucket string
 }
 
-type noAcceptEncodingSigner struct {
-	signer s3.HTTPSignerV4
-}
-
-func newNoAcceptEncodingSigner(signer s3.HTTPSignerV4) *noAcceptEncodingSigner {
-	return &noAcceptEncodingSigner{
-		signer: signer,
-	}
-}
-
-func (self *noAcceptEncodingSigner) SignHTTP(ctx context.Context, credentials aws.Credentials, r *http.Request, payloadHash string, service string, region string, signingTime time.Time, optFns ...func(*v4Signer.SignerOptions)) error {
-	acceptEncoding := r.Header.Get("Accept-Encoding")
-	r.Header.Del("Accept-Encoding")
-	err := self.signer.SignHTTP(ctx, credentials, r, payloadHash, service, region, signingTime, optFns...)
-	if acceptEncoding != "" {
-		r.Header.Set("Accept-Encoding", acceptEncoding)
-	}
-	return err
-}
-
-func New(awsAccessKey, awsSecretKey, s3Endpoint, bucket string) *BackupProvider {
-	if strings.HasPrefix(s3Endpoint, "http://localhost:") {
+func New(awsAccessKey, awsSecretKey, s3Endpoint, bucket string) *BackupService {
+	if strings.HasPrefix(s3Endpoint, "http://s3.premises.local:") {
 		// When S3 endpoint is localhost, it should be a development environment on Docker.
 		// We implicitly rewrite the address so that we can access S3 host.
-		s3Endpoint = strings.Replace(s3Endpoint, "http://localhost", "http://host.docker.internal", 1)
-	}
-	config := aws.Config{
-		Credentials:  credentials.NewStaticCredentialsProvider(awsAccessKey, awsSecretKey, ""),
-		BaseEndpoint: &s3Endpoint,
-		Logger: logging.LoggerFunc(func(classification logging.Classification, format string, v ...interface{}) {
-			log.WithField("source", "aws-sdk").Debug(v...)
-		}),
-		ClientLogMode: aws.LogRequestWithBody | aws.LogResponseWithBody,
+		s3Endpoint = strings.Replace(s3Endpoint, "http://s3.premises.local", "http://host.docker.internal", 1)
 	}
 
-	s3Client := s3.NewFromConfig(config, func(options *s3.Options) {
-		options.UsePathStyle = true
-		defSigner := v4Signer.NewSigner(func(so *v4Signer.SignerOptions) {
-			so.Logger = options.Logger
-			so.LogSigning = options.ClientLogMode.IsSigning()
-			so.DisableURIPathEscaping = true
-		})
-		options.HTTPSignerV4 = newNoAcceptEncodingSigner(defSigner)
-	})
+	s3 := s3wrap.New(awsAccessKey, awsSecretKey, s3Endpoint)
 
-	return &BackupProvider{
-		s3Client: s3Client,
-		bucket:   bucket,
+	return &BackupService{
+		s3:     s3,
+		bucket: bucket,
 	}
 }
 
@@ -91,12 +49,9 @@ func makeBackupName() string {
 	return fmt.Sprintf("%s.tar.zst", time.Now().Format(time.DateTime))
 }
 
-func (self *BackupProvider) DownloadWorldData(ctx *config.PMCMContext) error {
+func (self *BackupService) DownloadWorldData(ctx *config.PMCMContext) error {
 	log.Info("Downloading world archive...")
-	resp, err := self.s3Client.GetObject(context.Background(), &s3.GetObjectInput{
-		Bucket: &self.bucket,
-		Key:    &ctx.Cfg.World.GenerationId,
-	})
+	resp, err := self.s3.GetObject(context.Background(), self.bucket, ctx.Cfg.World.GenerationId)
 	if err != nil {
 		return fmt.Errorf("Unable to download %s: %w", ctx.Cfg.World.GenerationId, err)
 	}
@@ -120,7 +75,7 @@ func (self *BackupProvider) DownloadWorldData(ctx *config.PMCMContext) error {
 				total += int64(chunkSize)
 
 				if showNext {
-					percentage := total * 100 / *resp.ContentLength
+					percentage := total * 100 / resp.Size
 					if err := exterior.SendMessage("serverStatus", entity.Event{
 						Type: entity.EventStatus,
 						Status: &entity.StatusExtra{
@@ -156,7 +111,7 @@ func (self *BackupProvider) DownloadWorldData(ctx *config.PMCMContext) error {
 	return nil
 }
 
-func (self *BackupProvider) UploadWorldData(ctx *config.PMCMContext, options UploadOptions) error {
+func (self *BackupService) UploadWorldData(ctx *config.PMCMContext, options UploadOptions) error {
 	if options.SourceDir == "" {
 		options.SourceDir = ctx.LocateWorldData("")
 	}
@@ -214,9 +169,17 @@ type UploadOptions struct {
 	SourceDir   string
 }
 
-func (self *BackupProvider) doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
+func (self *BackupService) doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
+	log.Info("Uploading world archive...")
+
 	archivePath := ctx.LocateDataFile(options.TmpFileName)
-	fileInfo, err := os.Stat(archivePath)
+
+	file, err := os.Open(archivePath)
+	if err != nil {
+		return err
+	}
+
+	fileInfo, err := file.Stat()
 	if err != nil {
 		return err
 	}
@@ -262,27 +225,12 @@ func (self *BackupProvider) doUploadWorldData(ctx *config.PMCMContext, options *
 		}
 	}()
 
-	log.Info("Uploading world archive...")
-	file, err := os.Open(archivePath)
-	if err != nil {
-		return err
-	}
-
-	if _, err := file.Seek(0, 0); err != nil {
-		return err
-	}
-
 	key := fmt.Sprintf("%s/%s", ctx.Cfg.World.Name, makeBackupName())
-	_, err = self.s3Client.PutObject(context.Background(), &s3.PutObjectInput{
-		Bucket: &self.bucket,
-		Key:    &key,
-		Body: &ProgressReader{
-			reader: file,
-			notify: progress,
-		},
-		ContentLength: aws.Int64(fileInfo.Size()),
-	}, s3.WithAPIOptions(v4Signer.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware))
-	if err != nil {
+	if err := self.s3.PutObject(context.Background(), self.bucket, key, &ProgressReader{
+		reader: file,
+		notify: progress,
+	}, fileInfo.Size(),
+	); err != nil {
 		return fmt.Errorf("Unable to upload %s: %w", key, err)
 	}
 	log.Info("Uploading world archive...Done")
@@ -298,37 +246,26 @@ func (self *BackupProvider) doUploadWorldData(ctx *config.PMCMContext, options *
 	return nil
 }
 
-func (self *BackupProvider) RemoveOldBackups(ctx *config.PMCMContext) error {
-	resp, err := self.s3Client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{
-		Bucket: &self.bucket,
-		Prefix: aws.String(fmt.Sprintf("%s/", ctx.Cfg.World.Name)),
-	})
+func (self *BackupService) RemoveOldBackups(ctx *config.PMCMContext) error {
+	objs, err := self.s3.ListObjects(context.Background(), self.bucket, s3wrap.WithPrefix(ctx.Cfg.World.Name+"/"))
 	if err != nil {
 		return err
 	}
 
-	objs := resp.Contents
 	if len(objs) <= 5 {
 		// We don't need to delete old backups. Exiting...
 		return nil
 	}
 
 	sort.Slice(objs, func(i, j int) bool {
-		return objs[i].LastModified.Unix() > objs[j].LastModified.Unix()
+		return objs[i].Timestamp.Unix() > objs[j].Timestamp.Unix()
 	})
 
-	var objectIds []types.ObjectIdentifier
+	var keys []string
 	for _, obj := range objs[5:] {
-		objectIds = append(objectIds, types.ObjectIdentifier{
-			Key: obj.Key,
-		})
+		keys = append(keys, obj.Key)
 	}
-	if _, err := self.s3Client.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{
-		Bucket: &self.bucket,
-		Delete: &types.Delete{
-			Objects: objectIds,
-		},
-	}); err != nil {
+	if err := self.s3.DeleteObjects(context.Background(), self.bucket, keys); err != nil {
 		return err
 	}
 

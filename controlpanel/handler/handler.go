@@ -47,7 +47,7 @@ type Handler struct {
 	Cacher        caching.Cacher
 	MCVersions    mcversions.MCVersionProvider
 	Streaming     *streaming.Streaming
-	backup        *backup.BackupProvider
+	backup        *backup.BackupService
 }
 
 func createDatabaseClient(cfg *config.Config) (*gorm.DB, error) {

@@ -3,68 +3,30 @@ package backup
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"sort"
 	"strings"
-	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	v4Signer "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/smithy-go/logging"
 	entity "github.com/kofuk/premises/common/entity/web"
-	log "github.com/sirupsen/logrus"
+	"github.com/kofuk/premises/common/s3wrap"
 )
 
-type BackupProvider struct {
-	s3Client *s3.Client
-	bucket   string
+type BackupService struct {
+	s3     *s3wrap.Client
+	bucket string
 }
 
-type noAcceptEncodingSigner struct {
-	signer s3.HTTPSignerV4
-}
-
-func newNoAcceptEncodingSigner(signer s3.HTTPSignerV4) *noAcceptEncodingSigner {
-	return &noAcceptEncodingSigner{
-		signer: signer,
-	}
-}
-
-func (self *noAcceptEncodingSigner) SignHTTP(ctx context.Context, credentials aws.Credentials, r *http.Request, payloadHash string, service string, region string, signingTime time.Time, optFns ...func(*v4Signer.SignerOptions)) error {
-	acceptEncoding := r.Header.Get("Accept-Encoding")
-	r.Header.Del("Accept-Encoding")
-	err := self.signer.SignHTTP(ctx, credentials, r, payloadHash, service, region, signingTime, optFns...)
-	if acceptEncoding != "" {
-		r.Header.Set("Accept-Encoding", acceptEncoding)
-	}
-	return err
-}
-
-func New(awsAccessKey, awsSecretKey, s3Endpoint, bucket string) *BackupProvider {
-	config := aws.Config{
-		Credentials:  credentials.NewStaticCredentialsProvider(awsAccessKey, awsSecretKey, ""),
-		BaseEndpoint: &s3Endpoint,
-		Logger: logging.LoggerFunc(func(classification logging.Classification, format string, v ...interface{}) {
-			log.WithField("source", "aws-sdk").Debug(v...)
-		}),
-		ClientLogMode: aws.LogRequestWithBody | aws.LogResponseWithBody,
+func New(awsAccessKey, awsSecretKey, s3Endpoint, bucket string) *BackupService {
+	if strings.HasPrefix(s3Endpoint, "http://s3.premises.local:") {
+		// When S3 endpoint is localhost, it should be a development environment on Docker.
+		// We implicitly rewrite the address so that we can access S3 host.
+		s3Endpoint = strings.Replace(s3Endpoint, "http://s3.premises.local", "http://localhost", 1)
 	}
 
-	s3Client := s3.NewFromConfig(config, func(options *s3.Options) {
-		options.UsePathStyle = true
-		defSigner := v4Signer.NewSigner(func(so *v4Signer.SignerOptions) {
-			so.Logger = options.Logger
-			so.LogSigning = options.ClientLogMode.IsSigning()
-			so.DisableURIPathEscaping = true
-		})
-		options.HTTPSignerV4 = newNoAcceptEncodingSigner(defSigner)
-	})
+	client := s3wrap.New(awsAccessKey, awsSecretKey, s3Endpoint)
 
-	return &BackupProvider{
-		s3Client: s3Client,
-		bucket:   bucket,
+	return &BackupService{
+		s3:     client,
+		bucket: bucket,
 	}
 }
 
@@ -85,44 +47,15 @@ func extractBackupInfoFromKey(key string) (string, string, error) {
 	return world, name, nil
 }
 
-type objectMetaData struct {
-	key       string
-	timestamp time.Time
-}
-
-func (self *BackupProvider) fetchAllObjects(ctx context.Context) ([]objectMetaData, error) {
-	var result []objectMetaData
-	var continuationToken *string
-	first := true
-	for first || continuationToken != nil {
-		first = false
-		resp, err := self.s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
-			Bucket: &self.bucket,
-		})
-		if err != nil {
-			return nil, err
-		}
-		continuationToken = resp.NextContinuationToken
-		for _, obj := range resp.Contents {
-			result = append(result, objectMetaData{
-				key:       *obj.Key,
-				timestamp: *obj.LastModified,
-			})
-		}
-	}
-
-	return result, nil
-}
-
-func (self *BackupProvider) GetWorlds(ctx context.Context) ([]entity.WorldBackup, error) {
+func (self *BackupService) GetWorlds(ctx context.Context) ([]entity.WorldBackup, error) {
 	worlds := make(map[string]entity.WorldBackup)
-	objects, err := self.fetchAllObjects(ctx)
+	objects, err := self.s3.ListObjects(ctx, self.bucket)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, obj := range objects {
-		world, gen, err := extractBackupInfoFromKey(obj.key)
+		world, gen, err := extractBackupInfoFromKey(obj.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -130,8 +63,8 @@ func (self *BackupProvider) GetWorlds(ctx context.Context) ([]entity.WorldBackup
 			WorldName: world,
 			Generations: append(worlds[world].Generations, entity.BackupGeneration{
 				Gen:       gen,
-				ID:        obj.key,
-				Timestamp: int(obj.timestamp.UnixMilli()),
+				ID:        obj.Key,
+				Timestamp: int(obj.Timestamp.UnixMilli()),
 			}),
 		}
 	}
