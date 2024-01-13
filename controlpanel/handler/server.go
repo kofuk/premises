@@ -8,7 +8,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
-	"github.com/kofuk/premises/controlpanel/gameconfig"
+	"github.com/kofuk/premises/common/entity/runner"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -18,7 +18,7 @@ type IPAddressSet struct {
 }
 
 type GameServer interface {
-	SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Client, memSizeGB int) bool
+	SetUp(gameConfig *runner.GameConfig, rdb *redis.Client, memSizeGB int) bool
 	VMExists() bool
 	VMRunning() bool
 	StopVM() bool
@@ -68,7 +68,7 @@ func (s *ConohaServer) getToken() (string, error) {
 	return s.token, nil
 }
 
-func (s *ConohaServer) SetUp(gameConfig *gameconfig.GameConfig, rdb *redis.Client, memSizeGB int) bool {
+func (s *ConohaServer) SetUp(gameConfig *runner.GameConfig, rdb *redis.Client, memSizeGB int) bool {
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")

@@ -16,7 +16,6 @@ import (
 	runnerEntity "github.com/kofuk/premises/common/entity/runner"
 	entity "github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/config"
-	"github.com/kofuk/premises/controlpanel/gameconfig"
 	"github.com/kofuk/premises/controlpanel/streaming"
 	log "github.com/sirupsen/logrus"
 )
@@ -227,7 +226,7 @@ func StopServer(cfg *config.Config, addr string, rdb *redis.Client) error {
 	return nil
 }
 
-func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, addr string, rdb *redis.Client) error {
+func ReconfigureServer(gameConfig *runnerEntity.GameConfig, cfg *config.Config, addr string, rdb *redis.Client) error {
 	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{

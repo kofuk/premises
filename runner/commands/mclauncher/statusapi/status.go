@@ -108,7 +108,7 @@ func requestDeleteSnapshot(ssi *privileged.SnapshotInfo) error {
 
 func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 	http.HandleFunc("/newconfig", func(w http.ResponseWriter, r *http.Request) {
-		var config config.Config
+		var config entity.GameConfig
 		if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
 			log.WithError(err).Error("Failed to parse request JSON")
 			w.WriteHeader(http.StatusBadRequest)

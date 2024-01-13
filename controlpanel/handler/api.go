@@ -18,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	entity "github.com/kofuk/premises/common/entity/web"
+	runnerEntity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
@@ -189,7 +190,7 @@ func isValidMemSize(memSize int) bool {
 	return memSize == 1 || memSize == 2 || memSize == 4 || memSize == 8 || memSize == 16 || memSize == 32 || memSize == 64
 }
 
-func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Values, cfg *config.Config) (*gameconfig.GameConfig, error) {
+func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Values, cfg *config.Config) (*runnerEntity.GameConfig, error) {
 	if !values.Has("server-version") {
 		return nil, errors.New("Server version is not set")
 	}
@@ -230,13 +231,13 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Value
 
 	result.SetOperators(cfg.Game.Operators)
 	result.SetWhitelist(cfg.Game.Whitelist)
-	result.AWS.AccessKey = cfg.AWS.AccessKey
-	result.AWS.SecretKey = cfg.AWS.SecretKey
-	result.S3.Endpoint = cfg.S3.Endpoint
-	result.S3.Bucket = cfg.S3.Bucket
+	result.C.AWS.AccessKey = cfg.AWS.AccessKey
+	result.C.AWS.SecretKey = cfg.AWS.SecretKey
+	result.C.S3.Endpoint = cfg.S3.Endpoint
+	result.C.S3.Bucket = cfg.S3.Bucket
 	result.SetMotd(cfg.Game.Motd)
 
-	return result, nil
+	return &result.C, nil
 }
 
 func (h *Handler) notifyNonRecoverableFailure(cfg *config.Config, detail string) {
@@ -364,7 +365,7 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 	}
 }
 
-func (h *Handler) LaunchServer(gameConfig *gameconfig.GameConfig, gameServer GameServer, memSizeGB int, rdb *redis.Client) {
+func (h *Handler) LaunchServer(gameConfig *runnerEntity.GameConfig, gameServer GameServer, memSizeGB int, rdb *redis.Client) {
 	var dnsProvider *dns.DNSProvider
 	if h.cfg.Cloudflare.Token != "" {
 		cloudflareDNS, err := dns.NewCloudflareDNS(h.cfg.Cloudflare.Token, h.cfg.Cloudflare.ZoneID)
@@ -489,7 +490,7 @@ func StopServer(cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
 	}
 }
 
-func ReconfigureServer(gameConfig *gameconfig.GameConfig, cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
+func ReconfigureServer(gameConfig *runnerEntity.GameConfig, cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
 	if err := monitor.ReconfigureServer(gameConfig, cfg, cfg.ServerAddr, rdb); err != nil {
 		log.WithError(err).Error("Failed to reconfigure server")
 	}
