@@ -17,6 +17,7 @@ const (
 	ErrPasswordRule                          // 8
 	ErrDupUserName                           // 9
 	ErrRequiresAuth                          // 10
+	ErrBackup                                // 11
 )
 
 const (

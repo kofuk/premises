@@ -594,7 +594,7 @@ func (h *Handler) handleApiBackups(c *gin.Context) {
 		log.WithError(err).Error("Failed to retrieve backup list")
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
-			ErrorCode: entity.ErrInternal,
+			ErrorCode: entity.ErrBackup,
 		})
 		return
 	}

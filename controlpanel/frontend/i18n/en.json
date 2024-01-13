@@ -9,6 +9,7 @@
   "error.code_8": "Password must be alphanumeric and equal to or longer than 8 characters",
   "error.code_9": "A user with the same name exists",
   "error.code_10": "Authentication required",
+  "error.code_11": "Unable to retrieve backup list",
   "status.code_0": "Connecting…",
   "status.code_1": "Server is stopped",
   "status.code_2": "Initializing server…",

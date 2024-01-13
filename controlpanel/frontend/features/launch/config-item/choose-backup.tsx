@@ -1,11 +1,12 @@
 import React, {useEffect} from 'react';
 
+import {useSnackbar} from 'notistack';
 import {useTranslation} from 'react-i18next';
 
 import ConfigContainer from './config-container';
 import {ItemProp} from './prop';
 
-import {useBackups} from '@/api';
+import {APIError, useBackups} from '@/api';
 import {Loading} from '@/components';
 
 type Props = ItemProp & {
@@ -31,7 +32,9 @@ const ChooseBackup = ({
 }: Props) => {
   const [t] = useTranslation();
 
-  const {data: backups, isLoading} = useBackups();
+  const {enqueueSnackbar} = useSnackbar();
+
+  const {data: backups, error, isLoading} = useBackups();
   useEffect(() => {
     if (backups && backups.length > 0) {
       if (worldName === '') {
@@ -40,6 +43,13 @@ const ChooseBackup = ({
       }
     }
   }, [backups]);
+  useEffect(() => {
+    if (error) {
+      if (error instanceof APIError) {
+        enqueueSnackbar(error.message, {variant: 'error'});
+      }
+    }
+  }, [error]);
 
   const handleChangeWorld = (worldName: string) => {
     const generations = backups?.find((e) => e.worldName === worldName)!.generations;
@@ -122,7 +132,9 @@ const ChooseBackup = ({
 
   return (
     <ConfigContainer isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum} title={t('config_choose_backup')}>
-      {(isLoading && <Loading compact />) || (
+      {isLoading ? (
+        <Loading compact />
+      ) : (
         <>
           {content}
           <div className="m-1 text-end">
