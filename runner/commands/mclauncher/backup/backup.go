@@ -15,9 +15,9 @@ import (
 	"time"
 
 	"github.com/klauspost/compress/zstd"
-	entity "github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/common/s3wrap"
-	"github.com/kofuk/premises/runner/commands/mclauncher/config"
+	"github.com/kofuk/premises/runner/commands/mclauncher/fs"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/ulikunitz/xz"
 )
@@ -50,11 +50,11 @@ func makeBackupName() string {
 	return fmt.Sprintf("%s.tar.zst", time.Now().Format(time.DateTime))
 }
 
-func (self *BackupService) DownloadWorldData(ctx *config.PMCMContext) error {
+func (self *BackupService) DownloadWorldData(config *runner.Config) error {
 	slog.Info("Downloading world archive...")
-	resp, err := self.s3.GetObject(context.Background(), self.bucket, ctx.Cfg.World.GenerationId)
+	resp, err := self.s3.GetObject(context.Background(), self.bucket, config.World.GenerationId)
 	if err != nil {
-		return fmt.Errorf("Unable to download %s: %w", ctx.Cfg.World.GenerationId, err)
+		return fmt.Errorf("Unable to download %s: %w", config.World.GenerationId, err)
 	}
 	defer resp.Body.Close()
 
@@ -82,10 +82,10 @@ func (self *BackupService) DownloadWorldData(ctx *config.PMCMContext) error {
 
 				if showNext {
 					percentage := total * 100 / size
-					if err := exterior.SendMessage("serverStatus", entity.Event{
-						Type: entity.EventStatus,
-						Status: &entity.StatusExtra{
-							EventCode: entity.EventWorldDownload,
+					if err := exterior.SendMessage("serverStatus", runner.Event{
+						Type: runner.EventStatus,
+						Status: &runner.StatusExtra{
+							EventCode: runner.EventWorldDownload,
 							Progress:  int(percentage),
 						},
 					}); err != nil {
@@ -98,8 +98,8 @@ func (self *BackupService) DownloadWorldData(ctx *config.PMCMContext) error {
 		}
 	}()
 
-	ext := getFileExtension(ctx.Cfg.World.GenerationId)
-	file, err := os.Create(ctx.LocateDataFile("world" + ext))
+	ext := getFileExtension(config.World.GenerationId)
+	file, err := os.Create(fs.LocateDataFile("world" + ext))
 	if err != nil {
 		return err
 	}
@@ -129,19 +129,19 @@ func (self *BackupService) GetLatestKey(world string) (string, error) {
 	return objs[0].Key, nil
 }
 
-func (self *BackupService) UploadWorldData(ctx *config.PMCMContext, options UploadOptions) error {
+func (self *BackupService) UploadWorldData(config *runner.Config, options UploadOptions) error {
 	if options.SourceDir == "" {
-		options.SourceDir = ctx.LocateWorldData("")
+		options.SourceDir = fs.LocateWorldData("")
 	}
 	if options.TmpFileName == "" {
 		options.TmpFileName = "world.tar.zst"
 	}
 
-	return self.doUploadWorldData(ctx, &options)
+	return self.doUploadWorldData(config, &options)
 }
 
-func SaveLastWorldHash(ctx *config.PMCMContext, hash string) error {
-	file, err := os.Create(ctx.LocateDataFile("last_world"))
+func SaveLastWorldHash(config *runner.Config, hash string) error {
+	file, err := os.Create(fs.LocateDataFile("last_world"))
 	if err != nil {
 		return err
 	}
@@ -152,15 +152,15 @@ func SaveLastWorldHash(ctx *config.PMCMContext, hash string) error {
 	return nil
 }
 
-func RemoveLastWorldHash(ctx *config.PMCMContext) error {
-	if err := os.Remove(ctx.LocateDataFile("last_world")); err != nil {
+func RemoveLastWorldHash(config *runner.Config) error {
+	if err := os.Remove(fs.LocateDataFile("last_world")); err != nil {
 		return err
 	}
 	return nil
 }
 
-func GetLastWorldHash(ctx *config.PMCMContext) (string, bool, error) {
-	file, err := os.Open(ctx.LocateDataFile("last_world"))
+func GetLastWorldHash(config *runner.Config) (string, bool, error) {
+	file, err := os.Open(fs.LocateDataFile("last_world"))
 	if err != nil && os.IsNotExist(err) {
 		return "", false, nil
 	} else if err != nil {
@@ -187,10 +187,10 @@ type UploadOptions struct {
 	SourceDir   string
 }
 
-func (self *BackupService) doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
+func (self *BackupService) doUploadWorldData(config *runner.Config, options *UploadOptions) error {
 	slog.Info("Uploading world archive...")
 
-	archivePath := ctx.LocateDataFile(options.TmpFileName)
+	archivePath := fs.LocateDataFile(options.TmpFileName)
 
 	file, err := os.Open(archivePath)
 	if err != nil {
@@ -228,10 +228,10 @@ func (self *BackupService) doUploadWorldData(ctx *config.PMCMContext, options *U
 				if showNext {
 					percentage := totalUploaded * 100 / size
 					if percentage != prevPercentage {
-						if err := exterior.SendMessage("serverStatus", entity.Event{
-							Type: entity.EventStatus,
-							Status: &entity.StatusExtra{
-								EventCode: entity.EventWorldUpload,
+						if err := exterior.SendMessage("serverStatus", runner.Event{
+							Type: runner.EventStatus,
+							Status: &runner.StatusExtra{
+								EventCode: runner.EventWorldUpload,
 								Progress:  int(percentage),
 							},
 						}); err != nil {
@@ -246,25 +246,25 @@ func (self *BackupService) doUploadWorldData(ctx *config.PMCMContext, options *U
 		}
 	}()
 
-	key := fmt.Sprintf("%s/%s", ctx.Cfg.World.Name, makeBackupName())
+	key := fmt.Sprintf("%s/%s", config.World.Name, makeBackupName())
 	if err := self.s3.PutObject(context.Background(), self.bucket, key, &ProgressReader{reader: file, notify: progress}, fileInfo.Size()); err != nil {
 		return fmt.Errorf("Unable to upload %s: %w", key, err)
 	}
 	slog.Info("Uploading world archive...Done")
 
-	if err := os.Remove(ctx.LocateDataFile(options.TmpFileName)); err != nil {
+	if err := os.Remove(fs.LocateDataFile(options.TmpFileName)); err != nil {
 		return err
 	}
 
-	if err := SaveLastWorldHash(ctx, key); err != nil {
+	if err := SaveLastWorldHash(config, key); err != nil {
 		slog.Warn("Error saving last world hash", slog.Any("error", err))
 	}
 
 	return nil
 }
 
-func (self *BackupService) RemoveOldBackups(ctx *config.PMCMContext) error {
-	objs, err := self.s3.ListObjects(context.Background(), self.bucket, s3wrap.WithPrefix(ctx.Cfg.World.Name+"/"))
+func (self *BackupService) RemoveOldBackups(config *runner.Config) error {
+	objs, err := self.s3.ListObjects(context.Background(), self.bucket, s3wrap.WithPrefix(config.World.Name+"/"))
 	if err != nil {
 		return err
 	}
@@ -370,10 +370,10 @@ func extractZipWorldArchive(inFile, outDir string) error {
 	return nil
 }
 
-func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
-	if _, err := os.Stat(ctx.LocateDataFile("world.tar.zst")); os.IsNotExist(err) {
-		if _, err := os.Stat(ctx.LocateDataFile("world.tar.xz")); os.IsNotExist(err) {
-			if _, err := os.Stat(ctx.LocateDataFile("world.zip")); os.IsNotExist(err) {
+func ExtractWorldArchiveIfNeeded() error {
+	if _, err := os.Stat(fs.LocateDataFile("world.tar.zst")); os.IsNotExist(err) {
+		if _, err := os.Stat(fs.LocateDataFile("world.tar.xz")); os.IsNotExist(err) {
+			if _, err := os.Stat(fs.LocateDataFile("world.zip")); os.IsNotExist(err) {
 				slog.Info("No world archive exists; continue...")
 				return nil
 			}
@@ -382,16 +382,16 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 		return err
 	}
 
-	if err := os.RemoveAll(ctx.LocateWorldData("world")); err != nil {
+	if err := os.RemoveAll(fs.LocateWorldData("world")); err != nil {
 		return err
 	}
-	if _, err := os.Stat(ctx.LocateWorldData("world_nether")); err == nil {
-		if err := os.RemoveAll(ctx.LocateWorldData("world_nether")); err != nil {
+	if _, err := os.Stat(fs.LocateWorldData("world_nether")); err == nil {
+		if err := os.RemoveAll(fs.LocateWorldData("world_nether")); err != nil {
 			return err
 		}
 	}
-	if _, err := os.Stat(ctx.LocateWorldData("world_the_end")); err == nil {
-		if err := os.RemoveAll(ctx.LocateWorldData("world_the_end")); err != nil {
+	if _, err := os.Stat(fs.LocateWorldData("world_the_end")); err == nil {
+		if err := os.RemoveAll(fs.LocateWorldData("world_the_end")); err != nil {
 			return err
 		}
 	}
@@ -403,22 +403,22 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 		return err
 	}
 
-	inFile, err := os.Open(ctx.LocateDataFile("world.tar.zst"))
+	inFile, err := os.Open(fs.LocateDataFile("world.tar.zst"))
 	if err != nil {
-		inFile, err := os.Open(ctx.LocateDataFile("world.tar.xz"))
+		inFile, err := os.Open(fs.LocateDataFile("world.tar.xz"))
 		if err != nil {
-			_, err := os.Stat(ctx.LocateDataFile("world.zip"))
+			_, err := os.Stat(fs.LocateDataFile("world.zip"))
 			if err != nil {
 				return err
 			}
 
-			if err := extractZipWorldArchive(ctx.LocateDataFile("world.zip"), tempDir); err != nil {
+			if err := extractZipWorldArchive(fs.LocateDataFile("world.zip"), tempDir); err != nil {
 				return err
 			}
 
 			slog.Info("Extracting world archive...Done")
 
-			if err := os.Remove(ctx.LocateDataFile("world.zip")); err != nil {
+			if err := os.Remove(fs.LocateDataFile("world.zip")); err != nil {
 				return err
 			}
 		} else {
@@ -430,7 +430,7 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 
 			slog.Info("Extracting world archive...Done")
 
-			if err := os.Remove(ctx.LocateDataFile("world.tar.xz")); err != nil {
+			if err := os.Remove(fs.LocateDataFile("world.tar.xz")); err != nil {
 				return err
 			}
 		}
@@ -443,13 +443,13 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 
 		slog.Info("Extracting world archive...Done")
 
-		if err := os.Remove(ctx.LocateDataFile("world.tar.zst")); err != nil {
+		if err := os.Remove(fs.LocateDataFile("world.tar.zst")); err != nil {
 			return err
 		}
 	}
 
 	slog.Info("Detecting and renaming world data...")
-	if err := moveWorldDataToGameDir(ctx, tempDir); err != nil {
+	if err := moveWorldDataToGameDir(tempDir); err != nil {
 		slog.Error("Failed to prepare world data from archive", slog.Any("error", err))
 	}
 	slog.Info("Detecting and renaming world data...Done")
@@ -459,7 +459,7 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 	return nil
 }
 
-func doPrepareUploadData(ctx *config.PMCMContext, options *UploadOptions) error {
+func doPrepareUploadData(options *UploadOptions) error {
 	slog.Info("Creating world archive...")
 
 	tarArgs := []string{"-c", "world"}
@@ -480,7 +480,7 @@ func doPrepareUploadData(ctx *config.PMCMContext, options *UploadOptions) error 
 	}
 	defer tarStdout.Close()
 
-	outFile, err := os.Create(ctx.LocateDataFile(options.TmpFileName))
+	outFile, err := os.Create(fs.LocateDataFile(options.TmpFileName))
 	if err != nil {
 		return err
 	}
@@ -506,12 +506,12 @@ func doPrepareUploadData(ctx *config.PMCMContext, options *UploadOptions) error 
 	return nil
 }
 
-func PrepareUploadData(ctx *config.PMCMContext, options UploadOptions) error {
+func PrepareUploadData(options UploadOptions) error {
 	if options.SourceDir == "" {
-		options.SourceDir = ctx.LocateWorldData("")
+		options.SourceDir = fs.LocateWorldData("")
 	}
 	if options.TmpFileName == "" {
 		options.TmpFileName = "world.tar.zst"
 	}
-	return doPrepareUploadData(ctx, &options)
+	return doPrepareUploadData(&options)
 }

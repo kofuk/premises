@@ -10,8 +10,8 @@ import (
 	"os"
 	"path/filepath"
 
-	entity "github.com/kofuk/premises/common/entity/runner"
-	"github.com/kofuk/premises/runner/commands/mclauncher/config"
+	"github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/runner/commands/mclauncher/fs"
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
 	"github.com/kofuk/premises/runner/commands/privileged"
 	"github.com/kofuk/premises/runner/exterior"
@@ -106,23 +106,23 @@ func requestDeleteSnapshot(ssi *privileged.SnapshotInfo) error {
 	return nil
 }
 
-func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
+func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 	http.HandleFunc("/newconfig", func(w http.ResponseWriter, r *http.Request) {
-		var config entity.Config
-		if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
+		var configData runner.Config
+		if err := json.NewDecoder(r.Body).Decode(&configData); err != nil {
 			slog.Error("Failed to parse request JSON", slog.Any("error", err))
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		data, err := json.Marshal(&config)
+		data, err := json.Marshal(&configData)
 		if err != nil {
 			slog.Error("Failed to stringify request", slog.Any("error", err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
-		if err := os.WriteFile(ctx.LocateDataFile("config.json"), data, 0644); err != nil {
+		if err := os.WriteFile(fs.LocateDataFile("config.json"), data, 0644); err != nil {
 			slog.Error("Failed to write server config", slog.Any("error", err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
@@ -143,10 +143,10 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 		if err != nil {
 			slog.Error("Failed to create snapshot", slog.Any("error", err))
 
-			if err := exterior.SendMessage("serverStatus", entity.Event{
-				Type: entity.EventInfo,
-				Info: &entity.InfoExtra{
-					InfoCode: entity.InfoSnapshotError,
+			if err := exterior.SendMessage("serverStatus", runner.Event{
+				Type: runner.EventInfo,
+				Info: &runner.InfoExtra{
+					InfoCode: runner.InfoSnapshotError,
 					IsError:  true,
 				},
 			}); err != nil {
@@ -156,10 +156,10 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 			return
 		}
 
-		if err := exterior.SendMessage("serverStatus", entity.Event{
-			Type: entity.EventInfo,
-			Info: &entity.InfoExtra{
-				InfoCode: entity.InfoSnapshotDone,
+		if err := exterior.SendMessage("serverStatus", runner.Event{
+			Type: runner.EventInfo,
+			Info: &runner.InfoExtra{
+				InfoCode: runner.InfoSnapshotDone,
 				IsError:  false,
 			},
 		}); err != nil {
@@ -171,11 +171,11 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 
 	http.HandleFunc("/quickundo", func(w http.ResponseWriter, r *http.Request) {
 		go func() {
-			if _, err := os.Stat(filepath.Join(ctx.LocateWorldData("ss@quick0/world"))); err != nil {
-				if err := exterior.SendMessage("serverStatus", entity.Event{
-					Type: entity.EventInfo,
-					Info: &entity.InfoExtra{
-						InfoCode: entity.InfoNoSnapshot,
+			if _, err := os.Stat(filepath.Join(fs.LocateWorldData("ss@quick0/world"))); err != nil {
+				if err := exterior.SendMessage("serverStatus", runner.Event{
+					Type: runner.EventInfo,
+					Info: &runner.InfoExtra{
+						InfoCode: runner.InfoNoSnapshot,
 						IsError:  true,
 					},
 				}); err != nil {
@@ -214,7 +214,7 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 			return
 		}
 
-		worldInfo, err := GetWorldInfo(ctx, srv)
+		worldInfo, err := GetWorldInfo(config, srv)
 		if err != nil {
 			slog.Error("Failed to retrieve world info", slog.Any("error", err), slog.String("endpoint", "/worldinfo"))
 			return

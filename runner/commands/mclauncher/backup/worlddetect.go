@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/kofuk/premises/runner/commands/mclauncher/config"
+	"github.com/kofuk/premises/runner/commands/mclauncher/fs"
 )
 
 var (
@@ -152,25 +152,25 @@ retry:
 	return nil, worldNotFound
 }
 
-func moveWorldDataToGameDir(ctx *config.PMCMContext, tmpDir string) error {
+func moveWorldDataToGameDir(tmpDir string) error {
 	dirs, err := locateWorldsDir(tmpDir)
 	if err != nil {
 		return err
 	}
 
-	worldDir := ctx.LocateWorldData("world")
+	worldDir := fs.LocateWorldData("world")
 	if _, err := os.Stat(worldDir); err != nil {
 		if err := os.RemoveAll(worldDir); err != nil {
 			return err
 		}
 	}
-	netherDir := ctx.LocateWorldData("world_nether")
+	netherDir := fs.LocateWorldData("world_nether")
 	if _, err := os.Stat(netherDir); err != nil {
 		if err := os.RemoveAll(netherDir); err != nil {
 			return err
 		}
 	}
-	endDir := ctx.LocateWorldData("world_the_end")
+	endDir := fs.LocateWorldData("world_the_end")
 	if _, err := os.Stat(endDir); err != nil {
 		if err := os.RemoveAll(endDir); err != nil {
 			return err

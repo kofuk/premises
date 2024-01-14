@@ -10,23 +10,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kofuk/premises/common/entity/runner"
 	entity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/backup"
-	"github.com/kofuk/premises/runner/commands/mclauncher/config"
+	"github.com/kofuk/premises/runner/commands/mclauncher/fs"
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
 	"github.com/kofuk/premises/runner/commands/mclauncher/serverprop"
 	"github.com/kofuk/premises/runner/commands/mclauncher/statusapi"
+	"github.com/kofuk/premises/runner/config"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/metadata"
 )
 
-func generateServerProps(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) error {
+func generateServerProps(config *runner.Config, srv *gamesrv.ServerInstance) error {
 	serverProps := serverprop.New()
-	serverProps.SetMotd(ctx.Cfg.Motd)
-	serverProps.SetDifficulty(ctx.Cfg.World.Difficulty)
-	serverProps.SetLevelType(ctx.Cfg.World.LevelType)
-	serverProps.SetSeed(ctx.Cfg.World.Seed)
-	serverPropsFile, err := os.Create(ctx.LocateWorldData("server.properties"))
+	serverProps.SetMotd(config.Motd)
+	serverProps.SetDifficulty(config.World.Difficulty)
+	serverProps.SetLevelType(config.World.LevelType)
+	serverProps.SetSeed(config.World.Seed)
+	serverPropsFile, err := os.Create(fs.LocateWorldData("server.properties"))
 	if err != nil {
 		return err
 	}
@@ -37,28 +39,28 @@ func generateServerProps(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) e
 	return nil
 }
 
-func downloadWorldIfNeeded(ctx *config.PMCMContext) error {
-	if ctx.Cfg.World.ShouldGenerate {
+func downloadWorldIfNeeded(config *runner.Config) error {
+	if config.World.ShouldGenerate {
 		return nil
 	}
 
-	backupService := backup.New(ctx.Cfg.AWS.AccessKey, ctx.Cfg.AWS.SecretKey, ctx.Cfg.S3.Endpoint, ctx.Cfg.S3.Bucket)
+	backupService := backup.New(config.AWS.AccessKey, config.AWS.SecretKey, config.S3.Endpoint, config.S3.Bucket)
 
-	if ctx.Cfg.World.GenerationId == "@/latest" {
-		genId, err := backupService.GetLatestKey(ctx.Cfg.World.Name)
+	if config.World.GenerationId == "@/latest" {
+		genId, err := backupService.GetLatestKey(config.World.Name)
 		if err != nil {
 			return err
 		}
-		ctx.Cfg.World.GenerationId = genId
+		config.World.GenerationId = genId
 	}
 
-	lastWorldHash, exists, err := backup.GetLastWorldHash(ctx)
+	lastWorldHash, exists, err := backup.GetLastWorldHash(config)
 	if err != nil {
 		return err
 	}
 
-	if !exists || ctx.Cfg.World.GenerationId != lastWorldHash {
-		if err := backup.RemoveLastWorldHash(ctx); err != nil {
+	if !exists || config.World.GenerationId != lastWorldHash {
+		if err := backup.RemoveLastWorldHash(config); err != nil {
 			slog.Error("Failed to remove last world hash", slog.Any("error", err))
 		}
 
@@ -71,7 +73,7 @@ func downloadWorldIfNeeded(ctx *config.PMCMContext) error {
 			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
 
-		if err := backupService.DownloadWorldData(ctx); err != nil {
+		if err := backupService.DownloadWorldData(config); err != nil {
 			return err
 		}
 		return nil
@@ -80,20 +82,20 @@ func downloadWorldIfNeeded(ctx *config.PMCMContext) error {
 	return nil
 }
 
-func downloadServerJarIfNeeded(ctx *config.PMCMContext) error {
-	if _, err := os.Stat(ctx.LocateServer(ctx.Cfg.Server.Version)); err == nil {
+func downloadServerJarIfNeeded(config *runner.Config) error {
+	if _, err := os.Stat(fs.LocateServer(config.Server.Version)); err == nil {
 		slog.Info("No need to download server.jar")
 		return nil
 	} else if !os.IsNotExist(err) {
 		return err
 	}
 
-	if err := os.MkdirAll(ctx.LocateDataFile("servers.d"), 0755); err != nil {
+	if err := os.MkdirAll(fs.LocateDataFile("servers.d"), 0755); err != nil {
 		return err
 	}
 
-	slog.Info("Downloading Minecraft server...", slog.String("url", ctx.Cfg.Server.DownloadUrl))
-	resp, err := http.Get(ctx.Cfg.Server.DownloadUrl)
+	slog.Info("Downloading Minecraft server...", slog.String("url", config.Server.DownloadUrl))
+	resp, err := http.Get(config.Server.DownloadUrl)
 	if err != nil {
 		return err
 	}
@@ -102,7 +104,7 @@ func downloadServerJarIfNeeded(ctx *config.PMCMContext) error {
 		return errors.New(fmt.Sprintf("Download failed with status: %d", resp.StatusCode))
 	}
 
-	outFile, err := os.Create(ctx.LocateServer(ctx.Cfg.Server.Version) + ".download")
+	outFile, err := os.Create(fs.LocateServer(config.Server.Version) + ".download")
 	if err != nil {
 		resp.Body.Close()
 		return err
@@ -114,7 +116,7 @@ func downloadServerJarIfNeeded(ctx *config.PMCMContext) error {
 	}
 	outFile.Close()
 
-	if err := os.Rename(ctx.LocateServer(ctx.Cfg.Server.Version)+".download", ctx.LocateServer(ctx.Cfg.Server.Version)); err != nil {
+	if err := os.Rename(fs.LocateServer(config.Server.Version)+".download", fs.LocateServer(config.Server.Version)); err != nil {
 		return err
 	}
 
@@ -126,15 +128,14 @@ func downloadServerJarIfNeeded(ctx *config.PMCMContext) error {
 func Run() {
 	slog.Info("Starting Premises Runner", slog.String("revision", metadata.Revision))
 
-	ctx := new(config.PMCMContext)
-
-	if err := config.LoadConfig(ctx); err != nil {
+	config, err := config.Load()
+	if err != nil {
 		slog.Error("Failed to load config", slog.Any("error", err))
 		os.Exit(1)
 	}
 
 	srv := gamesrv.New()
-	go statusapi.LaunchStatusServer(ctx, srv)
+	go statusapi.LaunchStatusServer(config, srv)
 
 	if err := exterior.SendMessage("serverStatus", entity.Event{
 		Type: entity.EventStatus,
@@ -144,7 +145,7 @@ func Run() {
 	}); err != nil {
 		slog.Error("Unable to write send message", slog.Any("error", err))
 	}
-	if err := downloadServerJarIfNeeded(ctx); err != nil {
+	if err := downloadServerJarIfNeeded(config); err != nil {
 		slog.Error("Couldn't download server.jar", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
@@ -158,13 +159,13 @@ func Run() {
 		goto out
 	}
 
-	if err := generateServerProps(ctx, srv); err != nil {
+	if err := generateServerProps(config, srv); err != nil {
 		slog.Error("Couldn't generate server.properties", slog.Any("error", err))
 		srv.StartupFailed = true
 		goto out
 	}
 
-	if strings.Contains(ctx.Cfg.Server.Version, "/") {
+	if strings.Contains(config.Server.Version, "/") {
 		slog.Error("ServerName can't contain /")
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
@@ -178,7 +179,7 @@ func Run() {
 		goto out
 	}
 
-	if err := downloadWorldIfNeeded(ctx); err != nil {
+	if err := downloadWorldIfNeeded(config); err != nil {
 		slog.Error("Failed to download world data", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
@@ -201,7 +202,7 @@ func Run() {
 		slog.Error("Unable to write send message", slog.Any("error", err))
 	}
 
-	if err := gamesrv.LaunchServer(ctx, srv); err != nil {
+	if err := gamesrv.LaunchServer(config, srv); err != nil {
 		slog.Error("Failed to launch Minecraft server", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
@@ -215,8 +216,8 @@ func Run() {
 		goto out
 	}
 
-	srv.AddToWhiteList(ctx.Cfg.Whitelist)
-	srv.AddToOp(ctx.Cfg.Operators)
+	srv.AddToWhiteList(config.Whitelist)
+	srv.AddToOp(config.Operators)
 
 	srv.IsServerInitialized = true
 
@@ -232,7 +233,7 @@ func Run() {
 	}); err != nil {
 		slog.Error("Unable to write send message", slog.Any("error", err))
 	}
-	if err := backup.PrepareUploadData(ctx, backup.UploadOptions{}); err != nil {
+	if err := backup.PrepareUploadData(backup.UploadOptions{}); err != nil {
 		slog.Error("Failed to create world archive", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
@@ -254,7 +255,7 @@ func Run() {
 	}); err != nil {
 		slog.Error("Unable to write send message", slog.Any("error", err))
 	}
-	if err := backup.New(ctx.Cfg.AWS.AccessKey, ctx.Cfg.AWS.SecretKey, ctx.Cfg.S3.Endpoint, ctx.Cfg.S3.Bucket).UploadWorldData(ctx, backup.UploadOptions{}); err != nil {
+	if err := backup.New(config.AWS.AccessKey, config.AWS.SecretKey, config.S3.Endpoint, config.S3.Bucket).UploadWorldData(config, backup.UploadOptions{}); err != nil {
 		slog.Error("Failed to upload world data", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
@@ -267,7 +268,7 @@ func Run() {
 		}
 		goto out
 	}
-	if err := backup.New(ctx.Cfg.AWS.AccessKey, ctx.Cfg.AWS.SecretKey, ctx.Cfg.S3.Endpoint, ctx.Cfg.S3.Bucket).RemoveOldBackups(ctx); err != nil {
+	if err := backup.New(config.AWS.AccessKey, config.AWS.SecretKey, config.S3.Endpoint, config.S3.Bucket).RemoveOldBackups(config); err != nil {
 		slog.Error("Unable to delete outdated backups", slog.Any("error", err))
 	}
 

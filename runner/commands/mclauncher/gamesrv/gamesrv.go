@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	entity "github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/backup"
-	"github.com/kofuk/premises/runner/commands/mclauncher/config"
+	"github.com/kofuk/premises/runner/commands/mclauncher/fs"
 	"github.com/kofuk/premises/runner/exterior"
 )
 
@@ -184,7 +184,7 @@ var (
 	serverStoppingRegexp        = regexp.MustCompile("\\]: Stopping the server")
 )
 
-func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
+func MonitorServer(config *runner.Config, stdout io.ReadCloser) error {
 	reader := bufio.NewReader(stdout)
 	for {
 		line, isPrefix, err := reader.ReadLine()
@@ -198,10 +198,10 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 		}
 		slog.Info("Log from Minecraft", slog.String("content", string(line)))
 		if serverLoadingRegexp.Match(line) {
-			if err := exterior.SendMessage("serverStatus", entity.Event{
-				Type: entity.EventStatus,
-				Status: &entity.StatusExtra{
-					EventCode: entity.EventLoading,
+			if err := exterior.SendMessage("serverStatus", runner.Event{
+				Type: runner.EventStatus,
+				Status: &runner.StatusExtra{
+					EventCode: runner.EventLoading,
 				},
 			}); err != nil {
 				slog.Error("Unable to write send message", slog.Any("error", err))
@@ -213,33 +213,33 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 			}
 			progress, _ := strconv.Atoi(string(matches[1]))
 			progress %= 101
-			if err := exterior.SendMessage("serverStatus", entity.Event{
-				Type: entity.EventStatus,
-				Status: &entity.StatusExtra{
-					EventCode: entity.EventLoading,
+			if err := exterior.SendMessage("serverStatus", runner.Event{
+				Type: runner.EventStatus,
+				Status: &runner.StatusExtra{
+					EventCode: runner.EventLoading,
 					Progress:  progress,
 				},
 			}); err != nil {
 				slog.Error("Unable to write send message", slog.Any("error", err))
 			}
 		} else if serverLoadedRegexp.Match(line) {
-			if err := exterior.SendMessage("serverStatus", entity.Event{
-				Type: entity.EventStatus,
-				Status: &entity.StatusExtra{
-					EventCode: entity.EventRunning,
+			if err := exterior.SendMessage("serverStatus", runner.Event{
+				Type: runner.EventStatus,
+				Status: &runner.StatusExtra{
+					EventCode: runner.EventRunning,
 				},
 			}); err != nil {
 				slog.Error("Unable to write send message", slog.Any("error", err))
 			}
 
-			if err := SaveLastServerVersion(ctx); err != nil {
+			if err := SaveLastServerVersion(config); err != nil {
 				slog.Error("Error saving last server versoin", slog.Any("error", err))
 			}
 		} else if serverStoppingRegexp.Match(line) {
-			if err := exterior.SendMessage("serverStatus", entity.Event{
-				Type: entity.EventStatus,
-				Status: &entity.StatusExtra{
-					EventCode: entity.EventStopping,
+			if err := exterior.SendMessage("serverStatus", runner.Event{
+				Type: runner.EventStatus,
+				Status: &runner.StatusExtra{
+					EventCode: runner.EventStopping,
 				},
 			}); err != nil {
 				slog.Error("Unable to write send message", slog.Any("error", err))
@@ -248,8 +248,8 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 	}
 }
 
-func signEulaForServer(ctx *config.PMCMContext) error {
-	eulaFile, err := os.Create(ctx.LocateWorldData("eula.txt"))
+func signEulaForServer() error {
+	eulaFile, err := os.Create(fs.LocateWorldData("eula.txt"))
 	if err != nil {
 		return err
 	}
@@ -258,13 +258,13 @@ func signEulaForServer(ctx *config.PMCMContext) error {
 	return nil
 }
 
-func processQuickUndo(ctx *config.PMCMContext) error {
-	if err := os.RemoveAll(ctx.LocateWorldData("world")); err != nil {
+func processQuickUndo() error {
+	if err := os.RemoveAll(fs.LocateWorldData("world")); err != nil {
 		return err
 	}
 
 	cmd := exec.Command("cp", "-R", "--", "ss@quick0/world", "ss@quick0/world_nether", "ss@quick0/world_the_end", ".")
-	cmd.Dir = ctx.LocateWorldData("")
+	cmd.Dir = fs.LocateWorldData("")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -274,47 +274,47 @@ func processQuickUndo(ctx *config.PMCMContext) error {
 	return nil
 }
 
-func LaunchServer(ctx *config.PMCMContext, srv *ServerInstance) error {
-	if _, err := os.Stat(ctx.LocateServer(ctx.Cfg.Server.Version)); err != nil {
+func LaunchServer(config *runner.Config, srv *ServerInstance) error {
+	if _, err := os.Stat(fs.LocateServer(config.Server.Version)); err != nil {
 		return err
 	}
 
-	if ctx.Cfg.World.ShouldGenerate {
-		if _, err := os.Stat(ctx.LocateWorldData("world")); err == nil {
-			if err := os.RemoveAll(ctx.LocateWorldData("world")); err != nil {
+	if config.World.ShouldGenerate {
+		if _, err := os.Stat(fs.LocateWorldData("world")); err == nil {
+			if err := os.RemoveAll(fs.LocateWorldData("world")); err != nil {
 				slog.Error("Failed to remove world folder", slog.Any("error", err))
 			}
 		} else if !os.IsNotExist(err) {
 			slog.Error("Failed to stat world folder", slog.Any("error", err))
 		}
-		if _, err := os.Stat(ctx.LocateWorldData("world_nether")); err == nil {
-			if err := os.RemoveAll(ctx.LocateWorldData("world_nether")); err != nil {
+		if _, err := os.Stat(fs.LocateWorldData("world_nether")); err == nil {
+			if err := os.RemoveAll(fs.LocateWorldData("world_nether")); err != nil {
 				slog.Error("Failed to remove world_nether folder", slog.Any("error", err))
 			}
 		} else if !os.IsNotExist(err) {
 			slog.Error("Failed to stat world_nether folder", slog.Any("error", err))
 		}
-		if _, err := os.Stat(ctx.LocateWorldData("world_the_end")); err == nil {
-			if err := os.RemoveAll(ctx.LocateWorldData("world_the_end")); err != nil {
+		if _, err := os.Stat(fs.LocateWorldData("world_the_end")); err == nil {
+			if err := os.RemoveAll(fs.LocateWorldData("world_the_end")); err != nil {
 				slog.Error("Failed to remove world_the_end folder", slog.Any("error", err))
 			}
 		} else if !os.IsNotExist(err) {
 			slog.Error("Failed to stat world_the_end folder", slog.Any("error", err))
 		}
 	} else {
-		if err := backup.ExtractWorldArchiveIfNeeded(ctx); err != nil {
+		if err := backup.ExtractWorldArchiveIfNeeded(); err != nil {
 			return err
 		}
 	}
 
-	ver, exists, err := GetLastServerVersion(ctx)
+	ver, exists, err := GetLastServerVersion()
 	if err != nil {
 		return err
 	}
-	if !exists || ver != ctx.Cfg.Server.Version {
-		slog.Info("Different version of server selected. cleaning up...", slog.String("old", ver), slog.String("new", ctx.Cfg.Server.Version))
+	if !exists || ver != config.Server.Version {
+		slog.Info("Different version of server selected. cleaning up...", slog.String("old", ver), slog.String("new", config.Server.Version))
 
-		ents, err := os.ReadDir(ctx.LocateWorldData(""))
+		ents, err := os.ReadDir(fs.LocateWorldData(""))
 		if err != nil {
 			return err
 		}
@@ -322,34 +322,34 @@ func LaunchServer(ctx *config.PMCMContext, srv *ServerInstance) error {
 			if ent.Name() == "server.properties" || ent.Name() == "world" || ent.Name() == "world_nether" || ent.Name() == "world_the_end" {
 				continue
 			}
-			if err := os.RemoveAll(ctx.LocateWorldData(ent.Name())); err != nil {
+			if err := os.RemoveAll(fs.LocateWorldData(ent.Name())); err != nil {
 				return err
 			}
 		}
 	}
 
-	if err := RemoveLastServerVersion(ctx); err != nil && !os.IsNotExist(err) {
+	if err := RemoveLastServerVersion(); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
-	if err := signEulaForServer(ctx); err != nil {
+	if err := signEulaForServer(); err != nil {
 		return err
 	}
 
-	srv.Name = ctx.Cfg.Server.Version
+	srv.Name = config.Server.Version
 	srv.FinishWG.Add(1)
-	allocSize := ctx.Cfg.AllocSize
+	allocSize := config.AllocSize
 	if allocSize == 0 {
 		allocSize = 512
 	}
-	javaArgs := []string{fmt.Sprintf("-Xmx%dM", ctx.Cfg.AllocSize), fmt.Sprintf("-Xms%dM", ctx.Cfg.AllocSize), "-jar", ctx.LocateServer(ctx.Cfg.Server.Version), "nogui"}
+	javaArgs := []string{fmt.Sprintf("-Xmx%dM", config.AllocSize), fmt.Sprintf("-Xms%dM", config.AllocSize), "-jar", fs.LocateServer(config.Server.Version), "nogui"}
 	go func() {
-		slog.Info("Launching Minecraft server", slog.String("server_name", ctx.Cfg.Server.Version), slog.Any("commandline", javaArgs))
+		slog.Info("Launching Minecraft server", slog.String("server_name", config.Server.Version), slog.Any("commandline", javaArgs))
 		launchCount := 0
 		prevLaunch := time.Now()
 		for !srv.ShouldStop && !srv.RestartRequested {
 			if srv.quickUndoBeforeRestart {
-				if err := processQuickUndo(ctx); err != nil {
+				if err := processQuickUndo(); err != nil {
 					slog.Error("Error processing quick undo", slog.Any("error", err))
 				}
 
@@ -364,12 +364,12 @@ func LaunchServer(ctx *config.PMCMContext, srv *ServerInstance) error {
 				}
 			}
 			cmd := exec.Command("java", javaArgs...)
-			cmd.Dir = ctx.LocateWorldData("")
+			cmd.Dir = fs.LocateWorldData("")
 			cmdStdout, _ := cmd.StdoutPipe()
 			cmd.Stderr = os.Stderr
 			cmd.Start()
 			srv.ServerPid = cmd.Process.Pid
-			MonitorServer(ctx, cmdStdout)
+			MonitorServer(config, cmdStdout)
 			cmd.Wait()
 			cmdStdout.Close()
 			exitCode := cmd.ProcessState.ExitCode()
@@ -385,27 +385,27 @@ func LaunchServer(ctx *config.PMCMContext, srv *ServerInstance) error {
 	return nil
 }
 
-func SaveLastServerVersion(ctx *config.PMCMContext) error {
-	file, err := os.Create(ctx.LocateDataFile("last_version"))
+func SaveLastServerVersion(config *runner.Config) error {
+	file, err := os.Create(fs.LocateDataFile("last_version"))
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	if _, err := file.WriteString(ctx.Cfg.Server.Version); err != nil {
+	if _, err := file.WriteString(config.Server.Version); err != nil {
 		return err
 	}
 	return nil
 }
 
-func RemoveLastServerVersion(ctx *config.PMCMContext) error {
-	if err := os.Remove(ctx.LocateDataFile("last_version")); err != nil {
+func RemoveLastServerVersion() error {
+	if err := os.Remove(fs.LocateDataFile("last_version")); err != nil {
 		return err
 	}
 	return nil
 }
 
-func GetLastServerVersion(ctx *config.PMCMContext) (string, bool, error) {
-	file, err := os.Open(ctx.LocateDataFile("last_version"))
+func GetLastServerVersion() (string, bool, error) {
+	file, err := os.Open(fs.LocateDataFile("last_version"))
 	if err != nil && os.IsNotExist(err) {
 		return "", false, nil
 	} else if err != nil {
