@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -365,6 +366,24 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 }
 
 func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameServer, memSizeGB int, rdb *redis.Client) {
+	stdStream := h.Streaming.GetStream(streaming.StandardStream)
+	infoStream := h.Streaming.GetStream(streaming.InfoStream)
+
+	if err := h.Cacher.Set(context.Background(), fmt.Sprintf("runner:%s", gameConfig.AuthKey), "default", -1); err != nil {
+		slog.Error("Failed to save runner id", slog.Any("error", err))
+
+		if err := h.Streaming.PublishEvent(
+			context.Background(),
+			infoStream,
+			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
+		); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
+		}
+
+		h.serverRunning = false
+		return
+	}
+
 	var dnsProvider *dns.DNSProvider
 	if h.cfg.Cloudflare.Token != "" {
 		cloudflareDNS, err := dns.NewCloudflareDNS(h.cfg.Cloudflare.Token, h.cfg.Cloudflare.ZoneID)
@@ -374,9 +393,6 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameS
 			dnsProvider = dns.New(cloudflareDNS, h.cfg.Cloudflare.GameDomainName)
 		}
 	}
-
-	stdStream := h.Streaming.GetStream(streaming.StandardStream)
-	infoStream := h.Streaming.GetStream(streaming.InfoStream)
 
 	if err := h.Streaming.PublishEvent(
 		context.Background(),
@@ -481,6 +497,10 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameS
 	}
 
 	h.monitorServer(gameServer, rdb, dnsProvider)
+
+	if err := h.Cacher.Del(context.Background(), fmt.Sprintf("runner:%s", gameConfig.AuthKey)); err != nil {
+		slog.Error("Failed to delete runner id", slog.Any("error", err))
+	}
 }
 
 func StopServer(cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
@@ -562,6 +582,18 @@ func (h *Handler) handleApiReconfigure(c *gin.Context) {
 	// Use previously generated key.
 	gameConfig.AuthKey = h.cfg.MonitorKey
 
+	if err := h.runnerAction.Push(c.Request.Context(), "default", runnerEntity.Action{
+		Type:   runnerEntity.ActionReconfigure,
+		Config: gameConfig,
+	}); err != nil {
+		slog.Error("Unable to write action", slog.Any("error", err))
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrRemote,
+		})
+		return
+	}
+
 	go ReconfigureServer(gameConfig, h.cfg, h.serverImpl, h.redis)
 
 	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
@@ -570,6 +602,17 @@ func (h *Handler) handleApiReconfigure(c *gin.Context) {
 }
 
 func (h *Handler) handleApiStop(c *gin.Context) {
+	if err := h.runnerAction.Push(c.Request.Context(), "default", runnerEntity.Action{
+		Type: runnerEntity.ActionStop,
+	}); err != nil {
+		slog.Error("Unable to write action", slog.Any("error", err))
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrRemote,
+		})
+		return
+	}
+
 	go StopServer(h.cfg, h.serverImpl, h.redis)
 
 	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
@@ -729,6 +772,17 @@ func (h *Handler) handleApiWorldInfo(c *gin.Context) {
 }
 
 func (h *Handler) handleApiQuickUndoSnapshot(c *gin.Context) {
+	if err := h.runnerAction.Push(c.Request.Context(), "default", runnerEntity.Action{
+		Type: runnerEntity.ActionSnapshot,
+	}); err != nil {
+		slog.Error("Unable to write action", slog.Any("error", err))
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrRemote,
+		})
+		return
+	}
+
 	if h.cfg.ServerAddr == "" {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
@@ -751,6 +805,17 @@ func (h *Handler) handleApiQuickUndoSnapshot(c *gin.Context) {
 }
 
 func (h *Handler) handleApiQuickUndoUndo(c *gin.Context) {
+	if err := h.runnerAction.Push(c.Request.Context(), "default", runnerEntity.Action{
+		Type: runnerEntity.ActionUndo,
+	}); err != nil {
+		slog.Error("Unable to write action", slog.Any("error", err))
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrRemote,
+		})
+		return
+	}
+
 	if h.cfg.ServerAddr == "" {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
