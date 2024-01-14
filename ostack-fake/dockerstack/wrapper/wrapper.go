@@ -58,7 +58,6 @@ func createContainer(ctx context.Context, docker *docker.Client, imageID, nameTa
 
 	containerConfig := container.Config{
 		ExposedPorts: nat.PortSet{
-			"8521/tcp":  struct{}{},
 			"25565/tcp": struct{}{},
 		},
 		Image: image,
