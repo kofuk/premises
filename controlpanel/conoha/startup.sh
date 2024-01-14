@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-export RUNNER_SCHEMA=2
+export RUNNER_SCHEMA=3
 
 atomic_copy() {
     from="$1"
