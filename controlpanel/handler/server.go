@@ -102,7 +102,7 @@ func (s *ConohaServer) SetUp(gameConfig *runner.Config, rdb *redis.Client, memSi
 		return false
 	}
 
-	startupScript, err := conoha.GenerateStartupScript(gameConfigData, rdb)
+	startupScript, err := conoha.GenerateStartupScript(gameConfigData)
 	if err != nil {
 		log.WithError(err).Error("Failed to generate startup script")
 		return false

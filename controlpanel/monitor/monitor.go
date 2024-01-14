@@ -88,13 +88,6 @@ func HandleEvent(strmProvider *streaming.Streaming, cfg *config.Config, rdb *red
 }
 
 func GetSystemInfoData(ctx context.Context, cfg *config.Config, addr string, rdb *redis.Client) ([]byte, error) {
-	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
-	client := http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: tlsConfig,
-		},
-	}
-
 	req, err := http.NewRequest("POST", "https://"+addr+":8521/systeminfo", nil)
 	if err != nil {
 		return nil, err
@@ -102,7 +95,7 @@ func GetSystemInfoData(ctx context.Context, cfg *config.Config, addr string, rdb
 	req = req.WithContext(ctx)
 	req.Header.Add("X-Auth-Key", cfg.MonitorKey)
 
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -116,13 +109,6 @@ func GetSystemInfoData(ctx context.Context, cfg *config.Config, addr string, rdb
 }
 
 func GetWorldInfoData(ctx context.Context, cfg *config.Config, addr string, rdb *redis.Client) ([]byte, error) {
-	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
-	client := http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: tlsConfig,
-		},
-	}
-
 	req, err := http.NewRequest("POST", "https://"+addr+":8521/worldinfo", nil)
 	if err != nil {
 		return nil, err
@@ -130,7 +116,7 @@ func GetWorldInfoData(ctx context.Context, cfg *config.Config, addr string, rdb 
 	req = req.WithContext(ctx)
 	req.Header.Add("X-Auth-Key", cfg.MonitorKey)
 
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

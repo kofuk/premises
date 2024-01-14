@@ -103,8 +103,6 @@ func CleanUp() {
 
 	slog.Info("Removing config files...")
 	removeFilesIgnoreError(
-		"/opt/premises/server.key",
-		"/opt/premises/server.crt",
 		"/opt/premises/config.json",
 		"/userdata",
 		"/userdata_decoded.sh",
