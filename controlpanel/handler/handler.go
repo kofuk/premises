@@ -189,8 +189,6 @@ func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Cli
 		}
 
 		h.serverRunning = true
-		log.Info("Start monitoring server")
-		go h.monitorServer(gameServer, rdb, dnsProvider)
 	} else {
 		if !gameServer.ImageExists() && !gameServer.SaveImage() {
 			return errors.New("Invalid state")
