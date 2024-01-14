@@ -12,16 +12,23 @@ atomic_copy() {
     mv "${to}"{.new,}
 }
 
+http_get() {
+    if command -v curl &>/dev/null; then
+        curl "$@"
+    fi
+    wget -O- "$@"
+}
+
 do_remote_update() {
     cd '/tmp'
 
-    remote_version="$(curl "https://storage.googleapis.com/premises/version@v${RUNNER_SCHEMA}.txt")"
+    remote_version="$(http_get "https://storage.googleapis.com/premises/version@v${RUNNER_SCHEMA}.txt")"
 
     current_version="$("${PREMISES_BASEDIR}/bin/premises-runner" --version || true)"
 
     [ "${current_version}" = "${remote_version}" ] && exit 0
 
-    curl "https://storage.googleapis.com/premises/premises-runner@v${RUNNER_SCHEMA}.tar.gz" | tar -xz
+    http_get "https://storage.googleapis.com/premises/premises-runner@v${RUNNER_SCHEMA}.tar.gz" | tar -xz
     atomic_copy 'premises-runner' "${PREMISES_BASEDIR}/bin/premises-runner"
 }
 
@@ -44,13 +51,10 @@ __run() {
 
     mkdir -p "${PREMISES_BASEDIR}/bin"
 
-    if ! command -v curl &>/dev/null; then
+    if ! command -v curl &>/dev/null || ! command -v wget &>/dev/null; then
         # Unfortunately, first initialization can't be done without installing curl.
-        (
-            export DEBIAN_FRONTEND=noninteractive
-            apt-get update -y
-            apt-get install -y curl
-        )
+        DEBIAN_FRONTEND=noninteractive xaptget update -y
+        DEBIAN_FRONTEND=noninteractive xaptget install -y curl
     fi
 
     (
