@@ -11,7 +11,7 @@ import (
 )
 
 type Config struct {
-	C runner.GameConfig
+	C runner.Config
 }
 
 func New() *Config {

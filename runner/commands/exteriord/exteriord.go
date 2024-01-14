@@ -1,7 +1,6 @@
 package exteriord
 
 import (
-	"encoding/json"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -12,23 +11,14 @@ import (
 	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
 	"github.com/kofuk/premises/runner/commands/exteriord/outbound"
 	"github.com/kofuk/premises/runner/commands/exteriord/proc"
+	"github.com/kofuk/premises/runner/config"
 )
 
-type Config struct {
-	AuthKey string `json:"authKey"`
-}
-
 func getServerAuthKey() (string, error) {
-	data, err := os.ReadFile("/opt/premises/config.json")
+	config, err := config.Load()
 	if err != nil {
-		return "", err
+		return "", nil
 	}
-
-	var config Config
-	if err := json.Unmarshal(data, &config); err != nil {
-		return "", err
-	}
-
 	return config.AuthKey, nil
 }
 

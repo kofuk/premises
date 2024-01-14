@@ -190,7 +190,7 @@ func isValidMemSize(memSize int) bool {
 	return memSize == 1 || memSize == 2 || memSize == 4 || memSize == 8 || memSize == 16 || memSize == 32 || memSize == 64
 }
 
-func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Values, cfg *config.Config) (*runnerEntity.GameConfig, error) {
+func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Values, cfg *config.Config) (*runnerEntity.Config, error) {
 	if !values.Has("server-version") {
 		return nil, errors.New("Server version is not set")
 	}
@@ -364,7 +364,7 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 	}
 }
 
-func (h *Handler) LaunchServer(gameConfig *runnerEntity.GameConfig, gameServer GameServer, memSizeGB int, rdb *redis.Client) {
+func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameServer, memSizeGB int, rdb *redis.Client) {
 	var dnsProvider *dns.DNSProvider
 	if h.cfg.Cloudflare.Token != "" {
 		cloudflareDNS, err := dns.NewCloudflareDNS(h.cfg.Cloudflare.Token, h.cfg.Cloudflare.ZoneID)
@@ -489,7 +489,7 @@ func StopServer(cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
 	}
 }
 
-func ReconfigureServer(gameConfig *runnerEntity.GameConfig, cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
+func ReconfigureServer(gameConfig *runnerEntity.Config, cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
 	if err := monitor.ReconfigureServer(gameConfig, cfg, cfg.ServerAddr, rdb); err != nil {
 		log.WithError(err).Error("Failed to reconfigure server")
 	}

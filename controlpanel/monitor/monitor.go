@@ -226,7 +226,7 @@ func StopServer(cfg *config.Config, addr string, rdb *redis.Client) error {
 	return nil
 }
 
-func ReconfigureServer(gameConfig *runnerEntity.GameConfig, cfg *config.Config, addr string, rdb *redis.Client) error {
+func ReconfigureServer(gameConfig *runnerEntity.Config, cfg *config.Config, addr string, rdb *redis.Client) error {
 	tlsConfig, err := makeTLSClientConfig(cfg, rdb)
 	client := http.Client{
 		Transport: &http.Transport{

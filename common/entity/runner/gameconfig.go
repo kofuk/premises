@@ -1,6 +1,6 @@
 package runner
 
-type GameConfig struct {
+type Config struct {
 	AllocSize int    `json:"allocSize"`
 	AuthKey   string `json:"authKey"`
 	Server    struct {

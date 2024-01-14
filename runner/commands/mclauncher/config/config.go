@@ -1,16 +1,15 @@
 package config
 
 import (
-	"encoding/json"
-	"os"
 	"path/filepath"
 	"sync"
 
 	"github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/runner/config"
 )
 
 type PMCMContext struct {
-	Cfg            runner.GameConfig
+	Cfg            *runner.Config
 	StatusChannels []chan string
 	ChannelMutex   sync.Mutex
 	LastStatus     string
@@ -36,12 +35,10 @@ func (ctx *PMCMContext) LocateDataFile(path string) string {
 }
 
 func LoadConfig(ctx *PMCMContext) error {
-	data, err := os.ReadFile(ctx.LocateDataFile("config.json"))
+	config, err := config.Load()
 	if err != nil {
 		return err
 	}
-	if err := json.Unmarshal(data, &ctx.Cfg); err != nil {
-		return err
-	}
+	ctx.Cfg = config
 	return nil
 }
