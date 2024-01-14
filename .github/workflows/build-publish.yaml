@@ -199,7 +199,7 @@ jobs:
     needs: check-all-ok
     if: github.ref_name == 'master'
     env:
-      RUNNER_SCHEMA: '2'
+      RUNNER_SCHEMA: '3'
     steps:
       - name: Install Required Packages
         run: |
