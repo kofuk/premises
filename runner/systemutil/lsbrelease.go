@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"errors"
 	"io"
+	"log/slog"
 	"os"
 	"strings"
 
 	"github.com/kofuk/premises/runner/metadata"
-	log "github.com/sirupsen/logrus"
 )
 
 type SystemInfo struct {
@@ -59,7 +59,7 @@ func GetHostOS() (string, error) {
 func GetSystemVersion() *SystemInfo {
 	hostOS, err := GetHostOS()
 	if err != nil {
-		log.WithError(err).Error("Error retrieving host OS")
+		slog.Error("Error retrieving host OS", slog.Any("error", err))
 		hostOS = "unknown"
 	}
 

@@ -3,6 +3,7 @@ package cleanup
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -12,13 +13,12 @@ import (
 	runnerEntity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/systemutil"
-	log "github.com/sirupsen/logrus"
 )
 
 func removeFilesIgnoreError(paths ...string) {
 	for _, path := range paths {
 		if err := os.Remove(path); err != nil {
-			log.WithError(err).WithField("path", path).Info("Failed to clean up file")
+			slog.Info("Failed to clean up file", slog.Any("error", err), slog.String("path", path))
 		}
 	}
 }
@@ -26,7 +26,7 @@ func removeFilesIgnoreError(paths ...string) {
 func removeSnapshots() {
 	dirent, err := os.ReadDir("/opt/premises/gamedata")
 	if err != nil {
-		log.WithError(err).Error("Error reading data dir")
+		slog.Error("Error reading data dir", slog.Any("error", err))
 		return
 	}
 
@@ -41,14 +41,14 @@ func removeSnapshots() {
 
 	if needsClean {
 		if err := systemutil.Cmd("btrfs", args, nil); err != nil {
-			log.WithError(err).Info("Failed to remove snapshots")
+			slog.Error("Failed to remove snapshots", slog.Any("error", err))
 		}
 	}
 }
 
 func unmountData() {
 	if err := syscall.Unmount("/opt/premises/gamedata", 0); err != nil {
-		log.WithError(err).Error("Error unmounting data dir")
+		slog.Error("Error unmounting data dir", slog.Any("error", err))
 	}
 }
 
@@ -59,7 +59,7 @@ func notifyStatus(eventCode entity.EventCode) {
 			EventCode: eventCode,
 		},
 	}); err != nil {
-		log.WithError(err).Error("Unable to write send message")
+		slog.Error("Unable to write send message", slog.Any("error", err))
 	}
 }
 
@@ -70,32 +70,32 @@ func copyLogData() {
 
 	logFile, err := os.Open("/exteriord.log")
 	if err != nil {
-		log.WithError(err).Error("Error creating log file")
+		slog.Error("Error creating log file", slog.Any("error", err))
 		return
 	}
 	defer logFile.Close()
 
 	out, err := os.Create(fmt.Sprintf("/premises-dev/exteriord-%s.log", time.Now().Format("2006-01-02T15-04-05")))
 	if err != nil {
-		log.WithError(err).Error("Error creating copy file")
+		slog.Error("Error creating copy file", slog.Any("error", err))
 		return
 	}
 	defer out.Close()
 
 	if _, err := io.Copy(out, logFile); err != nil {
-		log.WithError(err).Error("Error copying log file")
+		slog.Error("Error copying log file", slog.Any("error", err))
 		return
 	}
 
 	if err := os.Remove("/exteriord.log"); err != nil {
-		log.WithError(err).Error("Error removing unneeded log file")
+		slog.Error("Error removing unneeded log file", slog.Any("error", err))
 	}
 }
 
 func CleanUp() {
 	notifyStatus(runnerEntity.EventClean)
 
-	log.Info("Removing config files...")
+	slog.Info("Removing config files...")
 	removeFilesIgnoreError(
 		"/opt/premises/server.key",
 		"/opt/premises/server.crt",
@@ -104,13 +104,13 @@ func CleanUp() {
 		"/userdata_decoded.sh",
 	)
 
-	log.Info("Removing snaphots...")
+	slog.Info("Removing snaphots...")
 	removeSnapshots()
 
-	log.Info("Unmounting data dir...")
+	slog.Info("Unmounting data dir...")
 	unmountData()
 
-	log.Info("Copying log file if it is dev runner")
+	slog.Info("Copying log file if it is dev runner")
 	copyLogData()
 
 	notifyStatus(runnerEntity.EventShutdown)

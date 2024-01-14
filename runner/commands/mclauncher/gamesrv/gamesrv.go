@@ -5,15 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"sync"
 	"time"
-
-	"github.com/gorcon/rcon"
-	log "github.com/sirupsen/logrus"
 
 	entity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/backup"
@@ -26,7 +24,6 @@ type ServerInstance struct {
 	FinishWG               sync.WaitGroup
 	ShouldStop             bool
 	StartupFailed          bool
-	rconMu                 sync.Mutex
 	IsServerInitialized    bool
 	IsGameFinished         bool
 	RestartRequested       bool
@@ -34,30 +31,28 @@ type ServerInstance struct {
 	lastActive             time.Time
 	quickUndoBeforeRestart bool
 	ServerPid              int
+	Rcon                   *Rcon
 }
 
 var (
 	activePlayerListRegexp = regexp.MustCompile("^There are ([0-9]+) of a max of [0-9]+ players online")
 )
 
-func (srv *ServerInstance) isServerActive() bool {
-	srv.rconMu.Lock()
-	defer srv.rconMu.Unlock()
-	conn, err := connectToRcon(srv)
-	if err != nil {
-		log.WithError(err).Error("Failed to connect rcon")
-		return false
+func New() *ServerInstance {
+	return &ServerInstance{
+		Rcon: NewRcon("127.0.0.1:25575", "x"),
 	}
-	defer conn.Close()
+}
 
-	resp, err := conn.Execute("list")
+func (srv *ServerInstance) isServerActive() bool {
+	resp, err := srv.Rcon.Execute("list")
 	if err != nil {
-		log.WithError(err).Error("Failed to send list command to server")
+		slog.Error("Failed to send list command to server", slog.Any("error", err))
 	}
 
 	if match := activePlayerListRegexp.FindStringSubmatch(resp); match != nil {
 		if match[1] == "0" {
-			log.Println("Server is detected to be inactive")
+			slog.Info("Server is detected to be inactive")
 			return false
 		}
 	}
@@ -95,131 +90,47 @@ func (srv *ServerInstance) Wait() {
 	close(done)
 }
 
-func connectToRcon(srv *ServerInstance) (*rcon.Conn, error) {
-	var err error
-	for i := 0; i < 500; i++ {
-		var conn *rcon.Conn
-		conn, err = rcon.Dial("127.0.0.1:25575", "x")
-		if err == nil {
-			return conn, nil
-		}
-		if srv != nil {
-			if srv.Crashed {
-				return nil, errors.New("Server is crashed")
-			} else if srv.ShouldStop {
-				return nil, errors.New("Server is stopped")
-			}
-		}
-		log.WithError(err).Info("Failed to connect rcon; retrying in 1 second")
-		time.Sleep(time.Second)
-	}
-	return nil, err
-}
-
 func (srv *ServerInstance) Stop() {
-	srv.rconMu.Lock()
-	defer srv.rconMu.Unlock()
-	conn, err := connectToRcon(srv)
-	if err != nil {
-		log.WithError(err).Error("Failed to connect rcon")
-		return
+	if _, err := srv.Rcon.Execute("stop"); err != nil {
+		slog.Error("Failed to send stop command to server", slog.Any("error", err))
 	}
-	defer conn.Close()
-
-	resp, err := conn.Execute("stop")
-	if err != nil {
-		log.WithError(err).Error("Failed to send stop command to server")
-	}
-	log.Info(resp)
 }
 
 func (srv *ServerInstance) SaveAll() error {
-	srv.rconMu.Lock()
-	defer srv.rconMu.Unlock()
-	conn, err := connectToRcon(srv)
-	if err != nil {
+	if _, err := srv.Rcon.Execute("save-all"); err != nil {
 		return err
 	}
-	defer conn.Close()
-
-	resp, err := conn.Execute("save-all")
-	if err != nil {
-		return err
-	}
-	log.Info(resp)
-
 	return nil
 }
 
 func (srv *ServerInstance) AddToWhiteList(players []string) {
-	srv.rconMu.Lock()
-	defer srv.rconMu.Unlock()
-
-	conn, err := connectToRcon(srv)
-	if err != nil {
-		log.WithError(err).Error("Failed to connect rcon")
-		return
-	}
-	defer conn.Close()
-
 	for _, player := range players {
-		resp, err := conn.Execute(fmt.Sprintf("whitelist add %s", player))
+		_, err := srv.Rcon.Execute(fmt.Sprintf("whitelist add %s", player))
 		if err != nil {
-			log.WithError(err).Error("Failed to execute whitelist command")
+			slog.Error("Failed to execute whitelist command", slog.Any("error", err))
 		}
-		log.Info(resp)
 	}
 }
 
 func (srv *ServerInstance) AddToOp(players []string) {
-	srv.rconMu.Lock()
-	defer srv.rconMu.Unlock()
-
-	conn, err := connectToRcon(srv)
-	if err != nil {
-		log.WithError(err).Error("Failed to connect rcon")
-		return
-	}
-	defer conn.Close()
-
 	for _, player := range players {
-		resp, err := conn.Execute(fmt.Sprintf("op %s", player))
+		_, err := srv.Rcon.Execute(fmt.Sprintf("op %s", player))
 		if err != nil {
-			log.WithError(err).Error("Failed to execute op command")
+			slog.Error("Failed to execute op command", slog.Any("error", err))
 		}
-		log.Info(resp)
 	}
 }
 
 func (srv *ServerInstance) SendChat(message string) error {
-	srv.rconMu.Lock()
-	defer srv.rconMu.Unlock()
-	conn, err := connectToRcon(srv)
-	if err != nil {
+	if _, err := srv.Rcon.Execute(fmt.Sprintf("tellraw @a \"%s\"", message)); err != nil {
 		return err
 	}
-	defer conn.Close()
-
-	resp, err := conn.Execute(fmt.Sprintf("tellraw @a \"%s\"", message))
-	if err != nil {
-		return err
-	}
-	log.Info(resp)
 
 	return nil
 }
 
 func (srv *ServerInstance) GetSeed() (string, error) {
-	srv.rconMu.Lock()
-	defer srv.rconMu.Unlock()
-
-	conn, err := connectToRcon(srv)
-	if err != nil {
-		return "", err
-	}
-	defer conn.Close()
-
-	seed, err := conn.Execute("seed")
+	seed, err := srv.Rcon.Execute("seed")
 	if err != nil {
 		return "", err
 	}
@@ -247,17 +158,14 @@ func (srv *ServerInstance) QuickUndo() error {
 }
 
 func LaunchInteractiveRcon() {
-	conn, err := connectToRcon(nil)
-	if err != nil {
-		os.Exit(1)
-	}
+	rcon := NewRcon("127.0.0.1:25575", "x")
 
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("> ")
 	for scanner.Scan() {
-		resp, err := conn.Execute(scanner.Text())
+		resp, err := rcon.Execute(scanner.Text())
 		if err != nil {
-			log.WithError(err).Error("Failed to execute command")
+			slog.Error("Failed to execute command", slog.Any("error", err))
 			os.Exit(1)
 		}
 		fmt.Println(resp)
@@ -265,7 +173,7 @@ func LaunchInteractiveRcon() {
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.WithError(err).Println("Failed to scan stdin")
+		slog.Info("Failed to scan stdin", slog.Any("error", err))
 	}
 }
 
@@ -288,7 +196,7 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 		if isPrefix {
 			continue
 		}
-		fmt.Println(string(line))
+		slog.Info("Log from Minecraft", slog.String("content", string(line)))
 		if serverLoadingRegexp.Match(line) {
 			if err := exterior.SendMessage("serverStatus", entity.Event{
 				Type: entity.EventStatus,
@@ -296,7 +204,7 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 					EventCode: entity.EventLoading,
 				},
 			}); err != nil {
-				log.WithError(err).Error("Unable to write send message")
+				slog.Error("Unable to write send message", slog.Any("error", err))
 			}
 		} else if serverLoadingProgressRegexp.Match(line) {
 			matches := serverLoadingProgressRegexp.FindSubmatch(line)
@@ -312,7 +220,7 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 					Progress:  progress,
 				},
 			}); err != nil {
-				log.WithError(err).Error("Unable to write send message")
+				slog.Error("Unable to write send message", slog.Any("error", err))
 			}
 		} else if serverLoadedRegexp.Match(line) {
 			if err := exterior.SendMessage("serverStatus", entity.Event{
@@ -321,11 +229,11 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 					EventCode: entity.EventRunning,
 				},
 			}); err != nil {
-				log.WithError(err).Error("Unable to write send message")
+				slog.Error("Unable to write send message", slog.Any("error", err))
 			}
 
 			if err := SaveLastServerVersion(ctx); err != nil {
-				log.WithError(err).Error("Error saving last server versoin")
+				slog.Error("Error saving last server versoin", slog.Any("error", err))
 			}
 		} else if serverStoppingRegexp.Match(line) {
 			if err := exterior.SendMessage("serverStatus", entity.Event{
@@ -334,7 +242,7 @@ func MonitorServer(ctx *config.PMCMContext, stdout io.ReadCloser) error {
 					EventCode: entity.EventStopping,
 				},
 			}); err != nil {
-				log.WithError(err).Error("Unable to write send message")
+				slog.Error("Unable to write send message", slog.Any("error", err))
 			}
 		}
 	}
@@ -360,7 +268,7 @@ func processQuickUndo(ctx *config.PMCMContext) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		log.WithError(err).Info("cp command returned an error (this is no problem in the most cases)")
+		slog.Info("cp command returned an error (this is no problem in the most cases)", slog.Any("error", err))
 	}
 
 	return nil
@@ -374,24 +282,24 @@ func LaunchServer(ctx *config.PMCMContext, srv *ServerInstance) error {
 	if ctx.Cfg.World.ShouldGenerate {
 		if _, err := os.Stat(ctx.LocateWorldData("world")); err == nil {
 			if err := os.RemoveAll(ctx.LocateWorldData("world")); err != nil {
-				log.WithError(err).Error("Failed to remove world folder")
+				slog.Error("Failed to remove world folder", slog.Any("error", err))
 			}
 		} else if !os.IsNotExist(err) {
-			log.WithError(err).Error("Failed to stat world folder")
+			slog.Error("Failed to stat world folder", slog.Any("error", err))
 		}
 		if _, err := os.Stat(ctx.LocateWorldData("world_nether")); err == nil {
 			if err := os.RemoveAll(ctx.LocateWorldData("world_nether")); err != nil {
-				log.WithError(err).Error("Failed to remove world_nether folder")
+				slog.Error("Failed to remove world_nether folder", slog.Any("error", err))
 			}
 		} else if !os.IsNotExist(err) {
-			log.WithError(err).Error("Failed to stat world_nether folder")
+			slog.Error("Failed to stat world_nether folder", slog.Any("error", err))
 		}
 		if _, err := os.Stat(ctx.LocateWorldData("world_the_end")); err == nil {
 			if err := os.RemoveAll(ctx.LocateWorldData("world_the_end")); err != nil {
-				log.WithError(err).Error("Failed to remove world_the_end folder")
+				slog.Error("Failed to remove world_the_end folder", slog.Any("error", err))
 			}
 		} else if !os.IsNotExist(err) {
-			log.WithError(err).Error("Failed to stat world_the_end folder")
+			slog.Error("Failed to stat world_the_end folder", slog.Any("error", err))
 		}
 	} else {
 		if err := backup.ExtractWorldArchiveIfNeeded(ctx); err != nil {
@@ -404,7 +312,7 @@ func LaunchServer(ctx *config.PMCMContext, srv *ServerInstance) error {
 		return err
 	}
 	if !exists || ver != ctx.Cfg.Server.Version {
-		log.WithField("old", ver).WithField("new", ctx.Cfg.Server.Version).Info("Different version of server selected. cleaning up...")
+		slog.Info("Different version of server selected. cleaning up...", slog.String("old", ver), slog.String("new", ctx.Cfg.Server.Version))
 
 		ents, err := os.ReadDir(ctx.LocateWorldData(""))
 		if err != nil {
@@ -436,13 +344,13 @@ func LaunchServer(ctx *config.PMCMContext, srv *ServerInstance) error {
 	}
 	javaArgs := []string{fmt.Sprintf("-Xmx%dM", ctx.Cfg.AllocSize), fmt.Sprintf("-Xms%dM", ctx.Cfg.AllocSize), "-jar", ctx.LocateServer(ctx.Cfg.Server.Version), "nogui"}
 	go func() {
-		log.WithField("server_name", ctx.Cfg.Server.Version).WithField("commandline", javaArgs).Info("Launching Minecraft server")
+		slog.Info("Launching Minecraft server", slog.String("server_name", ctx.Cfg.Server.Version), slog.Any("commandline", javaArgs))
 		launchCount := 0
 		prevLaunch := time.Now()
 		for !srv.ShouldStop && !srv.RestartRequested {
 			if srv.quickUndoBeforeRestart {
 				if err := processQuickUndo(ctx); err != nil {
-					log.WithError(err).Error("Error processing quick undo")
+					slog.Error("Error processing quick undo", slog.Any("error", err))
 				}
 
 				launchCount = 0
@@ -465,7 +373,7 @@ func LaunchServer(ctx *config.PMCMContext, srv *ServerInstance) error {
 			cmd.Wait()
 			cmdStdout.Close()
 			exitCode := cmd.ProcessState.ExitCode()
-			log.WithField("exit_code", exitCode).Info("Server exited")
+			slog.Info("Server exited", slog.Int("exit_code", exitCode))
 			if exitCode == 0 {
 				break
 			}

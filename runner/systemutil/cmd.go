@@ -1,19 +1,30 @@
 package systemutil
 
 import (
-	"log"
+	"fmt"
+	"log/slog"
+	"math/rand"
 	"os"
 	"os/exec"
 )
 
 func Cmd(cmdPath string, args []string, envs []string) error {
-	log.Println("Command:", cmdPath, args)
+	logPath := fmt.Sprintf("/tmp/command-%d.log", rand.Int())
+	log, err := os.Create(logPath)
+	if err != nil {
+		slog.Error("Unable to create log file", slog.Any("error", err))
+		return err
+	}
+	defer log.Close()
+
+	slog.Info("Execute system command", slog.String("command", cmdPath), slog.Any("args", args), slog.String("command_output", logPath))
 
 	cmd := exec.Command(cmdPath, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = log
+	cmd.Stderr = log
 	cmd.Env = append(cmd.Environ(), envs...)
 	if err := cmd.Run(); err != nil {
+		slog.Error("Command failed", slog.Any("error", err))
 		return err
 	}
 	return nil

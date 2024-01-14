@@ -3,13 +3,14 @@ package outbound
 import (
 	"crypto/subtle"
 	"crypto/tls"
+	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
-	log "github.com/sirupsen/logrus"
 )
 
 type Server struct {
@@ -29,7 +30,7 @@ func NewServer(addr string, authKey string, msgRouter *msgrouter.MsgRouter) *Ser
 
 func (self *Server) HandleMonitor(w http.ResponseWriter, r *http.Request) {
 	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Auth-Key")), []byte(self.authKey)) == 0 {
-		log.Error("Connection is closed because it has no valid auth key")
+		slog.Error("Connection is closed because it has no valid auth key")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
@@ -67,14 +68,15 @@ L:
 
 func (self *Server) HandleProxy(w http.ResponseWriter, r *http.Request) {
 	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Auth-Key")), []byte(self.authKey)) == 0 {
-		log.Error("Connection is closed because it has no valid auth key")
+		slog.Error("Connection is closed because it has no valid auth key")
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
 	remoteUrl, err := url.Parse("http://127.0.0.1:9000")
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("[BUG] Unable to parse remote url", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	httputil.NewSingleHostReverseProxy(remoteUrl).ServeHTTP(w, r)

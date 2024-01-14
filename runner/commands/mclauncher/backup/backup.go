@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,7 +19,6 @@ import (
 	"github.com/kofuk/premises/common/s3wrap"
 	"github.com/kofuk/premises/runner/commands/mclauncher/config"
 	"github.com/kofuk/premises/runner/exterior"
-	log "github.com/sirupsen/logrus"
 	"github.com/ulikunitz/xz"
 )
 
@@ -51,12 +51,17 @@ func makeBackupName() string {
 }
 
 func (self *BackupService) DownloadWorldData(ctx *config.PMCMContext) error {
-	log.Info("Downloading world archive...")
+	slog.Info("Downloading world archive...")
 	resp, err := self.s3.GetObject(context.Background(), self.bucket, ctx.Cfg.World.GenerationId)
 	if err != nil {
 		return fmt.Errorf("Unable to download %s: %w", ctx.Cfg.World.GenerationId, err)
 	}
 	defer resp.Body.Close()
+
+	size := resp.Size
+	if size < 1 {
+		size = 1
+	}
 
 	progress := make(chan int)
 	defer close(progress)
@@ -76,7 +81,7 @@ func (self *BackupService) DownloadWorldData(ctx *config.PMCMContext) error {
 				total += int64(chunkSize)
 
 				if showNext {
-					percentage := total * 100 / resp.Size
+					percentage := total * 100 / size
 					if err := exterior.SendMessage("serverStatus", entity.Event{
 						Type: entity.EventStatus,
 						Status: &entity.StatusExtra{
@@ -84,7 +89,7 @@ func (self *BackupService) DownloadWorldData(ctx *config.PMCMContext) error {
 							Progress:  int(percentage),
 						},
 					}); err != nil {
-						log.Error(err)
+						slog.Error("Unable to write server status", slog.Any("error", err))
 					}
 
 					showNext = false
@@ -100,14 +105,10 @@ func (self *BackupService) DownloadWorldData(ctx *config.PMCMContext) error {
 	}
 	defer file.Close()
 
-	_, err = io.Copy(&ProgressWriter{
-		writer: file,
-		notify: progress,
-	}, resp.Body)
-	if err != nil {
+	if _, err := io.Copy(&ProgressWriter{writer: file, notify: progress}, resp.Body); err != nil {
 		return err
 	}
-	log.Info("Downloading world archive...Done")
+	slog.Info("Downloading world archive...Done")
 
 	return nil
 }
@@ -187,7 +188,7 @@ type UploadOptions struct {
 }
 
 func (self *BackupService) doUploadWorldData(ctx *config.PMCMContext, options *UploadOptions) error {
-	log.Info("Uploading world archive...")
+	slog.Info("Uploading world archive...")
 
 	archivePath := ctx.LocateDataFile(options.TmpFileName)
 
@@ -202,6 +203,9 @@ func (self *BackupService) doUploadWorldData(ctx *config.PMCMContext, options *U
 	}
 
 	size := fileInfo.Size()
+	if size < 1 {
+		size = 1
+	}
 	progress := make(chan int)
 	defer close(progress)
 
@@ -231,7 +235,7 @@ func (self *BackupService) doUploadWorldData(ctx *config.PMCMContext, options *U
 								Progress:  int(percentage),
 							},
 						}); err != nil {
-							log.Error(err)
+							slog.Error("Unable to write server status", slog.Any("error", err))
 						}
 					}
 					prevPercentage = percentage
@@ -243,21 +247,17 @@ func (self *BackupService) doUploadWorldData(ctx *config.PMCMContext, options *U
 	}()
 
 	key := fmt.Sprintf("%s/%s", ctx.Cfg.World.Name, makeBackupName())
-	if err := self.s3.PutObject(context.Background(), self.bucket, key, &ProgressReader{
-		reader: file,
-		notify: progress,
-	}, fileInfo.Size(),
-	); err != nil {
+	if err := self.s3.PutObject(context.Background(), self.bucket, key, &ProgressReader{reader: file, notify: progress}, fileInfo.Size()); err != nil {
 		return fmt.Errorf("Unable to upload %s: %w", key, err)
 	}
-	log.Info("Uploading world archive...Done")
+	slog.Info("Uploading world archive...Done")
 
 	if err := os.Remove(ctx.LocateDataFile(options.TmpFileName)); err != nil {
 		return err
 	}
 
 	if err := SaveLastWorldHash(ctx, key); err != nil {
-		log.WithError(err).Warn("Error saving last world hash")
+		slog.Warn("Error saving last world hash", slog.Any("error", err))
 	}
 
 	return nil
@@ -290,7 +290,7 @@ func (self *BackupService) RemoveOldBackups(ctx *config.PMCMContext) error {
 }
 
 func extractZstWorldArchive(inFile io.Reader, outDir string) error {
-	log.Println("Extracting Zstandard...")
+	slog.Info("Extracting Zstandard...")
 
 	zstReader, err := zstd.NewReader(inFile, zstd.WithDecoderConcurrency(runtime.NumCPU()))
 	if err != nil {
@@ -310,13 +310,13 @@ func extractZstWorldArchive(inFile io.Reader, outDir string) error {
 
 	tarCmd.Wait()
 
-	log.Println("Extracting Zstandard...Done")
+	slog.Info("Extracting Zstandard...Done")
 
 	return nil
 }
 
 func extractXzWorldArchive(inFile io.Reader, outDir string) error {
-	log.Println("Extracting XZ...")
+	slog.Info("Extracting XZ...")
 
 	numThreads := runtime.NumCPU() - 1
 	if numThreads < 1 {
@@ -349,13 +349,13 @@ func extractXzWorldArchive(inFile io.Reader, outDir string) error {
 
 	tarCmd.Wait()
 
-	log.Println("Extracting XZ...Done")
+	slog.Info("Extracting XZ...Done")
 
 	return nil
 }
 
 func extractZipWorldArchive(inFile, outDir string) error {
-	log.Println("Extracting Zip...")
+	slog.Info("Extracting Zip...")
 
 	unzipCmd := exec.Command("unzip", inFile)
 	unzipCmd.Dir = outDir
@@ -365,7 +365,7 @@ func extractZipWorldArchive(inFile, outDir string) error {
 		return err
 	}
 
-	log.Println("Extracting Zip...Done")
+	slog.Info("Extracting Zip...Done")
 
 	return nil
 }
@@ -374,7 +374,7 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 	if _, err := os.Stat(ctx.LocateDataFile("world.tar.zst")); os.IsNotExist(err) {
 		if _, err := os.Stat(ctx.LocateDataFile("world.tar.xz")); os.IsNotExist(err) {
 			if _, err := os.Stat(ctx.LocateDataFile("world.zip")); os.IsNotExist(err) {
-				log.Info("No world archive exists; continue...")
+				slog.Info("No world archive exists; continue...")
 				return nil
 			}
 		}
@@ -396,7 +396,7 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 		}
 	}
 
-	log.Info("Extracting world archive...")
+	slog.Info("Extracting world archive...")
 
 	tempDir, err := os.MkdirTemp("/tmp", "premises-temp")
 	if err != nil {
@@ -416,7 +416,7 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 				return err
 			}
 
-			log.Info("Extracting world archive...Done")
+			slog.Info("Extracting world archive...Done")
 
 			if err := os.Remove(ctx.LocateDataFile("world.zip")); err != nil {
 				return err
@@ -428,7 +428,7 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 				return err
 			}
 
-			log.Info("Extracting world archive...Done")
+			slog.Info("Extracting world archive...Done")
 
 			if err := os.Remove(ctx.LocateDataFile("world.tar.xz")); err != nil {
 				return err
@@ -441,18 +441,18 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 			return err
 		}
 
-		log.Info("Extracting world archive...Done")
+		slog.Info("Extracting world archive...Done")
 
 		if err := os.Remove(ctx.LocateDataFile("world.tar.zst")); err != nil {
 			return err
 		}
 	}
 
-	log.Info("Detecting and renaming world data...")
+	slog.Info("Detecting and renaming world data...")
 	if err := moveWorldDataToGameDir(ctx, tempDir); err != nil {
-		log.WithError(err).Error("Failed to prepare world data from archive")
+		slog.Error("Failed to prepare world data from archive", slog.Any("error", err))
 	}
-	log.Info("Detecting and renaming world data...Done")
+	slog.Info("Detecting and renaming world data...Done")
 
 	os.RemoveAll(tempDir)
 
@@ -460,7 +460,7 @@ func ExtractWorldArchiveIfNeeded(ctx *config.PMCMContext) error {
 }
 
 func doPrepareUploadData(ctx *config.PMCMContext, options *UploadOptions) error {
-	log.Info("Creating world archive...")
+	slog.Info("Creating world archive...")
 
 	tarArgs := []string{"-c", "world"}
 
@@ -502,7 +502,7 @@ func doPrepareUploadData(ctx *config.PMCMContext, options *UploadOptions) error 
 
 	tarCmd.Wait()
 
-	log.Info("Creating world archive...Done")
+	slog.Info("Creating world archive...Done")
 	return nil
 }
 

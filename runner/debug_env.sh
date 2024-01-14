@@ -1,0 +1,1 @@
+export PREMISES_VERBOSE=1

@@ -1,13 +1,12 @@
 package proc
 
 import (
+	"log/slog"
 	"math/rand"
 	"os"
 	"os/exec"
 	"syscall"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type RestartPolicy int
@@ -106,7 +105,7 @@ L:
 
 		failure := false
 		if err := cmd.Run(); err != nil {
-			log.WithError(err).WithField("executable", p.execPath).Error("Command failed")
+			slog.Error("Command failed", slog.Any("error", err), slog.String("executable", p.execPath))
 			failure = true
 		}
 

@@ -1,18 +1,20 @@
 package systemstat
 
 import (
+	"log/slog"
+	"os"
 	"time"
 
 	entity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/systemutil"
-	log "github.com/sirupsen/logrus"
 )
 
 func Run() {
 	cpuStat, err := systemutil.NewCPUUsage()
 	if err != nil {
-		log.WithError(err).Fatal("Failed to initialize CPU usage")
+		slog.Error("Failed to initialize CPU usage", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	ticker := time.NewTicker(time.Second)
@@ -20,7 +22,7 @@ func Run() {
 	for range ticker.C {
 		usage, err := cpuStat.Percent()
 		if err != nil {
-			log.WithError(err).Error("Failed to retrieve CPU usage")
+			slog.Error("Failed to retrieve CPU usage", slog.Any("error", err))
 			continue
 		}
 
@@ -32,7 +34,7 @@ func Run() {
 			},
 		}
 		if err := exterior.SendMessage("systemStat", data); err != nil {
-			log.Error(err)
+			slog.Error("Unable to write system stat", slog.Any("error", err))
 		}
 	}
 }

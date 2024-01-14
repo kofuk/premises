@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"sort"
 	"syscall"
@@ -15,7 +16,6 @@ import (
 	"github.com/kofuk/premises/runner/commands/serversetup"
 	"github.com/kofuk/premises/runner/commands/systemstat"
 	"github.com/kofuk/premises/runner/metadata"
-	log "github.com/sirupsen/logrus"
 )
 
 type Command struct {
@@ -54,14 +54,16 @@ func (self App) Run(args []string) {
 
 	cmd, ok := self.Commands[cmdName]
 	if !ok {
-		fmt.Printf("Command '%s' not found.", cmdName)
+		slog.Error("Subcommand not found.", slog.String("cmd", cmdName))
 		self.printUsage()
 		os.Exit(1)
 	}
 
+	slog.SetDefault(slog.Default().With(slog.String("runner_command", cmdName)))
+
 	if cmd.RequiresRoot {
 		if syscall.Getuid() != 0 {
-			fmt.Println("This command requires root")
+			slog.Error("This command requires root")
 			os.Exit(1)
 		}
 	}
@@ -70,7 +72,14 @@ func (self App) Run(args []string) {
 }
 
 func main() {
-	log.SetReportCaller(true)
+	logLevel := slog.LevelInfo
+	if os.Getenv("PREMISES_VERBOSE") != "" {
+		logLevel = slog.LevelDebug
+	}
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     logLevel,
+	})))
 
 	app := App{
 		Commands: map[string]Command{

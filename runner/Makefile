@@ -1,35 +1,23 @@
 GO = go
+DOCKER = docker
 
 .PHONY: all
-all:
+all: premises-runner
+
+premises-runner:
 	CGO_ENABLED=0 $(GO) build -o premises-runner -ldflags \
 	    '-X github.com/kofuk/premises/runner/metadata.Revision=$(shell [ -e ../.git ] && git rev-parse HEAD || echo unkonwn)'
+
+.PHONY: sh
+sh:
+	$(DOCKER) container exec -it $(shell $(DOCKER) container ls -aqf label=org.kofuk.premises.managed) bash
 
 .PHONY: deploy-dev
 deploy-dev:
 	mkdir -p /tmp/premises
 	CGO_ENABLED=0 GOOS=linux $(GO) build -o /tmp/premises/premises-runner
+	cp debug_env.sh /tmp/premises/env
 
 .PHONY: clean
 clean:
 	$(RM) premises-runner
-
-.PHONY: setup-gamedatafs
-setup-gamedatafs:
-	mkdir -p /tmp/premises/gamedata
-	fallocate -l 1GiB /tmp/premises/gamedata.img
-	mkfs.btrfs -f /tmp/premises/gamedata.img
-	sudo mount /tmp/premises/gamedata.img /tmp/premises/gamedata
-	sudo chown -R '1000:1000' /tmp/premises/gamedata
-
-.PHONY: run-debug-privilaged-proc
-run-debug-privilaged-proc:
-	tmpname="/tmp/$$(uuidgen)";                                                 \
-	$(GO) build -o "$${tmpname}";                                               \
-	(                                                                           \
-		sleep 30;                                                               \
-		$(RM) "$${tmpname}"                                                     \
-	) &                                                                         \
-	pid=$$!;                                                                    \
-	sudo -E PREMISES_RUNNER_DEBUG=true "$${tmpname}" --privileged-helper;       \
-	wait "$${pid}"

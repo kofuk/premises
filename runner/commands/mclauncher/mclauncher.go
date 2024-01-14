@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -17,7 +18,6 @@ import (
 	"github.com/kofuk/premises/runner/commands/mclauncher/statusapi"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/metadata"
-	log "github.com/sirupsen/logrus"
 )
 
 func generateServerProps(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) error {
@@ -59,7 +59,7 @@ func downloadWorldIfNeeded(ctx *config.PMCMContext) error {
 
 	if !exists || ctx.Cfg.World.GenerationId != lastWorldHash {
 		if err := backup.RemoveLastWorldHash(ctx); err != nil {
-			log.WithError(err).Error("Failed to remove last world hash")
+			slog.Error("Failed to remove last world hash", slog.Any("error", err))
 		}
 
 		if err := exterior.SendMessage("serverStatus", entity.Event{
@@ -68,7 +68,7 @@ func downloadWorldIfNeeded(ctx *config.PMCMContext) error {
 				EventCode: entity.EventWorldDownload,
 			},
 		}); err != nil {
-			log.WithError(err).Error("Unable to write send message")
+			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
 
 		if err := backupService.DownloadWorldData(ctx); err != nil {
@@ -82,7 +82,7 @@ func downloadWorldIfNeeded(ctx *config.PMCMContext) error {
 
 func downloadServerJarIfNeeded(ctx *config.PMCMContext) error {
 	if _, err := os.Stat(ctx.LocateServer(ctx.Cfg.Server.Version)); err == nil {
-		log.Info("No need to download server.jar")
+		slog.Info("No need to download server.jar")
 		return nil
 	} else if !os.IsNotExist(err) {
 		return err
@@ -92,7 +92,7 @@ func downloadServerJarIfNeeded(ctx *config.PMCMContext) error {
 		return err
 	}
 
-	log.WithField("url", ctx.Cfg.Server.DownloadUrl).Info("Downloading Minecraft server...")
+	slog.Info("Downloading Minecraft server...", slog.String("url", ctx.Cfg.Server.DownloadUrl))
 	resp, err := http.Get(ctx.Cfg.Server.DownloadUrl)
 	if err != nil {
 		return err
@@ -118,21 +118,22 @@ func downloadServerJarIfNeeded(ctx *config.PMCMContext) error {
 		return err
 	}
 
-	log.Info("Downloading Minecraft server...Done")
+	slog.Info("Downloading Minecraft server...Done")
 
 	return nil
 }
 
 func Run() {
-	log.Printf("Starting Premises Runner (revision: %s)\n", metadata.Revision)
+	slog.Info("Starting Premises Runner", slog.String("revision", metadata.Revision))
 
 	ctx := new(config.PMCMContext)
 
 	if err := config.LoadConfig(ctx); err != nil {
-		log.Fatal(err)
+		slog.Error("Failed to load config", slog.Any("error", err))
+		os.Exit(1)
 	}
 
-	srv := new(gamesrv.ServerInstance)
+	srv := gamesrv.New()
 	go statusapi.LaunchStatusServer(ctx, srv)
 
 	if err := exterior.SendMessage("serverStatus", entity.Event{
@@ -141,10 +142,10 @@ func Run() {
 			EventCode: entity.EventGameDownload,
 		},
 	}); err != nil {
-		log.WithError(err).Error("Unable to write send message")
+		slog.Error("Unable to write send message", slog.Any("error", err))
 	}
 	if err := downloadServerJarIfNeeded(ctx); err != nil {
-		log.WithError(err).Error("Couldn't download server.jar")
+		slog.Error("Couldn't download server.jar", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
 			Type: entity.EventStatus,
@@ -152,19 +153,19 @@ func Run() {
 				EventCode: entity.EventGameErr,
 			},
 		}); err != nil {
-			log.WithError(err).Error("Unable to write send message")
+			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
 		goto out
 	}
 
 	if err := generateServerProps(ctx, srv); err != nil {
-		log.WithError(err).Error("Couldn't generate server.properties")
+		slog.Error("Couldn't generate server.properties", slog.Any("error", err))
 		srv.StartupFailed = true
 		goto out
 	}
 
 	if strings.Contains(ctx.Cfg.Server.Version, "/") {
-		log.Error("ServerName can't contain /")
+		slog.Error("ServerName can't contain /")
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
 			Type: entity.EventStatus,
@@ -172,13 +173,13 @@ func Run() {
 				EventCode: entity.EventGameErr,
 			},
 		}); err != nil {
-			log.WithError(err).Error("Unable to write send message")
+			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
 		goto out
 	}
 
 	if err := downloadWorldIfNeeded(ctx); err != nil {
-		log.WithError(err).Error("Failed to download world data")
+		slog.Error("Failed to download world data", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
 			Type: entity.EventStatus,
@@ -186,7 +187,7 @@ func Run() {
 				EventCode: entity.EventWorldErr,
 			},
 		}); err != nil {
-			log.WithError(err).Error("Unable to write send message")
+			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
 		goto out
 	}
@@ -197,11 +198,11 @@ func Run() {
 			EventCode: entity.EventWorldPrepare,
 		},
 	}); err != nil {
-		log.WithError(err).Error("Unable to write send message")
+		slog.Error("Unable to write send message", slog.Any("error", err))
 	}
 
 	if err := gamesrv.LaunchServer(ctx, srv); err != nil {
-		log.WithError(err).Error("Failed to launch Minecraft server")
+		slog.Error("Failed to launch Minecraft server", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
 			Type: entity.EventStatus,
@@ -209,7 +210,7 @@ func Run() {
 				EventCode: entity.EventLaunchErr,
 			},
 		}); err != nil {
-			log.WithError(err).Error("Unable to write send message")
+			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
 		goto out
 	}
@@ -229,10 +230,10 @@ func Run() {
 			EventCode: entity.EventWorldPrepare,
 		},
 	}); err != nil {
-		log.WithError(err).Error("Unable to write send message")
+		slog.Error("Unable to write send message", slog.Any("error", err))
 	}
 	if err := backup.PrepareUploadData(ctx, backup.UploadOptions{}); err != nil {
-		log.WithError(err).Error("Failed to create world archive")
+		slog.Error("Failed to create world archive", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
 			Type: entity.EventStatus,
@@ -240,7 +241,7 @@ func Run() {
 				EventCode: entity.EventWorldErr,
 			},
 		}); err != nil {
-			log.WithError(err).Error("Unable to write send message")
+			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
 		goto out
 	}
@@ -251,10 +252,10 @@ func Run() {
 			EventCode: entity.EventWorldUpload,
 		},
 	}); err != nil {
-		log.WithError(err).Error("Unable to write send message")
+		slog.Error("Unable to write send message", slog.Any("error", err))
 	}
 	if err := backup.New(ctx.Cfg.AWS.AccessKey, ctx.Cfg.AWS.SecretKey, ctx.Cfg.S3.Endpoint, ctx.Cfg.S3.Bucket).UploadWorldData(ctx, backup.UploadOptions{}); err != nil {
-		log.WithError(err).Error("Failed to upload world data")
+		slog.Error("Failed to upload world data", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
 			Type: entity.EventStatus,
@@ -262,17 +263,17 @@ func Run() {
 				EventCode: entity.EventWorldErr,
 			},
 		}); err != nil {
-			log.WithError(err).Error("Unable to write send message")
+			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
 		goto out
 	}
 	if err := backup.New(ctx.Cfg.AWS.AccessKey, ctx.Cfg.AWS.SecretKey, ctx.Cfg.S3.Endpoint, ctx.Cfg.S3.Bucket).RemoveOldBackups(ctx); err != nil {
-		log.WithError(err).Error("Unable to delete outdated backups")
+		slog.Error("Unable to delete outdated backups", slog.Any("error", err))
 	}
 
 out:
 	if srv.RestartRequested {
-		log.Info("Restart...")
+		slog.Info("Restart...")
 
 		os.Exit(100)
 	} else if srv.Crashed && !srv.ShouldStop {
@@ -282,7 +283,7 @@ out:
 				EventCode: entity.EventCrashed,
 			},
 		}); err != nil {
-			log.WithError(err).Error("Unable to write send message")
+			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
 
 		// User may reconfigure the server

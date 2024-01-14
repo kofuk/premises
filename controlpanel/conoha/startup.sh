@@ -75,6 +75,7 @@ EOF
 #__CONFIG_FILE__
 EOF
 
+    [ -e /premises-dev/env ] && . /premises-dev/env
     /opt/premises/bin/premises-runner --exteriord &>/exteriord.log &
 
     exit

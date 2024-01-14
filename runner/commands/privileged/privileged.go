@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 )
 
 type RequestMsg struct {
@@ -48,7 +49,7 @@ func takeFsSnapshot(snapshotId string) (*SnapshotInfo, error) {
 
 	if snapshotId != "" {
 		if err := deleteFsSnapshot(snapshotId); err != nil {
-			log.WithError(err).Info("Failed to remove old snapshot (doesn't the snapshot exist?)")
+			slog.Error("Failed to remove old snapshot (doesn't the snapshot exist?)", slog.Any("error", err))
 		}
 	}
 
@@ -98,45 +99,45 @@ func sendMessage(w http.ResponseWriter, msg interface{}) error {
 
 func Run() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Info("Request received")
+		slog.Info("Request received")
 
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.WithError(err).Error("Failed to read body")
+			slog.Error("Failed to read body", slog.Any("error", err))
 			err := sendMessage(w, &ResponseMsg{
 				Version: 1,
 				Success: false,
 				Message: "Failed to read body",
 			})
 			if err != nil {
-				log.WithError(err).Error("Failed to write body")
+				slog.Error("Failed to write body", slog.Any("error", err))
 			}
 			return
 		}
 
 		var req RequestMsg
 		if err := json.Unmarshal(body, &req); err != nil {
-			log.WithError(err).Error("Failed to parse body")
+			slog.Error("Failed to parse body", slog.Any("error", err))
 			err := sendMessage(w, &ResponseMsg{
 				Version: 1,
 				Success: false,
 				Message: "failed to parse body",
 			})
 			if err != nil {
-				log.WithError(err).Error("Failed to write body")
+				slog.Error("Failed to write body", slog.Any("error", err))
 			}
 			return
 		}
 
 		if req.Version != 1 {
-			log.WithField("version", req.Version).Error("Unsupported version")
+			slog.Error("Unsupported version", slog.Any("version", req.Version))
 			err := sendMessage(w, &ResponseMsg{
 				Version: 1,
 				Success: false,
 				Message: "Unsupported version",
 			})
 			if err != nil {
-				log.WithError(err).Error("Failed to write body")
+				slog.Error("Failed to write body", slog.Any("error", err))
 			}
 			return
 		}
@@ -144,7 +145,7 @@ func Run() {
 		if req.Func == "snapshots/create" {
 			ssi, err := takeFsSnapshot("")
 			if err != nil {
-				log.WithError(err).Error("Failed to take snapshot")
+				slog.Error("Failed to take snapshot", slog.Any("error", err))
 
 				err := sendMessage(w, &ResponseMsg{
 					Version: 1,
@@ -152,7 +153,7 @@ func Run() {
 					Message: "Failed to take snapshot",
 				})
 				if err != nil {
-					log.WithError(err).Error("Failed to write body")
+					slog.Error("Failed to write body", slog.Any("error", err))
 					return
 				}
 				return
@@ -164,12 +165,12 @@ func Run() {
 				Result:  ssi,
 			})
 			if err != nil {
-				log.WithError(err).Error("Failed to write body")
+				slog.Error("Failed to write body", slog.Any("error", err))
 				return
 			}
 		} else if req.Func == "snapshots/delete" {
 			if len(req.Args) != 1 {
-				log.Error("Invalid argument")
+				slog.Error("Invalid argument")
 
 				err = sendMessage(w, &ResponseMsg{
 					Version: 1,
@@ -177,13 +178,13 @@ func Run() {
 					Message: "Invalid argument",
 				})
 				if err != nil {
-					log.WithError(err).Error("Failed to write body")
+					slog.Error("Failed to write body", slog.Any("error", err))
 					return
 				}
 			}
 
 			if err := deleteFsSnapshot(req.Args[0]); err != nil {
-				log.WithError(err).Error("Failed to delete snapshot")
+				slog.Error("Failed to delete snapshot", slog.Any("error", err))
 
 				err = sendMessage(w, &ResponseMsg{
 					Version: 1,
@@ -191,7 +192,7 @@ func Run() {
 					Message: "Failed to take snapshot",
 				})
 				if err != nil {
-					log.WithError(err).Error("Failed to write body")
+					slog.Error("Failed to write body", slog.Any("error", err))
 					return
 				}
 				return
@@ -202,13 +203,13 @@ func Run() {
 				Success: true,
 			})
 			if err != nil {
-				log.WithError(err).Error("Failed to write body")
+				slog.Error("Failed to write body", slog.Any("error", err))
 				return
 			}
 		} else if req.Func == "quicksnapshots/create" {
 			ssi, err := takeFsSnapshot("quick0")
 			if err != nil {
-				log.WithError(err).Error("Failed to take snapshot")
+				slog.Error("Failed to take snapshot", slog.Any("error", err))
 
 				err := sendMessage(w, &ResponseMsg{
 					Version: 1,
@@ -216,7 +217,7 @@ func Run() {
 					Message: "Failed to take snapshot",
 				})
 				if err != nil {
-					log.WithError(err).Error("Failed to write body")
+					slog.Error("Failed to write body", slog.Any("error", err))
 					return
 				}
 				return
@@ -228,21 +229,24 @@ func Run() {
 				Result:  ssi,
 			})
 			if err != nil {
-				log.WithError(err).Error("Failed to write body")
+				slog.Error("Failed to write body", slog.Any("error", err))
 				return
 			}
 		} else {
-			log.Error("Unknown method")
+			slog.Error("Unknown method")
 			err := sendMessage(w, &ResponseMsg{
 				Version: 1,
 				Success: false,
 				Message: "Unknown method",
 			})
 			if err != nil {
-				log.WithError(err).Error("Failed to write body")
+				slog.Error("Failed to write body", slog.Any("error", err))
 			}
 		}
 	})
 
-	log.Fatal(http.ListenAndServe("localhost:8522", nil))
+	if err := http.ListenAndServe("localhost:8522", nil); err != nil {
+		slog.Error("Unable to listen :8522", slog.Any("error", err))
+		os.Exit(1)
+	}
 }

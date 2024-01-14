@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,7 +16,6 @@ import (
 	"github.com/kofuk/premises/runner/commands/privileged"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/systemutil"
-	log "github.com/sirupsen/logrus"
 )
 
 type createSnapshotResp struct {
@@ -110,20 +110,20 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 	http.HandleFunc("/newconfig", func(w http.ResponseWriter, r *http.Request) {
 		var config entity.GameConfig
 		if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
-			log.WithError(err).Error("Failed to parse request JSON")
+			slog.Error("Failed to parse request JSON", slog.Any("error", err))
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		data, err := json.Marshal(&config)
 		if err != nil {
-			log.WithError(err).Error("Failed to stringify request")
+			slog.Error("Failed to stringify request", slog.Any("error", err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		if err := os.WriteFile(ctx.LocateDataFile("config.json"), data, 0644); err != nil {
-			log.WithError(err).Error("Failed to write server config")
+			slog.Error("Failed to write server config", slog.Any("error", err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -134,14 +134,14 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 
 	http.HandleFunc("/quickss", func(w http.ResponseWriter, r *http.Request) {
 		if err := srv.SaveAll(); err != nil {
-			log.WithError(err).Error("Failed to run save-all")
+			slog.Error("Failed to run save-all", slog.Any("error", err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
 		_, err := requestQuickSnapshot()
 		if err != nil {
-			log.WithError(err).Error("Failed to create snapshot")
+			slog.Error("Failed to create snapshot", slog.Any("error", err))
 
 			if err := exterior.SendMessage("serverStatus", entity.Event{
 				Type: entity.EventInfo,
@@ -150,7 +150,7 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 					IsError:  true,
 				},
 			}); err != nil {
-				log.WithError(err).Error("Unable to write send message")
+				slog.Error("Unable to write send message", slog.Any("error", err))
 			}
 
 			return
@@ -163,7 +163,7 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 				IsError:  false,
 			},
 		}); err != nil {
-			log.WithError(err).Error("Unable to write send message")
+			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
 
 		w.WriteHeader(http.StatusCreated)
@@ -179,13 +179,13 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 						IsError:  true,
 					},
 				}); err != nil {
-					log.WithError(err).Error("Unable to write send message")
+					slog.Error("Unable to write send message", slog.Any("error", err))
 				}
 				return
 			}
 
 			if err := srv.QuickUndo(); err != nil {
-				log.WithError(err).Error("Unable to quick-undo")
+				slog.Error("Unable to quick-undo", slog.Any("error", err))
 			}
 		}()
 	})
@@ -199,7 +199,7 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 		systemInfo := systemutil.GetSystemVersion()
 		data, err := json.Marshal(systemInfo)
 		if err != nil {
-			log.WithError(err).WithField("endpoint", "/systeminfo").Error("Failed to unmarshal system info")
+			slog.Error("Failed to unmarshal system info", slog.Any("error", err), slog.String("endpoint", "/systeminfo"))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -209,25 +209,28 @@ func LaunchStatusServer(ctx *config.PMCMContext, srv *gamesrv.ServerInstance) {
 
 	http.HandleFunc("/worldinfo", func(w http.ResponseWriter, r *http.Request) {
 		if !srv.IsServerInitialized {
-			log.Info("Server is not started. Abort")
+			slog.Info("Server is not started. Abort")
 			w.WriteHeader(http.StatusTooEarly)
 			return
 		}
 
 		worldInfo, err := GetWorldInfo(ctx, srv)
 		if err != nil {
-			log.WithError(err).WithField("endpoint", "/worldinfo").Error("Failed to retrieve world info")
+			slog.Error("Failed to retrieve world info", slog.Any("error", err), slog.String("endpoint", "/worldinfo"))
 			return
 		}
 		data, err := json.Marshal(worldInfo)
 		if err != nil {
-			log.WithError(err).WithField("endpoint", "/worldinfo").Error("Failed to marshal world info")
+			slog.Error("Failed to marshal world info", slog.Any("error", err), slog.String("endpoint", "/worldinfo"))
 			return
 		}
 
 		w.Write(data)
 	})
 
-	log.Info("Launching status server...")
-	log.Fatal(http.ListenAndServe("127.0.0.1:9000", nil))
+	slog.Info("Launching status server...")
+	if err := http.ListenAndServe("127.0.0.1:9000", nil); err != nil {
+		slog.Error("Error listening on :9000", slog.Any("error", err))
+		os.Exit(1)
+	}
 }

@@ -41,7 +41,7 @@ func New(awsAccessKey, awsSecretKey, s3Endpoint string) *Client {
 		Logger: logging.LoggerFunc(func(classification logging.Classification, format string, v ...interface{}) {
 			slog.Debug(fmt.Sprintf(format, v), slog.String("source", "aws-sdk"))
 		}),
-		ClientLogMode: aws.LogRequestWithBody | aws.LogResponseWithBody,
+		ClientLogMode: aws.LogRequest | aws.LogResponse,
 	}
 
 	s3Client := s3.NewFromConfig(config, func(options *s3.Options) {

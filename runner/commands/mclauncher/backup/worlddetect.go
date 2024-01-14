@@ -2,12 +2,12 @@ package backup
 
 import (
 	"errors"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/kofuk/premises/runner/commands/mclauncher/config"
-	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -177,7 +177,7 @@ func moveWorldDataToGameDir(ctx *config.PMCMContext, tmpDir string) error {
 		}
 	}
 
-	log.WithField("from", dirs.defWorld).WithField("to", worldDir).Info("Copying overworld data")
+	slog.Info("Copying overworld data", slog.String("from", dirs.defWorld), slog.String("to", worldDir))
 	cmd := exec.Command("mv", "--", dirs.defWorld, worldDir)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
@@ -186,7 +186,7 @@ func moveWorldDataToGameDir(ctx *config.PMCMContext, tmpDir string) error {
 	}
 
 	if dirs.nether != "" {
-		log.WithField("from", dirs.nether).WithField("to", netherDir).Info("Copying nether data")
+		slog.Info("Copying nether data", slog.String("from", dirs.nether), slog.String("to", netherDir))
 		cmd := exec.Command("mv", "--", dirs.nether, netherDir)
 		cmd.Stdout = os.Stderr
 		cmd.Stderr = os.Stderr
@@ -194,7 +194,7 @@ func moveWorldDataToGameDir(ctx *config.PMCMContext, tmpDir string) error {
 			return err
 		}
 
-		log.WithField("from", dirs.theEnd).WithField("to", endDir).Info("Copying the end data")
+		slog.Info("Copying the end data", slog.String("from", dirs.theEnd), slog.String("to", endDir))
 		cmd = exec.Command("mv", "--", dirs.theEnd, endDir)
 		cmd.Stdout = os.Stderr
 		cmd.Stderr = os.Stderr

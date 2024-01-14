@@ -1,8 +1,9 @@
 package scheduler
 
 import (
+	"log/slog"
+
 	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 )
 
 type TaskID string
@@ -72,7 +73,7 @@ func (self *Scheduler) Run() {
 			}
 
 			if !task.started && uncompletedDepsCount == 0 {
-				log.WithField("description", task.description).WithField("id", task.taskID).Info("Starting task")
+				slog.Info("Starting task", slog.String("description", task.description), slog.String("id", string(task.taskID)))
 				go task.runTask(notifyComplete)
 				task.started = true
 			}
