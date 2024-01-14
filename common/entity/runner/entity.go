@@ -65,3 +65,17 @@ type Event struct {
 	Sysstat *SysstatExtra `json:"sysstat,omitempty"`
 	Info    *InfoExtra    `json:"info,omitempty"`
 }
+
+type ActionType string
+
+const (
+	ActionStop        ActionType = "stop"
+	ActionSnapshot               = "snapshot"
+	ActionUndo                   = "undo"
+	ActionReconfigure            = "reconfigure"
+)
+
+type Action struct {
+	Type   ActionType `json:"type"`
+	Config *Config    `json:"config,omitempty"`
+}

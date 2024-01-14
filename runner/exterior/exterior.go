@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	entity "github.com/kofuk/premises/common/entity/runner"
 )
 
 func SendMessage(msgType string, userData any) error {
+	slog.Debug("Sending message...", slog.String("type", msgType))
+
 	serializedUserData, err := json.Marshal(userData)
 	if err != nil {
 		return err
@@ -37,6 +40,8 @@ func SendMessage(msgType string, userData any) error {
 	if err != nil {
 		return err
 	}
+
+	slog.Debug("Sending message...Done")
 
 	return fmt.Errorf("Unable to send message to exteriord: %s", string(body))
 }

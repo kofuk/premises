@@ -23,6 +23,7 @@ import (
 	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/mcversions"
 	"github.com/kofuk/premises/controlpanel/model"
+	"github.com/kofuk/premises/controlpanel/pollable"
 	"github.com/kofuk/premises/controlpanel/streaming"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
@@ -48,6 +49,7 @@ type Handler struct {
 	MCVersions    mcversions.MCVersionProvider
 	Streaming     *streaming.Streaming
 	backup        *backup.BackupService
+	runnerAction  *pollable.PollableActionService
 }
 
 func createDatabaseClient(cfg *config.Config) (*gorm.DB, error) {
@@ -123,6 +125,7 @@ func setupRoutes(h *Handler) {
 
 	h.setupRootRoutes(h.engine.Group(""))
 	h.setupApiRoutes(h.engine.Group("/api"))
+	h.setupRunnerRoutes(h.engine.Group("/_runner"))
 }
 
 func setupSessions(h *Handler) {
@@ -225,6 +228,7 @@ func NewHandler(cfg *config.Config, bindAddr string) (*Handler, error) {
 	h.Cacher = cacher
 	h.MCVersions = mcversions.New(cacher)
 	h.Streaming = streaming.New(h.redis)
+	h.runnerAction = pollable.New(h.redis, "runner-action")
 
 	setupSessions(h)
 
