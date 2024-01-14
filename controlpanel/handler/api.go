@@ -361,6 +361,10 @@ func (h *Handler) shutdownServer(gameServer GameServer, rdb *redis.Client, dnsPr
 	if err := h.Cacher.Del(context.Background(), fmt.Sprintf("runner:%s", authKey)); err != nil {
 		slog.Error("Failed to delete runner id", slog.Any("error", err))
 	}
+
+	if err := h.Streaming.ClearHistory(context.Background(), h.Streaming.GetStream(streaming.SysstatStream)); err != nil {
+		log.WithError(err).Error("Unable to clear sysstat history")
+	}
 }
 
 func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameServer, memSizeGB int, rdb *redis.Client) {
