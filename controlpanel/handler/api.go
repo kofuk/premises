@@ -400,20 +400,6 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameS
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	if err := monitor.GenerateTLSKey(h.cfg, rdb); err != nil {
-		log.WithError(err).Error("Failed to generate TLS key")
-
-		if err := h.Streaming.PublishEvent(
-			context.Background(),
-			infoStream,
-			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
-		); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
-		}
-		h.serverRunning = false
-		return
-	}
-
 	h.cfg.MonitorKey = gameConfig.AuthKey
 	rdb.Set(context.Background(), "monitor-key", gameConfig.AuthKey, 0).Result()
 

@@ -57,6 +57,11 @@ func (self *MapCacheImpl) Get(ctx context.Context, key string) ([]byte, error) {
 	return val, nil
 }
 
+func (self *MapCacheImpl) Del(ctx context.Context, key string) error {
+	delete(self.entries, key)
+	return nil
+}
+
 func setupResponders() {
 	httpmock.RegisterResponder(http.MethodGet, "https://launchermeta/version_manifest.json", httpmock.NewJsonResponderOrPanic(http.StatusOK, testingLauncherMeta))
 	httpmock.RegisterResponder(http.MethodGet, "https://launchermeta/version0.json", httpmock.NewStringResponder(http.StatusOK, testingVersionMeta0))

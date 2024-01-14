@@ -67,14 +67,6 @@ __run() {
         fi
     )
 
-    cat <<'EOF' >"${PREMISES_BASEDIR}/server.crt"
-#__SERVER_CRT__
-EOF
-
-    cat <<'EOF' >"${PREMISES_BASEDIR}/server.key"
-#__SERVER_KEY__
-EOF
-
     cat <<'EOF' >"${PREMISES_BASEDIR}/config.json"
 #__CONFIG_FILE__
 EOF
