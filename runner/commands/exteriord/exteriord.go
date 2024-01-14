@@ -14,31 +14,19 @@ import (
 	"github.com/kofuk/premises/runner/config"
 )
 
-func getServerAuthKey() (string, error) {
-	config, err := config.Load()
-	if err != nil {
-		return "", nil
-	}
-	return config.AuthKey, nil
-}
-
 func Run() {
 	signal.Ignore(syscall.SIGHUP)
 
-	msgRouter := msgrouter.NewMsgRouter()
-
-	authKey, err := getServerAuthKey()
+	config, err := config.Load()
 	if err != nil {
-		slog.Error("Unable to get server auth key", slog.Any("error", err))
+		slog.Error("Unable to load config", slog.Any("error", err))
 		os.Exit(1)
 	}
 
-	ob := outbound.NewServer("0.0.0.0:8521", authKey, msgRouter)
-	go func() {
-		if err := ob.Start(); err != nil {
-			slog.Error("Unable to start outbound server", slog.Any("error", err))
-		}
-	}()
+	msgRouter := msgrouter.NewMsgRouter()
+
+	ob := outbound.NewServer(config.ControlPanel, config.AuthKey, msgRouter)
+	go ob.Start()
 
 	interior := interior.NewServer("127.0.0.1:2000", msgRouter)
 	go func() {

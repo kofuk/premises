@@ -1,8 +1,9 @@
 package outbound
 
 import (
+	"bytes"
 	"crypto/subtle"
-	"crypto/tls"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
@@ -16,7 +17,6 @@ import (
 type Server struct {
 	addr      string
 	authKey   string
-	server    *http.Server
 	msgRouter *msgrouter.MsgRouter
 }
 
@@ -28,40 +28,24 @@ func NewServer(addr string, authKey string, msgRouter *msgrouter.MsgRouter) *Ser
 	}
 }
 
-func (self *Server) HandleMonitor(w http.ResponseWriter, r *http.Request) {
-	if subtle.ConstantTimeCompare([]byte(r.Header.Get("X-Auth-Key")), []byte(self.authKey)) == 0 {
-		slog.Error("Connection is closed because it has no valid auth key")
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
+func (self *Server) HandleMonitor() {
 	client := self.msgRouter.Subscribe(msgrouter.NotifyLatest("serverStatus"))
 	defer self.msgRouter.Unsubscribe(client)
 
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	lastSent := time.Now().Add(time.Hour)
-
-L:
 	for {
-		select {
-		case msg := <-client.C:
-			w.Write([]byte(msg.UserData + "\n"))
-			w.(http.Flusher).Flush()
-
-			lastSent = time.Now()
-
-		case <-ticker.C:
-			if lastSent.Add(4 * time.Second).Before(time.Now()) {
-				w.Write([]byte(":uhaha\n"))
-				w.(http.Flusher).Flush()
-
-				lastSent = time.Now()
+		for msg := range client.C {
+			req, err := http.NewRequest(http.MethodPost, self.addr+"/_runner/push-status", bytes.NewBuffer([]byte(msg.UserData)))
+			if err != nil {
+				slog.Error("Error creating request", slog.Any("error", err))
+				continue
 			}
-
-		case <-r.Context().Done():
-			break L
+			req.Header.Set("Authorization", self.authKey)
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				slog.Error("Error writing status", slog.Any("error", err))
+				continue
+			}
+			io.ReadAll(resp.Body)
 		}
 	}
 }
@@ -82,36 +66,39 @@ func (self *Server) HandleProxy(w http.ResponseWriter, r *http.Request) {
 	httputil.NewSingleHostReverseProxy(remoteUrl).ServeHTTP(w, r)
 }
 
-func (self *Server) Start() error {
-	mux := http.NewServeMux()
+func (self *Server) PollAction() {
+	for {
+		req, err := http.NewRequest(http.MethodGet, self.addr+"/_runner/poll-action", nil)
+		if err != nil {
+			slog.Error("Error creating request", slog.Any("error", err))
+			continue
+		}
+		req.Header.Set("Authorization", self.authKey)
 
-	mux.HandleFunc("/", self.HandleProxy)
-	mux.HandleFunc("/monitor", self.HandleMonitor)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			slog.Error("Error polling action", slog.Any("error", err))
 
-	tlsCfg := &tls.Config{
-		MinVersion:               tls.VersionTLS13,
-		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-		PreferServerCipherSuites: true,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-			tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-		},
+			time.Sleep(5 * time.Second)
+			continue
+		}
+
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			slog.Error("Error reading body", slog.Any("error", err))
+			continue
+		}
+
+		resp, err = http.Post("http://127.0.0.1:9000/", "application/json", bytes.NewBuffer(data))
+		if err != nil {
+			slog.Error("Error forwarding action", slog.Any("error", err))
+			continue
+		}
+		io.ReadAll(resp.Body)
 	}
-
-	self.server = &http.Server{
-		Addr:         self.addr,
-		Handler:      mux,
-		TLSConfig:    tlsCfg,
-		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler), 0),
-		ReadTimeout:  5 * time.Second,
-		IdleTimeout:  120 * time.Second,
-	}
-
-	return self.server.ListenAndServeTLS("/opt/premises/server.crt", "/opt/premises/server.key")
 }
 
-func (self *Server) Close() error {
-	return self.server.Close()
+func (self *Server) Start() {
+	go self.PollAction()
+	self.HandleMonitor()
 }

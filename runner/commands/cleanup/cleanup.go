@@ -33,7 +33,7 @@ func removeSnapshots() {
 	args := []string{"subvolume", "delete", "--commit-after"}
 	needsClean := false
 	for _, ent := range dirent {
-		if ent.Name()[:3] == "ss@" {
+		if len(ent.Name()) > 3 && ent.Name()[:3] == "ss@" {
 			needsClean = true
 			args = append(args, filepath.Join("/opt/premises/gamedata", ent.Name()))
 		}
@@ -95,6 +95,12 @@ func copyLogData() {
 func CleanUp() {
 	notifyStatus(runnerEntity.EventClean)
 
+	slog.Info("Removing snaphots...")
+	removeSnapshots()
+
+	slog.Info("Unmounting data dir...")
+	unmountData()
+
 	slog.Info("Removing config files...")
 	removeFilesIgnoreError(
 		"/opt/premises/server.key",
@@ -103,12 +109,6 @@ func CleanUp() {
 		"/userdata",
 		"/userdata_decoded.sh",
 	)
-
-	slog.Info("Removing snaphots...")
-	removeSnapshots()
-
-	slog.Info("Unmounting data dir...")
-	unmountData()
 
 	slog.Info("Copying log file if it is dev runner")
 	copyLogData()

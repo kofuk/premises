@@ -196,6 +196,12 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Value
 		return nil, errors.New("Server version is not set")
 	}
 	result := gameconfig.New()
+
+	result.C.ControlPanel = h.cfg.ControlPanel.Origin
+	if strings.HasPrefix(h.cfg.ControlPanel.Origin, "http://localhost:") {
+		result.C.ControlPanel = strings.Replace(h.cfg.ControlPanel.Origin, "http://localhost", "http://host.docker.internal", 1)
+	}
+
 	serverDownloadURL, err := h.MCVersions.GetDownloadURL(ctx, values.Get("server-version"))
 	if err != nil {
 		return nil, err
@@ -267,7 +273,7 @@ func (h *Handler) notifyNonRecoverableFailure(cfg *config.Config, detail string)
 	}
 }
 
-func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsProvider *dns.DNSProvider) {
+func (h *Handler) shutdownServer(gameServer GameServer, rdb *redis.Client, dnsProvider *dns.DNSProvider, authKey string) {
 	defer func() {
 		h.serverMutex.Lock()
 		defer h.serverMutex.Unlock()
@@ -276,18 +282,6 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
 	infoStream := h.Streaming.GetStream(streaming.InfoStream)
-
-	if err := h.Streaming.PublishEvent(
-		context.Background(),
-		stdStream,
-		streaming.NewStandardMessage(entity.EvWaitConn, entity.PageLoading),
-	); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
-	}
-
-	if err := monitor.MonitorServer(h.Streaming, h.cfg, h.cfg.ServerAddr, rdb); err != nil {
-		log.WithError(err).Error("Failed to monitor server")
-	}
 
 	if err := h.Streaming.PublishEvent(
 		context.Background(),
@@ -362,6 +356,10 @@ func (h *Handler) monitorServer(gameServer GameServer, rdb *redis.Client, dnsPro
 		streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch),
 	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
+	}
+
+	if err := h.Cacher.Del(context.Background(), fmt.Sprintf("runner:%s", authKey)); err != nil {
+		slog.Error("Failed to delete runner id", slog.Any("error", err))
 	}
 }
 
@@ -495,24 +493,6 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameS
 	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
-
-	h.monitorServer(gameServer, rdb, dnsProvider)
-
-	if err := h.Cacher.Del(context.Background(), fmt.Sprintf("runner:%s", gameConfig.AuthKey)); err != nil {
-		slog.Error("Failed to delete runner id", slog.Any("error", err))
-	}
-}
-
-func StopServer(cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
-	if err := monitor.StopServer(cfg, cfg.ServerAddr, rdb); err != nil {
-		log.WithError(err).Error("Failed to request stopping server")
-	}
-}
-
-func ReconfigureServer(gameConfig *runnerEntity.Config, cfg *config.Config, gameServer GameServer, rdb *redis.Client) {
-	if err := monitor.ReconfigureServer(gameConfig, cfg, cfg.ServerAddr, rdb); err != nil {
-		log.WithError(err).Error("Failed to reconfigure server")
-	}
 }
 
 func (h *Handler) handleApiLaunch(c *gin.Context) {
@@ -594,8 +574,6 @@ func (h *Handler) handleApiReconfigure(c *gin.Context) {
 		return
 	}
 
-	go ReconfigureServer(gameConfig, h.cfg, h.serverImpl, h.redis)
-
 	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,
 	})
@@ -612,8 +590,6 @@ func (h *Handler) handleApiStop(c *gin.Context) {
 		})
 		return
 	}
-
-	go StopServer(h.cfg, h.serverImpl, h.redis)
 
 	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,
@@ -783,22 +759,6 @@ func (h *Handler) handleApiQuickUndoSnapshot(c *gin.Context) {
 		return
 	}
 
-	if h.cfg.ServerAddr == "" {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrServerNotRunning,
-		})
-		return
-	}
-
-	if err := monitor.QuickSnapshot(h.cfg, h.cfg.ServerAddr, h.redis); err != nil {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrRemote,
-		})
-		return
-	}
-
 	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,
 	})
@@ -809,23 +769,6 @@ func (h *Handler) handleApiQuickUndoUndo(c *gin.Context) {
 		Type: runnerEntity.ActionUndo,
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrRemote,
-		})
-		return
-	}
-
-	if h.cfg.ServerAddr == "" {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrServerNotRunning,
-		})
-		return
-	}
-
-	if err := monitor.QuickUndo(h.cfg, h.cfg.ServerAddr, h.redis); err != nil {
-		log.WithError(err).Error("Unable to quick-undo")
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,

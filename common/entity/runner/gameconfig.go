@@ -26,4 +26,5 @@ type Config struct {
 		Endpoint string `json:"endpoint"`
 		Bucket   string `json:"bucket"`
 	} `json:"s3"`
+	ControlPanel string `json:"controlPanel"`
 }

@@ -107,35 +107,13 @@ func requestDeleteSnapshot(ssi *privileged.SnapshotInfo) error {
 }
 
 func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
-	http.HandleFunc("/newconfig", func(w http.ResponseWriter, r *http.Request) {
-		var configData runner.Config
-		if err := json.NewDecoder(r.Body).Decode(&configData); err != nil {
-			slog.Error("Failed to parse request JSON", slog.Any("error", err))
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		data, err := json.Marshal(&configData)
-		if err != nil {
-			slog.Error("Failed to stringify request", slog.Any("error", err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		if err := os.WriteFile(fs.LocateDataFile("config.json"), data, 0644); err != nil {
-			slog.Error("Failed to write server config", slog.Any("error", err))
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		srv.RestartRequested = true
+	handleStop := func() {
+		srv.ShouldStop = true
 		srv.Stop()
-	})
-
-	http.HandleFunc("/quickss", func(w http.ResponseWriter, r *http.Request) {
+	}
+	handleSnapshot := func() {
 		if err := srv.SaveAll(); err != nil {
 			slog.Error("Failed to run save-all", slog.Any("error", err))
-			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 
@@ -165,11 +143,8 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 		}); err != nil {
 			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
-
-		w.WriteHeader(http.StatusCreated)
-	})
-
-	http.HandleFunc("/quickundo", func(w http.ResponseWriter, r *http.Request) {
+	}
+	handleUndo := func() {
 		go func() {
 			if _, err := os.Stat(filepath.Join(fs.LocateWorldData("ss@quick0/world"))); err != nil {
 				if err := exterior.SendMessage("serverStatus", runner.Event{
@@ -188,13 +163,56 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 				slog.Error("Unable to quick-undo", slog.Any("error", err))
 			}
 		}()
-	})
+	}
+	handleReconfigure := func(config *runner.Config) {
+		data, err := json.Marshal(&config)
+		if err != nil {
+			slog.Error("Failed to stringify request", slog.Any("error", err))
+			return
+		}
 
-	http.HandleFunc("/stop", func(w http.ResponseWriter, r *http.Request) {
-		srv.ShouldStop = true
+		if err := os.WriteFile(fs.LocateDataFile("config.json"), data, 0644); err != nil {
+			slog.Error("Failed to write server config", slog.Any("error", err))
+			return
+		}
+
+		srv.RestartRequested = true
 		srv.Stop()
+	}
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			slog.Error("Unable to read request body", slog.Any("error", err))
+			return
+		}
+
+		var action runner.Action
+		if err := json.Unmarshal(body, &action); err != nil {
+			slog.Error("Unable to unmarshal action", slog.Any("error", err))
+			return
+		}
+
+		switch action.Type {
+		case runner.ActionStop:
+			handleStop()
+			break
+
+		case runner.ActionSnapshot:
+			handleSnapshot()
+			break
+
+		case runner.ActionUndo:
+			handleUndo()
+			break
+
+		case runner.ActionReconfigure:
+			handleReconfigure(action.Config)
+			break
+		}
 	})
 
+	// TODO: Send this information to control panel
 	http.HandleFunc("/systeminfo", func(w http.ResponseWriter, r *http.Request) {
 		systemInfo := systemutil.GetSystemVersion()
 		data, err := json.Marshal(systemInfo)
@@ -207,6 +225,7 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 		w.Write(data)
 	})
 
+	// TODO: Send this information to control panel
 	http.HandleFunc("/worldinfo", func(w http.ResponseWriter, r *http.Request) {
 		if !srv.IsServerInitialized {
 			slog.Info("Server is not started. Abort")
