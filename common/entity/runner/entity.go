@@ -12,9 +12,10 @@ type Message struct {
 type EventType string
 
 const (
-	EventStatus  EventType = "status"
-	EventSysstat EventType = "sysstat"
-	EventInfo    EventType = "info"
+	EventHello   EventType = "hello"
+	EventStatus            = "status"
+	EventSysstat           = "sysstat"
+	EventInfo              = "info"
 )
 
 const (
@@ -59,8 +60,14 @@ type InfoExtra struct {
 	IsError  bool            `json:"isError"`
 }
 
+type HelloExtra struct {
+	Version string `json:"version"`
+	Host    string `json:"host"`
+}
+
 type Event struct {
 	Type    EventType     `json:"type"`
+	Hello   *HelloExtra   `json:"hello,omitempty"`
 	Status  *StatusExtra  `json:"status,omitempty"`
 	Sysstat *SysstatExtra `json:"sysstat,omitempty"`
 	Info    *InfoExtra    `json:"info,omitempty"`

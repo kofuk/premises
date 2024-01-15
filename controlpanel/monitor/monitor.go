@@ -4,13 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	entityTypes "github.com/kofuk/premises/common/entity"
 	runnerEntity "github.com/kofuk/premises/common/entity/runner"
 	entity "github.com/kofuk/premises/common/entity/web"
+	"github.com/kofuk/premises/controlpanel/caching"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/streaming"
 )
@@ -42,12 +45,21 @@ func GetPageCodeByEventCode(event entityTypes.EventCode) entity.PageCode {
 	return entity.PageLoading
 }
 
-func HandleEvent(strmProvider *streaming.Streaming, cfg *config.Config, rdb *redis.Client, event *runnerEntity.Event) error {
+func HandleEvent(runnerId string, strmProvider *streaming.Streaming, cfg *config.Config, cache *caching.Cacher, event *runnerEntity.Event) error {
 	stdStream := strmProvider.GetStream(streaming.StandardStream)
 	infoStream := strmProvider.GetStream(streaming.InfoStream)
 	sysstatStream := strmProvider.GetStream(streaming.SysstatStream)
 
-	if event.Type == runnerEntity.EventStatus {
+	switch event.Type {
+	case runnerEntity.EventHello:
+		if event.Hello == nil {
+			return errors.New("Invalid event message: has no Hello")
+		}
+		if err := cache.Set(context.Background(), fmt.Sprintf("runner-info:%s", runnerId), event.Hello, 30*24*time.Hour); err != nil {
+			return err
+		}
+
+	case runnerEntity.EventStatus:
 		if event.Status == nil {
 			return errors.New("Invalid event message: has no Status")
 		}
@@ -59,7 +71,8 @@ func HandleEvent(strmProvider *streaming.Streaming, cfg *config.Config, rdb *red
 		); err != nil {
 			return err
 		}
-	} else if event.Type == runnerEntity.EventSysstat {
+
+	case runnerEntity.EventSysstat:
 		if event.Sysstat == nil {
 			return errors.New("Invalid event message: has no Sysstat")
 		}
@@ -71,7 +84,8 @@ func HandleEvent(strmProvider *streaming.Streaming, cfg *config.Config, rdb *red
 		); err != nil {
 			return err
 		}
-	} else if event.Type == runnerEntity.EventInfo {
+
+	case runnerEntity.EventInfo:
 		if event.Info == nil {
 			return errors.New("Invalid event message: has no Info")
 		}
@@ -87,25 +101,16 @@ func HandleEvent(strmProvider *streaming.Streaming, cfg *config.Config, rdb *red
 	return nil
 }
 
-func GetSystemInfoData(ctx context.Context, cfg *config.Config, addr string, rdb *redis.Client) ([]byte, error) {
-	req, err := http.NewRequest("POST", "https://"+addr+":8521/systeminfo", nil)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	req.Header.Add("X-Auth-Key", cfg.MonitorKey)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
+func GetSystemInfo(ctx context.Context, cfg *config.Config, addr string, cache *caching.Cacher) (*entity.SystemInfo, error) {
+	var serverHello runnerEntity.HelloExtra
+	if err := cache.Get(context.Background(), "runner-info:default", &serverHello); err != nil {
 		return nil, err
 	}
 
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+	return &entity.SystemInfo{
+		PremisesVersion: serverHello.Version,
+		HostOS:          serverHello.Host,
+	}, nil
 }
 
 func GetWorldInfoData(ctx context.Context, cfg *config.Config, addr string, rdb *redis.Client) ([]byte, error) {

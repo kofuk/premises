@@ -672,33 +672,7 @@ func (h *Handler) handleApiMcversions(c *gin.Context) {
 }
 
 func (h *Handler) handleApiSystemInfo(c *gin.Context) {
-	if h.cfg.ServerAddr == "" {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrServerNotRunning,
-		})
-		return
-	}
-
-	cacheKey := fmt.Sprintf("%s:%s", CacheKeySystemInfoPrefix, h.cfg.ServerAddr)
-
-	if _, ok := c.GetQuery("reload"); ok {
-		if _, err := h.redis.Del(c.Request.Context(), cacheKey).Result(); err != nil {
-			log.WithError(err).WithField("server_addr", h.cfg.ServerAddr).Error("Failed to delete system info cache")
-		}
-	}
-
-	if val, err := h.redis.Get(c.Request.Context(), cacheKey).Result(); err == nil {
-		c.Header("Content-Type", "application/json")
-		c.Writer.Write([]byte(val))
-		return
-	} else if err != redis.Nil {
-		log.WithError(err).WithField("server_addr", h.cfg.ServerAddr).Error("Error retrieving system info cache")
-	}
-
-	log.WithField("cache_key", cacheKey).Info("cache miss")
-
-	data, err := monitor.GetSystemInfoData(c.Request.Context(), h.cfg, h.cfg.ServerAddr, h.redis)
+	data, err := monitor.GetSystemInfo(c.Request.Context(), h.cfg, h.cfg.ServerAddr, &h.Cacher)
 	if err != nil {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
@@ -706,13 +680,10 @@ func (h *Handler) handleApiSystemInfo(c *gin.Context) {
 		})
 		return
 	}
-
-	if _, err := h.redis.Set(c.Request.Context(), cacheKey, data, 24*time.Hour).Result(); err != nil {
-		log.WithError(err).WithField("server_addr", h.cfg.ServerAddr).Error("Failed to cache mcversions")
-	}
-
-	c.Header("Content-Type", "application/json")
-	c.Writer.Write(data)
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SystemInfo]{
+		Success: true,
+		Data:    *data,
+	})
 }
 
 func (h *Handler) handleApiWorldInfo(c *gin.Context) {
