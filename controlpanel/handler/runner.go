@@ -33,6 +33,12 @@ func (h *Handler) handleRunnerPollAction(c *gin.Context) {
 }
 
 func (h *Handler) handlePushStatus(c *gin.Context) {
+	runnerId := c.GetString("runner-id")
+	if runnerId == "" {
+		slog.Error("Runner ID is not set")
+		return
+	}
+
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		slog.Error("Error reading status", slog.Any("error", err))
@@ -62,7 +68,7 @@ func (h *Handler) handlePushStatus(c *gin.Context) {
 		return
 	}
 
-	if err := monitor.HandleEvent(h.Streaming, h.cfg, h.redis, &event); err != nil {
+	if err := monitor.HandleEvent(runnerId, h.Streaming, h.cfg, &h.Cacher, &event); err != nil {
 		slog.Error("Unable to handle event", slog.Any("error", err))
 		c.Status(http.StatusInternalServerError)
 		return

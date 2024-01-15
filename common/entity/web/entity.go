@@ -73,6 +73,11 @@ type UpdatePassword struct {
 	NewPassword string `json:"newPassword"`
 }
 
+type SystemInfo struct {
+	PremisesVersion string `json:"premisesVersion"`
+	HostOS          string `json:"hostOs"`
+}
+
 const (
 	EvStopped      entity.EventCode = iota + 100 // 100
 	EvCreateRunner                               // 101

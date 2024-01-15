@@ -41,6 +41,20 @@ func isDevEnv() bool {
 	return err == nil
 }
 
+func (self *ServerSetup) sendServerHello() {
+	systemVersion := systemutil.GetSystemVersion()
+
+	if err := exterior.SendMessage("serverStatus", entity.Event{
+		Type: entity.EventHello,
+		Hello: &entity.HelloExtra{
+			Version: systemVersion.PremisesVersion,
+			Host:    systemVersion.HostOS,
+		},
+	}); err != nil {
+		slog.Error("Unable to write server hello", slog.Any("error", err))
+	}
+}
+
 func (self *ServerSetup) notifyStatus() {
 	if err := exterior.SendMessage("serverStatus", entity.Event{
 		Type: entity.EventStatus,
@@ -53,6 +67,8 @@ func (self *ServerSetup) notifyStatus() {
 }
 
 func (self *ServerSetup) initializeServer() {
+	self.sendServerHello()
+
 	self.notifyStatus()
 
 	slog.Info("Updating package indices")

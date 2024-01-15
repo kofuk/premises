@@ -15,7 +15,6 @@ import (
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
 	"github.com/kofuk/premises/runner/commands/privileged"
 	"github.com/kofuk/premises/runner/exterior"
-	"github.com/kofuk/premises/runner/systemutil"
 )
 
 type createSnapshotResp struct {
@@ -210,19 +209,6 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 			handleReconfigure(action.Config)
 			break
 		}
-	})
-
-	// TODO: Send this information to control panel
-	http.HandleFunc("/systeminfo", func(w http.ResponseWriter, r *http.Request) {
-		systemInfo := systemutil.GetSystemVersion()
-		data, err := json.Marshal(systemInfo)
-		if err != nil {
-			slog.Error("Failed to unmarshal system info", slog.Any("error", err), slog.String("endpoint", "/systeminfo"))
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		w.Write(data)
 	})
 
 	// TODO: Send this information to control panel

@@ -34,3 +34,8 @@ export type UpdatePassword = {
   password: string;
   newPassword: string;
 };
+
+export type SystemInfo = {
+  premisesVersion: string;
+  hostOs: string;
+};
