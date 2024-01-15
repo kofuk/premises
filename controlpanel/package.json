@@ -47,7 +47,7 @@
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-promise": "^6.1.1",
     "eslint-plugin-react": "^7.33.2",
-    "i18next": "^23.7.13",
+    "i18next": "^23.7.16",
     "i18next-browser-languagedetector": "^7.2.0",
     "nock": "^13.3.8",
     "node-fetch": "^3.3.2",
