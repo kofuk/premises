@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -97,6 +95,15 @@ func HandleEvent(runnerId string, strmProvider *streaming.Streaming, cfg *config
 		); err != nil {
 			return err
 		}
+
+	case runnerEntity.EventStarted:
+		if event.Started == nil {
+			return errors.New("Invalid event message: has no Started")
+		}
+
+		if err := cache.Set(context.Background(), fmt.Sprintf("world-info:%s", runnerId), event.Started, 30*24*time.Hour); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -113,23 +120,15 @@ func GetSystemInfo(ctx context.Context, cfg *config.Config, addr string, cache *
 	}, nil
 }
 
-func GetWorldInfoData(ctx context.Context, cfg *config.Config, addr string, rdb *redis.Client) ([]byte, error) {
-	req, err := http.NewRequest("POST", "https://"+addr+":8521/worldinfo", nil)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	req.Header.Add("X-Auth-Key", cfg.MonitorKey)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
+func GetWorldInfo(ctx context.Context, cfg *config.Config, addr string, cache *caching.Cacher) (*entity.WorldInfo, error) {
+	var startedData runnerEntity.StartedExtra
+	if err := cache.Get(context.Background(), "world-info:default", &startedData); err != nil {
 		return nil, err
 	}
 
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
+	return &entity.WorldInfo{
+		Version:   startedData.ServerVersion,
+		WorldName: startedData.World.Name,
+		Seed:      startedData.World.Seed,
+	}, nil
 }

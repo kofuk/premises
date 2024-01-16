@@ -12,7 +12,7 @@ import (
 )
 
 func SendMessage(msgType string, userData any) error {
-	slog.Debug("Sending message...", slog.String("type", msgType))
+	slog.Debug("Sending message...", slog.String("type", msgType), slog.Any("data", userData))
 
 	serializedUserData, err := json.Marshal(userData)
 	if err != nil {

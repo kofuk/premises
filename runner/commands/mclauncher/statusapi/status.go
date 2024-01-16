@@ -211,28 +211,6 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 		}
 	})
 
-	// TODO: Send this information to control panel
-	http.HandleFunc("/worldinfo", func(w http.ResponseWriter, r *http.Request) {
-		if !srv.IsServerInitialized {
-			slog.Info("Server is not started. Abort")
-			w.WriteHeader(http.StatusTooEarly)
-			return
-		}
-
-		worldInfo, err := GetWorldInfo(config, srv)
-		if err != nil {
-			slog.Error("Failed to retrieve world info", slog.Any("error", err), slog.String("endpoint", "/worldinfo"))
-			return
-		}
-		data, err := json.Marshal(worldInfo)
-		if err != nil {
-			slog.Error("Failed to marshal world info", slog.Any("error", err), slog.String("endpoint", "/worldinfo"))
-			return
-		}
-
-		w.Write(data)
-	})
-
 	slog.Info("Launching status server...")
 	if err := http.ListenAndServe("127.0.0.1:9000", nil); err != nil {
 		slog.Error("Error listening on :9000", slog.Any("error", err))
