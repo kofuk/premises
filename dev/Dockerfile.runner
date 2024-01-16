@@ -6,6 +6,9 @@ FROM ubuntu:22.04
 #      --label org.kofuk.premises.id=$(uuidgen) \
 #      --label org.kofuk.premises.name=mc-premises .
 
+RUN apt-get update \
+  && apt-get install -y jq less
+
 COPY fake_cloud_init.sh /init.sh
 
 EXPOSE 8521

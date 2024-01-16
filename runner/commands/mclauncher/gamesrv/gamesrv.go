@@ -184,7 +184,28 @@ var (
 	serverStoppingRegexp        = regexp.MustCompile("\\]: Stopping the server")
 )
 
-func MonitorServer(config *runner.Config, stdout io.ReadCloser) error {
+func SendStartedEvent(config *runner.Config, srv *ServerInstance) {
+	slog.Debug("Send Started event...")
+
+	data := new(runner.StartedExtra)
+
+	data.ServerVersion = config.Server.Version
+	data.World.Name = config.World.Name
+	seed, err := srv.GetSeed()
+	if err != nil {
+		slog.Error("Failed to retrieve seed", slog.Any("error", err))
+	}
+	data.World.Seed = seed
+
+	if err := exterior.SendMessage("serverStatus", runner.Event{
+		Type:    runner.EventStarted,
+		Started: data,
+	}); err != nil {
+		slog.Error("Unable to write send message", slog.Any("error", err))
+	}
+}
+
+func MonitorServer(config *runner.Config, srv *ServerInstance, stdout io.ReadCloser) error {
 	reader := bufio.NewReader(stdout)
 	for {
 		line, isPrefix, err := reader.ReadLine()
@@ -231,6 +252,8 @@ func MonitorServer(config *runner.Config, stdout io.ReadCloser) error {
 			}); err != nil {
 				slog.Error("Unable to write send message", slog.Any("error", err))
 			}
+
+			go SendStartedEvent(config, srv)
 
 			if err := SaveLastServerVersion(config); err != nil {
 				slog.Error("Error saving last server versoin", slog.Any("error", err))
@@ -369,7 +392,7 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 			cmd.Stderr = os.Stderr
 			cmd.Start()
 			srv.ServerPid = cmd.Process.Pid
-			MonitorServer(config, cmdStdout)
+			MonitorServer(config, srv, cmdStdout)
 			cmd.Wait()
 			cmdStdout.Close()
 			exitCode := cmd.ProcessState.ExitCode()

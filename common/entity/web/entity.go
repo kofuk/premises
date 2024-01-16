@@ -78,6 +78,12 @@ type SystemInfo struct {
 	HostOS          string `json:"hostOs"`
 }
 
+type WorldInfo struct {
+	Version   string `json:"version"`
+	WorldName string `json:"worldName"`
+	Seed      string `json:"seed"`
+}
+
 const (
 	EvStopped      entity.EventCode = iota + 100 // 100
 	EvCreateRunner                               // 101

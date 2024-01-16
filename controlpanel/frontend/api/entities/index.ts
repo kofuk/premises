@@ -39,3 +39,9 @@ export type SystemInfo = {
   premisesVersion: string;
   hostOs: string;
 };
+
+export type WorldInfo = {
+  version: string;
+  worldName: string;
+  seed: string;
+};

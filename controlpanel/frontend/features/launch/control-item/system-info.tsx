@@ -38,7 +38,6 @@ const SystemInfo = ({backToMenu}: Prop) => {
         <ArrowBackIcon /> {t('back')}
       </button>
       <div className="m-2">
-        {' '}
         <List disablePadding>
           <CopyableListItem key="server_version" title={t('system_info_server_version')}>
             {systemInfo ? systemInfo.premisesVersion : <Skeleton animation="wave" height={24} width="25%" />}

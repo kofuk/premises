@@ -16,6 +16,7 @@ const (
 	EventStatus            = "status"
 	EventSysstat           = "sysstat"
 	EventInfo              = "info"
+	EventStarted           = "started"
 )
 
 const (
@@ -65,12 +66,21 @@ type HelloExtra struct {
 	Host    string `json:"host"`
 }
 
+type StartedExtra struct {
+	ServerVersion string `json:"serverVersion"`
+	World         struct {
+		Name string `json:"name"`
+		Seed string `json:"seed"`
+	} `json:"world"`
+}
+
 type Event struct {
 	Type    EventType     `json:"type"`
 	Hello   *HelloExtra   `json:"hello,omitempty"`
 	Status  *StatusExtra  `json:"status,omitempty"`
 	Sysstat *SysstatExtra `json:"sysstat,omitempty"`
 	Info    *InfoExtra    `json:"info,omitempty"`
+	Started *StartedExtra `json:"started,omitempty"`
 }
 
 type ActionType string

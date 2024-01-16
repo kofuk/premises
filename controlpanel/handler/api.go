@@ -687,15 +687,7 @@ func (h *Handler) handleApiSystemInfo(c *gin.Context) {
 }
 
 func (h *Handler) handleApiWorldInfo(c *gin.Context) {
-	if h.cfg.ServerAddr == "" {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrServerNotRunning,
-		})
-		return
-	}
-
-	data, err := monitor.GetWorldInfoData(c.Request.Context(), h.cfg, h.cfg.ServerAddr, h.redis)
+	data, err := monitor.GetWorldInfo(c.Request.Context(), h.cfg, h.cfg.ServerAddr, &h.Cacher)
 	if err != nil {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
@@ -703,9 +695,10 @@ func (h *Handler) handleApiWorldInfo(c *gin.Context) {
 		})
 		return
 	}
-
-	c.Header("Content-Type", "application/json")
-	c.Writer.Write(data)
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.WorldInfo]{
+		Success: true,
+		Data:    *data,
+	})
 }
 
 func (h *Handler) handleApiQuickUndoSnapshot(c *gin.Context) {
