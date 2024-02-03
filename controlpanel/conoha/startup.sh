@@ -15,6 +15,7 @@ atomic_copy() {
 http_get() {
     if command -v curl &>/dev/null; then
         curl "$@"
+        return
     fi
     wget -O- "$@"
 }
