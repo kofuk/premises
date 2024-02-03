@@ -5,25 +5,16 @@
 Since I develop Premises on Linux computer, support for Mac OS and Windows and so on is not tested (or is not implemented).
 If you are a Mac Os or Windows user, and want to run Premises locally, I strongly recommend to use Linux VM or WSL.
 
-1. Launch PostgreSQL and Redis using Docker Compose in /dev directory.
-```shell
-$ docker compose up -d
-```
-2. Build fake runner image in /dev directory (this required only once).
+1. Build fake runner image in /dev directory (this is required only once).
 ```shell
 $ docker build -t premises.kofuk.org/dev-runner -f Dockerfile.runner \
     --label org.kofuk.premises.managed=true \
     --label org.kofuk.premises.id=$(uuidgen) \
     --label org.kofuk.premises.name=mc-premises .
 ```
-3. Launch fake OpenStack in /ostack-fake directory.
-```shell
-$ cd ../ostack-fake
-$ go run .
-```
-4. Create /controlpanel/.env by copying /controlpanel/.env.example
+2. Create /controlpanel/.env by copying /controlpanel/.env.example
 ```ini
-premises_debug_web='false'
+premises_debug_web='true'
 premises_conoha_username='user'
 premises_conoha_password='password'
 premises_conoha_tenantId='tenantId'
@@ -53,14 +44,9 @@ premises_controlPanel_postgres_password='password'
 premises_controlPanel_postgres_dbName='premises'
 premises_controlPanel_locale='ja'
 ```
-5. Build frontend in /controlpanel directory.
+3. Launch all dependencies using helper script
 ```shell
-$ npm install
-$ npm run build
-```
-6. Launch Control Panel server in /controlpanel directory.
-```shell
-$ go run .
+$ ./dev/launch_all.sh
 ```
 
 ### Q&A
@@ -81,10 +67,3 @@ $ make deploy-dev
 On Linux, it is saved to /tmp/premises-data on your computer, but on the other platforms, it is inside your Docker image.
 
 Therefore, Docker image size will become significantly large on these platforms.
-
-#### Can I use Vite's HMR feature?
-
-Yes.
-
-To use it, set `premises_debug_web=true` in `controlpanel/.env` and run Vite server.
-Backend server will proxy requests to Vite development server.
