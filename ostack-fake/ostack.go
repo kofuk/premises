@@ -207,7 +207,7 @@ func (self *Ostack) setupRoutes() {
 }
 
 func NewOstack(options ...OstackOption) (*Ostack, error) {
-	docker, err := docker.NewClientWithOpts()
+	docker, err := docker.NewClientWithOpts(docker.FromEnv)
 	if err != nil {
 		return nil, err
 	}
