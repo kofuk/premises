@@ -32,9 +32,21 @@ func (self *Server) HandleMonitor() {
 	client := self.msgRouter.Subscribe(msgrouter.NotifyLatest("serverStatus"))
 	defer self.msgRouter.Unsubscribe(client)
 
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+	buf := bytes.NewBuffer(nil)
+
+out:
 	for {
-		for msg := range client.C {
-			req, err := http.NewRequest(http.MethodPost, self.addr+"/_runner/push-status", bytes.NewBuffer([]byte(msg.UserData)))
+		select {
+		case <-ticker.C:
+			if buf.Len() == 0 {
+				// If there's no data, don't send message.
+				continue out
+			}
+
+			req, err := http.NewRequest(http.MethodPost, self.addr+"/_runner/push-status", buf)
 			if err != nil {
 				slog.Error("Error creating request", slog.Any("error", err))
 				continue
@@ -46,8 +58,19 @@ func (self *Server) HandleMonitor() {
 				continue
 			}
 			io.ReadAll(resp.Body)
+
+			buf.Reset()
+
+		case msg, ok := <-client.C:
+			if !ok {
+				break out
+			}
+			buf.Write([]byte(msg.UserData))
+			buf.WriteByte(0)
 		}
 	}
+
+	slog.Error("BUG: client channel has been closed")
 }
 
 func (self *Server) HandleProxy(w http.ResponseWriter, r *http.Request) {

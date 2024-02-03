@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log/slog"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -14,12 +15,25 @@ func main() {
 	log.SetReportCaller(true)
 
 	if err := godotenv.Load(); err != nil {
-		log.WithError(err).Info("Failed to load .env file. If you want to use real envvars, you can ignore this diag safely.")
+		// We haven't initialized slog handler yet, so prepare an ephemeral one to output this.
+		slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			AddSource: true,
+		})).Info("Failed to load .env file. If you want to use real envvars, you can ignore this safely.", slog.Any("error", err))
 	}
+
+	logLevel := slog.LevelInfo
+	if os.Getenv("premises_debug_web") == "true" {
+		logLevel = slog.LevelDebug
+	}
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     logLevel,
+	})))
 
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.WithError(err).Fatal("Failed to load config")
+		slog.Error("Failed to load config", slog.Any("error", err))
+		os.Exit(1)
 	}
 
 	bindAddr := ":8000"
@@ -29,7 +43,11 @@ func main() {
 
 	handler, err := handler.NewHandler(cfg, bindAddr)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to initialize handler")
+		slog.Error("Failed to initialize handler", slog.Any("error", err))
+		os.Exit(1)
 	}
-	handler.Start()
+	if err := handler.Start(); err != nil {
+		slog.Error("Error starting server", slog.Any("error", err))
+		os.Exit(1)
+	}
 }

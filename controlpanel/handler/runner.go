@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -46,32 +47,42 @@ func (h *Handler) handlePushStatus(c *gin.Context) {
 		return
 	}
 
-	var event runner.Event
-	if err := json.Unmarshal(body, &event); err != nil {
-		slog.Error("Unable to unmarshal status data", slog.Any("error", err))
-		c.Status(http.StatusBadRequest)
-		return
-	}
+	events := bytes.Split(body, []byte{0})
 
-	if event.Type == runner.EventStatus && event.Status.EventCode == runner.EventShutdown {
-		var dnsProvider *dns.DNSProvider
-		if h.cfg.Cloudflare.Token != "" {
-			cloudflareDNS, err := dns.NewCloudflareDNS(h.cfg.Cloudflare.Token, h.cfg.Cloudflare.ZoneID)
-			if err != nil {
-				slog.Error("Failed to initialize DNS provider", slog.Any("error", err))
-			} else {
-				dnsProvider = dns.New(cloudflareDNS, h.cfg.Cloudflare.GameDomainName)
-			}
+	slog.Debug("Event from runner", slog.Int("estimated_count", len(events)-1))
+
+	for _, eventData := range events {
+		if len(eventData) == 0 {
+			continue
 		}
-		go h.shutdownServer(h.serverImpl, h.redis, dnsProvider, c.GetHeader("Authorization"))
 
-		return
-	}
+		var event runner.Event
+		if err := json.Unmarshal(eventData, &event); err != nil {
+			slog.Error("Unable to unmarshal status data", slog.Any("error", err))
+			c.Status(http.StatusBadRequest)
+			return
+		}
 
-	if err := monitor.HandleEvent(runnerId, h.Streaming, h.cfg, &h.Cacher, &event); err != nil {
-		slog.Error("Unable to handle event", slog.Any("error", err))
-		c.Status(http.StatusInternalServerError)
-		return
+		if event.Type == runner.EventStatus && event.Status.EventCode == runner.EventShutdown {
+			var dnsProvider *dns.DNSProvider
+			if h.cfg.Cloudflare.Token != "" {
+				cloudflareDNS, err := dns.NewCloudflareDNS(h.cfg.Cloudflare.Token, h.cfg.Cloudflare.ZoneID)
+				if err != nil {
+					slog.Error("Failed to initialize DNS provider", slog.Any("error", err))
+				} else {
+					dnsProvider = dns.New(cloudflareDNS, h.cfg.Cloudflare.GameDomainName)
+				}
+			}
+			go h.shutdownServer(h.serverImpl, h.redis, dnsProvider, c.GetHeader("Authorization"))
+
+			return
+		}
+
+		if err := monitor.HandleEvent(runnerId, h.Streaming, h.cfg, &h.Cacher, &event); err != nil {
+			slog.Error("Unable to handle event", slog.Any("error", err))
+			c.Status(http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
