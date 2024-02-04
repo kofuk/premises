@@ -7,13 +7,13 @@ import (
 	"time"
 
 	docker "github.com/docker/docker/client"
-	"github.com/gin-gonic/gin"
 	"github.com/kofuk/premises/ostack-fake/dockerstack"
 	"github.com/kofuk/premises/ostack-fake/entity"
+	"github.com/labstack/echo/v4"
 )
 
 type Ostack struct {
-	r             *gin.Engine
+	r             *echo.Echo
 	docker        *docker.Client
 	tenantId      string
 	user          string
@@ -38,12 +38,12 @@ func Token(token string) OstackOption {
 	}
 }
 
-func (self *Ostack) ServeGetToken(c *gin.Context) {
+func (self *Ostack) ServeGetToken(c echo.Context) error {
 	var req entity.GetTokenReq
-	if err := c.ShouldBind(&req); err != nil {
+	if err := c.Bind(&req); err != nil {
 		log.Println(err)
 		c.JSON(http.StatusBadRequest, nil)
-		return
+		return nil
 	}
 
 	user := req.Auth.PasswordCredentials.UserName
@@ -52,7 +52,7 @@ func (self *Ostack) ServeGetToken(c *gin.Context) {
 
 	if user != self.user || password != self.password || tenantId != self.tenantId {
 		c.JSON(http.StatusUnauthorized, nil)
-		return
+		return nil
 	}
 
 	resp := entity.GetTokenResp{}
@@ -60,76 +60,81 @@ func (self *Ostack) ServeGetToken(c *gin.Context) {
 	resp.Access.Token.Id = self.token
 
 	c.JSON(http.StatusOK, resp)
+	return nil
 }
 
-func (self *Ostack) ServeGetServerDetail(c *gin.Context) {
-	servers, err := dockerstack.GetServerDetail(c.Request.Context(), self.docker)
+func (self *Ostack) ServeGetServerDetail(c echo.Context) error {
+	servers, err := dockerstack.GetServerDetail(c.Request().Context(), self.docker)
 	if err != nil {
 		log.Println(err)
 		c.JSON(http.StatusInternalServerError, nil)
-		return
+		return nil
 	}
 
 	c.JSON(http.StatusOK, servers)
+	return nil
 }
 
-func (self *Ostack) ServeLaunchServer(c *gin.Context) {
+func (self *Ostack) ServeLaunchServer(c echo.Context) error {
 	var req entity.LaunchServerReq
-	if err := c.ShouldBind(&req); err != nil {
+	if err := c.Bind(&req); err != nil {
 		log.Println(err)
 		c.JSON(http.StatusBadRequest, nil)
-		return
+		return nil
 	}
 
-	server, err := dockerstack.LaunchServer(c.Request.Context(), self.docker, req)
+	server, err := dockerstack.LaunchServer(c.Request().Context(), self.docker, req)
 	if err != nil {
 		log.Println(err)
 		c.JSON(http.StatusInternalServerError, nil)
-		return
+		return nil
 	}
 
 	c.JSON(http.StatusAccepted, server)
+	return nil
 }
 
-func (self *Ostack) ServeServerAction(c *gin.Context) {
+func (self *Ostack) ServeServerAction(c echo.Context) error {
 	serverId := c.Param("server")
 
 	var req entity.ServerActionReq
-	if err := c.ShouldBind(&req); err != nil {
+	if err := c.Bind(&req); err != nil {
 		log.Println(err)
 		c.JSON(http.StatusBadRequest, nil)
-		return
+		return nil
 	}
 
 	if req.CreateImage != nil {
-		if err := dockerstack.CreateImage(c.Request.Context(), self.docker, serverId, req.CreateImage.Name); err != nil {
+		if err := dockerstack.CreateImage(c.Request().Context(), self.docker, serverId, req.CreateImage.Name); err != nil {
 			log.Println(err)
 			c.JSON(http.StatusInternalServerError, nil)
-			return
+			return nil
 		}
 	} else {
-		if err := dockerstack.StopServer(c.Request.Context(), self.docker, serverId); err != nil {
+		if err := dockerstack.StopServer(c.Request().Context(), self.docker, serverId); err != nil {
 			log.Println(err)
 			c.JSON(http.StatusInternalServerError, nil)
-			return
+			return nil
 		}
 	}
 
 	c.JSON(http.StatusAccepted, nil)
+	return nil
 }
 
-func (self *Ostack) ServeDeleteServer(c *gin.Context) {
+func (self *Ostack) ServeDeleteServer(c echo.Context) error {
 	serverId := c.Param("server")
 
-	if err := dockerstack.DeleteServer(c.Request.Context(), self.docker, serverId); err != nil {
+	if err := dockerstack.DeleteServer(c.Request().Context(), self.docker, serverId); err != nil {
 		log.Println(err)
 		c.JSON(http.StatusInternalServerError, nil)
-		return
+		return nil
 	}
 	c.JSON(http.StatusNoContent, nil)
+	return nil
 }
 
-func (self *Ostack) ServeGetFlavors(c *gin.Context) {
+func (self *Ostack) ServeGetFlavors(c echo.Context) error {
 	resp := entity.FlavorsResp{
 		Flavors: []entity.Flavor{
 			{
@@ -159,13 +164,14 @@ func (self *Ostack) ServeGetFlavors(c *gin.Context) {
 		},
 	}
 	c.JSON(http.StatusOK, resp)
+	return nil
 }
 
-func (self *Ostack) ServeGetImages(c *gin.Context) {
-	images, err := dockerstack.GetImages(c.Request.Context(), self.docker)
+func (self *Ostack) ServeGetImages(c echo.Context) error {
+	images, err := dockerstack.GetImages(c.Request().Context(), self.docker)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, nil)
-		return
+		return nil
 	}
 
 	visibleImage := make([]entity.Image, 0)
@@ -177,23 +183,28 @@ func (self *Ostack) ServeGetImages(c *gin.Context) {
 	images.Images = visibleImage
 
 	c.JSON(http.StatusOK, images)
+	return nil
 }
 
-func (self *Ostack) ServeDeleteImages(c *gin.Context) {
+func (self *Ostack) ServeDeleteImages(c echo.Context) error {
 	imageId := c.Param("image")
 	// No one can delete image of running container.
 	// We save removed image ID and emulate Open Stack behavior.
 	self.deletedImages[imageId] = true
 	c.JSON(http.StatusNoContent, nil)
+	return nil
 }
 
 func (self *Ostack) setupRoutes() {
 	self.r.POST("/identity/v2.0/tokens", self.ServeGetToken)
 
-	needsAuthEndpoint := self.r.Group("", func(c *gin.Context) {
-		if subtle.ConstantTimeCompare([]byte(c.GetHeader("X-Auth-Token")), []byte(self.token)) != 1 {
-			c.JSON(http.StatusUnauthorized, nil)
-			c.Abort()
+	needsAuthEndpoint := self.r.Group("", func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			if subtle.ConstantTimeCompare([]byte(c.Request().Header.Get("X-Auth-Token")), []byte(self.token)) != 1 {
+				c.JSON(http.StatusUnauthorized, nil)
+				return nil
+			}
+			return next(c)
 		}
 	})
 
@@ -213,7 +224,7 @@ func NewOstack(options ...OstackOption) (*Ostack, error) {
 	}
 
 	ostack := &Ostack{
-		r:             gin.Default(),
+		r:             echo.New(),
 		docker:        docker,
 		deletedImages: make(map[string]bool),
 	}
@@ -228,5 +239,5 @@ func NewOstack(options ...OstackOption) (*Ostack, error) {
 }
 
 func (self *Ostack) Start() error {
-	return self.r.Run("127.0.0.1:8010")
+	return self.r.Start("127.0.0.1:8010")
 }
