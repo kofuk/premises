@@ -19,7 +19,7 @@ require (
 	github.com/gorilla/securecookie v1.1.2
 	github.com/jarcoal/httpmock v1.3.1
 	github.com/joho/godotenv v1.5.1
-	github.com/klauspost/compress v1.13.6
+	github.com/klauspost/compress v1.17.5
 	github.com/mackerelio/go-osstat v0.2.4
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.4
