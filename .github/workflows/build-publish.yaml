@@ -2,18 +2,14 @@ name: Build and Publish
 on: push
 
 jobs:
-  test-runner:
+  go-test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./runner
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: runner/go.mod
-          cache-dependency-path: |
-            runner/go.sum
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
       - name: Check format
         run: |
           set -euo pipefail
@@ -26,61 +22,32 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: runner-coverage
-          path: ./runner/coverage.html
+          path: ./coverage.html
           retention-days: 1
 
   build-runner:
     needs:
-      - test-runner
+      - go-test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./runner
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version-file: runner/go.mod
-          cache-dependency-path: |
-            runner/go.sum
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
       - name: Install Required Packages
         run: |
           sudo apt-get update
           sudo apt-get install -y make
       - name: Build
-        run: make
+        run: |
+          cd runner
+          make
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: runner
           path: ./runner/premises-runner
-          retention-days: 1
-
-  test-common:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./common
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: common/go.mod
-          cache-dependency-path: |
-            common/go.sum
-      - name: Check format
-        run: |
-          set -euo pipefail
-          test "$(go fmt ./... | tee /dev/stderr | wc -l)" -eq 0
-      - name: Run test
-        run: go test -v -cover -coverprofile=coverprofile ./...
-      - name: Create coverage report
-        run: go tool cover -html=coverprofile -o coverage.html
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: common-coverage
-          path: ./common/coverage.html
           retention-days: 1
 
   test-controlpanel-frontend:
@@ -110,41 +77,11 @@ jobs:
         run: |
           npm test
 
-  test-controlpanel-backend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./controlpanel
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: controlpanel/go.mod
-          cache-dependency-path: |
-            controlpanel/go.sum
-      - name: Check format
-        run: |
-          set -euo pipefail
-          test "$(go fmt ./... | tee /dev/stderr | wc -l)" -eq 0
-      - name: Run test
-        run: go test -v -cover -coverprofile=coverprofile ./...
-      - name: Create coverage report
-        run: go tool cover -html=coverprofile -o coverage.html
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: controlpanel-coverage
-          path: ./controlpanel/coverage.html
-          retention-days: 1
-
   build-controlpanel:
     needs:
       - test-controlpanel-frontend
-      - test-controlpanel-backend
+      - go-test
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./home
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -190,7 +127,6 @@ jobs:
       - check-format-e2e
       - build-runner
       - build-controlpanel
-      - test-common
     steps:
       - run: echo ok
 

@@ -9,26 +9,14 @@ updates:
     schedule:
       interval: weekly
   - package-ecosystem: gomod
-    directory: /common
-    schedule:
-      interval: weekly
-  - package-ecosystem: gomod
-    directory: /controlpanel
+    directory: /
     schedule:
       interval: weekly
   - package-ecosystem: npm
     directory: /controlpanel
-    schedule:
-      interval: weekly
-  - package-ecosystem: gomod
-    directory: /runner
     schedule:
       interval: weekly
   - package-ecosystem: npm
     directory: /e2e-tests
-    schedule:
-      interval: weekly
-  - package-ecosystem: gomod
-    directory: /ostack-fake
     schedule:
       interval: weekly
