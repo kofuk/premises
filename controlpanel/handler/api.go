@@ -45,8 +45,8 @@ func (h *Handler) handleApiSessionData(c *gin.Context) {
 	}
 
 	if ok {
-		user := model.User{}
-		if err := h.db.WithContext(c.Request.Context()).Find(&user, userID).Error; err != nil {
+		var userName string
+		if err := h.db.NewSelect().Model((*model.User)(nil)).Column("name").Where("id = ? AND deleted_at IS NULL", userID).Scan(c.Request.Context(), &userName); err != nil {
 			log.WithError(err).Error("User not found")
 			c.JSON(http.StatusOK, entity.ErrorResponse{
 				Success:   false,
@@ -54,7 +54,7 @@ func (h *Handler) handleApiSessionData(c *gin.Context) {
 			})
 			return
 		}
-		sessionData.UserName = user.Name
+		sessionData.UserName = userName
 	}
 
 	c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SessionData]{
@@ -761,8 +761,8 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 		return
 	}
 
-	user := model.User{}
-	if err := h.db.WithContext(c.Request.Context()).Find(&user, userID).Error; err != nil {
+	var password string
+	if err := h.db.NewSelect().Model((*model.User)(nil)).Column("password").Where("id = ? AND deleted_at IS NULL", userID).Scan(c.Request.Context(), &password); err != nil {
 		log.WithError(err).Error("User not found")
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
@@ -770,7 +770,7 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 		})
 		return
 	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(req.Password)); err != nil {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
@@ -787,10 +787,8 @@ func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
 		})
 		return
 	}
-	user.Password = string(hashedPassword)
-	user.Initialized = true
 
-	if err := h.db.WithContext(c.Request.Context()).Save(user).Error; err != nil {
+	if _, err := h.db.NewUpdate().Model((*model.User)(nil)).Set("password = ?", string(hashedPassword)).Set("initialized = ?", true).Where("id = ? AND deleted_at IS NULL", userID).Exec(c.Request.Context()); err != nil {
 		log.WithError(err).Error("error updating password")
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
@@ -849,7 +847,7 @@ func (h *Handler) handleApiUsersAdd(c *gin.Context) {
 		Initialized:   false,
 	}
 
-	if err := h.db.WithContext(c.Request.Context()).Create(user).Error; err != nil {
+	if _, err := h.db.NewInsert().Model(user).Exec(c.Request.Context()); err != nil {
 		log.WithError(err).Error("error registering user")
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,

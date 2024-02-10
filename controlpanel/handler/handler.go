@@ -2,9 +2,11 @@ package handler
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -22,12 +24,15 @@ import (
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/mcversions"
-	"github.com/kofuk/premises/controlpanel/model"
+	"github.com/kofuk/premises/controlpanel/model/migrations"
 	"github.com/kofuk/premises/controlpanel/pollable"
 	"github.com/kofuk/premises/controlpanel/streaming"
 	log "github.com/sirupsen/logrus"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/pgdialect"
+	"github.com/uptrace/bun/driver/pgdriver"
+	"github.com/uptrace/bun/extra/bundebug"
+	"github.com/uptrace/bun/migrate"
 )
 
 type serverState struct {
@@ -39,7 +44,7 @@ type Handler struct {
 	cfg           *config.Config
 	bind          string
 	engine        *gin.Engine
-	db            *gorm.DB
+	db            *bun.DB
 	redis         *redis.Client
 	serverState   serverState
 	serverImpl    GameServer
@@ -52,13 +57,41 @@ type Handler struct {
 	runnerAction  *pollable.PollableActionService
 }
 
-func createDatabaseClient(cfg *config.Config) (*gorm.DB, error) {
-	dialector := postgres.Open(fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable TimeZone=Etc/UTC", cfg.ControlPanel.Postgres.Address, cfg.ControlPanel.Postgres.Port, cfg.ControlPanel.Postgres.User, cfg.ControlPanel.Postgres.Password, cfg.ControlPanel.Postgres.DBName))
-	db, err := gorm.Open(dialector, &gorm.Config{})
+func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
+	conn := pgdriver.NewConnector(
+		pgdriver.WithAddr(fmt.Sprintf("%s:%d", cfg.ControlPanel.Postgres.Address, cfg.ControlPanel.Postgres.Port)),
+		pgdriver.WithUser(cfg.ControlPanel.Postgres.User),
+		pgdriver.WithPassword(cfg.ControlPanel.Postgres.Password),
+		pgdriver.WithDatabase(cfg.ControlPanel.Postgres.DBName),
+		pgdriver.WithInsecure(true),
+		pgdriver.WithConnParams(map[string]interface{}{
+			"TimeZone": "Etc/UTC",
+		}),
+	)
+	db := bun.NewDB(sql.OpenDB(conn), pgdialect.New())
+	if cfg.Debug.Web {
+		db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
+	}
+
+	migrator := migrate.NewMigrator(db, migrations.Migrations)
+
+	slog.Info("Initializing bun migration")
+	if err := migrator.Init(context.Background()); err != nil {
+		return nil, err
+	}
+
+	migrator.Lock(context.Background())
+	defer migrator.Unlock(context.Background())
+
+	group, err := migrator.Migrate(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	db.AutoMigrate(&model.User{})
+	if group.IsZero() {
+		slog.Info("No new migrations")
+	} else {
+		slog.Info("Migration completed", slog.String("to", group.String()))
+	}
 
 	return db, nil
 }

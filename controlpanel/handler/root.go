@@ -29,7 +29,15 @@ func (h *Handler) handleLogin(c *gin.Context) {
 	}
 
 	user := model.User{}
-	if err := h.db.WithContext(c.Request.Context()).Where("name = ?", cred.UserName).First(&user).Error; err != nil {
+	if err := h.db.NewSelect().Model(&user).Column("id", "password", "initialized").Where("name = ? AND deleted_at IS NULL", cred.UserName).Scan(c.Request.Context()); err != nil {
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrCredential,
+		})
+		return
+	}
+
+	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(cred.Password)) != nil {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
@@ -38,34 +46,29 @@ func (h *Handler) handleLogin(c *gin.Context) {
 	}
 
 	session := sessions.Default(c)
-	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(cred.Password)) == nil {
-		if !user.Initialized {
-			session.Set("change_password_user_id", user.ID)
-			session.Save()
 
-			c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SessionState]{
-				Success: true,
-				Data: entity.SessionState{
-					NeedsChangePassword: true,
-				},
-			})
-		} else {
-			session.Set("user_id", user.ID)
-			session.Save()
+	if !user.Initialized {
+		session.Set("change_password_user_id", user.ID)
+		session.Save()
 
-			c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SessionState]{
-				Success: true,
-				Data: entity.SessionState{
-					NeedsChangePassword: false,
-				},
-			})
-		}
-	} else {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrCredential,
+		c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SessionState]{
+			Success: true,
+			Data: entity.SessionState{
+				NeedsChangePassword: true,
+			},
 		})
+		return
 	}
+
+	session.Set("user_id", user.ID)
+	session.Save()
+
+	c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SessionState]{
+		Success: true,
+		Data: entity.SessionState{
+			NeedsChangePassword: false,
+		},
+	})
 }
 
 func (h *Handler) handleLogout(c *gin.Context) {
@@ -100,25 +103,7 @@ func (h *Handler) handleLoginResetPassword(c *gin.Context) {
 	session := sessions.Default(c)
 	user_id := session.Get("change_password_user_id")
 
-	username := c.PostForm("username")
 	password := c.PostForm("password")
-
-	user := model.User{}
-	if err := h.db.WithContext(c.Request.Context()).Where("name = ?", username).First(&user).Error; err != nil {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrCredential,
-		})
-		return
-	}
-
-	if user.ID != user_id {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrCredential,
-		})
-		return
-	}
 
 	if !isAllowedPassword(password) {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
@@ -137,10 +122,8 @@ func (h *Handler) handleLoginResetPassword(c *gin.Context) {
 		})
 		return
 	}
-	user.Password = string(hashedPassword)
-	user.Initialized = true
 
-	if err := h.db.WithContext(c.Request.Context()).Save(user).Error; err != nil {
+	if _, err := h.db.NewUpdate().Model((*model.User)(nil)).Set("password = ?", string(hashedPassword)).Set("initialized = ?", true).Where("id = ? AND deleted_at IS NULL", user_id).Exec(c.Request.Context()); err != nil {
 		log.WithError(err).Error("error updating password")
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
@@ -149,7 +132,7 @@ func (h *Handler) handleLoginResetPassword(c *gin.Context) {
 		return
 	}
 
-	session.Set("user_id", user.ID)
+	session.Set("user_id", user_id)
 	session.Delete("change_password_user_id")
 	session.Save()
 
