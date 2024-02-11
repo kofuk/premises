@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
+	"net"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -13,6 +15,7 @@ import (
 	entity "github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/caching"
 	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/streaming"
 )
 
@@ -43,7 +46,7 @@ func GetPageCodeByEventCode(event entityTypes.EventCode) entity.PageCode {
 	return entity.PageLoading
 }
 
-func HandleEvent(runnerId string, strmProvider *streaming.Streaming, cfg *config.Config, cache *caching.Cacher, event *runnerEntity.Event) error {
+func HandleEvent(runnerId string, strmProvider *streaming.Streaming, cfg *config.Config, cache *caching.Cacher, dnsService *dns.DNSProvider, event *runnerEntity.Event) error {
 	stdStream := strmProvider.GetStream(streaming.StandardStream)
 	infoStream := strmProvider.GetStream(streaming.InfoStream)
 	sysstatStream := strmProvider.GetStream(streaming.SysstatStream)
@@ -55,6 +58,22 @@ func HandleEvent(runnerId string, strmProvider *streaming.Streaming, cfg *config
 		}
 		if err := cache.Set(context.Background(), fmt.Sprintf("runner-info:%s", runnerId), event.Hello, 30*24*time.Hour); err != nil {
 			return err
+		}
+
+		if dnsService != nil {
+			if len(event.Hello.Addr.IPv4) != 0 {
+				if err := dnsService.UpdateV4(context.Background(), net.ParseIP(event.Hello.Addr.IPv4[0])); err != nil {
+					slog.Error("Failed to update IPv4 address", slog.Any("error", err))
+
+					if err := strmProvider.PublishEvent(
+						context.Background(),
+						infoStream,
+						streaming.NewInfoMessage(entity.InfoErrDNS, true),
+					); err != nil {
+						slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
+					}
+				}
+			}
 		}
 
 	case runnerEntity.EventStatus:
@@ -108,19 +127,25 @@ func HandleEvent(runnerId string, strmProvider *streaming.Streaming, cfg *config
 	return nil
 }
 
-func GetSystemInfo(ctx context.Context, cfg *config.Config, addr string, cache *caching.Cacher) (*entity.SystemInfo, error) {
+func GetSystemInfo(ctx context.Context, cfg *config.Config, cache *caching.Cacher) (*entity.SystemInfo, error) {
 	var serverHello runnerEntity.HelloExtra
 	if err := cache.Get(context.Background(), "runner-info:default", &serverHello); err != nil {
 		return nil, err
 	}
 
+	var ipAddr *string
+	if len(serverHello.Addr.IPv4) != 0 {
+		ipAddr = &serverHello.Addr.IPv4[0]
+	}
+
 	return &entity.SystemInfo{
 		PremisesVersion: serverHello.Version,
 		HostOS:          serverHello.Host,
+		IPAddress:       ipAddr,
 	}, nil
 }
 
-func GetWorldInfo(ctx context.Context, cfg *config.Config, addr string, cache *caching.Cacher) (*entity.WorldInfo, error) {
+func GetWorldInfo(ctx context.Context, cfg *config.Config, cache *caching.Cacher) (*entity.WorldInfo, error) {
 	var startedData runnerEntity.StartedExtra
 	if err := cache.Get(context.Background(), "world-info:default", &startedData); err != nil {
 		return nil, err

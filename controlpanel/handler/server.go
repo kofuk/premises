@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"net"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -11,11 +10,6 @@ import (
 	"github.com/kofuk/premises/controlpanel/conoha"
 	log "github.com/sirupsen/logrus"
 )
-
-type IPAddressSet struct {
-	V4 net.IP
-	V6 net.IP
-}
 
 type GameServer interface {
 	SetUp(gameConfig *runner.Config, rdb *redis.Client, memSizeGB int) bool
@@ -26,7 +20,6 @@ type GameServer interface {
 	ImageExists() bool
 	SaveImage() bool
 	DeleteImage() bool
-	GetIPAddresses() *IPAddressSet
 }
 
 type ConohaServer struct {
@@ -141,12 +134,6 @@ func (s *ConohaServer) SetUp(gameConfig *runner.Config, rdb *redis.Client, memSi
 	}
 	log.WithField("vm_status", vms.Status).Info("Waiting for VM to be created...Done")
 
-	ip4Addr := vms.GetIPAddress(4)
-	ip6Addr := vms.GetIPAddress(6)
-	log.WithField("ip_addr_4", ip4Addr).WithField("ip_addr_6", ip6Addr).Info("Got IP addresses")
-
-	s.cfg.ServerAddr = ip4Addr
-
 	return true
 }
 
@@ -158,15 +145,11 @@ func (s *ConohaServer) VMExists() bool {
 	}
 
 	log.Info("Getting VM information...")
-	detail, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
-	if err != nil {
+	if _, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag); err != nil {
 		log.WithError(err).Error("Failed to get VM information")
 		return false
 	}
 	log.Info("Getting VM information...Done")
-
-	s.cfg.ServerAddr = detail.GetIPAddress(4)
-	log.WithField("ip_addr", s.cfg.ServerAddr).Info("Stored IP address")
 
 	return true
 }
@@ -185,9 +168,6 @@ func (s *ConohaServer) VMRunning() bool {
 		return false
 	}
 	log.Info("Getting VM information...Done")
-
-	s.cfg.ServerAddr = detail.GetIPAddress(4)
-	log.WithField("ip_addr", s.cfg.ServerAddr).Info("Stored IP address")
 
 	return detail.Status == "ACTIVE"
 }
@@ -352,27 +332,4 @@ success:
 	log.Info("Deleting image...Done")
 
 	return true
-}
-
-func (s *ConohaServer) GetIPAddresses() *IPAddressSet {
-	token, err := s.getToken()
-	if err != nil {
-		log.WithError(err).Error("Failed to get token")
-		return nil
-	}
-
-	log.Info("Getting VM information...")
-	vms, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
-	if err != nil {
-		log.WithField("vm_status", vms.Status).Info("Unable to get VM detail")
-		return nil
-	}
-	log.Info("Getting VM information...Done")
-
-	result := IPAddressSet{
-		V4: net.ParseIP(vms.GetIPAddress(4)),
-		V6: net.ParseIP(vms.GetIPAddress(6)),
-	}
-
-	return &result
 }

@@ -38,6 +38,7 @@ export type UpdatePassword = {
 export type SystemInfo = {
   premisesVersion: string;
   hostOs: string;
+  ipAddr: string | null;
 };
 
 export type WorldInfo = {

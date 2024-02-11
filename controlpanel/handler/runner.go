@@ -10,7 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/kofuk/premises/common/entity/runner"
-	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/monitor"
 )
 
@@ -64,21 +63,11 @@ func (h *Handler) handlePushStatus(c *gin.Context) {
 		}
 
 		if event.Type == runner.EventStatus && event.Status.EventCode == runner.EventShutdown {
-			var dnsProvider *dns.DNSProvider
-			if h.cfg.Cloudflare.Token != "" {
-				cloudflareDNS, err := dns.NewCloudflareDNS(h.cfg.Cloudflare.Token, h.cfg.Cloudflare.ZoneID)
-				if err != nil {
-					slog.Error("Failed to initialize DNS provider", slog.Any("error", err))
-				} else {
-					dnsProvider = dns.New(cloudflareDNS, h.cfg.Cloudflare.GameDomainName)
-				}
-			}
-			go h.shutdownServer(h.serverImpl, h.redis, dnsProvider, c.GetHeader("Authorization"))
-
+			go h.shutdownServer(h.serverImpl, h.redis, c.GetHeader("Authorization"))
 			return
 		}
 
-		if err := monitor.HandleEvent(runnerId, h.Streaming, h.cfg, &h.Cacher, &event); err != nil {
+		if err := monitor.HandleEvent(runnerId, h.Streaming, h.cfg, &h.Cacher, h.dnsService, &event); err != nil {
 			slog.Error("Unable to handle event", slog.Any("error", err))
 			c.Status(http.StatusInternalServerError)
 			return

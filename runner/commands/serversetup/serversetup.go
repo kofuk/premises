@@ -102,8 +102,6 @@ func (self *ServerSetup) notifyStatus() {
 }
 
 func (self *ServerSetup) initializeServer() {
-	self.sendServerHello()
-
 	self.notifyStatus()
 
 	slog.Info("Updating package indices")
@@ -144,6 +142,8 @@ func (self *ServerSetup) initializeServer() {
 }
 
 func (self ServerSetup) Run() {
+	self.sendServerHello()
+
 	if !isServerInitialized() {
 		slog.Info("Server seems not to be initialized. Will run full initialization")
 		self.initializeServer()

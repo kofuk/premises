@@ -296,17 +296,6 @@ func GetVMDetail(cfg *config.Config, token, name string) (*VMDetail, error) {
 	return nil, errors.New("No such VM")
 }
 
-func (d *VMDetail) GetIPAddress(ipVersion int) string {
-	for _, iface := range d.Addresses {
-		for _, addr := range iface {
-			if addr.Version == ipVersion {
-				return addr.Addr
-			}
-		}
-	}
-	return ""
-}
-
 type ImageResp struct {
 	Images []struct {
 		ID     string `json:"id"`

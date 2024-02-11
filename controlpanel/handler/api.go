@@ -21,7 +21,6 @@ import (
 	runnerEntity "github.com/kofuk/premises/common/entity/runner"
 	entity "github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/config"
-	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
 	"github.com/kofuk/premises/controlpanel/model"
 	"github.com/kofuk/premises/controlpanel/monitor"
@@ -273,7 +272,7 @@ func (h *Handler) notifyNonRecoverableFailure(cfg *config.Config, detail string)
 	}
 }
 
-func (h *Handler) shutdownServer(gameServer GameServer, rdb *redis.Client, dnsProvider *dns.DNSProvider, authKey string) {
+func (h *Handler) shutdownServer(gameServer GameServer, rdb *redis.Client, authKey string) {
 	defer func() {
 		h.serverMutex.Lock()
 		defer h.serverMutex.Unlock()
@@ -343,8 +342,8 @@ func (h *Handler) shutdownServer(gameServer GameServer, rdb *redis.Client, dnsPr
 		return
 	}
 
-	if dnsProvider != nil {
-		dnsProvider.UpdateV4(context.Background(), net.ParseIP("127.0.0.1"))
+	if h.dnsService != nil {
+		h.dnsService.UpdateV4(context.Background(), net.ParseIP("127.0.0.1"))
 	}
 
 	if err := h.Streaming.PublishEvent(
@@ -383,16 +382,6 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameS
 		return
 	}
 
-	var dnsProvider *dns.DNSProvider
-	if h.cfg.Cloudflare.Token != "" {
-		cloudflareDNS, err := dns.NewCloudflareDNS(h.cfg.Cloudflare.Token, h.cfg.Cloudflare.ZoneID)
-		if err != nil {
-			log.WithError(err).Error("Failed to initialize DNS provider")
-		} else {
-			dnsProvider = dns.New(cloudflareDNS, h.cfg.Cloudflare.GameDomainName)
-		}
-	}
-
 	if err := h.Streaming.PublishEvent(
 		context.Background(),
 		stdStream,
@@ -427,23 +416,6 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameS
 		streaming.NewStandardMessageWithProgress(entity.EvCreateRunner, 50, entity.PageLoading),
 	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
-	}
-
-	if dnsProvider != nil {
-		ipAddresses := gameServer.GetIPAddresses()
-		if ipAddresses != nil {
-			if err := dnsProvider.UpdateV4(context.Background(), ipAddresses.V4); err != nil {
-				log.WithError(err).Error("Failed to update IPv4 address")
-
-				if err := h.Streaming.PublishEvent(
-					context.Background(),
-					infoStream,
-					streaming.NewInfoMessage(entity.InfoErrDNS, true),
-				); err != nil {
-					log.WithError(err).Error("Failed to write status data to Redis channel")
-				}
-			}
-		}
 	}
 
 	if !gameServer.DeleteImage() {
@@ -653,7 +625,7 @@ func (h *Handler) handleApiMcversions(c *gin.Context) {
 }
 
 func (h *Handler) handleApiSystemInfo(c *gin.Context) {
-	data, err := monitor.GetSystemInfo(c.Request.Context(), h.cfg, h.cfg.ServerAddr, &h.Cacher)
+	data, err := monitor.GetSystemInfo(c.Request.Context(), h.cfg, &h.Cacher)
 	if err != nil {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
@@ -668,7 +640,7 @@ func (h *Handler) handleApiSystemInfo(c *gin.Context) {
 }
 
 func (h *Handler) handleApiWorldInfo(c *gin.Context) {
-	data, err := monitor.GetWorldInfo(c.Request.Context(), h.cfg, h.cfg.ServerAddr, &h.Cacher)
+	data, err := monitor.GetWorldInfo(c.Request.Context(), h.cfg, &h.Cacher)
 	if err != nil {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,

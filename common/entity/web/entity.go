@@ -74,8 +74,9 @@ type UpdatePassword struct {
 }
 
 type SystemInfo struct {
-	PremisesVersion string `json:"premisesVersion"`
-	HostOS          string `json:"hostOs"`
+	PremisesVersion string  `json:"premisesVersion"`
+	HostOS          string  `json:"hostOs"`
+	IPAddress       *string `json:"ipAddr"`
 }
 
 type WorldInfo struct {

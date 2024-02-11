@@ -39,11 +39,14 @@ const SystemInfo = ({backToMenu}: Prop) => {
       </button>
       <div className="m-2">
         <List disablePadding>
-          <CopyableListItem key="server_version" title={t('system_info_server_version')}>
-            {systemInfo ? systemInfo.premisesVersion : <Skeleton animation="wave" height={24} width="25%" />}
+          <CopyableListItem key="host_os" title={t('system_info_ip_addr')}>
+            {systemInfo ? systemInfo.ipAddr || 'unknown' : <Skeleton animation="wave" height={24} width="25%" />}
           </CopyableListItem>
           <CopyableListItem key="host_os" title={t('system_info_host_os')}>
             {systemInfo ? systemInfo.hostOs : <Skeleton animation="wave" height={24} width="25%" />}
+          </CopyableListItem>
+          <CopyableListItem key="server_version" title={t('system_info_server_version')}>
+            {systemInfo ? systemInfo.premisesVersion : <Skeleton animation="wave" height={24} width="25%" />}
           </CopyableListItem>
         </List>
       </div>
