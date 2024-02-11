@@ -34,6 +34,7 @@ const QuickUndo = ({backToMenu}: Prop) => {
       setRevertConfirming(true);
       return;
     }
+    setRevertConfirming(false);
 
     (async () => {
       try {
