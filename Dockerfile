@@ -3,7 +3,7 @@ WORKDIR /build
 COPY . .
 RUN cd /build/controlpanel && make
 
-FROM node:20 AS frontend_build
+FROM node:21 AS frontend_build
 WORKDIR /build
 COPY /controlpanel .
 RUN npm ci
