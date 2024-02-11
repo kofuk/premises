@@ -360,12 +360,9 @@ func (h *Handler) shutdownServer(gameServer *GameServer, authKey string) {
 		h.dnsService.UpdateV4(context.Background(), net.ParseIP("127.0.0.1"))
 	}
 
-	if err := h.Cacher.Del(context.Background(), "runner-id:default"); err != nil {
-		slog.Error("Failed to unset runner ID", slog.Any("error", err))
+	if err := h.Cacher.Del(context.Background(), "runner-id:default", "runner-info:default", "world-info:default", fmt.Sprintf("runner:%s", authKey)); err != nil {
+		slog.Error("Failed to unset runner information", slog.Any("error", err))
 		return
-	}
-	if err := h.Cacher.Del(context.Background(), fmt.Sprintf("runner:%s", authKey)); err != nil {
-		slog.Error("Failed to delete runner auth key", slog.Any("error", err))
 	}
 
 	if err := h.Streaming.PublishEvent(

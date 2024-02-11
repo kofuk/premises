@@ -11,7 +11,7 @@ import (
 type CacheImpl interface {
 	Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
 	Get(ctx context.Context, key string) ([]byte, error)
-	Del(ctx context.Context, key string) error
+	Del(ctx context.Context, key ...string) error
 }
 
 type Cacher struct {
@@ -42,8 +42,8 @@ func (self Cacher) Get(ctx context.Context, key string, result any) error {
 	return json.Unmarshal(data, result)
 }
 
-func (self Cacher) Del(ctx context.Context, key string) error {
-	return self.c.Del(ctx, key)
+func (self Cacher) Del(ctx context.Context, key ...string) error {
+	return self.c.Del(ctx, key...)
 }
 
 type RedisCacheImpl struct {
@@ -71,8 +71,8 @@ func (self RedisCacheImpl) Get(ctx context.Context, key string) ([]byte, error) 
 	return []byte(val), nil
 }
 
-func (self RedisCacheImpl) Del(ctx context.Context, key string) error {
-	if _, err := self.rdb.Del(ctx, key).Result(); err != nil {
+func (self RedisCacheImpl) Del(ctx context.Context, keys ...string) error {
+	if _, err := self.rdb.Del(ctx, keys...).Result(); err != nil {
 		return err
 	}
 	return nil
