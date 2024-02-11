@@ -347,7 +347,6 @@ func (h *Handler) shutdownServer(gameServer GameServer, rdb *redis.Client, dnsPr
 
 	if dnsProvider != nil {
 		dnsProvider.UpdateV4(context.Background(), net.ParseIP("127.0.0.1"))
-		dnsProvider.UpdateV6(context.Background(), net.ParseIP("::1"))
 	}
 
 	if err := h.Streaming.PublishEvent(
@@ -440,17 +439,6 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameS
 		if ipAddresses != nil {
 			if err := dnsProvider.UpdateV4(context.Background(), ipAddresses.V4); err != nil {
 				log.WithError(err).Error("Failed to update IPv4 address")
-
-				if err := h.Streaming.PublishEvent(
-					context.Background(),
-					infoStream,
-					streaming.NewInfoMessage(entity.InfoErrDNS, true),
-				); err != nil {
-					log.WithError(err).Error("Failed to write status data to Redis channel")
-				}
-			}
-			if err := dnsProvider.UpdateV6(context.Background(), ipAddresses.V6); err != nil {
-				log.WithError(err).Error("Failed to update IPv6 address")
 
 				if err := h.Streaming.PublishEvent(
 					context.Background(),

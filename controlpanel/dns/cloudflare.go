@@ -2,6 +2,7 @@ package dns
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 
@@ -26,13 +27,12 @@ func NewCloudflareDNS(token, zoneID string, options ...cloudflare.Option) (*Clou
 }
 
 func (self *CloudflareDNS) update(ctx context.Context, domainName string, addr net.IP) error {
-	recordType := "A"
-	if len(addr) == net.IPv6len {
-		recordType = "AAAA"
+	if len(addr) != net.IPv4len {
+		return errors.New("IPv6 not supported")
 	}
 
 	records, _, err := self.api.ListDNSRecords(ctx, self.zoneIdentifier, cloudflare.ListDNSRecordsParams{
-		Type:    recordType,
+		Type:    "A",
 		Name:    domainName,
 		Proxied: cloudflare.BoolPtr(false),
 		Match:   "all",
@@ -57,9 +57,5 @@ func (self *CloudflareDNS) update(ctx context.Context, domainName string, addr n
 }
 
 func (self *CloudflareDNS) UpdateV4(ctx context.Context, domainName string, addr net.IP) error {
-	return self.update(ctx, domainName, addr)
-}
-
-func (self *CloudflareDNS) UpdateV6(ctx context.Context, domainName string, addr net.IP) error {
 	return self.update(ctx, domainName, addr)
 }

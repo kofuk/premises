@@ -217,7 +217,6 @@ func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Cli
 			ipAddresses := gameServer.GetIPAddresses()
 			if ipAddresses != nil {
 				dnsProvider.UpdateV4(context.Background(), ipAddresses.V4)
-				dnsProvider.UpdateV6(context.Background(), ipAddresses.V6)
 			}
 		}
 
