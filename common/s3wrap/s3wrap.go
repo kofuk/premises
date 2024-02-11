@@ -6,6 +6,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -94,6 +95,11 @@ func (self *Client) ListObjects(ctx context.Context, bucket string, opts ...List
 
 		continuationToken = resp.NextContinuationToken
 		for _, obj := range resp.Contents {
+			if strings.HasSuffix(*obj.Key, "/") {
+				// Quirk: GCS's XML API returns directries as a object. We'll filter them out.
+				continue
+			}
+
 			result = append(result, ObjectMetaData{
 				Key:       *obj.Key,
 				Timestamp: *obj.LastModified,
