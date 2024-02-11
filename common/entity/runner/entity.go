@@ -4,11 +4,6 @@ import (
 	"github.com/kofuk/premises/common/entity"
 )
 
-type Message struct {
-	Type     string `json:"type"`
-	UserData string `json:"user_data"`
-}
-
 type EventType string
 
 const (

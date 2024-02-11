@@ -85,7 +85,7 @@ func (self *ServerSetup) sendServerHello() {
 		slog.Error("Failed to get IP addresses for network interface", slog.Any("error", err))
 	}
 
-	if err := exterior.SendMessage("serverStatus", eventData); err != nil {
+	if err := exterior.DispatchMessage("serverStatus", eventData); err != nil {
 		slog.Error("Unable to write server hello", slog.Any("error", err))
 	}
 }

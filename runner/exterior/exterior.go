@@ -8,10 +8,10 @@ import (
 	"log/slog"
 	"net/http"
 
-	entity "github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
 )
 
-func SendMessage(msgType string, userData any) error {
+func sendMessage(msgType string, userData any, dispatch bool) error {
 	slog.Debug("Sending message...", slog.String("type", msgType), slog.Any("data", userData))
 
 	serializedUserData, err := json.Marshal(userData)
@@ -19,8 +19,9 @@ func SendMessage(msgType string, userData any) error {
 		return err
 	}
 
-	msg := entity.Message{
+	msg := msgrouter.Message{
 		Type:     msgType,
+		Dispatch: dispatch,
 		UserData: string(serializedUserData),
 	}
 
@@ -44,4 +45,14 @@ func SendMessage(msgType string, userData any) error {
 	slog.Debug("Sending message...Done")
 
 	return fmt.Errorf("Unable to send message to exteriord: %s", string(body))
+}
+
+// Send status message
+func SendMessage(msgType string, userData any) error {
+	return sendMessage(msgType, userData, false)
+}
+
+// Same as `SendMessage`, but flushes buffer immediately.
+func DispatchMessage(msgType string, userData any) error {
+	return sendMessage(msgType, userData, true)
 }

@@ -8,6 +8,7 @@ import (
 
 type Message struct {
 	Type     string `json:"type"`
+	Dispatch bool   `json:"dispatch"`
 	UserData string `json:"user_data"`
 }
 

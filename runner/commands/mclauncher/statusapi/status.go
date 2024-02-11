@@ -120,7 +120,7 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 		if err != nil {
 			slog.Error("Failed to create snapshot", slog.Any("error", err))
 
-			if err := exterior.SendMessage("serverStatus", runner.Event{
+			if err := exterior.DispatchMessage("serverStatus", runner.Event{
 				Type: runner.EventInfo,
 				Info: &runner.InfoExtra{
 					InfoCode: runner.InfoSnapshotError,
@@ -133,7 +133,7 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 			return
 		}
 
-		if err := exterior.SendMessage("serverStatus", runner.Event{
+		if err := exterior.DispatchMessage("serverStatus", runner.Event{
 			Type: runner.EventInfo,
 			Info: &runner.InfoExtra{
 				InfoCode: runner.InfoSnapshotDone,
@@ -146,7 +146,7 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 	handleUndo := func() {
 		go func() {
 			if _, err := os.Stat(filepath.Join(fs.LocateWorldData("ss@quick0/world"))); err != nil {
-				if err := exterior.SendMessage("serverStatus", runner.Event{
+				if err := exterior.DispatchMessage("serverStatus", runner.Event{
 					Type: runner.EventInfo,
 					Info: &runner.InfoExtra{
 						InfoCode: runner.InfoNoSnapshot,

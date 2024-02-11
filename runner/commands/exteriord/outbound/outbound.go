@@ -37,6 +37,23 @@ func (self *Server) HandleMonitor() {
 
 	buf := bytes.NewBuffer(nil)
 
+	sendStatus := func() {
+		req, err := http.NewRequest(http.MethodPost, self.addr+"/_runner/push-status", buf)
+		if err != nil {
+			slog.Error("Error creating request", slog.Any("error", err))
+			return
+		}
+		req.Header.Set("Authorization", self.authKey)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			slog.Error("Error writing status", slog.Any("error", err))
+			return
+		}
+		io.ReadAll(resp.Body)
+
+		buf.Reset()
+	}
+
 out:
 	for {
 		select {
@@ -46,20 +63,7 @@ out:
 				continue out
 			}
 
-			req, err := http.NewRequest(http.MethodPost, self.addr+"/_runner/push-status", buf)
-			if err != nil {
-				slog.Error("Error creating request", slog.Any("error", err))
-				continue
-			}
-			req.Header.Set("Authorization", self.authKey)
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				slog.Error("Error writing status", slog.Any("error", err))
-				continue
-			}
-			io.ReadAll(resp.Body)
-
-			buf.Reset()
+			sendStatus()
 
 		case msg, ok := <-client.C:
 			if !ok {
@@ -67,6 +71,10 @@ out:
 			}
 			buf.Write([]byte(msg.UserData))
 			buf.WriteByte(0)
+
+			if msg.Dispatch {
+				sendStatus()
+			}
 		}
 	}
 
