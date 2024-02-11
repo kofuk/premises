@@ -2,6 +2,7 @@ package serversetup
 
 import (
 	"log/slog"
+	"net"
 	"os"
 	"os/exec"
 	"os/user"
@@ -41,16 +42,50 @@ func isDevEnv() bool {
 	return err == nil
 }
 
+func getIPAddr() (v4Addrs []string, v6Addrs []string, err error) {
+	if isDevEnv() {
+		return []string{"127.0.0.1"}, []string{"::1"}, nil
+	}
+
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, addr := range addrs {
+		if ipnet, ok := addr.(*net.IPNet); ok {
+			if ipnet.IP.IsLoopback() {
+				slog.Info("Address is loopback", slog.String("addr", ipnet.IP.String()))
+				continue
+			}
+
+			if v4Addr := ipnet.IP.To4(); v4Addr != nil {
+				v4Addrs = append(v4Addrs, v4Addr.String())
+			}
+			v6Addrs = append(v6Addrs, ipnet.IP.To16().String())
+		}
+	}
+	return
+}
+
 func (self *ServerSetup) sendServerHello() {
 	systemVersion := systemutil.GetSystemVersion()
 
-	if err := exterior.SendMessage("serverStatus", entity.Event{
+	eventData := entity.Event{
 		Type: entity.EventHello,
 		Hello: &entity.HelloExtra{
 			Version: systemVersion.PremisesVersion,
 			Host:    systemVersion.HostOS,
 		},
-	}); err != nil {
+	}
+
+	var err error
+	eventData.Hello.Addr.IPv4, eventData.Hello.Addr.IPv6, err = getIPAddr()
+	if err != nil {
+		slog.Error("Failed to get IP addresses for network interface", slog.Any("error", err))
+	}
+
+	if err := exterior.SendMessage("serverStatus", eventData); err != nil {
 		slog.Error("Unable to write server hello", slog.Any("error", err))
 	}
 }
