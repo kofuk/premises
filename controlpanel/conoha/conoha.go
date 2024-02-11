@@ -297,7 +297,28 @@ type VMDetailListResp struct {
 	Servers []VMDetail `json:"servers"`
 }
 
-func FindVMByName(cfg *config.Config, token, name string) (*VMDetail, error) {
+type FindVMFunc func(server *VMDetail) bool
+
+func FindByName(name string) FindVMFunc {
+	return func(server *VMDetail) bool {
+		return server.Metadata.InstanceNameTag == name
+	}
+}
+
+func FindByIPAddr(ipv4Addr string) FindVMFunc {
+	return func(server *VMDetail) bool {
+		for _, addresses := range server.Addresses {
+			for _, addr := range addresses {
+				if addr.Version == 4 && addr.Addr == ipv4Addr {
+					return true
+				}
+			}
+		}
+		return false
+	}
+}
+
+func FindVM(cfg *config.Config, token string, condition FindVMFunc) (*VMDetail, error) {
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
 		return nil, err
@@ -333,7 +354,7 @@ func FindVMByName(cfg *config.Config, token, name string) (*VMDetail, error) {
 	}
 
 	for _, instance := range result.Servers {
-		if instance.Metadata.InstanceNameTag == name {
+		if condition(&instance) {
 			return &instance, nil
 		}
 	}

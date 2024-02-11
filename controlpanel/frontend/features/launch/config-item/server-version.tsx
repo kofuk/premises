@@ -117,7 +117,7 @@ const ServerVersion = ({
             <input
               checked={showBeta}
               className="form-check-input"
-              id="showSnapshot"
+              id="showBeta"
               onChange={() => {
                 setShowBeta(!showBeta);
                 postUpdateCondition(mcVersions!);
@@ -132,7 +132,7 @@ const ServerVersion = ({
             <input
               checked={showAlpha}
               className="form-check-input"
-              id="showSnapshot"
+              id="showAlpha"
               onChange={() => {
                 setShowAlpha(!showAlpha);
                 postUpdateCondition(mcVersions!);

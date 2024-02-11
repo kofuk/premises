@@ -119,7 +119,7 @@ func (s *GameServer) FindVM() (string, error) {
 		return "", err
 	}
 
-	detail, err := conoha.FindVMByName(s.cfg, token, s.cfg.Conoha.NameTag)
+	detail, err := conoha.FindVM(s.cfg, token, conoha.FindByName(s.cfg.Conoha.NameTag))
 	if err != nil {
 		return "", err
 	}

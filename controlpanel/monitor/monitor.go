@@ -15,6 +15,7 @@ import (
 	entity "github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/caching"
 	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/controlpanel/conoha"
 	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/streaming"
 )
@@ -46,6 +47,31 @@ func GetPageCodeByEventCode(event entityTypes.EventCode) entity.PageCode {
 	return entity.PageLoading
 }
 
+func UpdateRunnerID(cfg *config.Config, cache *caching.Cacher, ipv4Addr string) error {
+	var id string
+	if err := cache.Get(context.Background(), "runner-id:default", &id); err == nil {
+		return nil
+	}
+
+	slog.Debug("Updating runner ID")
+
+	token, _, err := conoha.GetToken(cfg)
+	if err != nil {
+		return err
+	}
+
+	vm, err := conoha.FindVM(cfg, token, conoha.FindByIPAddr(ipv4Addr))
+	if err != nil {
+		return err
+	}
+
+	if err := cache.Set(context.Background(), "runner-id:default", vm.ID, -1); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func HandleEvent(runnerId string, strmProvider *streaming.Streaming, cfg *config.Config, cache *caching.Cacher, dnsService *dns.DNSProvider, event *runnerEntity.Event) error {
 	stdStream := strmProvider.GetStream(streaming.StandardStream)
 	infoStream := strmProvider.GetStream(streaming.InfoStream)
@@ -60,8 +86,12 @@ func HandleEvent(runnerId string, strmProvider *streaming.Streaming, cfg *config
 			return err
 		}
 
-		if dnsService != nil {
-			if len(event.Hello.Addr.IPv4) != 0 {
+		if len(event.Hello.Addr.IPv4) != 0 {
+			if err := UpdateRunnerID(cfg, cache, event.Hello.Addr.IPv4[0]); err != nil {
+				slog.Error("Error updating runner ID", slog.Any("error", err))
+			}
+
+			if dnsService != nil {
 				if err := dnsService.UpdateV4(context.Background(), net.ParseIP(event.Hello.Addr.IPv4[0])); err != nil {
 					slog.Error("Failed to update IPv4 address", slog.Any("error", err))
 

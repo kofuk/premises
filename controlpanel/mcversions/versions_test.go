@@ -57,8 +57,10 @@ func (self *MapCacheImpl) Get(ctx context.Context, key string) ([]byte, error) {
 	return val, nil
 }
 
-func (self *MapCacheImpl) Del(ctx context.Context, key string) error {
-	delete(self.entries, key)
+func (self *MapCacheImpl) Del(ctx context.Context, keys ...string) error {
+	for _, key := range keys {
+		delete(self.entries, key)
+	}
 	return nil
 }
 
