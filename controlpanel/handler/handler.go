@@ -47,7 +47,7 @@ type Handler struct {
 	db            *bun.DB
 	redis         *redis.Client
 	serverState   serverState
-	serverImpl    GameServer
+	GameServer    *GameServer
 	serverMutex   sync.Mutex
 	serverRunning bool
 	Cacher        caching.Cacher
@@ -114,7 +114,7 @@ func prepareDependencies(cfg *config.Config, h *Handler) error {
 
 	h.redis = createRedisClient(cfg)
 
-	h.serverImpl = NewConohaServer(h.cfg, h)
+	h.GameServer = NewGameServer(h.cfg, h)
 
 	h.backup = backup.New(h.cfg.AWS.AccessKey, h.cfg.AWS.SecretKey, h.cfg.S3.Endpoint, h.cfg.S3.Bucket)
 
@@ -187,35 +187,53 @@ func setupSessions(h *Handler) {
 	h.engine.Use(sessions.Sessions("session", sessionStore))
 }
 
-func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Client, h *Handler) error {
+func syncRemoteVMState(cfg *config.Config, gameServer *GameServer, h *Handler) error {
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
 
-	if !gameServer.VMExists() {
-		if err := h.Streaming.PublishEvent(
-			context.Background(),
-			stdStream,
-			streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch),
-		); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
-		}
+	var id string
+	if err := h.Cacher.Get(context.Background(), "runner-id:default", &id); err != nil {
+		slog.Info("ID for previous runner is not set. Searching for one...", slog.Any("error", err))
 
-		return nil
+		var err error
+		id, err = gameServer.FindVM()
+		if err != nil {
+			slog.Info("No running VM", slog.Any("error", err))
+
+			if err := h.Streaming.PublishEvent(
+				context.Background(),
+				stdStream,
+				streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch),
+			); err != nil {
+				log.WithError(err).Error("Failed to write status data to Redis channel")
+			}
+
+			return nil
+		}
 	}
-	if gameServer.VMRunning() {
+
+	if gameServer.VMRunning(id) {
 		if gameServer.ImageExists() {
 			log.Info("Server seems to be running, but remote image exists")
 			gameServer.DeleteImage()
 		}
 
 		h.serverRunning = true
-	} else {
-		if !gameServer.ImageExists() && !gameServer.SaveImage() {
-			return errors.New("Invalid state")
-		}
-		if !gameServer.DeleteVM() {
-			return errors.New("Failed to delete VM")
-		}
+
+		slog.Info("Successfully synced runner state")
+
+		return nil
 	}
+
+	slog.Info("Recovering system state...")
+
+	if !gameServer.ImageExists() && !gameServer.SaveImage(id) {
+		return errors.New("Invalid state")
+	}
+	if !gameServer.DeleteVM(id) {
+		return errors.New("Failed to delete VM")
+	}
+
+	slog.Info("Successfully recovered runner state")
 
 	return nil
 }
@@ -249,7 +267,7 @@ func NewHandler(cfg *config.Config, bindAddr string) (*Handler, error) {
 
 	setupSessions(h)
 
-	syncRemoteVMState(cfg, h.serverImpl, h.redis, h)
+	syncRemoteVMState(cfg, h.GameServer, h)
 
 	setupRoutes(h)
 

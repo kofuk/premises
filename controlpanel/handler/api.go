@@ -21,6 +21,7 @@ import (
 	runnerEntity "github.com/kofuk/premises/common/entity/runner"
 	entity "github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/controlpanel/conoha"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
 	"github.com/kofuk/premises/controlpanel/model"
 	"github.com/kofuk/premises/controlpanel/monitor"
@@ -272,7 +273,7 @@ func (h *Handler) notifyNonRecoverableFailure(cfg *config.Config, detail string)
 	}
 }
 
-func (h *Handler) shutdownServer(gameServer GameServer, rdb *redis.Client, authKey string) {
+func (h *Handler) shutdownServer(gameServer *GameServer, authKey string) {
 	defer func() {
 		h.serverMutex.Lock()
 		defer h.serverMutex.Unlock()
@@ -290,7 +291,20 @@ func (h *Handler) shutdownServer(gameServer GameServer, rdb *redis.Client, authK
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	if !gameServer.StopVM() {
+	var id string
+	if err := h.Cacher.Get(context.Background(), "runner-id:default", &id); err != nil {
+		if err := h.Streaming.PublishEvent(
+			context.Background(),
+			infoStream,
+			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
+		); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
+		}
+		h.notifyNonRecoverableFailure(h.cfg, "Runner ID is not set")
+		return
+	}
+
+	if !gameServer.StopVM(id) {
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
 			infoStream,
@@ -310,7 +324,7 @@ func (h *Handler) shutdownServer(gameServer GameServer, rdb *redis.Client, authK
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	if !gameServer.SaveImage() {
+	if !gameServer.SaveImage(id) {
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
 			infoStream,
@@ -330,7 +344,7 @@ func (h *Handler) shutdownServer(gameServer GameServer, rdb *redis.Client, authK
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	if !gameServer.DeleteVM() {
+	if !gameServer.DeleteVM(id) {
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
 			infoStream,
@@ -346,6 +360,14 @@ func (h *Handler) shutdownServer(gameServer GameServer, rdb *redis.Client, authK
 		h.dnsService.UpdateV4(context.Background(), net.ParseIP("127.0.0.1"))
 	}
 
+	if err := h.Cacher.Del(context.Background(), "runner-id:default"); err != nil {
+		slog.Error("Failed to unset runner ID", slog.Any("error", err))
+		return
+	}
+	if err := h.Cacher.Del(context.Background(), fmt.Sprintf("runner:%s", authKey)); err != nil {
+		slog.Error("Failed to delete runner auth key", slog.Any("error", err))
+	}
+
 	if err := h.Streaming.PublishEvent(
 		context.Background(),
 		stdStream,
@@ -354,16 +376,12 @@ func (h *Handler) shutdownServer(gameServer GameServer, rdb *redis.Client, authK
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	if err := h.Cacher.Del(context.Background(), fmt.Sprintf("runner:%s", authKey)); err != nil {
-		slog.Error("Failed to delete runner id", slog.Any("error", err))
-	}
-
 	if err := h.Streaming.ClearHistory(context.Background(), h.Streaming.GetStream(streaming.SysstatStream)); err != nil {
 		log.WithError(err).Error("Unable to clear sysstat history")
 	}
 }
 
-func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameServer, memSizeGB int, rdb *redis.Client) {
+func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer *GameServer, memSizeGB int, rdb *redis.Client) {
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
 	infoStream := h.Streaming.GetStream(streaming.InfoStream)
 
@@ -398,7 +416,26 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameS
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	if !gameServer.SetUp(gameConfig, rdb, memSizeGB) {
+	log.Info("Generating startup script...")
+	startupScript, err := conoha.GenerateStartupScript(gameConfig)
+	if err != nil {
+		log.WithError(err).Error("Failed to generate startup script")
+
+		if err := h.Streaming.PublishEvent(
+			context.Background(),
+			infoStream,
+			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
+		); err != nil {
+			log.WithError(err).Error("Failed to write status data to Redis channel")
+		}
+
+		h.serverRunning = false
+		return
+	}
+	log.Info("Generating startup script...Done")
+
+	id := gameServer.SetUp(gameConfig, rdb, memSizeGB, string(startupScript))
+	if id == "" {
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
 			infoStream,
@@ -407,6 +444,11 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameS
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 		h.serverRunning = false
+		return
+	}
+
+	if err := h.Cacher.Set(context.Background(), "runner-id:default", id, -1); err != nil {
+		slog.Error("Failed to set runner ID", slog.Any("error", err))
 		return
 	}
 
@@ -476,7 +518,7 @@ func (h *Handler) handleApiLaunch(c *gin.Context) {
 	h.serverState.machineType = machineType
 	memSizeGB, _ := strconv.Atoi(strings.Replace(machineType, "g", "", 1))
 
-	go h.LaunchServer(gameConfig, h.serverImpl, memSizeGB, h.redis)
+	go h.LaunchServer(gameConfig, h.GameServer, memSizeGB, h.redis)
 
 	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,

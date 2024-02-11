@@ -252,15 +252,15 @@ type VMDetail struct {
 }
 
 type VMDetailResp struct {
-	Servers []VMDetail `json:"servers"`
+	Server VMDetail `json:"server"`
 }
 
-func GetVMDetail(cfg *config.Config, token, name string) (*VMDetail, error) {
+func GetVMDetail(cfg *config.Config, token, id string) (*VMDetail, error) {
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
 		return nil, err
 	}
-	url.Path = path.Join(url.Path, "servers", "detail")
+	url.Path = path.Join(url.Path, "servers", id)
 
 	req, err := http.NewRequest("GET", url.String(), nil)
 	if err != nil {
@@ -273,6 +273,9 @@ func GetVMDetail(cfg *config.Config, token, name string) (*VMDetail, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, errors.New("No such VM")
+	}
 	if resp.StatusCode != 200 {
 		return nil, errors.New(fmt.Sprintf("Failed to retrieve VM details: %d", resp.StatusCode))
 	}
@@ -283,6 +286,48 @@ func GetVMDetail(cfg *config.Config, token, name string) (*VMDetail, error) {
 	}
 
 	var result VMDetailResp
+	if err := json.Unmarshal(respData, &result); err != nil {
+		return nil, err
+	}
+
+	return &result.Server, nil
+}
+
+type VMDetailListResp struct {
+	Servers []VMDetail `json:"servers"`
+}
+
+func FindVMByName(cfg *config.Config, token, name string) (*VMDetail, error) {
+	url, err := url.Parse(cfg.Conoha.Services.Compute)
+	if err != nil {
+		return nil, err
+	}
+	url.Path = path.Join(url.Path, "servers/detail")
+
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add(HeaderKeyAuthToken, token)
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, errors.New("No such VM")
+	}
+	if resp.StatusCode != 200 {
+		return nil, errors.New(fmt.Sprintf("Failed to retrieve VM details: %d", resp.StatusCode))
+	}
+
+	respData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result VMDetailListResp
 	if err := json.Unmarshal(respData, &result); err != nil {
 		return nil, err
 	}

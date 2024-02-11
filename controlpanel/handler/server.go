@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -11,32 +10,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type GameServer interface {
-	SetUp(gameConfig *runner.Config, rdb *redis.Client, memSizeGB int) bool
-	VMExists() bool
-	VMRunning() bool
-	StopVM() bool
-	DeleteVM() bool
-	ImageExists() bool
-	SaveImage() bool
-	DeleteImage() bool
-}
-
-type ConohaServer struct {
+type GameServer struct {
 	cfg     *config.Config
 	token   string
 	expires string
 	h       *Handler
 }
 
-func NewConohaServer(cfg *config.Config, h *Handler) *ConohaServer {
-	return &ConohaServer{
+func NewGameServer(cfg *config.Config, h *Handler) *GameServer {
+	return &GameServer{
 		cfg: cfg,
 		h:   h,
 	}
 }
 
-func (s *ConohaServer) getToken() (string, error) {
+func (s *GameServer) getToken() (string, error) {
 	if s.token == "" {
 		token, expires, err := conoha.GetToken(s.cfg)
 		if err != nil {
@@ -61,18 +49,18 @@ func (s *ConohaServer) getToken() (string, error) {
 	return s.token, nil
 }
 
-func (s *ConohaServer) SetUp(gameConfig *runner.Config, rdb *redis.Client, memSizeGB int) bool {
+func (s *GameServer) SetUp(gameConfig *runner.Config, rdb *redis.Client, memSizeGB int, startupScript string) string {
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
-		return false
+		return ""
 	}
 
 	log.Info("Retrieving flavors...")
 	flavors, err := conoha.GetFlavors(s.cfg, token)
 	if err != nil {
 		log.WithError(err).Error("Failed to get flavors")
-		return false
+		return ""
 	}
 	flavorID := flavors.GetIDByMemSize(memSizeGB)
 	log.WithField("selected_flavor", flavorID).Info("Retriving flavors...Done")
@@ -81,38 +69,25 @@ func (s *ConohaServer) SetUp(gameConfig *runner.Config, rdb *redis.Client, memSi
 	imageID, imageStatus, err := conoha.GetImageID(s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
 		log.WithError(err).Error("Failed to get image ID")
-		return false
+		return ""
 	} else if imageStatus != "active" {
 		log.Error("Image is not active")
-		return false
+		return ""
 	}
 	log.WithField("image_id", imageID).Info("Retriving image ID...Done")
 
-	log.Info("Generating startup script...")
-	gameConfigData, err := json.Marshal(gameConfig)
-	if err != nil {
-		log.WithError(err).Error("Failed to marshal config")
-		return false
-	}
-
-	startupScript, err := conoha.GenerateStartupScript(gameConfigData)
-	if err != nil {
-		log.WithError(err).Error("Failed to generate startup script")
-		return false
-	}
-	log.Info("Generating startup script...Done")
-
 	log.Info("Creating VM...")
-	if _, err := conoha.CreateVM(s.cfg, s.cfg.Conoha.NameTag, token, imageID, flavorID, startupScript); err != nil {
+	id, err := conoha.CreateVM(s.cfg, s.cfg.Conoha.NameTag, token, imageID, flavorID, startupScript)
+	if err != nil {
 		log.WithError(err).Error("Failed to create VM")
-		return false
+		return ""
 	}
 	log.Info("Creating VM...")
 
 	log.Info("Waiting for VM to be created...")
 	var vms *conoha.VMDetail
 	for i := 0; i < 500; i++ {
-		vms, err = conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
+		vms, err = conoha.GetVMDetail(s.cfg, token, id)
 		if err != nil {
 			log.WithError(err).Info("Waiting for VM to be created...")
 			time.Sleep(10 * time.Second)
@@ -130,14 +105,29 @@ func (s *ConohaServer) SetUp(gameConfig *runner.Config, rdb *redis.Client, memSi
 		if err == nil {
 			log.Error("Building VM didn't completed")
 		}
-		return false
+		return ""
 	}
 	log.WithField("vm_status", vms.Status).Info("Waiting for VM to be created...Done")
 
-	return true
+	return id
 }
 
-func (s *ConohaServer) VMExists() bool {
+func (s *GameServer) FindVM() (string, error) {
+	token, err := s.getToken()
+	if err != nil {
+		log.WithError(err).Error("Failed to get token")
+		return "", err
+	}
+
+	detail, err := conoha.FindVMByName(s.cfg, token, s.cfg.Conoha.NameTag)
+	if err != nil {
+		return "", err
+	}
+
+	return detail.ID, nil
+}
+
+func (s *GameServer) VMRunning(id string) bool {
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
@@ -145,24 +135,7 @@ func (s *ConohaServer) VMExists() bool {
 	}
 
 	log.Info("Getting VM information...")
-	if _, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag); err != nil {
-		log.WithError(err).Error("Failed to get VM information")
-		return false
-	}
-	log.Info("Getting VM information...Done")
-
-	return true
-}
-
-func (s *ConohaServer) VMRunning() bool {
-	token, err := s.getToken()
-	if err != nil {
-		log.WithError(err).Error("Failed to get token")
-		return false
-	}
-
-	log.Info("Getting VM information...")
-	detail, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
+	detail, err := conoha.GetVMDetail(s.cfg, token, id)
 	if err != nil {
 		log.WithError(err).Error("Failed to get VM detail")
 		return false
@@ -172,23 +145,15 @@ func (s *ConohaServer) VMRunning() bool {
 	return detail.Status == "ACTIVE"
 }
 
-func (s *ConohaServer) StopVM() bool {
+func (s *GameServer) StopVM(id string) bool {
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
 		return false
 	}
 
-	log.Info("Getting VM information...")
-	detail, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
-	if err != nil {
-		log.WithError(err).Error("Failed to get VM detail")
-		return false
-	}
-	log.Info("Getting VM information...Done")
-
 	log.Info("Requesting to Stop VM...")
-	if err := conoha.StopVM(s.cfg, token, detail.ID); err != nil {
+	if err := conoha.StopVM(s.cfg, token, id); err != nil {
 		log.WithError(err).Error("Failed to stop VM")
 		return false
 	}
@@ -197,7 +162,7 @@ func (s *ConohaServer) StopVM() bool {
 	// Wait for VM to stop
 	log.Info("Waiting for the VM to stop...")
 	for {
-		detail, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
+		detail, err := conoha.GetVMDetail(s.cfg, token, id)
 		if err != nil {
 			log.WithError(err).Error("Failed to get VM information")
 			return false
@@ -213,23 +178,15 @@ func (s *ConohaServer) StopVM() bool {
 	return true
 }
 
-func (s *ConohaServer) DeleteVM() bool {
+func (s *GameServer) DeleteVM(id string) bool {
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
 		return false
 	}
 
-	log.Info("Getting VM information...")
-	detail, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
-	if err != nil {
-		log.WithError(err).Error("Failed to get VM detail")
-		return false
-	}
-	log.Info("Getting VM information...Done")
-
 	log.Info("Deleting VM...")
-	if err := conoha.DeleteVM(s.cfg, token, detail.ID); err != nil {
+	if err := conoha.DeleteVM(s.cfg, token, id); err != nil {
 		log.WithError(err).Error("Failed to delete VM")
 		return false
 	}
@@ -238,7 +195,7 @@ func (s *ConohaServer) DeleteVM() bool {
 	return true
 }
 
-func (s *ConohaServer) ImageExists() bool {
+func (s *GameServer) ImageExists() bool {
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
@@ -260,23 +217,15 @@ func (s *ConohaServer) ImageExists() bool {
 	return true
 }
 
-func (s *ConohaServer) SaveImage() bool {
+func (s *GameServer) SaveImage(id string) bool {
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")
 		return false
 	}
 
-	log.Info("Getting VM information...")
-	detail, err := conoha.GetVMDetail(s.cfg, token, s.cfg.Conoha.NameTag)
-	if err != nil {
-		log.WithError(err).Error("Failed to get VM detail")
-		return false
-	}
-	log.Info("Getting VM information...Done")
-
 	log.Info("Requesting to create image...")
-	if err := conoha.CreateImage(s.cfg, token, detail.ID, s.cfg.Conoha.NameTag); err != nil {
+	if err := conoha.CreateImage(s.cfg, token, id, s.cfg.Conoha.NameTag); err != nil {
 		log.WithError(err).Error("Failed to create image")
 		return false
 	}
@@ -298,7 +247,7 @@ func (s *ConohaServer) SaveImage() bool {
 	return true
 }
 
-func (s *ConohaServer) DeleteImage() bool {
+func (s *GameServer) DeleteImage() bool {
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")

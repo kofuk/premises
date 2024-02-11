@@ -63,7 +63,7 @@ func (h *Handler) handlePushStatus(c *gin.Context) {
 		}
 
 		if event.Type == runner.EventStatus && event.Status.EventCode == runner.EventShutdown {
-			go h.shutdownServer(h.serverImpl, h.redis, c.GetHeader("Authorization"))
+			go h.shutdownServer(h.GameServer, c.GetHeader("Authorization"))
 			return
 		}
 

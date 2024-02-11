@@ -36,8 +36,12 @@ type ServerDetail struct {
 	Metadata  ServerDetailMetadata             `json:"metadata"`
 }
 
-type ServerDetailResp struct {
+type ServerDetailsResp struct {
 	Servers []ServerDetail `json:"servers"`
+}
+
+type ServerDetailResp struct {
+	Server ServerDetail `json:"server"`
 }
 
 type Flavor struct {

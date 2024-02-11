@@ -63,8 +63,20 @@ func (self *Ostack) ServeGetToken(c echo.Context) error {
 	return nil
 }
 
+func (self *Ostack) ServeGetServerDetails(c echo.Context) error {
+	servers, err := dockerstack.GetServerDetails(c.Request().Context(), self.docker)
+	if err != nil {
+		log.Println(err)
+		c.JSON(http.StatusInternalServerError, nil)
+		return nil
+	}
+
+	c.JSON(http.StatusOK, servers)
+	return nil
+}
+
 func (self *Ostack) ServeGetServerDetail(c echo.Context) error {
-	servers, err := dockerstack.GetServerDetail(c.Request().Context(), self.docker)
+	servers, err := dockerstack.GetServerDetail(c.Request().Context(), self.docker, c.Param("id"))
 	if err != nil {
 		log.Println(err)
 		c.JSON(http.StatusInternalServerError, nil)
@@ -211,7 +223,8 @@ func (self *Ostack) setupRoutes() {
 	needsAuthEndpoint.GET("/image/v2/images", self.ServeGetImages)
 	needsAuthEndpoint.DELETE("/image/v2/images/:image", self.ServeDeleteImages)
 	needsAuthEndpoint.POST("/compute/v2/servers", self.ServeLaunchServer)
-	needsAuthEndpoint.GET("/compute/v2/servers/detail", self.ServeGetServerDetail)
+	needsAuthEndpoint.GET("/compute/v2/servers/detail", self.ServeGetServerDetails)
+	needsAuthEndpoint.GET("/compute/v2/servers/:id", self.ServeGetServerDetail)
 	needsAuthEndpoint.POST("/compute/v2/servers/:server/action", self.ServeServerAction)
 	needsAuthEndpoint.DELETE("/compute/v2/servers/:server", self.ServeDeleteServer)
 	needsAuthEndpoint.GET("/compute/v2/flavors", self.ServeGetFlavors)

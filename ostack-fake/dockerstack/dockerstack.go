@@ -2,13 +2,14 @@ package dockerstack
 
 import (
 	"context"
+	"errors"
 
 	docker "github.com/docker/docker/client"
 	"github.com/kofuk/premises/ostack-fake/dockerstack/wrapper"
 	"github.com/kofuk/premises/ostack-fake/entity"
 )
 
-func GetServerDetail(ctx context.Context, docker *docker.Client) (*entity.ServerDetailResp, error) {
+func GetServerDetails(ctx context.Context, docker *docker.Client) (*entity.ServerDetailsResp, error) {
 	containers, err := wrapper.GetManagedContainers(ctx, docker)
 	if err != nil {
 		return nil, err
@@ -45,7 +46,24 @@ func GetServerDetail(ctx context.Context, docker *docker.Client) (*entity.Server
 		result = append(result, serverDetail)
 	}
 
-	return &entity.ServerDetailResp{Servers: result}, nil
+	return &entity.ServerDetailsResp{Servers: result}, nil
+}
+
+func GetServerDetail(ctx context.Context, docker *docker.Client, id string) (*entity.ServerDetailResp, error) {
+	details, err := GetServerDetails(ctx, docker)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, server := range details.Servers {
+		if server.ID == id {
+			return &entity.ServerDetailResp{
+				Server: server,
+			}, nil
+		}
+	}
+
+	return nil, errors.New("Not found")
 }
 
 func GetImages(ctx context.Context, docker *docker.Client) (*entity.ImageResp, error) {
