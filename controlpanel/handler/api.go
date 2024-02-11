@@ -343,8 +343,6 @@ func (h *Handler) shutdownServer(gameServer GameServer, rdb *redis.Client, dnsPr
 		return
 	}
 
-	rdb.Del(context.Background(), "monitor-key").Result()
-
 	if dnsProvider != nil {
 		dnsProvider.UpdateV4(context.Background(), net.ParseIP("127.0.0.1"))
 	}
@@ -402,9 +400,6 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer GameS
 	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
-
-	h.cfg.MonitorKey = gameConfig.AuthKey
-	rdb.Set(context.Background(), "monitor-key", gameConfig.AuthKey, 0).Result()
 
 	if err := h.Streaming.PublishEvent(
 		context.Background(),
@@ -537,8 +532,6 @@ func (h *Handler) handleApiReconfigure(c *gin.Context) {
 		})
 		return
 	}
-	// Use previously generated key.
-	gameConfig.AuthKey = h.cfg.MonitorKey
 
 	if err := h.runnerAction.Push(c.Request.Context(), "default", runnerEntity.Action{
 		Type:   runnerEntity.ActionReconfigure,

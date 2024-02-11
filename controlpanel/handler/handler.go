@@ -22,7 +22,6 @@ import (
 	"github.com/kofuk/premises/controlpanel/backup"
 	"github.com/kofuk/premises/controlpanel/caching"
 	"github.com/kofuk/premises/controlpanel/config"
-	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/mcversions"
 	"github.com/kofuk/premises/controlpanel/model/migrations"
 	"github.com/kofuk/premises/controlpanel/pollable"
@@ -192,32 +191,9 @@ func syncRemoteVMState(cfg *config.Config, gameServer GameServer, rdb *redis.Cli
 		return nil
 	}
 	if gameServer.VMRunning() {
-		monitorKey, err := rdb.Get(context.TODO(), "monitor-key").Result()
-		if err != nil {
-			return err
-		}
-		cfg.MonitorKey = string(monitorKey)
-
 		if gameServer.ImageExists() {
 			log.Info("Server seems to be running, but remote image exists")
 			gameServer.DeleteImage()
-		}
-
-		var dnsProvider *dns.DNSProvider
-		if h.cfg.Cloudflare.Token != "" {
-			cloudflareDNS, err := dns.NewCloudflareDNS(h.cfg.Cloudflare.Token, h.cfg.Cloudflare.ZoneID)
-			if err != nil {
-				log.WithError(err).Error("Failed to initialize DNS provider")
-			} else {
-				dnsProvider = dns.New(cloudflareDNS, h.cfg.Cloudflare.GameDomainName)
-			}
-		}
-
-		if dnsProvider != nil {
-			ipAddresses := gameServer.GetIPAddresses()
-			if ipAddresses != nil {
-				dnsProvider.UpdateV4(context.Background(), ipAddresses.V4)
-			}
 		}
 
 		h.serverRunning = true

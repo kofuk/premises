@@ -49,7 +49,6 @@ type Config struct {
 		} `env:"redis"`
 		AlertWebhookUrl string `env:"alertWebhook"`
 	} `env:"controlPanel"`
-	MonitorKey string `env:"-"`
 	ServerAddr string `env:"-"`
 }
 

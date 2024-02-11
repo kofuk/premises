@@ -65,7 +65,7 @@ type HelloExtra struct {
 	Version string `json:"version"`
 	Host    string `json:"host"`
 	Addr    struct {
-		IPv4 []string  `json:"ipv4"`
+		IPv4 []string `json:"ipv4"`
 		IPv6 []string `json:"ipv6,omitempty"`
 	} `json:"addr"`
 }
