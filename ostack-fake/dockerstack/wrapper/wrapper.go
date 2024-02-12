@@ -81,11 +81,6 @@ func createContainer(ctx context.Context, docker *docker.Client, imageID, nameTa
 	hostConfig := container.HostConfig{
 		Binds: binds,
 		PortBindings: nat.PortMap{
-			"8521/tcp": []nat.PortBinding{
-				{
-					HostPort: "8521",
-				},
-			},
 			"25565/tcp": []nat.PortBinding{
 				{
 					HostPort: "25565",

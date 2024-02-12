@@ -45,7 +45,10 @@ const NavBar = () => {
     })();
   };
 
-  const {message, progress} = useRunnerStatus();
+  const {
+    message,
+    extra: {progress}
+  } = useRunnerStatus();
 
   return (
     <RoundedAppBar>

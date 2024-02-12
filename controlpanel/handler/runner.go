@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kofuk/premises/common/entity/runner"
@@ -75,6 +76,68 @@ func (h *Handler) handlePushStatus(c *gin.Context) {
 	}
 }
 
+func (h *Handler) handleGetInstallScript(c *gin.Context) {
+	var protocol string
+	if c.Query("p") == "s" {
+		protocol = "https"
+	} else {
+		protocol = "http"
+	}
+
+	script := fmt.Sprintf(`#!/usr/bin/env bash
+set -euo pipefail
+function run() {
+
+if [ "$(whoami)" != root ]; then
+    echo 'This script must be run as root.' >&2
+    exit 1
+fi
+
+# Explicitly opening /dev/tty because stdin will be curl.
+exec 3</dev/tty
+
+read -sp 'Enter auth code: ' -u3 auth
+echo
+exec 3<&-
+
+name="/premises-userdata-${RANDOM}"
+
+curl -H "Authorization: Setup-Code ${auth}" '%s://%s/_runner/startup' | base64 -d >"${name}"
+chmod +x "${name}"
+
+echo 'Launching Premises...'
+bash "${name}"
+
+rm -f "${name}"
+
+echo 'Success! Premises should be started shortly!'
+
+
+exit
+} && run
+`, protocol, c.Request.Host)
+
+	c.Writer.WriteString(script)
+}
+
+func (h *Handler) handleGetStartupScript(c *gin.Context) {
+	authKey := c.GetHeader("Authorization")
+	if !strings.HasPrefix(authKey, "Setup-Code ") {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	authKey = strings.TrimPrefix(authKey, "Setup-Code ")
+
+	var script string
+	if err := h.Cacher.Get(c.Request.Context(), fmt.Sprintf("startup:%s", authKey), &script); err != nil {
+		slog.Error("Invalid auth code", slog.Any("error", err))
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	c.Writer.WriteString(script)
+}
+
 func (h *Handler) authKeyMiddleware(c *gin.Context) {
 	authKey := c.GetHeader("Authorization")
 
@@ -90,7 +153,10 @@ func (h *Handler) authKeyMiddleware(c *gin.Context) {
 }
 
 func (h *Handler) setupRunnerRoutes(group *gin.RouterGroup) {
-	group.Use(h.authKeyMiddleware)
-	group.GET("/poll-action", h.handleRunnerPollAction)
-	group.POST("/push-status", h.handlePushStatus)
+	group.GET("/install", h.handleGetInstallScript)
+	group.GET("/startup", h.handleGetStartupScript)
+
+	privates := group.Group("", h.authKeyMiddleware)
+	privates.GET("/poll-action", h.handleRunnerPollAction)
+	privates.POST("/push-status", h.handlePushStatus)
 }

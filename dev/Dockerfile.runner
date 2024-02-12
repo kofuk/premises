@@ -1,13 +1,7 @@
 FROM ubuntu:22.04
 
-# Build this Dockerfile with
-#  docker build -t premises.kofuk.org/dev-runner -f Dockerfile.runner \
-#      --label org.kofuk.premises.managed=true \
-#      --label org.kofuk.premises.id=$(uuidgen) \
-#      --label org.kofuk.premises.name=mc-premises .
-
 RUN apt-get update \
-  && apt-get install -y jq less
+  && apt-get install -y jq less curl
 
 COPY fake_cloud_init.sh /init.sh
 

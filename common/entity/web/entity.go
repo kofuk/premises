@@ -86,25 +86,30 @@ type WorldInfo struct {
 }
 
 const (
-	EvStopped      entity.EventCode = iota + 100 // 100
-	EvCreateRunner                               // 101
-	EvWaitConn                                   // 102
-	EvConnLost                                   // 103
-	EvStopRunner                                 // 104
+	EvStopped      entity.EventCode = 100
+	EvCreateRunner entity.EventCode = 101
+	EvWaitConn     entity.EventCode = 102
+	EvConnLost     entity.EventCode = 103
+	EvStopRunner   entity.EventCode = 104
+	EvManualSetup  entity.EventCode = 105
 )
 
 type PageCode int
 
 const (
-	PageLaunch  PageCode = iota + 1 // 1
-	PageLoading                     // 2
-	PageRunning                     // 3
+	PageLaunch      PageCode = 1
+	PageLoading     PageCode = 2
+	PageRunning     PageCode = 3
+	PageManualSetup PageCode = 4
 )
 
 type StandardMessage struct {
 	EventCode entity.EventCode `json:"eventCode"`
-	Progress  int              `json:"progress"`
 	PageCode  PageCode         `json:"pageCode"`
+	Extra     struct {
+		Progress int    `json:"progress"`
+		TextData string `json:"textData"`
+	} `json:"extra"`
 }
 
 type InfoMessage struct {

@@ -65,11 +65,21 @@ func NewStandardMessage(eventCode entity.EventCode, pageCode webEntity.PageCode)
 }
 
 func NewStandardMessageWithProgress(eventCode entity.EventCode, progress int, pageCode webEntity.PageCode) Message {
-	return &webEntity.StandardMessage{
+	msg := &webEntity.StandardMessage{
 		EventCode: eventCode,
-		Progress:  progress,
 		PageCode:  pageCode,
 	}
+	msg.Extra.Progress = progress
+	return msg
+}
+
+func NewStandardMessageWithTextData(eventCode entity.EventCode, textData string, pageCode webEntity.PageCode) Message {
+	msg := &webEntity.StandardMessage{
+		EventCode: eventCode,
+		PageCode:  pageCode,
+	}
+	msg.Extra.TextData = textData
+	return msg
 }
 
 func NewInfoMessage(infoCode entity.InfoCode, isError bool) Message {

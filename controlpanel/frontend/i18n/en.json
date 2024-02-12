@@ -30,6 +30,7 @@
   "status.code_102": "Connecting to the server…",
   "status.code_103": "Connection to the server lost. Reconnecting…",
   "status.code_104": "Stopping the server…",
+  "status.code_105": "Waiting for manual setup…",
   "info.code_1": "Snapshot taken",
   "info.code_2": "Error taking snapshot",
   "info.code_3": "No snapshot exists",
@@ -115,5 +116,8 @@
   "set_password_title": "Set Password",
   "set_password_submit": "Set password",
   "cpu_usage": "CPU Usage",
-  "use_latest_backup": "Use latest backup"
+  "use_latest_backup": "Use latest backup",
+  "manual_setup_summary": "Manual setup is required to run Minecraft server because we can't find any existing server data.",
+  "manual_setup_execute_command": "To do so, run the following command on the server to run Minecraft server:",
+  "manual_setup_auth_code": "The above command will ask you to type the auth code. Your auth code is"
 }

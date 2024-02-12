@@ -4,6 +4,7 @@ import {Helmet} from 'react-helmet-async';
 import {useTranslation} from 'react-i18next';
 
 import LoadingPage from './components/loading-page';
+import ManualSetupPage from './components/manual-setup-page';
 import ServerConfigPane from './server-config-pane';
 import ServerControlPane from './server-control-pane';
 
@@ -16,6 +17,7 @@ import 'bootstrap/scss/bootstrap.scss';
 const PAGE_LAUNCH = 1;
 const PAGE_LOADING = 2;
 const PAGE_RUNNING = 3;
+const PAGE_MANUAL_SETUP = 4;
 
 const LaunchPage = () => {
   const [t] = useTranslation();
@@ -29,6 +31,8 @@ const LaunchPage = () => {
       return <LoadingPage />;
     } else if (page == PAGE_RUNNING) {
       return <ServerControlPane />;
+    } else if (page == PAGE_MANUAL_SETUP) {
+      return <ManualSetupPage />;
     }
     throw new Error(`Unkwnon page: ${page}`);
   };

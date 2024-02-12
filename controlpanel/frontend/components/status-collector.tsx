@@ -13,11 +13,11 @@ const StatusCollector = () => {
   useEffect(() => {
     const eventSource = new EventSource('/api/streaming/events');
     eventSource.addEventListener('error', () => {
-      updateStatus(0, 0);
+      updateStatus(0);
     });
     eventSource.addEventListener('statuschanged', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);
-      updateStatus(event.eventCode, event.progress, event.pageCode);
+      updateStatus(event.eventCode, event.extra, event.pageCode);
     });
 
     return () => {

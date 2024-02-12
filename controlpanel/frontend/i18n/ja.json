@@ -30,6 +30,7 @@
   "status.code_102": "サーバーに接続しています…",
   "status.code_103": "サーバーとの接続が失われました。再接続しています…",
   "status.code_104": "サーバーを停止しています…",
+  "status.code_105": "手動セットアップを待機しています…",
   "info.code_1": "スナップショットを取得しました",
   "info.code_2": "スナップショットを取得できせんでした",
   "info.code_3": "スナップショットがありません",
@@ -75,7 +76,6 @@
   "generate_world": "新しい世界を生成",
   "menu_world_info": "ワールド情報",
   "menu_reconfigure": "サーバを再設定",
-  "menu_snapshot": "ワールドのスナップショット",
   "menu_system_info": "システム情報",
   "system_info_server_version": "ビルド",
   "system_info_host_os": "ホストのOS",
@@ -116,5 +116,8 @@
   "set_password_title": "パスワードを設定",
   "set_password_submit": "パスワードを設定",
   "cpu_usage": "CPU 使用率",
-  "use_latest_backup": "最新のバックアップを使う"
+  "use_latest_backup": "最新のバックアップを使う",
+  "manual_setup_summary": "サーバのデータが存在しないため、手動でのセットアップが必要です。",
+  "manual_setup_execute_command": "セットアップするには、Minecraft サーバを実行したいサーバで次のコマンドを実行してください。",
+  "manual_setup_auth_code": "Auth code の入力を求められたら、次のコードを入力してください。"
 }

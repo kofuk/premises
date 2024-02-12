@@ -2,12 +2,14 @@ import React, {useContext, useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
+import {StatusExtraData as ExtraData} from '@/api/entities';
+
 type RunnerStatusContextType = {
   statusCode: number;
   message: string;
-  progress: number;
+  extra: ExtraData;
   pageCode: number;
-  updateStatus: (statusCode: number, progress: number, pageCode?: number) => void;
+  updateStatus: (statusCode: number, extra?: ExtraData, pageCode?: number) => void;
 };
 
 const RunnerStatusContext = React.createContext<RunnerStatusContextType>(null!);
@@ -16,17 +18,20 @@ export const RunnerStatusProvider = ({children}: {children: React.ReactNode}) =>
   const [t] = useTranslation();
 
   const [statusCode, setStatusCode] = useState(0);
-  const [progress, setProgress] = useState(0);
+  const [extra, setExtra] = useState<ExtraData>({
+    progress: 0,
+    textData: ''
+  });
   const [pageCode, setPageCode] = useState(1);
 
   const value = {
     statusCode,
     message: t(`status.code_${statusCode}`),
-    progress,
+    extra,
     pageCode,
-    updateStatus: (statusCode: number, progress: number, pageCode?: number) => {
+    updateStatus: (statusCode: number, extra?: ExtraData, pageCode?: number) => {
       setStatusCode(statusCode);
-      setProgress(progress);
+      setExtra(extra || {progress: 0, textData: ''});
       if (typeof pageCode === 'number') {
         setPageCode(pageCode);
       }

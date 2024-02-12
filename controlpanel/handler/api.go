@@ -3,6 +3,7 @@ package handler
 import (
 	"bytes"
 	"context"
+	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,6 +19,7 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/securecookie"
 	runnerEntity "github.com/kofuk/premises/common/entity/runner"
 	entity "github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/config"
@@ -433,14 +435,24 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer *Game
 
 	id := gameServer.SetUp(gameConfig, rdb, memSizeGB, string(startupScript))
 	if id == "" {
+		// Startup failed. Manual setup can recover this status.
+
+		encoder := base32.StdEncoding.WithPadding(base32.NoPadding)
+		authCode := encoder.EncodeToString(securecookie.GenerateRandomKey(10))
+
 		if err := h.Streaming.PublishEvent(
 			context.Background(),
-			infoStream,
-			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
+			stdStream,
+			streaming.NewStandardMessageWithTextData(entity.EvManualSetup, authCode, entity.PageManualSetup),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
-		h.serverRunning = false
+
+		if err := h.Cacher.Set(context.Background(), fmt.Sprintf("startup:%s", authCode), startupScript, 30*time.Minute); err != nil {
+			slog.Error("Failed to set startup script", slog.Any("error", err))
+			return
+		}
+
 		return
 	}
 

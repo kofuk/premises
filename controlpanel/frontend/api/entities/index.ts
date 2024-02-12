@@ -46,3 +46,8 @@ export type WorldInfo = {
   worldName: string;
   seed: string;
 };
+
+export type StatusExtraData = {
+  progress: number;
+  textData: string;
+};
