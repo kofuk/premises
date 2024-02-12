@@ -7,7 +7,7 @@ jobs:
   delete-old-images:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/delete-package-versions@v4
+      - uses: actions/delete-package-versions@v5
         with:
           package-name: premises
           package-type: container
