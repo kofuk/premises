@@ -9,6 +9,9 @@ on:
 jobs:
   build-mcserver-fake:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     container:
       image: rust:alpine
     steps:
