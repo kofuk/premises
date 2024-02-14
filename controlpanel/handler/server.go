@@ -3,7 +3,6 @@ package handler
 import (
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
@@ -49,7 +48,7 @@ func (s *GameServer) getToken() (string, error) {
 	return s.token, nil
 }
 
-func (s *GameServer) SetUp(gameConfig *runner.Config, rdb *redis.Client, memSizeGB int, startupScript string) string {
+func (s *GameServer) SetUp(gameConfig *runner.Config, memSizeGB int, startupScript string) string {
 	token, err := s.getToken()
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")

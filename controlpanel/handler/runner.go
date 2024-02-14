@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/controlpanel/monitor"
+	"github.com/kofuk/premises/controlpanel/pollable"
 )
 
 func (h *Handler) handleRunnerPollAction(c *gin.Context) {
@@ -24,6 +25,9 @@ func (h *Handler) handleRunnerPollAction(c *gin.Context) {
 
 	action, err := h.runnerAction.Wait(c.Request.Context(), runnerId)
 	if err != nil {
+		if err == pollable.Cancelled {
+			return
+		}
 		slog.Error("Error waiting action", slog.Any("error", err))
 		c.Status(http.StatusInternalServerError)
 		return

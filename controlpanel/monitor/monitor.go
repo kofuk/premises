@@ -2,14 +2,12 @@ package monitor
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	entityTypes "github.com/kofuk/premises/common/entity"
 	runnerEntity "github.com/kofuk/premises/common/entity/runner"
 	entity "github.com/kofuk/premises/common/entity/web"
@@ -26,18 +24,6 @@ type StatusData struct {
 	Shutdown bool    `json:"shutdown"`
 	HasError bool    `json:"hasError"`
 	CPUUsage float64 `json:"cpuUsage"`
-}
-
-func publishSystemStatEvent(redis *redis.Client, status StatusData) error {
-	json, err := json.Marshal(status)
-	if err != nil {
-		return err
-	}
-	if err := redis.Publish(context.TODO(), "systemstat:default", string(json)).Err(); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func GetPageCodeByEventCode(event entityTypes.EventCode) entity.PageCode {

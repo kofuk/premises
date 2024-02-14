@@ -380,7 +380,7 @@ func (h *Handler) shutdownServer(gameServer *GameServer, authKey string) {
 	}
 }
 
-func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer *GameServer, memSizeGB int, rdb *redis.Client) {
+func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer *GameServer, memSizeGB int) {
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
 	infoStream := h.Streaming.GetStream(streaming.InfoStream)
 
@@ -433,7 +433,7 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer *Game
 	}
 	log.Info("Generating startup script...Done")
 
-	id := gameServer.SetUp(gameConfig, rdb, memSizeGB, string(startupScript))
+	id := gameServer.SetUp(gameConfig, memSizeGB, string(startupScript))
 	if id == "" {
 		// Startup failed. Manual setup can recover this status.
 
@@ -527,7 +527,7 @@ func (h *Handler) handleApiLaunch(c *gin.Context) {
 	h.serverState.machineType = machineType
 	memSizeGB, _ := strconv.Atoi(strings.Replace(machineType, "g", "", 1))
 
-	go h.LaunchServer(gameConfig, h.GameServer, memSizeGB, h.redis)
+	go h.LaunchServer(gameConfig, h.GameServer, memSizeGB)
 
 	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,

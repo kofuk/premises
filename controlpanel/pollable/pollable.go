@@ -9,6 +9,8 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+var Cancelled = errors.New("Cancelled")
+
 type PollableActionService struct {
 	redis *redis.Client
 	key   string
@@ -73,5 +75,5 @@ out:
 		}
 	}
 
-	return "", errors.New("Cancelled")
+	return "", Cancelled
 }
