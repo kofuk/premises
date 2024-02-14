@@ -14,7 +14,7 @@ const ManualSetupPage = () => {
 
   const getInstallScriptPath = (): string => {
     const url = new URL(location.href);
-    const query = url.protocol === 'https:' ? '?p=s' : '';
+    const query = url.protocol === 'http:' ? '?s=0' : '';
     return `${url.protocol}//${url.host}/_runner/install${query}`;
   };
 

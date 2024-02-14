@@ -82,10 +82,10 @@ func (h *Handler) handlePushStatus(c *gin.Context) {
 
 func (h *Handler) handleGetInstallScript(c *gin.Context) {
 	var protocol string
-	if c.Query("p") == "s" {
-		protocol = "https"
-	} else {
+	if c.Query("s") == "0" {
 		protocol = "http"
+	} else {
+		protocol = "https"
 	}
 
 	script := fmt.Sprintf(`#!/usr/bin/env bash
