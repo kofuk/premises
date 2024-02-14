@@ -10,13 +10,13 @@ import (
 	webEntity "github.com/kofuk/premises/common/entity/web"
 )
 
-type Streaming struct {
-	rdb *redis.Client
+type StreamingService struct {
+	redis *redis.Client
 }
 
-func New(rdb *redis.Client) *Streaming {
-	return &Streaming{
-		rdb: rdb,
+func New(redis *redis.Client) *StreamingService {
+	return &StreamingService{
+		redis: redis,
 	}
 }
 
@@ -45,7 +45,7 @@ var (
 	}
 )
 
-func (self *Streaming) GetStream(streamType StreamType) *Stream {
+func (self *StreamingService) GetStream(streamType StreamType) *Stream {
 	return &Stream{
 		streamType: streamType,
 	}
@@ -96,13 +96,13 @@ func NewSysstatMessage(cpuUsage float64, time int64) Message {
 	}
 }
 
-func (self *Streaming) PublishEvent(ctx context.Context, stream *Stream, message Message) error {
+func (self *StreamingService) PublishEvent(ctx context.Context, stream *Stream, message Message) error {
 	data, err := json.Marshal(message)
 	if err != nil {
 		return err
 	}
 
-	if _, err := self.rdb.Pipelined(ctx, func(p redis.Pipeliner) error {
+	if _, err := self.redis.Pipelined(ctx, func(p redis.Pipeliner) error {
 		channelID := stream.GetChannelID()
 		if stream.streamType.historyCount > 0 {
 			p.LPush(ctx, "status-history:"+channelID, data)
@@ -116,10 +116,10 @@ func (self *Streaming) PublishEvent(ctx context.Context, stream *Stream, message
 	return nil
 }
 
-func (self *Streaming) SubscribeEvent(ctx context.Context, stream *Stream) (*redis.PubSub, [][]byte, error) {
+func (self *StreamingService) SubscribeEvent(ctx context.Context, stream *Stream) (*redis.PubSub, [][]byte, error) {
 	channelID := stream.GetChannelID()
 
-	statusHistory, err := self.rdb.LRange(ctx, "status-history:"+channelID, 0, -1).Result()
+	statusHistory, err := self.redis.LRange(ctx, "status-history:"+channelID, 0, -1).Result()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -129,14 +129,14 @@ func (self *Streaming) SubscribeEvent(ctx context.Context, stream *Stream) (*red
 		historyBytes[len(historyBytes)-1-i] = []byte(entry)
 	}
 
-	subscription := self.rdb.Subscribe(ctx, "status:"+channelID)
+	subscription := self.redis.Subscribe(ctx, "status:"+channelID)
 
 	return subscription, historyBytes, nil
 }
 
-func (self *Streaming) ClearHistory(ctx context.Context, stream *Stream) error {
+func (self *StreamingService) ClearHistory(ctx context.Context, stream *Stream) error {
 	channelID := stream.GetChannelID()
-	if _, err := self.rdb.Del(ctx, "status-history:"+channelID).Result(); err != nil {
+	if _, err := self.redis.Del(ctx, "status-history:"+channelID).Result(); err != nil {
 		return err
 	}
 	return nil

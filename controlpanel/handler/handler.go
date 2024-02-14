@@ -14,15 +14,15 @@ import (
 	"sync"
 
 	"github.com/gin-contrib/sessions"
-	redisess "github.com/gin-contrib/sessions/redis"
+	sessionsRedis "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	entity "github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/backup"
-	"github.com/kofuk/premises/controlpanel/caching"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/dns"
+	"github.com/kofuk/premises/controlpanel/kvs"
 	"github.com/kofuk/premises/controlpanel/mcversions"
 	"github.com/kofuk/premises/controlpanel/model/migrations"
 	"github.com/kofuk/premises/controlpanel/pollable"
@@ -50,12 +50,12 @@ type Handler struct {
 	GameServer    *GameServer
 	serverMutex   sync.Mutex
 	serverRunning bool
-	Cacher        caching.Cacher
-	MCVersions    mcversions.MCVersionProvider
-	Streaming     *streaming.Streaming
+	Cacher        kvs.KeyValueStore
+	MCVersions    mcversions.MCVersionsService
+	Streaming     *streaming.StreamingService
 	backup        *backup.BackupService
 	runnerAction  *pollable.PollableActionService
-	dnsService    *dns.DNSProvider
+	dnsService    *dns.DNSService
 }
 
 func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
@@ -172,7 +172,7 @@ func setupRoutes(h *Handler) {
 }
 
 func setupSessions(h *Handler) {
-	sessionStore, err := redisess.NewStore(4, "tcp", h.cfg.ControlPanel.Redis.Address, h.cfg.ControlPanel.Redis.Password, []byte(h.cfg.ControlPanel.Secret))
+	sessionStore, err := sessionsRedis.NewStore(4, "tcp", h.cfg.ControlPanel.Redis.Address, h.cfg.ControlPanel.Redis.Password, []byte(h.cfg.ControlPanel.Secret))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize Redis store")
 	}
@@ -183,7 +183,7 @@ func setupSessions(h *Handler) {
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	})
-	redisess.SetKeyPrefix(sessionStore, "session:")
+	sessionsRedis.SetKeyPrefix(sessionStore, "session:")
 	h.engine.Use(sessions.Sessions("session", sessionStore))
 }
 
@@ -259,9 +259,9 @@ func NewHandler(cfg *config.Config, bindAddr string) (*Handler, error) {
 		return nil, err
 	}
 
-	cacher := caching.New(caching.NewRedis(h.redis))
-	h.Cacher = cacher
-	h.MCVersions = mcversions.New(cacher)
+	kvs := kvs.New(kvs.NewRedis(h.redis))
+	h.Cacher = kvs
+	h.MCVersions = mcversions.New(kvs)
 	h.Streaming = streaming.New(h.redis)
 	h.runnerAction = pollable.New(h.redis, "runner-action")
 

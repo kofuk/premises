@@ -57,9 +57,9 @@ func Test_CloudflareDNS_UpdateV4(t *testing.T) {
 		}))
 
 	cfdns, err := NewCloudflareDNS("xxx", "yyy", cloudflare.BaseURL("http://cf/client/v4"), cloudflare.Debug(true))
-	dnsProvider := New(cfdns, "game.example.com")
+	dnsService := New(cfdns, "game.example.com")
 
-	err = dnsProvider.UpdateV4(context.Background(), net.ParseIP("192.0.2.2"))
+	err = dnsService.UpdateV4(context.Background(), net.ParseIP("192.0.2.2"))
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, httpmock.GetCallCountInfo()["GET http://cf/client/v4/zones/yyy/dns_records?match=all&name=game.example.com&page=1&per_page=100&proxied=false&type=A"])

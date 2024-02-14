@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kofuk/premises/controlpanel/caching"
+	"github.com/kofuk/premises/controlpanel/kvs"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,22 +16,22 @@ const (
 	mojangManifest = "https://launchermeta.mojang.com/mc/game/version_manifest.json"
 )
 
-type MCVersionProvider struct {
-	cacher      caching.Cacher
+type MCVersionsService struct {
+	kvs         kvs.KeyValueStore
 	manifestURL string
 }
 
-type Option func(p *MCVersionProvider)
+type Option func(p *MCVersionsService)
 
 func ManifestURL(url string) Option {
-	return func(p *MCVersionProvider) {
+	return func(p *MCVersionsService) {
 		p.manifestURL = url
 	}
 }
 
-func New(cacher caching.Cacher, options ...Option) MCVersionProvider {
-	provider := MCVersionProvider{
-		cacher:      cacher,
+func New(kvs kvs.KeyValueStore, options ...Option) MCVersionsService {
+	provider := MCVersionsService{
+		kvs:         kvs,
 		manifestURL: mojangManifest,
 	}
 
@@ -42,7 +42,7 @@ func New(cacher caching.Cacher, options ...Option) MCVersionProvider {
 	return provider
 }
 
-func (self MCVersionProvider) fetchVersionManifest(ctx context.Context) (*launcherMeta, error) {
+func (self MCVersionsService) fetchVersionManifest(ctx context.Context) (*launcherMeta, error) {
 	req, err := http.NewRequest(http.MethodGet, self.manifestURL, nil)
 	if err != nil {
 		return nil, err
@@ -82,10 +82,10 @@ type launcherMeta struct {
 	Versions []VersionInfo `json:"versions"`
 }
 
-func (self MCVersionProvider) GetVersions(ctx context.Context) ([]VersionInfo, error) {
+func (self MCVersionsService) GetVersions(ctx context.Context) ([]VersionInfo, error) {
 	{
 		var result launcherMeta
-		if err := self.cacher.Get(ctx, "mcversions:launchermeta", &result); err != nil {
+		if err := self.kvs.Get(ctx, "mcversions:launchermeta", &result); err != nil {
 			log.WithError(err).Error("Failed to get launchermeta from cache")
 		} else {
 			return result.Versions, nil
@@ -97,7 +97,7 @@ func (self MCVersionProvider) GetVersions(ctx context.Context) ([]VersionInfo, e
 		return nil, err
 	}
 
-	if err := self.cacher.Set(ctx, "mcversions:launchermeta", launcherMeta, 24*time.Hour); err != nil {
+	if err := self.kvs.Set(ctx, "mcversions:launchermeta", launcherMeta, 24*time.Hour); err != nil {
 		log.WithError(err).Error("Failed to write version list cache")
 	}
 
@@ -112,7 +112,7 @@ type versionMeta struct {
 	} `json:"downloads"`
 }
 
-func (self MCVersionProvider) fetchDownloadURL(ctx context.Context, versionMetaURL string) (string, error) {
+func (self MCVersionsService) fetchDownloadURL(ctx context.Context, versionMetaURL string) (string, error) {
 	req, err := http.NewRequest(http.MethodGet, versionMetaURL, nil)
 	if err != nil {
 		return "", err
@@ -146,10 +146,10 @@ func (self MCVersionProvider) fetchDownloadURL(ctx context.Context, versionMetaU
 	return url, nil
 }
 
-func (self MCVersionProvider) GetDownloadURL(ctx context.Context, version string) (string, error) {
+func (self MCVersionsService) GetDownloadURL(ctx context.Context, version string) (string, error) {
 	{
 		var result string
-		if err := self.cacher.Get(ctx, fmt.Sprintf("mcversions:v%s", version), &result); err != nil {
+		if err := self.kvs.Get(ctx, fmt.Sprintf("mcversions:v%s", version), &result); err != nil {
 			log.WithError(err).WithField("version", version).Error("Failed to get version data from cache")
 		} else {
 			return result, nil
@@ -176,7 +176,7 @@ func (self MCVersionProvider) GetDownloadURL(ctx context.Context, version string
 		return "", err
 	}
 
-	if err := self.cacher.Set(ctx, fmt.Sprintf("mcversions:v%s", version), url, -1); err != nil {
+	if err := self.kvs.Set(ctx, fmt.Sprintf("mcversions:v%s", version), url, -1); err != nil {
 		log.WithError(err).WithField("version", version).Error("Failed to write mcversions cache")
 	}
 

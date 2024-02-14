@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/jarcoal/httpmock"
-	"github.com/kofuk/premises/controlpanel/caching"
+	"github.com/kofuk/premises/controlpanel/kvs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,16 +40,16 @@ var testingVersionMeta0 = `{"downloads":{"server":{"url":"https://launchermeta/v
 var testingVersionMeta1 = `{"downloads":{"server":{"url":"https://launchermeta/version1.jar"}}}`
 var testingVersionMeta2 = `{"downloads":{"server":{"url":"https://launchermeta/version2.jar"}}}`
 
-type MapCacheImpl struct {
+type MapStore struct {
 	entries map[string][]byte
 }
 
-func (self *MapCacheImpl) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
+func (self *MapStore) Set(ctx context.Context, key string, value []byte, ttl time.Duration) error {
 	self.entries[key] = value
 	return nil
 }
 
-func (self *MapCacheImpl) Get(ctx context.Context, key string) ([]byte, error) {
+func (self *MapStore) Get(ctx context.Context, key string) ([]byte, error) {
 	val, ok := self.entries[key]
 	if !ok {
 		return nil, errors.New("")
@@ -57,7 +57,7 @@ func (self *MapCacheImpl) Get(ctx context.Context, key string) ([]byte, error) {
 	return val, nil
 }
 
-func (self *MapCacheImpl) Del(ctx context.Context, keys ...string) error {
+func (self *MapStore) Del(ctx context.Context, keys ...string) error {
 	for _, key := range keys {
 		delete(self.entries, key)
 	}
@@ -77,7 +77,7 @@ func Test_GetVersions(t *testing.T) {
 
 	setupResponders()
 
-	provider := New(caching.New(&MapCacheImpl{
+	provider := New(kvs.New(&MapStore{
 		entries: make(map[string][]byte),
 	}), ManifestURL("https://launchermeta/version_manifest.json"))
 	versions1, err := provider.GetVersions(context.Background())
@@ -104,7 +104,7 @@ func Test_GetDownloadURL(t *testing.T) {
 
 	setupResponders()
 
-	provider := New(caching.New(&MapCacheImpl{
+	provider := New(kvs.New(&MapStore{
 		entries: make(map[string][]byte),
 	}), ManifestURL("https://launchermeta/version_manifest.json"))
 

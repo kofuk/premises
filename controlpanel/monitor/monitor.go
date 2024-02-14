@@ -13,10 +13,10 @@ import (
 	entityTypes "github.com/kofuk/premises/common/entity"
 	runnerEntity "github.com/kofuk/premises/common/entity/runner"
 	entity "github.com/kofuk/premises/common/entity/web"
-	"github.com/kofuk/premises/controlpanel/caching"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
 	"github.com/kofuk/premises/controlpanel/dns"
+	"github.com/kofuk/premises/controlpanel/kvs"
 	"github.com/kofuk/premises/controlpanel/streaming"
 )
 
@@ -47,7 +47,7 @@ func GetPageCodeByEventCode(event entityTypes.EventCode) entity.PageCode {
 	return entity.PageLoading
 }
 
-func UpdateRunnerID(cfg *config.Config, cache *caching.Cacher, ipv4Addr string) error {
+func UpdateRunnerID(cfg *config.Config, cache *kvs.KeyValueStore, ipv4Addr string) error {
 	var id string
 	if err := cache.Get(context.Background(), "runner-id:default", &id); err == nil {
 		return nil
@@ -72,7 +72,7 @@ func UpdateRunnerID(cfg *config.Config, cache *caching.Cacher, ipv4Addr string) 
 	return nil
 }
 
-func HandleEvent(runnerId string, strmProvider *streaming.Streaming, cfg *config.Config, cache *caching.Cacher, dnsService *dns.DNSProvider, event *runnerEntity.Event) error {
+func HandleEvent(runnerId string, strmProvider *streaming.StreamingService, cfg *config.Config, kvs *kvs.KeyValueStore, dnsService *dns.DNSService, event *runnerEntity.Event) error {
 	stdStream := strmProvider.GetStream(streaming.StandardStream)
 	infoStream := strmProvider.GetStream(streaming.InfoStream)
 	sysstatStream := strmProvider.GetStream(streaming.SysstatStream)
@@ -82,12 +82,12 @@ func HandleEvent(runnerId string, strmProvider *streaming.Streaming, cfg *config
 		if event.Hello == nil {
 			return errors.New("Invalid event message: has no Hello")
 		}
-		if err := cache.Set(context.Background(), fmt.Sprintf("runner-info:%s", runnerId), event.Hello, 30*24*time.Hour); err != nil {
+		if err := kvs.Set(context.Background(), fmt.Sprintf("runner-info:%s", runnerId), event.Hello, 30*24*time.Hour); err != nil {
 			return err
 		}
 
 		if len(event.Hello.Addr.IPv4) != 0 {
-			if err := UpdateRunnerID(cfg, cache, event.Hello.Addr.IPv4[0]); err != nil {
+			if err := UpdateRunnerID(cfg, kvs, event.Hello.Addr.IPv4[0]); err != nil {
 				slog.Error("Error updating runner ID", slog.Any("error", err))
 			}
 
@@ -150,14 +150,14 @@ func HandleEvent(runnerId string, strmProvider *streaming.Streaming, cfg *config
 			return errors.New("Invalid event message: has no Started")
 		}
 
-		if err := cache.Set(context.Background(), fmt.Sprintf("world-info:%s", runnerId), event.Started, 30*24*time.Hour); err != nil {
+		if err := kvs.Set(context.Background(), fmt.Sprintf("world-info:%s", runnerId), event.Started, 30*24*time.Hour); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func GetSystemInfo(ctx context.Context, cfg *config.Config, cache *caching.Cacher) (*entity.SystemInfo, error) {
+func GetSystemInfo(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueStore) (*entity.SystemInfo, error) {
 	var serverHello runnerEntity.HelloExtra
 	if err := cache.Get(context.Background(), "runner-info:default", &serverHello); err != nil {
 		return nil, err
@@ -175,7 +175,7 @@ func GetSystemInfo(ctx context.Context, cfg *config.Config, cache *caching.Cache
 	}, nil
 }
 
-func GetWorldInfo(ctx context.Context, cfg *config.Config, cache *caching.Cacher) (*entity.WorldInfo, error) {
+func GetWorldInfo(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueStore) (*entity.WorldInfo, error) {
 	var startedData runnerEntity.StartedExtra
 	if err := cache.Get(context.Background(), "world-info:default", &startedData); err != nil {
 		return nil, err
