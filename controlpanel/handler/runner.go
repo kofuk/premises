@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -68,11 +69,11 @@ func (h *Handler) handlePushStatus(c *gin.Context) {
 		}
 
 		if event.Type == runner.EventStatus && event.Status.EventCode == runner.EventShutdown {
-			go h.shutdownServer(h.GameServer, c.GetHeader("Authorization"))
+			go h.shutdownServer(context.Background(), h.GameServer, c.GetHeader("Authorization"))
 			return
 		}
 
-		if err := monitor.HandleEvent(runnerId, h.Streaming, h.cfg, &h.Cacher, h.dnsService, &event); err != nil {
+		if err := monitor.HandleEvent(context.Background(), runnerId, h.Streaming, h.cfg, &h.KVS, h.dnsService, &event); err != nil {
 			slog.Error("Unable to handle event", slog.Any("error", err))
 			c.Status(http.StatusInternalServerError)
 			return
@@ -133,7 +134,7 @@ func (h *Handler) handleGetStartupScript(c *gin.Context) {
 	authKey = strings.TrimPrefix(authKey, "Setup-Code ")
 
 	var script string
-	if err := h.Cacher.Get(c.Request.Context(), fmt.Sprintf("startup:%s", authKey), &script); err != nil {
+	if err := h.KVS.Get(c.Request.Context(), fmt.Sprintf("startup:%s", authKey), &script); err != nil {
 		slog.Error("Invalid auth code", slog.Any("error", err))
 		c.Status(http.StatusBadRequest)
 		return
@@ -146,7 +147,7 @@ func (h *Handler) authKeyMiddleware(c *gin.Context) {
 	authKey := c.GetHeader("Authorization")
 
 	var runnerId string
-	if err := h.Cacher.Get(c.Request.Context(), fmt.Sprintf("runner:%s", authKey), &runnerId); err != nil {
+	if err := h.KVS.Get(c.Request.Context(), fmt.Sprintf("runner:%s", authKey), &runnerId); err != nil {
 		slog.Error("Invalid auth key", slog.Any("error", err))
 		c.Status(http.StatusBadRequest)
 		c.Abort()

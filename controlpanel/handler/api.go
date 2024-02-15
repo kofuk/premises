@@ -275,7 +275,7 @@ func (h *Handler) notifyNonRecoverableFailure(cfg *config.Config, detail string)
 	}
 }
 
-func (h *Handler) shutdownServer(gameServer *GameServer, authKey string) {
+func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, authKey string) {
 	defer func() {
 		h.serverMutex.Lock()
 		defer h.serverMutex.Unlock()
@@ -286,7 +286,7 @@ func (h *Handler) shutdownServer(gameServer *GameServer, authKey string) {
 	infoStream := h.Streaming.GetStream(streaming.InfoStream)
 
 	if err := h.Streaming.PublishEvent(
-		context.Background(),
+		ctx,
 		stdStream,
 		streaming.NewStandardMessage(entity.EvStopRunner, entity.PageLoading),
 	); err != nil {
@@ -294,9 +294,9 @@ func (h *Handler) shutdownServer(gameServer *GameServer, authKey string) {
 	}
 
 	var id string
-	if err := h.Cacher.Get(context.Background(), "runner-id:default", &id); err != nil {
+	if err := h.KVS.Get(ctx, "runner-id:default", &id); err != nil {
 		if err := h.Streaming.PublishEvent(
-			context.Background(),
+			ctx,
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		); err != nil {
@@ -306,9 +306,9 @@ func (h *Handler) shutdownServer(gameServer *GameServer, authKey string) {
 		return
 	}
 
-	if !gameServer.StopVM(id) {
+	if !gameServer.StopVM(ctx, id) {
 		if err := h.Streaming.PublishEvent(
-			context.Background(),
+			ctx,
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		); err != nil {
@@ -319,16 +319,16 @@ func (h *Handler) shutdownServer(gameServer *GameServer, authKey string) {
 	}
 
 	if err := h.Streaming.PublishEvent(
-		context.Background(),
+		ctx,
 		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EvStopRunner, 40, entity.PageLoading),
 	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	if !gameServer.SaveImage(id) {
+	if !gameServer.SaveImage(ctx, id) {
 		if err := h.Streaming.PublishEvent(
-			context.Background(),
+			ctx,
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		); err != nil {
@@ -339,16 +339,16 @@ func (h *Handler) shutdownServer(gameServer *GameServer, authKey string) {
 	}
 
 	if err := h.Streaming.PublishEvent(
-		context.Background(),
+		ctx,
 		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EvStopRunner, 80, entity.PageLoading),
 	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	if !gameServer.DeleteVM(id) {
+	if !gameServer.DeleteVM(ctx, id) {
 		if err := h.Streaming.PublishEvent(
-			context.Background(),
+			ctx,
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		); err != nil {
@@ -359,36 +359,36 @@ func (h *Handler) shutdownServer(gameServer *GameServer, authKey string) {
 	}
 
 	if h.dnsService != nil {
-		h.dnsService.UpdateV4(context.Background(), net.ParseIP("127.0.0.1"))
+		h.dnsService.UpdateV4(ctx, net.ParseIP("127.0.0.1"))
 	}
 
-	if err := h.Cacher.Del(context.Background(), "runner-id:default", "runner-info:default", "world-info:default", fmt.Sprintf("runner:%s", authKey)); err != nil {
+	if err := h.KVS.Del(ctx, "runner-id:default", "runner-info:default", "world-info:default", fmt.Sprintf("runner:%s", authKey)); err != nil {
 		slog.Error("Failed to unset runner information", slog.Any("error", err))
 		return
 	}
 
 	if err := h.Streaming.PublishEvent(
-		context.Background(),
+		ctx,
 		stdStream,
 		streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch),
 	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	if err := h.Streaming.ClearHistory(context.Background(), h.Streaming.GetStream(streaming.SysstatStream)); err != nil {
+	if err := h.Streaming.ClearHistory(ctx, h.Streaming.GetStream(streaming.SysstatStream)); err != nil {
 		log.WithError(err).Error("Unable to clear sysstat history")
 	}
 }
 
-func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer *GameServer, memSizeGB int) {
+func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Config, gameServer *GameServer, memSizeGB int) {
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
 	infoStream := h.Streaming.GetStream(streaming.InfoStream)
 
-	if err := h.Cacher.Set(context.Background(), fmt.Sprintf("runner:%s", gameConfig.AuthKey), "default", -1); err != nil {
+	if err := h.KVS.Set(ctx, fmt.Sprintf("runner:%s", gameConfig.AuthKey), "default", -1); err != nil {
 		slog.Error("Failed to save runner id", slog.Any("error", err))
 
 		if err := h.Streaming.PublishEvent(
-			context.Background(),
+			ctx,
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
 		); err != nil {
@@ -400,7 +400,7 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer *Game
 	}
 
 	if err := h.Streaming.PublishEvent(
-		context.Background(),
+		ctx,
 		stdStream,
 		streaming.NewStandardMessage(entity.EvCreateRunner, entity.PageLoading),
 	); err != nil {
@@ -408,7 +408,7 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer *Game
 	}
 
 	if err := h.Streaming.PublishEvent(
-		context.Background(),
+		ctx,
 		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EvCreateRunner, 10, entity.PageLoading),
 	); err != nil {
@@ -421,7 +421,7 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer *Game
 		log.WithError(err).Error("Failed to generate startup script")
 
 		if err := h.Streaming.PublishEvent(
-			context.Background(),
+			ctx,
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
 		); err != nil {
@@ -433,7 +433,7 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer *Game
 	}
 	log.Info("Generating startup script...Done")
 
-	id := gameServer.SetUp(gameConfig, memSizeGB, string(startupScript))
+	id := gameServer.SetUp(ctx, gameConfig, memSizeGB, string(startupScript))
 	if id == "" {
 		// Startup failed. Manual setup can recover this status.
 
@@ -441,14 +441,14 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer *Game
 		authCode := encoder.EncodeToString(securecookie.GenerateRandomKey(10))
 
 		if err := h.Streaming.PublishEvent(
-			context.Background(),
+			ctx,
 			stdStream,
 			streaming.NewStandardMessageWithTextData(entity.EvManualSetup, authCode, entity.PageManualSetup),
 		); err != nil {
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 
-		if err := h.Cacher.Set(context.Background(), fmt.Sprintf("startup:%s", authCode), startupScript, 30*time.Minute); err != nil {
+		if err := h.KVS.Set(ctx, fmt.Sprintf("startup:%s", authCode), startupScript, 30*time.Minute); err != nil {
 			slog.Error("Failed to set startup script", slog.Any("error", err))
 			return
 		}
@@ -456,22 +456,22 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer *Game
 		return
 	}
 
-	if err := h.Cacher.Set(context.Background(), "runner-id:default", id, -1); err != nil {
+	if err := h.KVS.Set(ctx, "runner-id:default", id, -1); err != nil {
 		slog.Error("Failed to set runner ID", slog.Any("error", err))
 		return
 	}
 
 	if err := h.Streaming.PublishEvent(
-		context.Background(),
+		ctx,
 		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EvCreateRunner, 50, entity.PageLoading),
 	); err != nil {
 		log.WithError(err).Error("Failed to write status data to Redis channel")
 	}
 
-	if !gameServer.DeleteImage() {
+	if !gameServer.DeleteImage(ctx) {
 		if err := h.Streaming.PublishEvent(
-			context.Background(),
+			ctx,
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
 		); err != nil {
@@ -483,7 +483,7 @@ func (h *Handler) LaunchServer(gameConfig *runnerEntity.Config, gameServer *Game
 	}
 
 	if err := h.Streaming.PublishEvent(
-		context.Background(),
+		ctx,
 		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EvCreateRunner, 80, entity.PageLoading),
 	); err != nil {
@@ -527,7 +527,7 @@ func (h *Handler) handleApiLaunch(c *gin.Context) {
 	h.serverState.machineType = machineType
 	memSizeGB, _ := strconv.Atoi(strings.Replace(machineType, "g", "", 1))
 
-	go h.LaunchServer(gameConfig, h.GameServer, memSizeGB)
+	go h.LaunchServer(context.Background(), gameConfig, h.GameServer, memSizeGB)
 
 	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,
@@ -676,7 +676,7 @@ func (h *Handler) handleApiMcversions(c *gin.Context) {
 }
 
 func (h *Handler) handleApiSystemInfo(c *gin.Context) {
-	data, err := monitor.GetSystemInfo(c.Request.Context(), h.cfg, &h.Cacher)
+	data, err := monitor.GetSystemInfo(c.Request.Context(), h.cfg, &h.KVS)
 	if err != nil {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
@@ -691,7 +691,7 @@ func (h *Handler) handleApiSystemInfo(c *gin.Context) {
 }
 
 func (h *Handler) handleApiWorldInfo(c *gin.Context) {
-	data, err := monitor.GetWorldInfo(c.Request.Context(), h.cfg, &h.Cacher)
+	data, err := monitor.GetWorldInfo(c.Request.Context(), h.cfg, &h.KVS)
 	if err != nil {
 		c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,

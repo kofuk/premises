@@ -50,7 +50,7 @@ type Handler struct {
 	GameServer    *GameServer
 	serverMutex   sync.Mutex
 	serverRunning bool
-	Cacher        kvs.KeyValueStore
+	KVS           kvs.KeyValueStore
 	MCVersions    mcversions.MCVersionsService
 	Streaming     *streaming.StreamingService
 	backup        *backup.BackupService
@@ -187,20 +187,20 @@ func setupSessions(h *Handler) {
 	h.engine.Use(sessions.Sessions("session", sessionStore))
 }
 
-func syncRemoteVMState(cfg *config.Config, gameServer *GameServer, h *Handler) error {
+func syncRemoteVMState(ctx context.Context, cfg *config.Config, gameServer *GameServer, h *Handler) error {
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
 
 	var id string
-	if err := h.Cacher.Get(context.Background(), "runner-id:default", &id); err != nil {
+	if err := h.KVS.Get(ctx, "runner-id:default", &id); err != nil {
 		slog.Info("ID for previous runner is not set. Searching for one...", slog.Any("error", err))
 
 		var err error
-		id, err = gameServer.FindVM()
+		id, err = gameServer.FindVM(ctx)
 		if err != nil {
 			slog.Info("No running VM", slog.Any("error", err))
 
 			if err := h.Streaming.PublishEvent(
-				context.Background(),
+				ctx,
 				stdStream,
 				streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch),
 			); err != nil {
@@ -211,10 +211,10 @@ func syncRemoteVMState(cfg *config.Config, gameServer *GameServer, h *Handler) e
 		}
 	}
 
-	if gameServer.VMRunning(id) {
-		if gameServer.ImageExists() {
+	if gameServer.VMRunning(ctx, id) {
+		if gameServer.ImageExists(ctx) {
 			log.Info("Server seems to be running, but remote image exists")
-			gameServer.DeleteImage()
+			gameServer.DeleteImage(ctx)
 		}
 
 		h.serverRunning = true
@@ -226,10 +226,10 @@ func syncRemoteVMState(cfg *config.Config, gameServer *GameServer, h *Handler) e
 
 	slog.Info("Recovering system state...")
 
-	if !gameServer.ImageExists() && !gameServer.SaveImage(id) {
+	if !gameServer.ImageExists(ctx) && !gameServer.SaveImage(ctx, id) {
 		return errors.New("Invalid state")
 	}
-	if !gameServer.DeleteVM(id) {
+	if !gameServer.DeleteVM(ctx, id) {
 		return errors.New("Failed to delete VM")
 	}
 
@@ -260,14 +260,14 @@ func NewHandler(cfg *config.Config, bindAddr string) (*Handler, error) {
 	}
 
 	kvs := kvs.New(kvs.NewRedis(h.redis))
-	h.Cacher = kvs
+	h.KVS = kvs
 	h.MCVersions = mcversions.New(kvs)
 	h.Streaming = streaming.New(h.redis)
 	h.runnerAction = pollable.New(h.redis, "runner-action")
 
 	setupSessions(h)
 
-	syncRemoteVMState(cfg, h.GameServer, h)
+	syncRemoteVMState(context.Background(), cfg, h.GameServer, h)
 
 	setupRoutes(h)
 

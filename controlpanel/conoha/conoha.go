@@ -2,6 +2,7 @@ package conoha
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,22 +21,49 @@ import (
 )
 
 const (
-	HeaderKeyAuthToken = "X-Auth-Token"
+	headerKeyAuthToken = "X-Auth-Token"
 )
 
-func StopVM(cfg *config.Config, token, vmID string) error {
+func makeJSONRequest(ctx context.Context, method, url, token string, data any) (*http.Request, error) {
+	json, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewBuffer(json))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Add(headerKeyAuthToken, token)
+	}
+	return req, nil
+}
+
+func makeRequest(ctx context.Context, method, url, token string) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	if token != "" {
+		req.Header.Add(headerKeyAuthToken, token)
+	}
+	return req, nil
+}
+
+func StopVM(ctx context.Context, cfg *config.Config, token, vmID string) error {
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
 		return err
 	}
 	url.Path = path.Join(url.Path, "servers", vmID, "action")
 
-	req, err := http.NewRequest("POST", url.String(), bytes.NewBuffer([]byte("{\"os-stop\": null}")))
+	req, err := makeJSONRequest(ctx, http.MethodPost, url.String(), token, struct {
+		V *interface{} `json:"os-stop"`
+	}{})
 	if err != nil {
 		return err
 	}
-	req.Header.Add(HeaderKeyAuthToken, token)
-	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
@@ -45,7 +73,7 @@ func StopVM(cfg *config.Config, token, vmID string) error {
 	io.Copy(os.Stdout, resp.Body)
 
 	if resp.StatusCode != 202 {
-		return errors.New(fmt.Sprintf("Failed to stop the VM: %d", resp.StatusCode))
+		return fmt.Errorf("Failed to stop the VM: %d", resp.StatusCode)
 	}
 
 	return nil
@@ -57,14 +85,9 @@ type CreateImageReq struct {
 	} `json:"createImage"`
 }
 
-func CreateImage(cfg *config.Config, token, vmID, imageName string) error {
+func CreateImage(ctx context.Context, cfg *config.Config, token, vmID, imageName string) error {
 	var reqBody CreateImageReq
 	reqBody.CreateImage.Name = imageName
-
-	reqData, err := json.Marshal(reqBody)
-	if err != nil {
-		return err
-	}
 
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
@@ -72,12 +95,10 @@ func CreateImage(cfg *config.Config, token, vmID, imageName string) error {
 	}
 	url.Path = path.Join(url.Path, "servers", vmID, "action")
 
-	req, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(reqData))
+	req, err := makeJSONRequest(ctx, http.MethodPost, url.String(), token, reqBody)
 	if err != nil {
 		return err
 	}
-	req.Header.Add(HeaderKeyAuthToken, token)
-	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
@@ -85,24 +106,23 @@ func CreateImage(cfg *config.Config, token, vmID, imageName string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 202 {
-		return errors.New(fmt.Sprintf("Failed to create image: %d", resp.StatusCode))
+		return fmt.Errorf("Failed to create image: %d", resp.StatusCode)
 	}
 
 	return nil
 }
 
-func DeleteImage(cfg *config.Config, token, imageID string) error {
+func DeleteImage(ctx context.Context, cfg *config.Config, token, imageID string) error {
 	url, err := url.Parse(cfg.Conoha.Services.Image)
 	if err != nil {
 		return err
 	}
 	url.Path = path.Join(url.Path, "v2/images", imageID)
 
-	req, err := http.NewRequest("DELETE", url.String(), nil)
+	req, err := makeRequest(ctx, http.MethodDelete, url.String(), token)
 	if err != nil {
 		return err
 	}
-	req.Header.Add(HeaderKeyAuthToken, token)
 
 	log.Info("Deleting image...")
 	for i := 0; i < 10; i++ {
@@ -120,7 +140,7 @@ func DeleteImage(cfg *config.Config, token, imageID string) error {
 			continue
 		}
 		if resp.StatusCode != 204 {
-			return errors.New(fmt.Sprintf("Failed to delete the image: %d", resp.StatusCode))
+			return fmt.Errorf("Failed to delete the image: %d", resp.StatusCode)
 		}
 
 		break
@@ -133,7 +153,7 @@ func DeleteImage(cfg *config.Config, token, imageID string) error {
 	return nil
 }
 
-func DeleteVM(cfg *config.Config, token, vmID string) error {
+func DeleteVM(ctx context.Context, cfg *config.Config, token, vmID string) error {
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
 		return err
@@ -143,11 +163,10 @@ func DeleteVM(cfg *config.Config, token, vmID string) error {
 	var finalErr error = nil
 
 	for i := 0; i < 10; i++ {
-		req, err := http.NewRequest("DELETE", url.String(), nil)
+		req, err := makeRequest(ctx, http.MethodDelete, url.String(), token)
 		if err != nil {
 			return err
 		}
-		req.Header.Add(HeaderKeyAuthToken, token)
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return err
@@ -160,7 +179,7 @@ func DeleteVM(cfg *config.Config, token, vmID string) error {
 			finalErr = nil
 			break
 		} else {
-			finalErr = errors.New(fmt.Sprintf("Failed to delete the VM: %d", resp.StatusCode))
+			finalErr = fmt.Errorf("Failed to delete the VM: %d", resp.StatusCode)
 			time.Sleep(time.Duration(rand.Intn(10)))
 		}
 
@@ -190,7 +209,7 @@ type CreateVMResp struct {
 	} `json:"server"`
 }
 
-func CreateVM(cfg *config.Config, nameTag, token, imageRef, flavorRef, encodedStartupScript string) (string, error) {
+func CreateVM(ctx context.Context, cfg *config.Config, nameTag, token, imageRef, flavorRef, encodedStartupScript string) (string, error) {
 	var reqBody CreateVMReq
 	reqBody.Server.ImageRef = imageRef
 	reqBody.Server.FlavorRef = flavorRef
@@ -199,10 +218,6 @@ func CreateVM(cfg *config.Config, nameTag, token, imageRef, flavorRef, encodedSt
 	reqBody.Server.SecurityGroups = []struct {
 		Name string `json:"name"`
 	}{{"default"}, {"gncs-ipv4-all"}, {"gncs-ipv6-all"}}
-	reqData, err := json.Marshal(reqBody)
-	if err != nil {
-		return "", err
-	}
 
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
@@ -210,19 +225,17 @@ func CreateVM(cfg *config.Config, nameTag, token, imageRef, flavorRef, encodedSt
 	}
 	url.Path = path.Join(url.Path, "servers")
 
-	req, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(reqData))
+	req, err := makeJSONRequest(ctx, http.MethodPost, url.String(), token, reqBody)
 	if err != nil {
 		return "", err
 	}
-	req.Header.Add(HeaderKeyAuthToken, token)
-	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 202 {
-		return "", errors.New(fmt.Sprintf("Failed to create VM: %d", resp.StatusCode))
+		return "", fmt.Errorf("Failed to create VM: %d", resp.StatusCode)
 	}
 
 	respData, err := io.ReadAll(resp.Body)
@@ -255,19 +268,17 @@ type VMDetailResp struct {
 	Server VMDetail `json:"server"`
 }
 
-func GetVMDetail(cfg *config.Config, token, id string) (*VMDetail, error) {
+func GetVMDetail(ctx context.Context, cfg *config.Config, token, id string) (*VMDetail, error) {
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
 		return nil, err
 	}
 	url.Path = path.Join(url.Path, "servers", id)
 
-	req, err := http.NewRequest("GET", url.String(), nil)
+	req, err := makeRequest(ctx, http.MethodGet, url.String(), token)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(HeaderKeyAuthToken, token)
-	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -277,7 +288,7 @@ func GetVMDetail(cfg *config.Config, token, id string) (*VMDetail, error) {
 		return nil, errors.New("No such VM")
 	}
 	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("Failed to retrieve VM details: %d", resp.StatusCode))
+		return nil, fmt.Errorf("Failed to retrieve VM details: %d", resp.StatusCode)
 	}
 
 	respData, err := io.ReadAll(resp.Body)
@@ -318,19 +329,17 @@ func FindByIPAddr(ipv4Addr string) FindVMFunc {
 	}
 }
 
-func FindVM(cfg *config.Config, token string, condition FindVMFunc) (*VMDetail, error) {
+func FindVM(ctx context.Context, cfg *config.Config, token string, condition FindVMFunc) (*VMDetail, error) {
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
 		return nil, err
 	}
 	url.Path = path.Join(url.Path, "servers/detail")
 
-	req, err := http.NewRequest("GET", url.String(), nil)
+	req, err := makeRequest(ctx, http.MethodGet, url.String(), token)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(HeaderKeyAuthToken, token)
-	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -340,7 +349,7 @@ func FindVM(cfg *config.Config, token string, condition FindVMFunc) (*VMDetail, 
 		return nil, errors.New("No such VM")
 	}
 	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("Failed to retrieve VM details: %d", resp.StatusCode))
+		return nil, fmt.Errorf("Failed to retrieve VM details: %d", resp.StatusCode)
 	}
 
 	respData, err := io.ReadAll(resp.Body)
@@ -370,28 +379,27 @@ type ImageResp struct {
 	} `json:"images"`
 }
 
-func GetImageID(cfg *config.Config, token, tag string) (string, string, error) {
+func GetImageID(ctx context.Context, cfg *config.Config, token, tag string) (string, string, error) {
 	url, err := url.Parse(cfg.Conoha.Services.Image)
 	if err != nil {
 		return "", "", err
 	}
 	url.Path = path.Join(url.Path, "v2/images")
 
-	req, err := http.NewRequest("GET", url.String(), nil)
+	req, err := makeRequest(ctx, http.MethodGet, url.String(), token)
 	if err != nil {
 		return "", "", err
 	}
 	query := req.URL.Query()
 	query.Add("name", tag)
 	req.URL.RawQuery = query.Encode()
-	req.Header.Add(HeaderKeyAuthToken, token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return "", "", errors.New(fmt.Sprintf("Failed to retrieve image list: %d", resp.StatusCode))
+		return "", "", fmt.Errorf("Failed to retrieve image list: %d", resp.StatusCode)
 	}
 
 	respData, err := io.ReadAll(resp.Body)
@@ -418,25 +426,24 @@ type FlavorsResp struct {
 	} `json:"flavors"`
 }
 
-func GetFlavors(cfg *config.Config, token string) (*FlavorsResp, error) {
+func GetFlavors(ctx context.Context, cfg *config.Config, token string) (*FlavorsResp, error) {
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
 		return nil, err
 	}
 	url.Path = path.Join(url.Path, "flavors")
 
-	req, err := http.NewRequest("GET", url.String(), nil)
+	req, err := makeRequest(ctx, http.MethodGet, url.String(), token)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add(HeaderKeyAuthToken, token)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("Failed to retrieve flavor list: %d", resp.StatusCode))
+		return nil, fmt.Errorf("Failed to retrieve flavor list: %d", resp.StatusCode)
 	}
 
 	respData, err := io.ReadAll(resp.Body)
@@ -527,12 +534,11 @@ type IdentityResp struct {
 	} `json:"access"`
 }
 
-func GetToken(cfg *config.Config) (string, string, error) {
+func GetToken(ctx context.Context, cfg *config.Config) (string, string, error) {
 	var auth IdentityReq
 	auth.Auth.PasswordCredentials.UserName = cfg.Conoha.UserName
 	auth.Auth.PasswordCredentials.Password = cfg.Conoha.Password
 	auth.Auth.TenantID = cfg.Conoha.TenantID
-	identData, _ := json.Marshal(auth)
 
 	url, err := url.Parse(cfg.Conoha.Services.Identity)
 	if err != nil {
@@ -540,18 +546,17 @@ func GetToken(cfg *config.Config) (string, string, error) {
 	}
 	url.Path = path.Join(url.Path, "tokens")
 
-	req, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(identData))
+	req, err := makeJSONRequest(ctx, http.MethodPost, url.String(), "", auth)
 	if err != nil {
 		return "", "", err
 	}
-	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return "", "", errors.New(fmt.Sprintf("Authentication failed: %d", resp.StatusCode))
+		return "", "", fmt.Errorf("Authentication failed: %d", resp.StatusCode)
 	}
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
