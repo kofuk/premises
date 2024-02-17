@@ -15,32 +15,24 @@ import (
 	"github.com/kofuk/premises/runner/commands/mclauncher/backup"
 	"github.com/kofuk/premises/runner/commands/mclauncher/fs"
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
-	"github.com/kofuk/premises/runner/commands/mclauncher/serverprop"
 	"github.com/kofuk/premises/runner/commands/mclauncher/statusapi"
 	"github.com/kofuk/premises/runner/config"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/metadata"
 )
 
-func generateServerProps(config *runner.Config, srv *gamesrv.ServerInstance) error {
-	serverProps := serverprop.New()
-	serverProps.SetMotd(config.Motd)
-	serverProps.SetDifficulty(config.World.Difficulty)
-	serverProps.SetLevelType(config.World.LevelType)
-	serverProps.SetSeed(config.World.Seed)
-	serverPropsFile, err := os.Create(fs.LocateWorldData("server.properties"))
-	if err != nil {
-		return err
-	}
-	defer serverPropsFile.Close()
-	if err := serverProps.Write(serverPropsFile); err != nil {
-		return err
-	}
-	return nil
-}
-
 func downloadWorldIfNeeded(config *runner.Config) error {
 	if config.World.ShouldGenerate {
+		for _, dir := range []string{"world", "world_nether", "world_the_end"} {
+			if _, err := os.Stat(fs.LocateWorldData(dir)); err == nil {
+				if err := os.RemoveAll(fs.LocateWorldData(dir)); err != nil {
+					slog.Error("Failed to remove world folder", slog.Any("error", err))
+				}
+			} else if !os.IsNotExist(err) {
+				slog.Error("Failed to stat world dir", slog.Any("error", err))
+			}
+		}
+
 		return nil
 	}
 
@@ -74,6 +66,10 @@ func downloadWorldIfNeeded(config *runner.Config) error {
 		}
 
 		if err := backupService.DownloadWorldData(config); err != nil {
+			return err
+		}
+
+		if err := backup.ExtractWorldArchiveIfNeeded(); err != nil {
 			return err
 		}
 		return nil
@@ -137,31 +133,17 @@ func Run() {
 	srv := gamesrv.New()
 	go statusapi.LaunchStatusServer(config, srv)
 
-	if err := exterior.SendMessage("serverStatus", entity.Event{
-		Type: entity.EventStatus,
-		Status: &entity.StatusExtra{
-			EventCode: entity.EventGameDownload,
-		},
-	}); err != nil {
-		slog.Error("Unable to write send message", slog.Any("error", err))
-	}
-	if err := downloadServerJarIfNeeded(config); err != nil {
-		slog.Error("Couldn't download server.jar", slog.Any("error", err))
+	if err := downloadWorldIfNeeded(config); err != nil {
+		slog.Error("Failed to download world data", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
 			Type: entity.EventStatus,
 			Status: &entity.StatusExtra{
-				EventCode: entity.EventGameErr,
+				EventCode: entity.EventWorldErr,
 			},
 		}); err != nil {
 			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
-		goto out
-	}
-
-	if err := generateServerProps(config, srv); err != nil {
-		slog.Error("Couldn't generate server.properties", slog.Any("error", err))
-		srv.StartupFailed = true
 		goto out
 	}
 
@@ -179,13 +161,22 @@ func Run() {
 		goto out
 	}
 
-	if err := downloadWorldIfNeeded(config); err != nil {
-		slog.Error("Failed to download world data", slog.Any("error", err))
+	if err := exterior.SendMessage("serverStatus", entity.Event{
+		Type: entity.EventStatus,
+		Status: &entity.StatusExtra{
+			EventCode: entity.EventGameDownload,
+		},
+	}); err != nil {
+		slog.Error("Unable to write send message", slog.Any("error", err))
+	}
+
+	if err := downloadServerJarIfNeeded(config); err != nil {
+		slog.Error("Couldn't download server.jar", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", entity.Event{
 			Type: entity.EventStatus,
 			Status: &entity.StatusExtra{
-				EventCode: entity.EventWorldErr,
+				EventCode: entity.EventGameErr,
 			},
 		}); err != nil {
 			slog.Error("Unable to write send message", slog.Any("error", err))

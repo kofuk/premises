@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/kofuk/premises/common/entity/runner"
-	"github.com/kofuk/premises/runner/commands/mclauncher/backup"
 	"github.com/kofuk/premises/runner/commands/mclauncher/fs"
+	"github.com/kofuk/premises/runner/commands/mclauncher/serverprop"
 	"github.com/kofuk/premises/runner/exterior"
 )
 
@@ -271,6 +271,23 @@ func MonitorServer(config *runner.Config, srv *ServerInstance, stdout io.ReadClo
 	}
 }
 
+func generateServerProps(config *runner.Config) error {
+	serverProps := serverprop.New()
+	serverProps.SetMotd(config.Motd)
+	serverProps.SetDifficulty(config.World.Difficulty)
+	serverProps.SetLevelType(config.World.LevelType)
+	serverProps.SetSeed(config.World.Seed)
+	serverPropsFile, err := os.Create(fs.LocateWorldData("server.properties"))
+	if err != nil {
+		return err
+	}
+	defer serverPropsFile.Close()
+	if err := serverProps.Write(serverPropsFile); err != nil {
+		return err
+	}
+	return nil
+}
+
 func signEulaForServer() error {
 	eulaFile, err := os.Create(fs.LocateWorldData("eula.txt"))
 	if err != nil {
@@ -302,34 +319,6 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 		return err
 	}
 
-	if config.World.ShouldGenerate {
-		if _, err := os.Stat(fs.LocateWorldData("world")); err == nil {
-			if err := os.RemoveAll(fs.LocateWorldData("world")); err != nil {
-				slog.Error("Failed to remove world folder", slog.Any("error", err))
-			}
-		} else if !os.IsNotExist(err) {
-			slog.Error("Failed to stat world folder", slog.Any("error", err))
-		}
-		if _, err := os.Stat(fs.LocateWorldData("world_nether")); err == nil {
-			if err := os.RemoveAll(fs.LocateWorldData("world_nether")); err != nil {
-				slog.Error("Failed to remove world_nether folder", slog.Any("error", err))
-			}
-		} else if !os.IsNotExist(err) {
-			slog.Error("Failed to stat world_nether folder", slog.Any("error", err))
-		}
-		if _, err := os.Stat(fs.LocateWorldData("world_the_end")); err == nil {
-			if err := os.RemoveAll(fs.LocateWorldData("world_the_end")); err != nil {
-				slog.Error("Failed to remove world_the_end folder", slog.Any("error", err))
-			}
-		} else if !os.IsNotExist(err) {
-			slog.Error("Failed to stat world_the_end folder", slog.Any("error", err))
-		}
-	} else {
-		if err := backup.ExtractWorldArchiveIfNeeded(); err != nil {
-			return err
-		}
-	}
-
 	ver, exists, err := GetLastServerVersion()
 	if err != nil {
 		return err
@@ -352,6 +341,10 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 	}
 
 	if err := RemoveLastServerVersion(); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	if err := generateServerProps(config); err != nil {
 		return err
 	}
 
