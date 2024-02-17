@@ -49,7 +49,7 @@ func (s *GameServer) getToken(ctx context.Context) (string, error) {
 	return s.token, nil
 }
 
-func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSizeGB int, startupScript string) string {
+func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSizeGB int, startupScript []byte) string {
 	token, err := s.getToken(ctx)
 	if err != nil {
 		log.WithError(err).Error("Failed to get token")

@@ -1,8 +1,8 @@
 package conoha
 
 import (
+	"bytes"
 	_ "embed"
-	"encoding/base64"
 	"encoding/json"
 	"strings"
 
@@ -12,26 +12,24 @@ import (
 //go:embed startup.sh
 var startupScriptTemplate string
 
-func GenerateStartupScript(gameConfig *runner.Config) (string, error) {
+func GenerateStartupScript(gameConfig *runner.Config) ([]byte, error) {
 	gameConfigData, err := json.Marshal(gameConfig)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	lines := strings.Split(strings.ReplaceAll(startupScriptTemplate, "\r\n", "\n"), "\n")
-	var result strings.Builder
-	encoder := base64.NewEncoder(base64.RawStdEncoding, &result)
+	var result bytes.Buffer
 	for _, line := range lines {
 		switch line {
 		case "#__CONFIG_FILE__":
-			encoder.Write(gameConfigData)
+			result.Write(gameConfigData)
 			break
 		default:
-			encoder.Write([]byte(line))
+			result.Write([]byte(line))
 			break
 		}
-		encoder.Write([]byte("\n"))
+		result.Write([]byte("\n"))
 	}
-	encoder.Close()
-	return result.String(), nil
+	return result.Bytes(), nil
 }

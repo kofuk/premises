@@ -105,18 +105,10 @@ read -sp 'Enter auth code: ' -u3 auth
 echo
 exec 3<&-
 
-name="/premises-userdata-${RANDOM}"
-
-curl -H "Authorization: Setup-Code ${auth}" '%s://%s/_runner/startup' | base64 -d >"${name}"
-chmod +x "${name}"
-
 echo 'Launching Premises...'
-bash "${name}"
-
-rm -f "${name}"
+curl -H "Authorization: Setup-Code ${auth}" '%s://%s/_runner/startup' | bash
 
 echo 'Success! Premises should be started shortly!'
-
 
 exit
 } && run

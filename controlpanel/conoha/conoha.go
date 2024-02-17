@@ -3,6 +3,7 @@ package conoha
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -209,11 +210,17 @@ type CreateVMResp struct {
 	} `json:"server"`
 }
 
-func CreateVM(ctx context.Context, cfg *config.Config, nameTag, token, imageRef, flavorRef, encodedStartupScript string) (string, error) {
+func base64Encode(data []byte) []byte {
+	result := make([]byte, base64.RawStdEncoding.EncodedLen(len(data)))
+	base64.RawStdEncoding.Encode(result, data)
+	return result
+}
+
+func CreateVM(ctx context.Context, cfg *config.Config, nameTag, token, imageRef, flavorRef string, startupScript []byte) (string, error) {
 	var reqBody CreateVMReq
 	reqBody.Server.ImageRef = imageRef
 	reqBody.Server.FlavorRef = flavorRef
-	reqBody.Server.UserData = encodedStartupScript
+	reqBody.Server.UserData = string(base64Encode(startupScript))
 	reqBody.Server.MetaData.InstanceNameTag = nameTag
 	reqBody.Server.SecurityGroups = []struct {
 		Name string `json:"name"`

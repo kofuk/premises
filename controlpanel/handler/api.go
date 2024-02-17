@@ -433,7 +433,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 	}
 	log.Info("Generating startup script...Done")
 
-	id := gameServer.SetUp(ctx, gameConfig, memSizeGB, string(startupScript))
+	id := gameServer.SetUp(ctx, gameConfig, memSizeGB, startupScript)
 	if id == "" {
 		// Startup failed. Manual setup can recover this status.
 
@@ -448,7 +448,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 			log.WithError(err).Error("Failed to write status data to Redis channel")
 		}
 
-		if err := h.KVS.Set(ctx, fmt.Sprintf("startup:%s", authCode), startupScript, 30*time.Minute); err != nil {
+		if err := h.KVS.Set(ctx, fmt.Sprintf("startup:%s", authCode), string(startupScript), 30*time.Minute); err != nil {
 			slog.Error("Failed to set startup script", slog.Any("error", err))
 			return
 		}
