@@ -1,3 +1,4 @@
 /premises
 /.env
 /target
+*.env
