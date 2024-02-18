@@ -2,3 +2,5 @@
 /.env
 /target
 *.env
+/coverage.html
+/coverprofile
