@@ -4,8 +4,9 @@ type Config struct {
 	AllocSize int    `json:"allocSize"`
 	AuthKey   string `json:"authKey"`
 	Server    struct {
-		Version     string `json:"name"`
-		DownloadUrl string `json:"downloadUrl"`
+		PreferDetected bool   `json:"preferDetected"`
+		Version        string `json:"name"`
+		DownloadUrl    string `json:"downloadUrl"`
 	} `json:"server"`
 	World struct {
 		ShouldGenerate bool   `json:"shouldGenerate"`

@@ -71,6 +71,7 @@
   "version_show_snapshot": "スナップショットを表示する",
   "version_show_beta": "ベータ版を表示する",
   "version_show_alpha": "アルファ版を表示する",
+  "version_detect": "ワールドからサーバのバージョンを検出する",
   "world_name": "ワールド名",
   "use_backups": "バックアップを使用",
   "generate_world": "新しい世界を生成",

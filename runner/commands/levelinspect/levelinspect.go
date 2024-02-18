@@ -9,11 +9,11 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/kofuk/premises/common/nbt"
 	"github.com/kofuk/premises/runner/fs"
 )
 
 type Result struct {
-	Success       bool   `json:"success"`
 	ServerVersion string `json:"serverVersion"`
 }
 
@@ -36,15 +36,23 @@ func (self *limitedReader) Read(p []byte) (int, error) {
 	return read, nil
 }
 
+type LevelDat struct {
+	Data struct {
+		Version struct {
+			Name string
+		}
+	}
+}
+
 func Run() {
-	levelDat, err := os.Open(fs.LocateWorldData("world/level.dat"))
+	levelDatFile, err := os.Open(fs.LocateWorldData("world/level.dat"))
 	if err != nil {
 		slog.Error("Failed to open level.dat", slog.Any("error", err))
 		os.Exit(1)
 	}
-	defer levelDat.Close()
+	defer levelDatFile.Close()
 
-	gzipReader, err := gzip.NewReader(levelDat)
+	gzipReader, err := gzip.NewReader(levelDatFile)
 	if err != nil {
 		slog.Error("Failed to decompress level.dat", slog.Any("error", err))
 		os.Exit(1)
@@ -55,10 +63,15 @@ func Run() {
 		limit: 4 * 1024 * 1024, // 4 MiB
 	}
 
-	_ = reader
+	decoder := nbt.NewDecoderWithDepthLimit(reader, 20)
+	var levelDat LevelDat
+	if err := decoder.Decode(&levelDat); err != nil {
+		slog.Error("Failed to parse level.dat", slog.Any("error", err))
+		os.Exit(1)
+	}
 
 	result := Result{
-		Success: false,
+		ServerVersion: levelDat.Data.Version.Name,
 	}
 
 	json, err := json.Marshal(result)

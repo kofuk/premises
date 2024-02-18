@@ -38,6 +38,10 @@ func calculateMemSizeForGame(availableSizeMiB int) (int, error) {
 	return availableSizeMiB - 1024, nil
 }
 
+func (c *Config) SetDetectServerVersion(detect bool) {
+	c.C.Server.PreferDetected = detect
+}
+
 func (c *Config) SetAllocFromAvailableMemSize(memSizeMiB int) error {
 	size, err := calculateMemSizeForGame(memSizeMiB)
 	if err != nil {

@@ -18,6 +18,7 @@ const ReconfigureMenu = ({backToMenu}: Prop) => {
   const [t] = useTranslation();
 
   const [serverVersion, setServerVersion] = useState('');
+  const [preferDetect, setPreferDetect] = useState(true);
   const [worldSource, setWorldSource] = useState(WorldLocation.Backups);
   const [worldName, setWorldName] = useState('');
   const [backupGeneration, setBackupGeneration] = useState('@/latest');
@@ -29,6 +30,7 @@ const ReconfigureMenu = ({backToMenu}: Prop) => {
     (async () => {
       const data = new URLSearchParams();
       data.append('server-version', serverVersion);
+      data.append('prefer-detect', preferDetect.toString());
       data.append('world-source', worldSource);
       if (worldSource === WorldLocation.Backups) {
         data.append('world-name', worldName);
@@ -85,8 +87,10 @@ const ReconfigureMenu = ({backToMenu}: Prop) => {
         key="serverVersion"
         isFocused={currentStep === stepIndex}
         nextStep={handleNextStep}
+        preferDetect={preferDetect}
         requestFocus={() => handleRequestFocus(stepIndex)}
         serverVersion={serverVersion}
+        setPreferDetect={setPreferDetect}
         setServerVersion={setServerVersion}
         stepNum={stepIndex + 1}
       />

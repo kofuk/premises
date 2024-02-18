@@ -209,6 +209,7 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Value
 		return nil, err
 	}
 	result.SetServer(values.Get("server-version"), serverDownloadURL)
+	result.SetDetectServerVersion(values.Get("prefer-detect") == "true")
 
 	if !values.Has("machine-type") {
 		return nil, errors.New("Machine type is not set")

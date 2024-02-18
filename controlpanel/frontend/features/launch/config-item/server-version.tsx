@@ -2,6 +2,8 @@ import React, {useEffect, useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
+import {FormControlLabel, Switch} from '@mui/material';
+
 import ConfigContainer from './config-container';
 import {ItemProp} from './prop';
 
@@ -21,10 +23,14 @@ const ServerVersion = ({
   requestFocus,
   stepNum,
   serverVersion,
-  setServerVersion
+  setServerVersion,
+  preferDetect,
+  setPreferDetect
 }: ItemProp & {
   serverVersion: string;
   setServerVersion: (val: string) => void;
+  preferDetect: boolean;
+  setPreferDetect: (prefer: boolean) => void;
 }) => {
   const [t] = useTranslation();
 
@@ -143,6 +149,11 @@ const ServerVersion = ({
               {t('version_show_alpha')}
             </label>
           </div>
+
+          <FormControlLabel
+            control={<Switch checked={preferDetect} onChange={(e) => setPreferDetect(e.target.checked)} />}
+            label={t('version_detect')}
+          />
         </>
       )}
       <div className="m-1 text-end">

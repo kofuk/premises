@@ -99,7 +99,7 @@ func main() {
 				Run:          mclauncher.Run,
 				RequiresRoot: false,
 			},
-			"levelinspect": {
+			"level-inspect": {
 				Description:  "Parse level.dat",
 				Run:          levelinspect.Run,
 				RequiresRoot: false,

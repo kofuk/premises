@@ -147,6 +147,13 @@ func Run() {
 		goto out
 	}
 
+	if config.Server.PreferDetected {
+		slog.Info("Read server version from level.dat")
+		if err := gamesrv.DetectAndUpdateVersion(config); err != nil {
+			slog.Error("Error detecting Minecraft version", slog.Any("error", err))
+		}
+	}
+
 	if strings.Contains(config.Server.Version, "/") {
 		slog.Error("ServerName can't contain /")
 		srv.StartupFailed = true
