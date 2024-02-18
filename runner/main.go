@@ -10,6 +10,7 @@ import (
 	"github.com/kofuk/premises/runner/commands/cleanup"
 	"github.com/kofuk/premises/runner/commands/exteriord"
 	"github.com/kofuk/premises/runner/commands/keepsystemutd"
+	"github.com/kofuk/premises/runner/commands/levelinspect"
 	"github.com/kofuk/premises/runner/commands/mclauncher"
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
 	"github.com/kofuk/premises/runner/commands/privileged"
@@ -96,6 +97,11 @@ func main() {
 			"launcher": {
 				Description:  "Launch game server",
 				Run:          mclauncher.Run,
+				RequiresRoot: false,
+			},
+			"levelinspect": {
+				Description:  "Parse level.dat",
+				Run:          levelinspect.Run,
 				RequiresRoot: false,
 			},
 			"rcon": {

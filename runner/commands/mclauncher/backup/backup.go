@@ -17,8 +17,8 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/common/s3wrap"
-	"github.com/kofuk/premises/runner/commands/mclauncher/fs"
 	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/fs"
 	"github.com/ulikunitz/xz"
 )
 

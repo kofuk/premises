@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"github.com/kofuk/premises/common/entity/runner"
-	"github.com/kofuk/premises/runner/commands/mclauncher/fs"
 	"github.com/kofuk/premises/runner/commands/mclauncher/serverprop"
 	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/fs"
 )
 
 type ServerInstance struct {

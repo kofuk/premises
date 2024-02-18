@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/kofuk/premises/runner/commands/mclauncher/fs"
+	"github.com/kofuk/premises/runner/fs"
 )
 
 var (

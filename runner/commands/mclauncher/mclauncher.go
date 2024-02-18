@@ -13,11 +13,11 @@ import (
 	"github.com/kofuk/premises/common/entity/runner"
 	entity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/backup"
-	"github.com/kofuk/premises/runner/commands/mclauncher/fs"
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
 	"github.com/kofuk/premises/runner/commands/mclauncher/statusapi"
 	"github.com/kofuk/premises/runner/config"
 	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/metadata"
 )
 

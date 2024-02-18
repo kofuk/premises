@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 
 	"github.com/kofuk/premises/common/entity/runner"
-	"github.com/kofuk/premises/runner/commands/mclauncher/fs"
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
 	"github.com/kofuk/premises/runner/commands/privileged"
 	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/fs"
 )
 
 type createSnapshotResp struct {
