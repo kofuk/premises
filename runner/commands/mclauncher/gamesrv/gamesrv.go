@@ -305,7 +305,7 @@ func processQuickUndo(slot int) error {
 		return err
 	}
 
-	cmd := exec.Command("cp", "-R", "--", fmt.Sprintf("ss@quick%d/world", slot), "ss@quick0/world_nether", "ss@quick0/world_the_end", ".")
+	cmd := exec.Command("cp", "-R", "--", fmt.Sprintf("ss@quick%d/world", slot), fmt.Sprintf("ss@quick%d/world_nether", slot), fmt.Sprintf("ss@quick%d/world_the_end", slot), ".")
 	cmd.Dir = fs.LocateWorldData("")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
