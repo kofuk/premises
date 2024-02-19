@@ -30,6 +30,7 @@ type ServerInstance struct {
 	Crashed                bool
 	lastActive             time.Time
 	quickUndoBeforeRestart bool
+	quickUndoSlot          int
 	ServerPid              int
 	Rcon                   *Rcon
 }
@@ -142,8 +143,9 @@ func (srv *ServerInstance) GetSeed() (string, error) {
 	return seed[7 : len(seed)-1], nil
 }
 
-func (srv *ServerInstance) QuickUndo() error {
+func (srv *ServerInstance) QuickUndo(slot int) error {
 	srv.quickUndoBeforeRestart = true
+	srv.quickUndoSlot = slot
 
 	proc, err := os.FindProcess(srv.ServerPid)
 	if err != nil {
@@ -298,12 +300,12 @@ func signEulaForServer() error {
 	return nil
 }
 
-func processQuickUndo() error {
+func processQuickUndo(slot int) error {
 	if err := os.RemoveAll(fs.LocateWorldData("world")); err != nil {
 		return err
 	}
 
-	cmd := exec.Command("cp", "-R", "--", "ss@quick0/world", "ss@quick0/world_nether", "ss@quick0/world_the_end", ".")
+	cmd := exec.Command("cp", "-R", "--", fmt.Sprintf("ss@quick%d/world", slot), "ss@quick0/world_nether", "ss@quick0/world_the_end", ".")
 	cmd.Dir = fs.LocateWorldData("")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -365,7 +367,7 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 		prevLaunch := time.Now()
 		for !srv.ShouldStop && !srv.RestartRequested {
 			if srv.quickUndoBeforeRestart {
-				if err := processQuickUndo(); err != nil {
+				if err := processQuickUndo(srv.quickUndoSlot); err != nil {
 					slog.Error("Error processing quick undo", slog.Any("error", err))
 				}
 

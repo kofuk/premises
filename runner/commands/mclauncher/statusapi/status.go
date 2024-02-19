@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
@@ -24,10 +26,13 @@ type createSnapshotResp struct {
 	Result  privileged.SnapshotInfo `json:"result"`
 }
 
-func requestQuickSnapshot() (*privileged.SnapshotInfo, error) {
+func requestQuickSnapshot(slot int) (*privileged.SnapshotInfo, error) {
 	reqMsg := &privileged.RequestMsg{
 		Version: 1,
 		Func:    "quicksnapshots/create",
+		Args: []string{
+			strconv.Itoa(slot),
+		},
 	}
 	reqData, err := json.Marshal(reqMsg)
 	if err != nil {
@@ -63,60 +68,18 @@ func requestQuickSnapshot() (*privileged.SnapshotInfo, error) {
 	return &respMsg.Result, nil
 }
 
-func requestDeleteSnapshot(ssi *privileged.SnapshotInfo) error {
-	reqMsg := &privileged.RequestMsg{
-		Version: 1,
-		Func:    "snapshots/delete",
-		Args: []string{
-			ssi.ID,
-		},
-	}
-	reqData, err := json.Marshal(reqMsg)
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequest(http.MethodPost, "http://localhost:8522", bytes.NewBuffer(reqData))
-	if err != nil {
-		return err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	respData, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	var respMsg createSnapshotResp
-	if err := json.Unmarshal(respData, &respMsg); err != nil {
-		return err
-	}
-
-	if respMsg.Version != 1 {
-		return errors.New("Unsupported version")
-	}
-
-	if !respMsg.Success {
-		return errors.New(respMsg.Message)
-	}
-
-	return nil
-}
-
 func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 	handleStop := func() {
 		srv.ShouldStop = true
 		srv.Stop()
 	}
-	handleSnapshot := func() {
+	handleSnapshot := func(config runner.SnapshotConfig) {
 		if err := srv.SaveAll(); err != nil {
 			slog.Error("Failed to run save-all", slog.Any("error", err))
 			return
 		}
 
-		_, err := requestQuickSnapshot()
+		_, err := requestQuickSnapshot(config.Slot)
 		if err != nil {
 			slog.Error("Failed to create snapshot", slog.Any("error", err))
 
@@ -143,9 +106,9 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
 	}
-	handleUndo := func() {
+	handleUndo := func(config runner.SnapshotConfig) {
 		go func() {
-			if _, err := os.Stat(filepath.Join(fs.LocateWorldData("ss@quick0/world"))); err != nil {
+			if _, err := os.Stat(filepath.Join(fs.LocateWorldData(fmt.Sprintf("ss@quick%d/world", config.Slot)))); err != nil {
 				if err := exterior.DispatchMessage("serverStatus", runner.Event{
 					Type: runner.EventInfo,
 					Info: &runner.InfoExtra{
@@ -158,7 +121,7 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 				return
 			}
 
-			if err := srv.QuickUndo(); err != nil {
+			if err := srv.QuickUndo(config.Slot); err != nil {
 				slog.Error("Unable to quick-undo", slog.Any("error", err))
 			}
 		}()
@@ -198,11 +161,11 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 			break
 
 		case runner.ActionSnapshot:
-			handleSnapshot()
+			handleSnapshot(action.Snapshot)
 			break
 
 		case runner.ActionUndo:
-			handleUndo()
+			handleUndo(action.Snapshot)
 			break
 
 		case runner.ActionReconfigure:

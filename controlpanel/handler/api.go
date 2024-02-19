@@ -707,8 +707,28 @@ func (h *Handler) handleApiWorldInfo(c *gin.Context) {
 }
 
 func (h *Handler) handleApiQuickUndoSnapshot(c *gin.Context) {
+	var config entity.SnapshotConfiguration
+	if err := c.BindJSON(&config); err != nil {
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+		return
+	}
+
+	if config.Slot < 0 || 10 <= config.Slot {
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+		return
+	}
+
 	if err := h.runnerAction.Push(c.Request.Context(), "default", runnerEntity.Action{
 		Type: runnerEntity.ActionSnapshot,
+		Snapshot: runnerEntity.SnapshotConfig{
+			Slot: config.Slot,
+		},
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
 		c.JSON(http.StatusOK, entity.ErrorResponse{
@@ -724,8 +744,28 @@ func (h *Handler) handleApiQuickUndoSnapshot(c *gin.Context) {
 }
 
 func (h *Handler) handleApiQuickUndoUndo(c *gin.Context) {
+	var config entity.SnapshotConfiguration
+	if err := c.BindJSON(&config); err != nil {
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+		return
+	}
+
+	if config.Slot < 0 || 10 <= config.Slot {
+		c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+		return
+	}
+
 	if err := h.runnerAction.Push(c.Request.Context(), "default", runnerEntity.Action{
 		Type: runnerEntity.ActionUndo,
+		Snapshot: runnerEntity.SnapshotConfig{
+			Slot: config.Slot,
+		},
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
 		c.JSON(http.StatusOK, entity.ErrorResponse{

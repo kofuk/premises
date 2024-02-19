@@ -91,7 +91,12 @@ const (
 	ActionReconfigure            = "reconfigure"
 )
 
+type SnapshotConfig struct {
+	Slot int `json:"slot"`
+}
+
 type Action struct {
-	Type   ActionType `json:"type"`
-	Config *Config    `json:"config,omitempty"`
+	Type     ActionType     `json:"type"`
+	Config   *Config        `json:"config,omitempty"`
+	Snapshot SnapshotConfig `json:"snapshot"`
 }

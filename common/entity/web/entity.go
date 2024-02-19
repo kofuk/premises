@@ -121,3 +121,7 @@ type SysstatMessage struct {
 	CPUUsage float64 `json:"cpuUsage"`
 	Time     int64   `json:"time"`
 }
+
+type SnapshotConfiguration struct {
+	Slot int `json:"slot"`
+}

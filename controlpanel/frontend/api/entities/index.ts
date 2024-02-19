@@ -51,3 +51,7 @@ export type StatusExtraData = {
   progress: number;
   textData: string;
 };
+
+export type SnapshotConfiguration = {
+  slot: number;
+};

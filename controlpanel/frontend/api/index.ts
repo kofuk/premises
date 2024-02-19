@@ -2,7 +2,17 @@ import {t} from 'i18next';
 import useSWR, {KeyedMutator} from 'swr';
 import useSWRImmutable from 'swr/immutable';
 
-import {MCVersion, PasswordCredential, SessionData, SessionState, SystemInfo, UpdatePassword, WorldBackup, WorldInfo} from './entities';
+import {
+  MCVersion,
+  PasswordCredential,
+  SessionData,
+  SessionState,
+  SnapshotConfiguration,
+  SystemInfo,
+  UpdatePassword,
+  WorldBackup,
+  WorldInfo
+} from './entities';
 
 const domain = process.env.NODE_ENV === 'test' ? 'http://localhost' : '';
 
@@ -36,8 +46,10 @@ export const getBackups = declareApi<null, WorldBackup[]>('/api/backups');
 export const getMCVersions = declareApi<null, MCVersion[]>('/api/mcversions');
 export const changePassword = declareApi<UpdatePassword, null>('/api/users/change-password', 'post');
 export const addUser = declareApi<PasswordCredential, null>('/api/users/add', 'post');
-export const getSystemInfo = declareApi<SystemInfo, null>('/api/systeminfo');
-export const getWorldInfo = declareApi<WorldInfo, null>('/api/worldinfo');
+export const getSystemInfo = declareApi<null, SystemInfo>('/api/systeminfo');
+export const getWorldInfo = declareApi<null, WorldInfo>('/api/worldinfo');
+export const takeQuickSnapshot = declareApi<SnapshotConfiguration, null>('/api/quickundo/snapshot', 'post');
+export const undoQuickSnapshot = declareApi<SnapshotConfiguration, null>('/api/quickundo/undo', 'post');
 
 export type ImmutableUseResponse<T> = {
   data: T | undefined;

@@ -3,6 +3,7 @@ package privileged
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -142,72 +143,12 @@ func Run() {
 			return
 		}
 
-		if req.Func == "snapshots/create" {
-			ssi, err := takeFsSnapshot("")
-			if err != nil {
-				slog.Error("Failed to take snapshot", slog.Any("error", err))
-
-				err := sendMessage(w, &ResponseMsg{
-					Version: 1,
-					Success: false,
-					Message: "Failed to take snapshot",
-				})
-				if err != nil {
-					slog.Error("Failed to write body", slog.Any("error", err))
-					return
-				}
-				return
+		if req.Func == "quicksnapshots/create" {
+			if len(req.Args) == 0 {
+				req.Args = append(req.Args, "0")
 			}
 
-			err = sendMessage(w, &ResponseMsg{
-				Version: 1,
-				Success: true,
-				Result:  ssi,
-			})
-			if err != nil {
-				slog.Error("Failed to write body", slog.Any("error", err))
-				return
-			}
-		} else if req.Func == "snapshots/delete" {
-			if len(req.Args) != 1 {
-				slog.Error("Invalid argument")
-
-				err = sendMessage(w, &ResponseMsg{
-					Version: 1,
-					Success: true,
-					Message: "Invalid argument",
-				})
-				if err != nil {
-					slog.Error("Failed to write body", slog.Any("error", err))
-					return
-				}
-			}
-
-			if err := deleteFsSnapshot(req.Args[0]); err != nil {
-				slog.Error("Failed to delete snapshot", slog.Any("error", err))
-
-				err = sendMessage(w, &ResponseMsg{
-					Version: 1,
-					Success: true,
-					Message: "Failed to take snapshot",
-				})
-				if err != nil {
-					slog.Error("Failed to write body", slog.Any("error", err))
-					return
-				}
-				return
-			}
-
-			err = sendMessage(w, &ResponseMsg{
-				Version: 1,
-				Success: true,
-			})
-			if err != nil {
-				slog.Error("Failed to write body", slog.Any("error", err))
-				return
-			}
-		} else if req.Func == "quicksnapshots/create" {
-			ssi, err := takeFsSnapshot("quick0")
+			ssi, err := takeFsSnapshot(fmt.Sprintf("quick%s", req.Args[0]))
 			if err != nil {
 				slog.Error("Failed to take snapshot", slog.Any("error", err))
 
