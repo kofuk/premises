@@ -3,10 +3,10 @@ module github.com/kofuk/premises
 go 1.21
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.24.1
+	github.com/aws/aws-sdk-go-v2 v1.25.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.16.16
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.48.1
-	github.com/aws/smithy-go v1.19.0
+	github.com/aws/smithy-go v1.20.0
 	github.com/cloudflare/cloudflare-go v0.87.0
 	github.com/docker/docker v25.0.3+incompatible
 	github.com/docker/go-connections v0.5.0
