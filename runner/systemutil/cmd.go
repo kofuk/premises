@@ -3,13 +3,15 @@ package systemutil
 import (
 	"fmt"
 	"log/slog"
-	"math/rand"
 	"os"
 	"os/exec"
+	"sync/atomic"
 )
 
+var logNum uint64
+
 func Cmd(cmdPath string, args []string, envs []string) error {
-	logPath := fmt.Sprintf("/tmp/command-%d.log", rand.Int())
+	logPath := fmt.Sprintf("/tmp/command-%d.log", atomic.AddUint64(&logNum, 1)-1)
 	log, err := os.Create(logPath)
 	if err != nil {
 		slog.Error("Unable to create log file", slog.Any("error", err))
