@@ -3,6 +3,7 @@ package dockerstack
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	docker "github.com/docker/docker/client"
 	"github.com/kofuk/premises/ostack-fake/dockerstack/wrapper"
@@ -40,6 +41,11 @@ func GetServerDetails(ctx context.Context, docker *docker.Client) (*entity.Serve
 			},
 			Metadata: entity.ServerDetailMetadata{
 				InstanceNameTag: container.Labels["org.kofuk.premises.instance_name_tag"],
+			},
+			Volumes: []entity.Volume{
+				{
+					ID: fmt.Sprintf("volume_%s", container.Labels["org.kofuk.premises.id"]),
+				},
 			},
 		}
 

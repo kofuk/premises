@@ -2,21 +2,27 @@ package entity
 
 type GetTokenReq struct {
 	Auth struct {
-		PasswordCredentials struct {
-			UserName string `json:"username"`
-			Password string `json:"password"`
-		} `json:"passwordCredentials"`
-		TenantID string `json:"tenantId"`
+		Identity struct {
+			Methods  []string `json:"methods"`
+			Password struct {
+				User struct {
+					Name     string `json:"name"`
+					Password string `json:"password"`
+				} `json:"user"`
+			} `json:"password"`
+		} `json:"identity"`
+		Scope struct {
+			Project struct {
+				ID string `json:"id"`
+			} `json:"project"`
+		} `json:"scope"`
 	} `json:"auth"`
 }
 
 type GetTokenResp struct {
-	Access struct {
-		Token struct {
-			Id      string `json:"id"`
-			Expires string `json:"expires"`
-		} `json:"token"`
-	} `json:"access"`
+	Token struct {
+		ExpiresAt string `json:"expires_at"`
+	} `json:"token"`
 }
 
 type ServerDetailAddress struct {
@@ -28,12 +34,17 @@ type ServerDetailMetadata struct {
 	InstanceNameTag string `json:"instance_name_tag"`
 }
 
+type Volume struct {
+	ID string `json:"id"`
+}
+
 type ServerDetail struct {
 	ID        string                           `json:"id"`
 	Name      string                           `json:"name"`
 	Status    string                           `json:"status"`
 	Addresses map[string][]ServerDetailAddress `json:"addresses"`
 	Metadata  ServerDetailMetadata             `json:"metadata"`
+	Volumes   []Volume                         `json:"os-extended-volumes:volumes_attached"`
 }
 
 type ServerDetailsResp struct {
@@ -89,8 +100,35 @@ type LaunchServerResp struct {
 	} `json:"server"`
 }
 
-type ServerActionReq struct {
-	CreateImage *struct {
-		Name string `json:"name"`
-	} `json:"createImage"`
+type SecurityGroupRule struct {
+	SecurityGroupID string `json:"security_group_id"`
+	Direction       string `json:"direction"`
+	EtherType       string `json:"ethertype"`
+	PortRangeMin    string `json:"port_range_min"`
+	PortRangeMax    string `json:"port_range_max"`
+	Protocol        string `json:"protocol"`
+}
+
+type SecurityGroup struct {
+	ID                 string              `json:"id"`
+	Name               string              `json:"name"`
+	SecurityGroupRules []SecurityGroupRule `json:"security_group_rules"`
+}
+
+type SecurityGroupResp struct {
+	SecurityGroups []SecurityGroup `json:"security_groups"`
+}
+
+type SecurityGroupReq struct {
+	SecurityGroup SecurityGroup `json:"security_group"`
+}
+
+type SecurityGroupRuleReq struct {
+	SecurityGroupRule SecurityGroupRule `json:"security_group_rule"`
+}
+
+type VolumeActionReq struct {
+	UploadImage struct {
+		ImageName string `json:"image_name"`
+	} `json:"os-volume_upload_image"`
 }
