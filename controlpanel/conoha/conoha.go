@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 	"time"
 
@@ -422,19 +421,25 @@ func GetImageID(ctx context.Context, cfg *config.Config, token, tag string) (str
 	return result.Images[0].ID, result.Images[0].Status, nil
 }
 
-type FlavorsResp struct {
-	Flavors []struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	} `json:"flavors"`
+type Flavor struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	RAM        int    `json:"ram"`
+	Disk       int    `json:"disk"`
+	VCPUs      int    `json:"vcpus"`
+	RXTXFactor int    `json:"rxtx_factor"`
 }
 
-func GetFlavors(ctx context.Context, cfg *config.Config, token string) (*FlavorsResp, error) {
+type FlavorsResp struct {
+	Flavors []Flavor `json:"flavors"`
+}
+
+func GetFlavors(ctx context.Context, cfg *config.Config, token string) ([]Flavor, error) {
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
 		return nil, err
 	}
-	url.Path = path.Join(url.Path, "flavors")
+	url.Path = path.Join(url.Path, "flavors/detail")
 
 	req, err := makeRequest(ctx, http.MethodGet, url.String(), token)
 	if err != nil {
@@ -458,63 +463,26 @@ func GetFlavors(ctx context.Context, cfg *config.Config, token string) (*Flavors
 		return nil, err
 	}
 
-	return &result, nil
+	return result.Flavors, nil
 }
 
-var unsupportedFlavorError = errors.New("Unsupported flavor name")
-
-func getSpecFromFlavorName(name string) (int, int, int, error) {
-	if name[:3] != "g-c" {
-		return 0, 0, 0, unsupportedFlavorError
-	}
-	var strFields [3]strings.Builder
-	curField := 0
-	name = name[3:]
-	for _, c := range name {
-		if curField == 0 && c == 'm' {
-			curField++
-		} else if curField == 1 && c == 'd' {
-			curField++
-		} else if '0' <= c && c <= '9' {
-			strFields[curField].WriteRune(c)
-		} else {
-			return 0, 0, 0, unsupportedFlavorError
-		}
-	}
-
-	var fields [3]int
-
-	for i, f := range strFields {
-		if f.Len() == 0 {
-			return 0, 0, 0, unsupportedFlavorError
-		}
-		fields[i], _ = strconv.Atoi(f.String())
-	}
-
-	return fields[0], fields[1], fields[2], nil
-}
-
-func (fl *FlavorsResp) GetIDByCondition(cpus, ram, disk int) string {
-	name := fmt.Sprintf("g-c%dm%dd%d", cpus, ram, disk)
-	for _, f := range fl.Flavors {
-		if f.Name == name {
-			return f.ID
-		}
-	}
-	return ""
-}
-
-func (fl *FlavorsResp) GetIDByMemSize(memSize int) string {
-	for _, f := range fl.Flavors {
-		_, mem, _, err := getSpecFromFlavorName(f.Name)
-		if err != nil {
+func FindMatchingFlavor(flavors []Flavor, memSize int) (string, error) {
+	var memMatch []Flavor
+	for _, fl := range flavors {
+		if !strings.HasPrefix(fl.Name, "g2l-") {
+			// "g2w-" is Windows and "g2d-" is Database?
 			continue
 		}
-		if mem == memSize {
-			return f.ID
+		if fl.RAM == memSize {
+			memMatch = append(memMatch, fl)
 		}
 	}
-	return ""
+
+	if len(memMatch) == 0 {
+		return "", errors.New("Matching flavor not found")
+	} else {
+		return memMatch[0].ID, nil
+	}
 }
 
 type SecurityGroup struct {

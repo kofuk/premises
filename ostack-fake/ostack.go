@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/subtle"
+	_ "embed"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -14,6 +15,9 @@ import (
 	"github.com/kofuk/premises/ostack-fake/entity"
 	"github.com/labstack/echo/v4"
 )
+
+//go:embed flavors.json
+var flavorData []byte
 
 type Ostack struct {
 	r             *echo.Echo
@@ -144,35 +148,9 @@ func (self *Ostack) ServeDeleteServer(c echo.Context) error {
 }
 
 func (self *Ostack) ServeGetFlavors(c echo.Context) error {
-	resp := entity.FlavorsResp{
-		Flavors: []entity.Flavor{
-			{
-				ID:   "10921063-8e6a-4c96-b72d-bf6f7bfe4a2b",
-				Name: "g-c3m2d100",
-			},
-			{
-				ID:   "791bda46-b944-499c-affe-c04ba73cb341",
-				Name: "g-c4m4d100",
-			},
-			{
-				ID:   "fce5765d-f2bd-447d-9851-0fe695902984",
-				Name: "g-c6m8d100",
-			},
-			{
-				ID:   "680f6515-b903-4d8c-895f-006ef040600e",
-				Name: "g-c8m16d100",
-			},
-			{
-				ID:   "8b376d12-eb83-4922-9423-6aba0f326aba",
-				Name: "g-c12m32d100",
-			},
-			{
-				ID:   "0f5756a5-6e0e-47f3-859d-fd46aacb8694",
-				Name: "g-c24m64d100",
-			},
-		},
-	}
-	return c.JSON(http.StatusOK, resp)
+	c.Response().Header().Add("Content-Type", "application/json")
+	c.Response().Writer.Write(flavorData)
+	return nil
 }
 
 func (self *Ostack) ServeGetImages(c echo.Context) error {
@@ -319,7 +297,7 @@ func (self *Ostack) setupRoutes() {
 	needsAuthEndpoint.GET("/compute/v2.1/servers/:id", self.ServeGetServerDetail)
 	needsAuthEndpoint.POST("/compute/v2.1/servers/:server/action", self.ServeServerAction)
 	needsAuthEndpoint.DELETE("/compute/v2.1/servers/:server", self.ServeDeleteServer)
-	needsAuthEndpoint.GET("/compute/v2.1/flavors", self.ServeGetFlavors)
+	needsAuthEndpoint.GET("/compute/v2.1/flavors/detail", self.ServeGetFlavors)
 	needsAuthEndpoint.GET("/network/v2.0/security-groups", self.ServeGetSecurityGroups)
 	needsAuthEndpoint.POST("/network/v2.0/security-groups", self.ServeCreateSecurityGroup)
 	needsAuthEndpoint.POST("/network/v2.0/security-group-rules", self.ServeCreateSecurityGroupRule)

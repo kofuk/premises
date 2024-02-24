@@ -55,15 +55,6 @@ type ServerDetailResp struct {
 	Server ServerDetail `json:"server"`
 }
 
-type Flavor struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
-type FlavorsResp struct {
-	Flavors []Flavor `json:"flavors"`
-}
-
 type ImageReq struct {
 	Name string
 }

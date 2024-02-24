@@ -99,8 +99,13 @@ func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSi
 		log.WithError(err).Error("Failed to get flavors")
 		return ""
 	}
-	flavorID := flavors.GetIDByMemSize(memSizeGB)
-	log.WithField("selected_flavor", flavorID).Info("Retriving flavors...Done")
+	flavorId, err := conoha.FindMatchingFlavor(flavors, memSizeGB*1024)
+	if err != nil {
+		log.WithError(err).Error("Matching flavor not found")
+		return ""
+	}
+
+	log.WithField("selected_flavor", flavorId).Info("Retriving flavors...Done")
 
 	log.Info("Retriving image ID...")
 	imageID, imageStatus, err := conoha.GetImageID(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
@@ -114,7 +119,7 @@ func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSi
 	log.WithField("image_id", imageID).Info("Retriving image ID...Done")
 
 	log.Info("Creating VM...")
-	id, err := conoha.CreateVM(ctx, s.cfg, s.cfg.Conoha.NameTag, token, imageID, flavorID, startupScript)
+	id, err := conoha.CreateVM(ctx, s.cfg, s.cfg.Conoha.NameTag, token, imageID, flavorId, startupScript)
 	if err != nil {
 		log.WithError(err).Error("Failed to create VM")
 		return ""
