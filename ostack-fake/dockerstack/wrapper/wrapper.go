@@ -13,6 +13,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/strslice"
 	docker "github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
@@ -20,13 +21,13 @@ import (
 )
 
 func GetManagedContainers(ctx context.Context, docker *docker.Client) ([]types.Container, error) {
-	return docker.ContainerList(ctx, types.ContainerListOptions{
+	return docker.ContainerList(ctx, container.ListOptions{
 		All:     true,
 		Filters: filters.NewArgs(filters.Arg("label", "org.kofuk.premises.managed")),
 	})
 }
 
-func GetManagedImages(ctx context.Context, docker *docker.Client) ([]types.ImageSummary, error) {
+func GetManagedImages(ctx context.Context, docker *docker.Client) ([]image.Summary, error) {
 	return docker.ImageList(ctx, types.ImageListOptions{
 		Filters: filters.NewArgs(filters.Arg("label", "org.kofuk.premises.managed")),
 	})
@@ -133,7 +134,7 @@ func LaunchContainer(ctx context.Context, docker *docker.Client, imageID, userDa
 		return "", err
 	}
 
-	if err := docker.ContainerStart(ctx, createResp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := docker.ContainerStart(ctx, createResp.ID, container.StartOptions{}); err != nil {
 		return "", err
 	}
 
@@ -141,7 +142,7 @@ func LaunchContainer(ctx context.Context, docker *docker.Client, imageID, userDa
 }
 
 func getContainerIdByServerId(ctx context.Context, docker *docker.Client, serverId string) (string, error) {
-	containers, err := docker.ContainerList(ctx, types.ContainerListOptions{
+	containers, err := docker.ContainerList(ctx, container.ListOptions{
 		All: true,
 		Filters: filters.NewArgs(
 			filters.Arg("label", "org.kofuk.premises.managed"),
@@ -197,7 +198,7 @@ func CreateImage(ctx context.Context, docker *docker.Client, serverId, imageName
 
 	tagName := fmt.Sprintf("premises.kofuk.org/dev-temp:%s", serverId)
 
-	if _, err := docker.ContainerCommit(ctx, containerId, types.ContainerCommitOptions{
+	if _, err := docker.ContainerCommit(ctx, containerId, container.CommitOptions{
 		Reference: tagName,
 	}); err != nil {
 		return err
@@ -247,16 +248,16 @@ func DeleteServerAndImage(ctx context.Context, docker *docker.Client, serverId s
 		return err
 	}
 
-	container, err := docker.ContainerInspect(ctx, containerId)
+	containerInfo, err := docker.ContainerInspect(ctx, containerId)
 	if err != nil {
 		return err
 	}
 
-	if err := docker.ContainerRemove(ctx, containerId, types.ContainerRemoveOptions{}); err != nil {
+	if err := docker.ContainerRemove(ctx, containerId, container.RemoveOptions{}); err != nil {
 		return err
 	}
 
-	if err := removeOrUntagImage(ctx, docker, container.Image); err != nil {
+	if err := removeOrUntagImage(ctx, docker, containerInfo.Image); err != nil {
 		return err
 	}
 
