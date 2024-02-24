@@ -69,7 +69,6 @@ func StopVM(ctx context.Context, cfg *config.Config, token, vmID string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
 	io.Copy(os.Stdout, resp.Body)
 
@@ -82,19 +81,19 @@ func StopVM(ctx context.Context, cfg *config.Config, token, vmID string) error {
 
 type CreateImageReq struct {
 	CreateImage struct {
-		Name string `json:"name"`
-	} `json:"createImage"`
+		Name string `json:"image_name"`
+	} `json:"os-volume_upload_image"`
 }
 
-func CreateImage(ctx context.Context, cfg *config.Config, token, vmID, imageName string) error {
+func CreateImage(ctx context.Context, cfg *config.Config, token, volumeId, imageName string) error {
 	var reqBody CreateImageReq
 	reqBody.CreateImage.Name = imageName
 
-	url, err := url.Parse(cfg.Conoha.Services.Compute)
+	url, err := url.Parse(cfg.Conoha.Services.Volume)
 	if err != nil {
 		return err
 	}
-	url.Path = path.Join(url.Path, "servers", vmID, "action")
+	url.Path = path.Join(url.Path, "volumes", volumeId, "action")
 
 	req, err := makeJSONRequest(ctx, http.MethodPost, url.String(), token, reqBody)
 	if err != nil {
@@ -104,9 +103,8 @@ func CreateImage(ctx context.Context, cfg *config.Config, token, vmID, imageName
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != 202 {
+	if resp.StatusCode != http.StatusAccepted {
 		return fmt.Errorf("Failed to create image: %d", resp.StatusCode)
 	}
 
@@ -172,7 +170,6 @@ func DeleteVM(ctx context.Context, cfg *config.Config, token, vmID string) error
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
 
 		log.WithField("status_code", resp.StatusCode).Info("Requested deleting VM")
 
@@ -224,7 +221,7 @@ func CreateVM(ctx context.Context, cfg *config.Config, nameTag, token, imageRef,
 	reqBody.Server.MetaData.InstanceNameTag = nameTag
 	reqBody.Server.SecurityGroups = []struct {
 		Name string `json:"name"`
-	}{{"default"}, {"gncs-ipv4-all"}, {"gncs-ipv6-all"}}
+	}{{nameTag}}
 
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
@@ -240,7 +237,6 @@ func CreateVM(ctx context.Context, cfg *config.Config, nameTag, token, imageRef,
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 202 {
 		return "", fmt.Errorf("Failed to create VM: %d", resp.StatusCode)
 	}
@@ -269,6 +265,9 @@ type VMDetail struct {
 	Metadata struct {
 		InstanceNameTag string `json:"instance_name_tag"`
 	} `json:"metadata"`
+	Volumes []struct {
+		ID string `json:"id"`
+	} `json:"os-extended-volumes:volumes_attached"`
 }
 
 type VMDetailResp struct {
@@ -290,7 +289,6 @@ func GetVMDetail(ctx context.Context, cfg *config.Config, token, id string) (*VM
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, errors.New("No such VM")
 	}
@@ -351,7 +349,6 @@ func FindVM(ctx context.Context, cfg *config.Config, token string, condition Fin
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, errors.New("No such VM")
 	}
@@ -404,7 +401,6 @@ func GetImageID(ctx context.Context, cfg *config.Config, token, tag string) (str
 	if err != nil {
 		return "", "", err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return "", "", fmt.Errorf("Failed to retrieve image list: %d", resp.StatusCode)
 	}
@@ -448,7 +444,6 @@ func GetFlavors(ctx context.Context, cfg *config.Config, token string) (*Flavors
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("Failed to retrieve flavor list: %d", resp.StatusCode)
 	}
@@ -522,36 +517,157 @@ func (fl *FlavorsResp) GetIDByMemSize(memSize int) string {
 	return ""
 }
 
-type IdentityReq struct {
+type SecurityGroup struct {
+	ID   *string `json:"id,omitempty"`
+	Name string  `json:"name"`
+}
+
+func GetSecurityGroups(ctx context.Context, cfg *config.Config, token string) ([]SecurityGroup, error) {
+	url, err := url.Parse(cfg.Conoha.Services.Network)
+	if err != nil {
+		return nil, err
+	}
+	url.Path = path.Join(url.Path, "v2.0/security-groups")
+
+	req, err := makeRequest(ctx, http.MethodGet, url.String(), token)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var sg struct {
+		SecurityGroups []SecurityGroup `json:"security_groups"`
+	}
+	if err := json.Unmarshal(respBody, &sg); err != nil {
+		return nil, err
+	}
+
+	return sg.SecurityGroups, nil
+}
+
+func CreateSecurityGroup(ctx context.Context, cfg *config.Config, token, name string) (string, error) {
+	url, err := url.Parse(cfg.Conoha.Services.Network)
+	if err != nil {
+		return "", err
+	}
+	url.Path = path.Join(url.Path, "v2.0/security-groups")
+
+	req, err := makeJSONRequest(ctx, http.MethodPost, url.String(), token, struct {
+		SecurityGroup SecurityGroup `json:"security_group"`
+	}{
+		SecurityGroup: SecurityGroup{
+			Name: name,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	var sg struct {
+		SecurityGroup SecurityGroup `json:"security_group"`
+	}
+	if err := json.Unmarshal(respBody, &sg); err != nil {
+		return "", err
+	}
+
+	if sg.SecurityGroup.ID == nil {
+		return "", errors.New("Security group ID shouldn't be nil")
+	}
+
+	return *sg.SecurityGroup.ID, nil
+}
+
+type SecurityGroupRule struct {
+	SecurityGroupID string `json:"security_group_id"`
+	Direction       string `json:"direction"`
+	EtherType       string `json:"ethertype"`
+	PortRangeMin    string `json:"port_range_min"`
+	PortRangeMax    string `json:"port_range_max"`
+	Protocol        string `json:"protocol"`
+	RemoteIP        string `json:"remote_ip_prefix"`
+}
+
+func CreateSecurityGroupRule(ctx context.Context, cfg *config.Config, token string, rule SecurityGroupRule) error {
+	url, err := url.Parse(cfg.Conoha.Services.Network)
+	if err != nil {
+		return err
+	}
+	url.Path = path.Join(url.Path, "v2.0/security-group-rules")
+
+	req, err := makeJSONRequest(ctx, http.MethodPost, url.String(), token, struct {
+		SecurityGroupRule SecurityGroupRule `json:"security_group_rule"`
+	}{
+		SecurityGroupRule: rule,
+	})
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("Failed to create security group rule: %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+type GetTokenReq struct {
 	Auth struct {
-		PasswordCredentials struct {
-			UserName string `json:"username"`
-			Password string `json:"password"`
-		} `json:"passwordCredentials"`
-		TenantID string `json:"tenantId"`
+		Identity struct {
+			Methods  []string `json:"methods"`
+			Password struct {
+				User struct {
+					Name     string `json:"name"`
+					Password string `json:"password"`
+				} `json:"user"`
+			} `json:"password"`
+		} `json:"identity"`
+		Scope struct {
+			Project struct {
+				ID string `json:"id"`
+			} `json:"project"`
+		} `json:"scope"`
 	} `json:"auth"`
 }
 
-type IdentityResp struct {
-	Access struct {
-		Token struct {
-			Id      string `json:"id"`
-			Expires string `json:"expires"`
-		} `json:"token"`
-	} `json:"access"`
+type GetTokenResp struct {
+	Token struct {
+		ExpiresAt string `json:"expires_at"`
+	} `json:"token"`
 }
 
 func GetToken(ctx context.Context, cfg *config.Config) (string, string, error) {
-	var auth IdentityReq
-	auth.Auth.PasswordCredentials.UserName = cfg.Conoha.UserName
-	auth.Auth.PasswordCredentials.Password = cfg.Conoha.Password
-	auth.Auth.TenantID = cfg.Conoha.TenantID
+	var auth GetTokenReq
+	auth.Auth.Identity.Methods = append(auth.Auth.Identity.Methods, "password")
+	auth.Auth.Identity.Password.User.Name = cfg.Conoha.UserName
+	auth.Auth.Identity.Password.User.Password = cfg.Conoha.Password
+	auth.Auth.Scope.Project.ID = cfg.Conoha.TenantID
 
 	url, err := url.Parse(cfg.Conoha.Services.Identity)
 	if err != nil {
 		return "", "", err
 	}
-	url.Path = path.Join(url.Path, "tokens")
+	url.Path = path.Join(url.Path, "auth/tokens")
 
 	req, err := makeJSONRequest(ctx, http.MethodPost, url.String(), "", auth)
 	if err != nil {
@@ -561,17 +677,16 @@ func GetToken(ctx context.Context, cfg *config.Config) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusCreated {
 		return "", "", fmt.Errorf("Authentication failed: %d", resp.StatusCode)
 	}
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", "", err
 	}
-	var ident IdentityResp
+	var ident GetTokenResp
 	if err := json.Unmarshal(respBody, &ident); err != nil {
 		return "", "", err
 	}
-	return ident.Access.Token.Id, ident.Access.Token.Expires, nil
+	return resp.Header.Get("x-subject-token"), ident.Token.ExpiresAt, nil
 }

@@ -56,6 +56,43 @@ func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSi
 		return ""
 	}
 
+	log.Info("Finding security group...")
+	sgs, err := conoha.GetSecurityGroups(ctx, s.cfg, token)
+	if err != nil {
+		log.WithError(err).Error("Failed to get security groups")
+		return ""
+	}
+	hasSecGroup := false
+	for _, sg := range sgs {
+		if sg.Name == s.cfg.Conoha.NameTag {
+			hasSecGroup = true
+			break
+		}
+	}
+	if !hasSecGroup {
+		log.Info("Createing security group...")
+		sgId, err := conoha.CreateSecurityGroup(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
+		if err != nil {
+			log.WithError(err).Error("Failed to create security group")
+			return ""
+		}
+		if err := conoha.CreateSecurityGroupRule(ctx, s.cfg, token, conoha.SecurityGroupRule{
+			SecurityGroupID: sgId,
+			Direction:       "ingress",
+			EtherType:       "IPv4",
+			PortRangeMin:    "25565",
+			PortRangeMax:    "25565",
+			Protocol:        "tcp",
+			RemoteIP:        "0.0.0.0/0",
+		}); err != nil {
+			log.WithError(err).Error("Failed to create security group rule")
+			return ""
+		}
+		log.Info("Createing security group...Done")
+
+	}
+	log.Info("Finding security group...Done")
+
 	log.Info("Retrieving flavors...")
 	flavors, err := conoha.GetFlavors(ctx, s.cfg, token)
 	if err != nil {
@@ -224,8 +261,20 @@ func (s *GameServer) SaveImage(ctx context.Context, id string) bool {
 		return false
 	}
 
+	log.Info("Retrieving to volume information...")
+	vm, err := conoha.GetVMDetail(ctx, s.cfg, token, id)
+	if err != nil {
+		log.WithError(err).Error("Error retrieving VM detail")
+		return false
+	}
+	if len(vm.Volumes) == 0 {
+		log.Error("No volume attached to the VM")
+		return false
+	}
+	log.Info("Retrieving to volume information...Done")
+
 	log.Info("Requesting to create image...")
-	if err := conoha.CreateImage(ctx, s.cfg, token, id, s.cfg.Conoha.NameTag); err != nil {
+	if err := conoha.CreateImage(ctx, s.cfg, token, vm.Volumes[0].ID, s.cfg.Conoha.NameTag); err != nil {
 		log.WithError(err).Error("Failed to create image")
 		return false
 	}

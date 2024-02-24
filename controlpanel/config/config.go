@@ -12,6 +12,8 @@ type Config struct {
 			Identity string `env:"identity"`
 			Image    string `env:"image"`
 			Compute  string `env:"compute"`
+			Network  string `env:"network"`
+			Volume   string `env:"volume"`
 		} `env:"services"`
 		NameTag string `env:"nameTag"`
 	} `env:"conoha"`
