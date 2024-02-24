@@ -101,12 +101,12 @@ type LaunchServerResp struct {
 }
 
 type SecurityGroupRule struct {
-	SecurityGroupID string `json:"security_group_id"`
-	Direction       string `json:"direction"`
-	EtherType       string `json:"ethertype"`
-	PortRangeMin    string `json:"port_range_min"`
-	PortRangeMax    string `json:"port_range_max"`
-	Protocol        string `json:"protocol"`
+	SecurityGroupID string  `json:"security_group_id"`
+	Direction       string  `json:"direction"`
+	EtherType       string  `json:"ethertype"`
+	PortRangeMin    *string `json:"port_range_min"`
+	PortRangeMax    *string `json:"port_range_max"`
+	Protocol        *string `json:"protocol"`
 }
 
 type SecurityGroup struct {
