@@ -221,7 +221,6 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Value
 	if !isValidMemSize(memSizeGB) {
 		return nil, errors.New("Invalid machine type")
 	}
-	result.SetAllocFromAvailableMemSize(memSizeGB * 1024)
 	result.GenerateAuthKey()
 
 	if values.Get("world-source") == "backups" {

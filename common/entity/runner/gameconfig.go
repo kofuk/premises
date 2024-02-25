@@ -1,9 +1,8 @@
 package runner
 
 type Config struct {
-	AllocSize int    `json:"allocSize"`
-	AuthKey   string `json:"authKey"`
-	Server    struct {
+	AuthKey string `json:"authKey"`
+	Server  struct {
 		PreferDetected bool   `json:"preferDetected"`
 		Version        string `json:"name"`
 		DownloadUrl    string `json:"downloadUrl"`

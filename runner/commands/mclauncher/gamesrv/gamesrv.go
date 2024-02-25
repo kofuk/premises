@@ -17,6 +17,7 @@ import (
 	"github.com/kofuk/premises/runner/commands/mclauncher/serverprop"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/systemutil"
 )
 
 type ServerInstance struct {
@@ -356,11 +357,18 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 
 	srv.Name = config.Server.Version
 	srv.FinishWG.Add(1)
-	allocSize := config.AllocSize
-	if allocSize == 0 {
-		allocSize = 512
+	allocSize := 1024
+	if _, err := os.Stat("/.dockerenv"); err != nil {
+		// It is non-dev environment. Guess allocSize from total memory
+		totalMem, err := systemutil.GetTotalMemory()
+		if err != nil {
+			slog.Error("Error retrieving total memory", slog.Any("error", err))
+		} else {
+			totalMemMiB := totalMem / 1024 / 1024
+			allocSize = totalMemMiB - 1024
+		}
 	}
-	javaArgs := []string{fmt.Sprintf("-Xmx%dM", config.AllocSize), fmt.Sprintf("-Xms%dM", config.AllocSize), "-jar", fs.LocateServer(config.Server.Version), "nogui"}
+	javaArgs := []string{fmt.Sprintf("-Xmx%dM", allocSize), fmt.Sprintf("-Xms%dM", allocSize), "-jar", fs.LocateServer(config.Server.Version), "nogui"}
 	go func() {
 		slog.Info("Launching Minecraft server", slog.String("server_name", config.Server.Version), slog.Any("commandline", javaArgs))
 		launchCount := 0

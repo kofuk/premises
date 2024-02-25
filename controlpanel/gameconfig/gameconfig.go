@@ -42,15 +42,6 @@ func (c *Config) SetDetectServerVersion(detect bool) {
 	c.C.Server.PreferDetected = detect
 }
 
-func (c *Config) SetAllocFromAvailableMemSize(memSizeMiB int) error {
-	size, err := calculateMemSizeForGame(memSizeMiB)
-	if err != nil {
-		return err
-	}
-	c.C.AllocSize = size
-	return nil
-}
-
 func (c *Config) GenerateAuthKey() string {
 	encoder := base32.StdEncoding.WithPadding(base32.NoPadding)
 	result := encoder.EncodeToString(securecookie.GenerateRandomKey(30))
