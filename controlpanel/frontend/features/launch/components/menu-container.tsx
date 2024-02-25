@@ -22,15 +22,15 @@ const MenuContainer = ({items}: Props) => {
 
   const createMenu = () => {
     const itemElements = items.map((e, i) => (
-      <>
-        <ListItem key={e.title} disablePadding>
+      <React.Fragment key={e.title}>
+        <ListItem disablePadding>
           <ListItemButton onClick={() => setSelectedItem(i)}>
             <ListItemIcon>{e.icon}</ListItemIcon>
             <ListItemText primary={e.title} secondary={e.detail} />
           </ListItemButton>
         </ListItem>
         <Divider component="li" />
-      </>
+      </React.Fragment>
     ));
 
     return <List>{itemElements}</List>;
