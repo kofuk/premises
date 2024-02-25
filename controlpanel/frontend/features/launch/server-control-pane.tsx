@@ -26,7 +26,7 @@ const ServerControlPane = () => {
     const eventSource = new EventSource('/api/streaming/sysstat');
     eventSource.addEventListener('systemstat', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);
-      setCpuUsage((current) => [event, ...current.slice(0, 100)]);
+      setCpuUsage((current) => [...current.slice(1, 100), event]);
     });
     return () => {
       eventSource.close();
