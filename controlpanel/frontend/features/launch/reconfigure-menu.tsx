@@ -2,19 +2,13 @@ import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
-import {ArrowBack as ArrowBackIcon} from '@mui/icons-material';
-
 import ChooseBackup from '@/features/launch/config-item/choose-backup';
 import ConfigureWorld, {LevelType} from '@/features/launch/config-item/configure-world';
 import ServerVersion from '@/features/launch/config-item/server-version';
 import WorldName from '@/features/launch/config-item/world-name';
 import WorldSource, {WorldLocation} from '@/features/launch/config-item/world-source';
 
-type Prop = {
-  backToMenu: () => void;
-};
-
-const ReconfigureMenu = ({backToMenu}: Prop) => {
+const ReconfigureMenu = () => {
   const [t] = useTranslation();
 
   const [serverVersion, setServerVersion] = useState('');
@@ -49,9 +43,7 @@ const ReconfigureMenu = ({backToMenu}: Prop) => {
           },
           body: data.toString()
         }).then((resp) => resp.json());
-        if (result['success']) {
-          backToMenu();
-        } else {
+        if (!result['success']) {
           throw new Error(t(`error.code_${result['errorCode']}`));
         }
       } catch (err) {
@@ -165,9 +157,6 @@ const ReconfigureMenu = ({backToMenu}: Prop) => {
 
   return (
     <div className="m-2">
-      <button className="btn btn-outline-primary" onClick={backToMenu}>
-        <ArrowBackIcon /> {t('back')}
-      </button>
       <div className="m-2">
         {configItems}
         <div className="d-md-block mt-3 text-end">

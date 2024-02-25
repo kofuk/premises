@@ -33,7 +33,7 @@ const CopyableListItem = ({title, children}: Prop) => {
       <ListItem {...listItemProps}>
         <ListItemText primary={title} secondary={children} />
       </ListItem>
-      <Divider />
+      <Divider component="li" />
     </>
   );
 };

@@ -2,17 +2,13 @@ import React, {useRef, useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
-import {ArrowBack as ArrowBackIcon, ArrowDropDown as ArrowDropDownIcon} from '@mui/icons-material';
+import {ArrowDropDown as ArrowDropDownIcon} from '@mui/icons-material';
 import {Button, ButtonGroup, ClickAwayListener, FormControl, Grow, InputLabel, MenuItem, MenuList, Paper, Popper, Select, Stack} from '@mui/material';
 import {Box} from '@mui/system';
 
 import {takeQuickSnapshot, undoQuickSnapshot} from '@/api';
 
-type Prop = {
-  backToMenu: () => void;
-};
-
-const QuickUndo = ({backToMenu}: Prop) => {
+const QuickUndo = () => {
   const [t] = useTranslation();
   const [selectedSlot, setSelectedSlot] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -48,9 +44,6 @@ const QuickUndo = ({backToMenu}: Prop) => {
 
   return (
     <Box sx={{m: 2}}>
-      <button className="btn btn-outline-primary" onClick={backToMenu}>
-        <ArrowBackIcon /> {t('back')}
-      </button>
       <Box sx={{m: 2}}>{t('snapshot_description')}</Box>
       <Stack direction="row" justifyContent="center" spacing={1}>
         <FormControl size="small" sx={{minWidth: 120}}>
