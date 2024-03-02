@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	lm "github.com/kofuk/premises/common/mclaunchermeta"
+	lm "github.com/kofuk/premises/common/mc/launchermeta"
 	"github.com/kofuk/premises/controlpanel/kvs"
 	log "github.com/sirupsen/logrus"
 )

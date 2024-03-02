@@ -8,7 +8,7 @@ import (
 	"os/exec"
 
 	"github.com/kofuk/premises/common/entity/runner"
-	lm "github.com/kofuk/premises/common/mclaunchermeta"
+	lm "github.com/kofuk/premises/common/mc/launchermeta"
 	"github.com/kofuk/premises/runner/commands/levelinspect"
 )
 
