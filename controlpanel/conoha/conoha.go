@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kofuk/premises/common/retry"
 	"github.com/kofuk/premises/controlpanel/config"
 	log "github.com/sirupsen/logrus"
 )
@@ -117,15 +117,14 @@ func DeleteImage(ctx context.Context, cfg *config.Config, token, imageID string)
 	}
 	url.Path = path.Join(url.Path, "v2/images", imageID)
 
-	req, err := makeRequest(ctx, http.MethodDelete, url.String(), token)
-	if err != nil {
-		return err
-	}
-
 	log.Info("Deleting image...")
-	for i := 0; i < 10; i++ {
-		var resp *http.Response
-		resp, err = http.DefaultClient.Do(req)
+	err = retry.Retry(func() error {
+		req, err := makeRequest(ctx, http.MethodDelete, url.String(), token)
+		if err != nil {
+			return err
+		}
+
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			log.WithError(err).Error("Failed to send request")
 			return err
@@ -133,21 +132,17 @@ func DeleteImage(ctx context.Context, cfg *config.Config, token, imageID string)
 
 		log.WithField("status_code", resp.StatusCode).Info("Requested deleting image")
 
-		if resp.StatusCode == 409 {
-			time.Sleep(time.Duration(rand.Intn(10)))
-			continue
-		}
-		if resp.StatusCode != 204 {
-			return fmt.Errorf("Failed to delete the image: %d", resp.StatusCode)
+		if resp.StatusCode == 204 {
+			return nil
 		}
 
-		break
-	}
-	log.Info("Deleting image...Done")
-
+		return fmt.Errorf("Failed to delete the image: %d", resp.StatusCode)
+	}, 3*time.Minute)
 	if err != nil {
 		return err
 	}
+	log.Info("Deleting image...Done")
+
 	return nil
 }
 
@@ -158,9 +153,7 @@ func DeleteVM(ctx context.Context, cfg *config.Config, token, vmID string) error
 	}
 	url.Path = path.Join(url.Path, "servers", vmID)
 
-	var finalErr error = nil
-
-	for i := 0; i < 10; i++ {
+	return retry.Retry(func() error {
 		req, err := makeRequest(ctx, http.MethodDelete, url.String(), token)
 		if err != nil {
 			return err
@@ -173,17 +166,11 @@ func DeleteVM(ctx context.Context, cfg *config.Config, token, vmID string) error
 		log.WithField("status_code", resp.StatusCode).Info("Requested deleting VM")
 
 		if resp.StatusCode == 204 {
-			finalErr = nil
-			break
-		} else {
-			finalErr = fmt.Errorf("Failed to delete the VM: %d", resp.StatusCode)
-			time.Sleep(time.Duration(rand.Intn(10)))
+			return nil
 		}
 
-		time.Sleep(time.Duration(rand.Intn(10)))
-	}
-
-	return finalErr
+		return fmt.Errorf("Failed to delete the VM: %d", resp.StatusCode)
+	}, 3*time.Minute)
 }
 
 type CreateVMReq struct {

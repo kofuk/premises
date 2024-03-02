@@ -2,9 +2,12 @@ package handler
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/common/retry"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
 	log "github.com/sirupsen/logrus"
@@ -127,29 +130,22 @@ func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSi
 	log.Info("Creating VM...")
 
 	log.Info("Waiting for VM to be created...")
-	var vms *conoha.VMDetail
-	for i := 0; i < 500; i++ {
-		vms, err = conoha.GetVMDetail(ctx, s.cfg, token, id)
+	err = retry.Retry(func() error {
+		vms, err := conoha.GetVMDetail(ctx, s.cfg, token, id)
 		if err != nil {
 			log.WithError(err).Info("Waiting for VM to be created...")
-			time.Sleep(10 * time.Second)
-			continue
+			return err
 		} else if vms.Status == "BUILD" {
 			log.WithField("vm_status", vms.Status).Info("Waiting for VM to be created...")
-			time.Sleep(10 * time.Second)
-			continue
+			return errors.New("VM is building")
 		}
-		break
-	}
 
-	if err != nil || vms.Status == "BUILD" {
+		return nil
+	}, 30*time.Minute)
+	if err != nil {
 		log.WithError(err).Error("Timeout creating VM")
-		if err == nil {
-			log.Error("Building VM didn't completed")
-		}
 		return ""
 	}
-	log.WithField("vm_status", vms.Status).Info("Waiting for VM to be created...Done")
 
 	return id
 }
@@ -203,19 +199,24 @@ func (s *GameServer) StopVM(ctx context.Context, id string) bool {
 
 	// Wait for VM to stop
 	log.Info("Waiting for the VM to stop...")
-	for {
+	err = retry.Retry(func() error {
 		detail, err := conoha.GetVMDetail(ctx, s.cfg, token, id)
 		if err != nil {
 			log.WithError(err).Error("Failed to get VM information")
-			return false
+			return err
 		}
 		log.WithField("status", detail.Status).Info("Waiting for the VM to stop...")
-		if detail.Status == "SHUTOFF" {
-			break
+		if detail.Status != "SHUTOFF" {
+			return errors.New("Not yet stopped")
 		}
 
-		time.Sleep(20 * time.Second)
+		return nil
+	}, 30*time.Minute)
+	if err != nil {
+		log.WithError(err).Error("Failed to stop VM")
+		return false
 	}
+	log.Info("Waiting for the VM to stop...Done")
 
 	return true
 }
@@ -286,15 +287,20 @@ func (s *GameServer) SaveImage(ctx context.Context, id string) bool {
 	log.Info("Requesting to create image...Done")
 
 	log.Info("Waiting for image to be created...")
-	for {
+	err = retry.Retry(func() error {
 		_, imageStatus, err := conoha.GetImageID(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
 		if err != nil {
-			log.WithError(err).Error("Error getting image information; retrying...")
-		} else if imageStatus == "active" {
-			break
+			log.WithError(err).Error("Error getting image information")
+		}
+		if imageStatus == "active" {
+			return nil
 		}
 		log.WithField("image_status", imageStatus).Info("Waiting for image to be created...")
-		time.Sleep(30 * time.Second)
+		return fmt.Errorf("Image is not active (status=%s)", imageStatus)
+	}, 30*time.Minute)
+	if err != nil {
+		log.WithError(err).Error("Failed save image")
+		return false
 	}
 	log.Info("Waiting for image to be created...Done")
 
@@ -322,16 +328,17 @@ func (s *GameServer) DeleteImage(ctx context.Context) bool {
 	log.Info("Deleting image...")
 	if err := conoha.DeleteImage(ctx, s.cfg, token, imageID); err != nil {
 		log.WithError(err).Error("Seems we got undocumented response from image API; checking image existence...")
-		for i := 0; i < 10; i++ {
-			time.Sleep(2 * time.Second)
+		err := retry.Retry(func() error {
 			if !s.ImageExists(ctx) {
-				goto success
+				return nil
 			}
-			time.Sleep(3 * time.Second)
+
+			return errors.New("Image exists")
+		}, 1*time.Minute)
+		if err != nil {
+			return false
 		}
-		return false
 	}
-success:
 	log.Info("Deleting image...Done")
 
 	return true

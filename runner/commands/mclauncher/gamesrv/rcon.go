@@ -1,13 +1,12 @@
 package gamesrv
 
 import (
-	"errors"
 	"log/slog"
-	"math/rand"
 	"sync"
 	"time"
 
 	"github.com/gorcon/rcon"
+	"github.com/kofuk/premises/common/retry"
 )
 
 type Rcon struct {
@@ -32,26 +31,20 @@ func (self *Rcon) connect() (*rcon.Conn, error) {
 }
 
 func (self *Rcon) waitConnect() (*rcon.Conn, error) {
-	totalWait := 0
-	var err error
-	for i := 0; i < 500; i++ {
-		var conn *rcon.Conn
+	var conn *rcon.Conn
+	err := retry.Retry(func() error {
+		var err error
 		conn, err = self.connect()
-		if err == nil {
-			return conn, nil
+		if err != nil {
+			return err
 		}
-
-		if totalWait >= 600 {
-			return nil, errors.New("Timed out")
-		}
-
-		slog.Info("Failed to connect rcon; retrying...", slog.Any("error", err))
-
-		waitDur := (1 << i) + rand.Intn(5)
-		time.Sleep(time.Duration(waitDur) * time.Second)
-		totalWait += waitDur
+		return nil
+	}, 20*time.Minute)
+	if err != nil {
+		return nil, err
 	}
-	return nil, err
+
+	return conn, nil
 }
 
 func (self *Rcon) Execute(cmd string) (string, error) {
