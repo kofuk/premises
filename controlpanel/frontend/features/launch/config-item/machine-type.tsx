@@ -2,6 +2,9 @@ import React from 'react';
 
 import {useTranslation} from 'react-i18next';
 
+import {ArrowDownward as NextIcon} from '@mui/icons-material';
+import {Box, Button, Slider} from '@mui/material';
+
 import ConfigContainer from '@/features/launch/config-item/config-container';
 import {ItemProp} from '@/features/launch/config-item/prop';
 
@@ -22,24 +25,8 @@ class Machine {
     return `${this.memSize}GB RAM & ${this.nCores}-core CPU, ¥${this.price}/h`;
   };
 
-  createReactElement = (selectedValue: string, clickHandler: (val: string) => void): React.ReactElement => {
-    return (
-      <React.Fragment key={this.name}>
-        <input
-          autoComplete="off"
-          checked={this.name === selectedValue}
-          className="btn-check"
-          id={`machineType_${this.name}`}
-          name="machine-type"
-          onChange={() => clickHandler(this.name)}
-          type="radio"
-          value={this.name}
-        />
-        <label className="btn btn-outline-primary" htmlFor={`machineType_${this.name}`} title={this.getLabel()}>
-          {this.memSize} GB
-        </label>
-      </React.Fragment>
-    );
+  getMemSizeLabel = (): string => {
+    return `${this.memSize} GB`;
   };
 }
 
@@ -65,20 +52,28 @@ const MachineType = ({
 }) => {
   const [t] = useTranslation();
 
-  const handleClick = (val: string) => {
-    setMachineType(val);
+  const handleChange = (event: Event, newValue: number | number[]) => {
+    setMachineType(machines[newValue as number].name);
   };
 
   return (
     <ConfigContainer isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum} title={t('config_machine_type')}>
-      <div className="btn-group ms-3" role="group">
-        {machines.map((e) => e.createReactElement(machineType, handleClick))}
-      </div>
-      <div className="m-1 text-end">
-        <button className="btn btn-primary" onClick={nextStep} type="button">
+      <Box sx={{mx: 5}}>
+        <Slider
+          marks={machines.map((e, i) => ({value: i, label: e.getMemSizeLabel()}))}
+          max={machines.length - 1}
+          min={0}
+          onChange={handleChange}
+          value={machines.findIndex((e) => e.name == machineType)}
+          valueLabelDisplay="auto"
+          valueLabelFormat={(i) => machines[i].getLabel()}
+        />
+      </Box>
+      <Box sx={{textAlign: 'end'}}>
+        <Button endIcon={<NextIcon />} onClick={nextStep} type="button" variant="outlined">
           {t('next')}
-        </button>
-      </div>
+        </Button>
+      </Box>
     </ConfigContainer>
   );
 };

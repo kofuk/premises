@@ -13,9 +13,10 @@ export type MenuItem = {
 
 export type Props = {
   items: MenuItem[];
+  menuFooter?: React.ReactNode;
 };
 
-const MenuContainer = ({items}: Props) => {
+const MenuContainer = ({items, menuFooter}: Props) => {
   const [t] = useTranslation();
 
   const [selectedItem, setSelectedItem] = useState(-1);
@@ -37,7 +38,12 @@ const MenuContainer = ({items}: Props) => {
   };
 
   if (selectedItem < 0) {
-    return createMenu();
+    return (
+      <Box>
+        {createMenu()}
+        {menuFooter}
+      </Box>
+    );
   }
 
   return (

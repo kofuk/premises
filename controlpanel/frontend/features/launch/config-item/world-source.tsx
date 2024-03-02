@@ -2,6 +2,9 @@ import React from 'react';
 
 import {useTranslation} from 'react-i18next';
 
+import {ArrowDownward as NextIcon} from '@mui/icons-material';
+import {Box, Button, FormControlLabel, Radio, RadioGroup} from '@mui/material';
+
 import ConfigContainer from '@/features/launch/config-item/config-container';
 import {ItemProp} from '@/features/launch/config-item/prop';
 
@@ -20,46 +23,22 @@ const WorldSource = ({
 }: ItemProp & {worldSource: WorldLocation; setWorldSource: (val: WorldLocation) => void}) => {
   const [t] = useTranslation();
 
-  const handleChange = (val: string) => {
-    setWorldSource(val === 'backups' ? WorldLocation.Backups : WorldLocation.NewWorld);
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setWorldSource((event.target as HTMLInputElement).value == WorldLocation.Backups ? WorldLocation.Backups : WorldLocation.NewWorld);
   };
 
   return (
     <ConfigContainer isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum} title={t('config_world_source')}>
-      <div className="form-check">
-        <input
-          checked={worldSource === WorldLocation.Backups}
-          className="form-check-input"
-          id="worldSourceBackups"
-          name="worldSource"
-          onChange={(e) => handleChange(e.target.value)}
-          type="radio"
-          value="backups"
-        />
-        <label className="form-check-label" htmlFor="worldSourceBackups">
-          {t('use_backups')}
-        </label>
-      </div>
-      <div className="form-check">
-        <input
-          checked={worldSource === WorldLocation.NewWorld}
-          className="form-check-input"
-          id="worldSourceNewWorld"
-          name="worldSource"
-          onChange={(e) => handleChange(e.target.value)}
-          type="radio"
-          value="newWorld"
-        />
-        <label className="form-check-label" htmlFor="worldSourceNewWorld">
-          {t('generate_world')}
-        </label>
-      </div>
+      <RadioGroup onChange={handleChange} value={worldSource}>
+        <FormControlLabel control={<Radio />} label={t('use_backups')} value={WorldLocation.Backups} />
+        <FormControlLabel control={<Radio />} label={t('generate_world')} value={WorldLocation.NewWorld} />
+      </RadioGroup>
 
-      <div className="m-1 text-end">
-        <button className="btn btn-primary" onClick={nextStep} type="button">
+      <Box sx={{textAlign: 'end'}}>
+        <Button endIcon={<NextIcon />} onClick={nextStep} type="button" variant="outlined">
           {t('next')}
-        </button>
-      </div>
+        </Button>
+      </Box>
     </ConfigContainer>
   );
 };

@@ -2,6 +2,8 @@ import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
+import {Box, Button} from '@mui/material';
+
 import ChooseBackup from '@/features/launch/config-item/choose-backup';
 import ConfigureWorld, {LevelType} from '@/features/launch/config-item/configure-world';
 import ServerVersion from '@/features/launch/config-item/server-version';
@@ -156,16 +158,14 @@ const ReconfigureMenu = () => {
   const stepCount = configItems.length;
 
   return (
-    <div className="m-2">
-      <div className="m-2">
-        {configItems}
-        <div className="d-md-block mt-3 text-end">
-          <button className="btn btn-primary bg-gradient" disabled={currentStep !== stepCount} onClick={handleStart} type="button">
-            {t('relaunch_server')}
-          </button>
-        </div>
-      </div>
-    </div>
+    <Box>
+      {configItems}
+      <Box sx={{textAlign: 'end'}}>
+        <Button disabled={currentStep !== stepCount} onClick={handleStart} type="button" variant="contained">
+          {t('relaunch_server')}
+        </Button>
+      </Box>
+    </Box>
   );
 };
 

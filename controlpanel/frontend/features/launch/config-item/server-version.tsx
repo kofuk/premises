@@ -2,7 +2,8 @@ import React, {useEffect, useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
-import {FormControlLabel, Switch} from '@mui/material';
+import {ArrowDownward as NextIcon} from '@mui/icons-material';
+import {Box, Button, FormControl, FormControlLabel, FormGroup, InputLabel, MenuItem, Select, Switch} from '@mui/material';
 
 import ConfigContainer from './config-container';
 import {ItemProp} from './prop';
@@ -73,94 +74,93 @@ const ServerVersion = ({
       .filter((e) => showBeta || e.channel !== 'beta')
       .filter((e) => showAlpha || e.channel !== 'alpha')
       .map((e) => (
-        <option key={e.name} value={e.name}>
+        <MenuItem key={e.name} value={e.name}>
           {e.name}
-        </option>
+        </MenuItem>
       ));
   return (
     <ConfigContainer isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum} title={t('config_server_version')}>
       {(isLoading && <Loading compact />) || (
         <>
-          <select
-            aria-label={t('config_server_version')}
-            className="form-select"
-            onChange={(e) => handleChange(e.target.value)}
-            value={serverVersion}
-          >
-            {versions}
-          </select>
-          <div className="m-1 form-check form-switch">
-            <input
-              checked={showStable}
-              className="form-check-input"
-              id="showStable"
-              onChange={() => {
-                setShowStable(!showStable);
-                postUpdateCondition(mcVersions!);
-              }}
-              type="checkbox"
+          <Box sx={{mb: 3}}>
+            <FormControlLabel
+              control={<Switch checked={preferDetect} onChange={(e) => setPreferDetect(e.target.checked)} />}
+              label={t('version_detect')}
             />
-            <label className="form-check-label" htmlFor="showStable">
-              {t('version_show_stable')}
-            </label>
-          </div>
-          <div className="m-1 form-check form-switch">
-            <input
-              checked={showSnapshot}
-              className="form-check-input"
-              id="showSnapshot"
-              onChange={() => {
-                setShowSnapshot(!showSnapshot);
-                postUpdateCondition(mcVersions!);
-              }}
-              type="checkbox"
-            />
-            <label className="form-check-label" htmlFor="showSnapshot">
-              {t('version_show_snapshot')}
-            </label>
-          </div>
-          <div className="m-1 form-check form-switch">
-            <input
-              checked={showBeta}
-              className="form-check-input"
-              id="showBeta"
-              onChange={() => {
-                setShowBeta(!showBeta);
-                postUpdateCondition(mcVersions!);
-              }}
-              type="checkbox"
-            />
-            <label className="form-check-label" htmlFor="showBeta">
-              {t('version_show_beta')}
-            </label>
-          </div>
-          <div className="m-1 form-check form-switch">
-            <input
-              checked={showAlpha}
-              className="form-check-input"
-              id="showAlpha"
-              onChange={() => {
-                setShowAlpha(!showAlpha);
-                postUpdateCondition(mcVersions!);
-              }}
-              type="checkbox"
-            />
-            <label className="form-check-label" htmlFor="showAlpha">
-              {t('version_show_alpha')}
-            </label>
-          </div>
+          </Box>
 
-          <FormControlLabel
-            control={<Switch checked={preferDetect} onChange={(e) => setPreferDetect(e.target.checked)} />}
-            label={t('version_detect')}
-          />
+          <FormControl fullWidth>
+            <InputLabel id="mc-version-select-label">{t('config_server_version')}</InputLabel>
+            <Select
+              label={t('config_server_version')}
+              labelId="mc-version-select-label"
+              onChange={(e) => handleChange(e.target.value)}
+              value={serverVersion}
+            >
+              {versions}
+            </Select>
+          </FormControl>
+          <FormGroup row>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showStable}
+                  onChange={() => {
+                    setShowStable(!showStable);
+                    postUpdateCondition(mcVersions!);
+                  }}
+                  size="small"
+                />
+              }
+              label={t('version_show_stable')}
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showSnapshot}
+                  onChange={() => {
+                    setShowSnapshot(!showSnapshot);
+                    postUpdateCondition(mcVersions!);
+                  }}
+                  size="small"
+                />
+              }
+              label={t('version_show_snapshot')}
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showBeta}
+                  onChange={() => {
+                    setShowBeta(!showBeta);
+                    postUpdateCondition(mcVersions!);
+                  }}
+                  size="small"
+                />
+              }
+              label={t('version_show_beta')}
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showAlpha}
+                  onChange={() => {
+                    setShowAlpha(!showAlpha);
+                    postUpdateCondition(mcVersions!);
+                  }}
+                  size="small"
+                />
+              }
+              label={t('version_show_alpha')}
+            />
+          </FormGroup>
         </>
       )}
-      <div className="m-1 text-end">
-        <button className="btn btn-primary" disabled={isLoading} onClick={nextStep} type="button">
+      <Box sx={{textAlign: 'end'}}>
+        <Button endIcon={<NextIcon />} onClick={nextStep} type="button" variant="outlined">
           {t('next')}
-        </button>
-      </div>
+        </Button>
+      </Box>
     </ConfigContainer>
   );
 };

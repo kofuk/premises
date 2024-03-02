@@ -2,6 +2,9 @@ import React from 'react';
 
 import {useTranslation} from 'react-i18next';
 
+import {ArrowDownward as NextIcon} from '@mui/icons-material';
+import {Box, Button, FormControl, InputLabel, MenuItem, Select, Stack, TextField} from '@mui/material';
+
 import ConfigContainer from './config-container';
 import {ItemProp} from './prop';
 
@@ -12,23 +15,10 @@ export enum LevelType {
   Amplified = 'amplified'
 }
 
-class LevelTypeInfo {
+type LevelTypeInfo = {
   levelType: LevelType;
   label: string;
-
-  constructor(levelType: LevelType, label: string) {
-    this.levelType = levelType;
-    this.label = label;
-  }
-
-  createReactElement = (): React.ReactElement => {
-    return (
-      <option key={this.levelType} value={this.levelType}>
-        {this.label}
-      </option>
-    );
-  };
-}
+};
 
 const ConfigureWorld = ({
   isFocused,
@@ -48,35 +38,43 @@ const ConfigureWorld = ({
   const [t] = useTranslation();
 
   const levelTypes: LevelTypeInfo[] = [
-    new LevelTypeInfo(LevelType.Default, t('world_type_default')),
-    new LevelTypeInfo(LevelType.Superflat, t('world_type_superflat')),
-    new LevelTypeInfo(LevelType.LargeBiomes, t('world_type_large_biomes')),
-    new LevelTypeInfo(LevelType.Amplified, t('world_type_amplified'))
+    {levelType: LevelType.Default, label: t('world_type_default')},
+    {levelType: LevelType.Superflat, label: t('world_type_superflat')},
+    {levelType: LevelType.LargeBiomes, label: t('world_type_large_biomes')},
+    {levelType: LevelType.Amplified, label: t('world_type_amplified')}
   ];
 
   return (
     <ConfigContainer isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum} title={t('config_configure_world')}>
-      <div className="m-2">
-        <label className="form-label" htmlFor="seed">
-          {t('seed')}
-        </label>
-        <input className="form-control" id="seed" onChange={(e) => setSeed(e.target.value)} value={seed} />
-      </div>
+      <Stack spacing={3}>
+        <TextField
+          fullWidth
+          inputProps={{'data-1p-ignore': ''}}
+          label={t('seed')}
+          onChange={(e) => {
+            setSeed(e.target.value);
+          }}
+          type="text"
+          value={seed}
+        />
 
-      <div className="m-2">
-        <label className="form-label" htmlFor="selectLevelType">
-          {t('world_type')}
-        </label>
-        <select className="form-select" id="selectLeveltype" onChange={(e) => setLevelType(e.target.value as LevelType)} value={levelType}>
-          {levelTypes.map((e) => e.createReactElement())}
-        </select>
-      </div>
+        <FormControl fullWidth>
+          <InputLabel id="level-type-label">{t('world_type')}</InputLabel>
+          <Select label={t('world_type')} labelId="level-type-label" onChange={(e) => setLevelType(e.target.value as LevelType)} value={levelType}>
+            {levelTypes.map((e) => (
+              <MenuItem key={e.levelType} value={e.levelType}>
+                {e.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Stack>
 
-      <div className="m-1 text-end">
-        <button className="btn btn-primary" onClick={nextStep} type="button">
+      <Box sx={{textAlign: 'end', mt: 1}}>
+        <Button endIcon={<NextIcon />} onClick={nextStep} type="button" variant="outlined">
           {t('next')}
-        </button>
-      </div>
+        </Button>
+      </Box>
     </ConfigContainer>
   );
 };

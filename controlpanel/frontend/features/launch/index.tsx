@@ -11,7 +11,7 @@ import ServerControlPane from './server-control-pane';
 import {useRunnerStatus} from '@/utils/runner-status';
 
 // For bootstrap based screen. We should remove this after migrating to styled-component completed.
-import 'bootstrap/scss/bootstrap.scss';
+//import 'bootstrap/scss/bootstrap.scss';
 /////
 
 const PAGE_LAUNCH = 1;

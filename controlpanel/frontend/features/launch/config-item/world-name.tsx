@@ -1,6 +1,9 @@
-import React, {useState} from 'react';
+import React from 'react';
 
 import {useTranslation} from 'react-i18next';
+
+import {ArrowDownward as NextIcon} from '@mui/icons-material';
+import {Alert, Box, Button, TextField} from '@mui/material';
 
 import {useBackups} from '@/api';
 import {Loading} from '@/components';
@@ -21,64 +24,63 @@ const WorldName = ({
   const [t] = useTranslation();
 
   const {data: backups, isLoading} = useBackups();
-  const [duplicateName, setDuplicateName] = useState(false);
-  const [invalidName, setInvalidName] = useState(false);
 
   const handleChange = (val: string) => {
     setWorldName(val);
-
-    if (!val.match(/^[- _a-zA-Z0-9()]+$/)) {
-      setInvalidName(true);
-      return;
-    }
-    if (backups?.find((e) => e.worldName === val)) {
-      setDuplicateName(true);
-      return;
-    }
-
-    setDuplicateName(false);
-    setInvalidName(false);
   };
 
-  let alert = <></>;
-  if (invalidName) {
-    alert = (
-      <div className="m-2 alert alert-danger" role="alert">
-        Name must be alphanumeric.
-      </div>
-    );
-  } else if (duplicateName) {
-    alert = (
-      <div className="m-2 alert alert-danger" role="alert">
-        World name duplicates.
-      </div>
-    );
-  }
+  const invalidName = !worldName.match(/^[- _a-zA-Z0-9()]+$/);
+  const duplicateName = !!backups?.find((e) => e.worldName === worldName);
+
+  const createAlert = () => {
+    if (invalidName) {
+      return (
+        <Alert severity="error" sx={{my: 2}}>
+          {t('world_name_error_invalid')}
+        </Alert>
+      );
+    }
+    if (duplicateName) {
+      return (
+        <Alert severity="error" sx={{my: 2}}>
+          {t('world_name_error_duplicate')}
+        </Alert>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <ConfigContainer isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum} title={t('config_world_name')}>
-      {(isLoading && <Loading compact />) || (
-        <>
-          <label className="form-label" htmlFor="newWorldName">
-            {t('world_name')}
-          </label>
-          <input
-            className="form-control"
-            id="newWorldName"
-            onChange={(e) => {
-              handleChange(e.target.value);
-            }}
-            type="text"
-            value={worldName}
-          />
-          {alert}
-        </>
-      )}
-      <div className="m-1 text-end">
-        <button className="btn btn-primary" disabled={worldName.length === 0 || duplicateName || invalidName} onClick={nextStep} type="button">
+      <Box sx={{my: 2}}>
+        {(isLoading && <Loading compact />) || (
+          <>
+            <TextField
+              fullWidth
+              inputProps={{'data-1p-ignore': ''}}
+              label={t('world_name')}
+              onChange={(e) => {
+                handleChange(e.target.value);
+              }}
+              type="text"
+              value={worldName}
+            />
+            {createAlert()}
+          </>
+        )}
+      </Box>
+      <Box sx={{textAlign: 'end', mt: 1}}>
+        <Button
+          disabled={worldName.length === 0 || duplicateName || invalidName}
+          endIcon={<NextIcon />}
+          onClick={nextStep}
+          type="button"
+          variant="outlined"
+        >
           {t('next')}
-        </button>
-      </div>
+        </Button>
+      </Box>
     </ConfigContainer>
   );
 };

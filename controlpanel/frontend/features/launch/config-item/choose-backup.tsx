@@ -3,7 +3,8 @@ import React, {useEffect} from 'react';
 import {useSnackbar} from 'notistack';
 import {useTranslation} from 'react-i18next';
 
-import {FormControlLabel, Switch} from '@mui/material';
+import {ArrowDownward as NextIcon} from '@mui/icons-material';
+import {Alert, Box, Button, FormControl, FormControlLabel, InputLabel, MenuItem, Select, SelectChangeEvent, Switch} from '@mui/material';
 
 import ConfigContainer from './config-container';
 import {ItemProp} from './prop';
@@ -39,52 +40,53 @@ const ChooseBackup = ({isFocused, nextStep, requestFocus, stepNum, worldName, ba
     }
   }, [error]);
 
-  const handleChangeWorld = (worldName: string) => {
+  const changeWorld = (worldName: string) => {
     const generations = backups?.find((e) => e.worldName === worldName)!.generations;
     if (generations) {
       setWorldName(worldName);
     }
   };
 
-  const handleChangeGeneration = (generationId: string) => {
-    setBackupGeneration(generationId);
+  const handleChangeWorld = (event: SelectChangeEvent) => {
+    const worldName = event.target.value;
+    changeWorld(worldName);
+  };
+
+  const handleChangeGeneration = (event: SelectChangeEvent) => {
+    setBackupGeneration(event.target.value);
   };
 
   const createBackupSelector = (): React.ReactElement => {
     const worlds = (
-      <div className="m-2">
-        <label className="form-label" htmlFor="worldSelect">
-          {t('select_world')}
-        </label>
-        <select className="form-select" id="worldSelect" onChange={(e) => handleChangeWorld(e.target.value)} value={worldName}>
+      <FormControl fullWidth>
+        <InputLabel id="backup-name-label">{t('select_world')}</InputLabel>
+        <Select label={t('select_world')} labelId="backup-name-label" onChange={handleChangeWorld} value={worldName}>
           {backups?.map((e) => (
-            <option key={e.worldName} value={e.worldName}>
+            <MenuItem key={e.worldName} value={e.worldName}>
               {e.worldName.replace(/^[0-9]+-/, '')}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-      </div>
+        </Select>
+      </FormControl>
     );
     const worldData = backups!.find((e) => e.worldName === worldName);
     const generations = worldData && (
-      <div className="m-2">
-        <label className="form-label" htmlFor="backupGenerationSelect">
-          {t('backup_generation')}
-        </label>
-        <select className="form-select" id="backupGenerationSelect" onChange={(e) => handleChangeGeneration(e.target.value)} value={backupGeneration}>
+      <FormControl fullWidth>
+        <InputLabel id="backup-generation-label">{t('backup_generation')}</InputLabel>
+        <Select label={t('backup_generation')} labelId="backup-generation-label" onChange={handleChangeGeneration} value={backupGeneration}>
           {worldData.generations.map((e) => {
             const dateTime = new Date(e.timestamp);
             const label = e.gen.match(/[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+/)
               ? dateTime.toLocaleString()
               : `${e.gen} (${dateTime.toLocaleString()})`;
             return (
-              <option key={e.gen} value={e.id}>
+              <MenuItem key={e.gen} value={e.id}>
                 {label}
-              </option>
+              </MenuItem>
             );
           })}
-        </select>
-      </div>
+        </Select>
+      </FormControl>
     );
 
     return (
@@ -94,21 +96,21 @@ const ChooseBackup = ({isFocused, nextStep, requestFocus, stepNum, worldName, ba
           control={
             <Switch
               checked={backupGeneration === '@/latest'}
-              onChange={(e) => handleChangeGeneration(e.target.checked ? '@/latest' : worldData!.generations[0].id)}
+              onChange={(e) => setBackupGeneration(e.target.checked ? '@/latest' : worldData!.generations[0].id)}
             />
           }
           label={t('use_latest_backup')}
         />
-        {backupGeneration !== '@/latest' && generations}
+        <Box sx={{my: 3}}>{backupGeneration !== '@/latest' && generations}</Box>
       </>
     );
   };
 
   const createEmptyMessage = (): React.ReactElement => {
     return (
-      <div className="alert alert-warning" role="alert">
+      <Alert severity="error" sx={{my: 2}}>
         {t('no_backups')}
-      </div>
+      </Alert>
     );
   };
 
@@ -121,11 +123,11 @@ const ChooseBackup = ({isFocused, nextStep, requestFocus, stepNum, worldName, ba
       ) : (
         <>
           {content}
-          <div className="m-1 text-end">
-            <button className="btn btn-primary" disabled={backups?.length === 0} onClick={nextStep} type="button">
+          <Box sx={{textAlign: 'end'}}>
+            <Button endIcon={<NextIcon />} onClick={nextStep} type="button" variant="outlined">
               {t('next')}
-            </button>
-          </div>
+            </Button>
+          </Box>
         </>
       )}
     </ConfigContainer>

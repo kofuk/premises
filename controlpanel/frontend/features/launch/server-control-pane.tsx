@@ -35,56 +35,63 @@ const ServerControlPane = () => {
 
   return (
     <Card sx={{p: 2, mt: 12}}>
-      <Stack spacing={1}>
-        <MenuContainer
-          items={[
-            {
-              title: t('menu_world_info'),
-              icon: <WorldIcon />,
-              ui: <WorldInfo />
-            },
-            {
-              title: t('menu_reconfigure'),
-              icon: <RestartIcon />,
-              ui: <ReconfigureMenu />
-            },
-            {
-              title: 'QuickUndo',
-              icon: <UndoIcon />,
-              ui: <QuickUndo />
-            },
-            {
-              title: t('menu_system_info'),
-              icon: <InfoIcon />,
-              ui: <SystemInfo />
-            }
-          ]}
-        />
-        <Box sx={{textAlign: 'end'}}>
-          <Button
-            onClick={() => {
-              fetch('/api/stop', {method: 'post'});
-            }}
-            startIcon={<StopIcon />}
-            variant="contained"
-          >
-            {t('stop_server')}
-          </Button>
-        </Box>
-        <ResponsiveContainer height={450} width={'100%'}>
-          <AreaChart data={cpuUsage} margin={{bottom: 40}}>
-            <XAxis angle={-45} dataKey="time" textAnchor="end" tickFormatter={(time) => (time === 0 ? '' : new Date(time).toLocaleTimeString())} />
-            <YAxis domain={[0, 100]}></YAxis>
-            <Tooltip
-              formatter={(value: number, _name, _props) => [`${Math.floor(value * 10) / 10}%`, t('cpu_usage')]}
-              isAnimationActive={false}
-              labelFormatter={(time) => (time === 0 ? '' : new Date(time).toLocaleTimeString())}
-              wrapperStyle={{opacity: 0.8}}
-            />
-            <Area dataKey="cpuUsage" dot={false} isAnimationActive={false} stroke="#00f" />
-          </AreaChart>
-        </ResponsiveContainer>
-      </Stack>
+      <MenuContainer
+        items={[
+          {
+            title: t('menu_world_info'),
+            icon: <WorldIcon />,
+            ui: <WorldInfo />
+          },
+          {
+            title: t('menu_reconfigure'),
+            icon: <RestartIcon />,
+            ui: <ReconfigureMenu />
+          },
+          {
+            title: 'QuickUndo',
+            icon: <UndoIcon />,
+            ui: <QuickUndo />
+          },
+          {
+            title: t('menu_system_info'),
+            icon: <InfoIcon />,
+            ui: <SystemInfo />
+          }
+        ]}
+        menuFooter={
+          <Stack spacing={1}>
+            <Box sx={{textAlign: 'end'}}>
+              <Button
+                onClick={() => {
+                  fetch('/api/stop', {method: 'post'});
+                }}
+                startIcon={<StopIcon />}
+                variant="contained"
+              >
+                {t('stop_server')}
+              </Button>
+            </Box>
+            <ResponsiveContainer height={450} width={'100%'}>
+              <AreaChart data={cpuUsage} margin={{bottom: 40}}>
+                <XAxis
+                  angle={-45}
+                  dataKey="time"
+                  textAnchor="end"
+                  tickFormatter={(time) => (time === 0 ? '' : new Date(time).toLocaleTimeString())}
+                />
+                <YAxis domain={[0, 100]}></YAxis>
+                <Tooltip
+                  formatter={(value: number, _name, _props) => [`${Math.floor(value * 10) / 10}%`, t('cpu_usage')]}
+                  isAnimationActive={false}
+                  labelFormatter={(time) => (time === 0 ? '' : new Date(time).toLocaleTimeString())}
+                  wrapperStyle={{opacity: 0.8}}
+                />
+                <Area dataKey="cpuUsage" dot={false} isAnimationActive={false} stroke="#00f" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Stack>
+        }
+      />
     </Card>
   );
 };
