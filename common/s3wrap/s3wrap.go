@@ -37,6 +37,7 @@ func (self *noAcceptEncodingSigner) SignHTTP(ctx context.Context, credentials aw
 
 func New(awsAccessKey, awsSecretKey, s3Endpoint string) *Client {
 	config := aws.Config{
+		Region:       "AUTO",
 		Credentials:  credentials.NewStaticCredentialsProvider(awsAccessKey, awsSecretKey, ""),
 		BaseEndpoint: &s3Endpoint,
 		Logger: logging.LoggerFunc(func(classification logging.Classification, format string, v ...interface{}) {
