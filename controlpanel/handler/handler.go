@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
@@ -13,11 +12,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/gin-contrib/sessions"
-	sessionsRedis "github.com/gin-contrib/sessions/redis"
-	"github.com/gin-contrib/static"
-	"github.com/gin-gonic/gin"
+	"github.com/boj/redistore"
 	"github.com/go-redis/redis/v8"
+	"github.com/gorilla/sessions"
 	entity "github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/backup"
 	"github.com/kofuk/premises/controlpanel/config"
@@ -27,6 +24,8 @@ import (
 	"github.com/kofuk/premises/controlpanel/model/migrations"
 	"github.com/kofuk/premises/controlpanel/pollable"
 	"github.com/kofuk/premises/controlpanel/streaming"
+	"github.com/labstack/echo-contrib/session"
+	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -43,7 +42,7 @@ type serverState struct {
 type Handler struct {
 	cfg           *config.Config
 	bind          string
-	engine        *gin.Engine
+	engine        *echo.Echo
 	db            *bun.DB
 	redis         *redis.Client
 	serverState   serverState
@@ -141,15 +140,22 @@ func setupRoutes(h *Handler) {
 
 		proxy := httputil.NewSingleHostReverseProxy(remoteUrl)
 
-		h.engine.NoRoute(func(c *gin.Context) {
-			proxy.ServeHTTP(c.Writer, c.Request)
-		})
+		h.engine.HTTPErrorHandler = func(err error, c echo.Context) {
+			if err != echo.ErrNotFound {
+				h.engine.DefaultHTTPErrorHandler(err, c)
+				return
+			}
+			proxy.ServeHTTP(c.Response().Writer, c.Request())
+		}
 	} else {
-		h.engine.Use(static.Serve("/", static.LocalFile("gen", false)))
-		h.engine.NoRoute(func(c *gin.Context) {
+		h.engine.Static("/", "gen")
+		h.engine.HTTPErrorHandler = func(err error, c echo.Context) {
+			if err != echo.ErrNotFound {
+				h.engine.DefaultHTTPErrorHandler(err, c)
+				return
+			}
+
 			// Return a HTML file for any page to render the page with React.
-			c.Status(http.StatusOK)
-			c.Header("Content-Type", "text/html;charset=utf-8")
 
 			entryFile, err := os.Open("gen/index.html")
 			if err != nil {
@@ -160,10 +166,9 @@ func setupRoutes(h *Handler) {
 				})
 				return
 			}
-			defer entryFile.Close()
 
-			io.Copy(c.Writer, entryFile)
-		})
+			c.Stream(http.StatusOK, "text/html;charset=utf-8", entryFile)
+		}
 	}
 
 	h.setupRootRoutes(h.engine.Group(""))
@@ -172,19 +177,18 @@ func setupRoutes(h *Handler) {
 }
 
 func setupSessions(h *Handler) {
-	sessionStore, err := sessionsRedis.NewStore(4, "tcp", h.cfg.ControlPanel.Redis.Address, h.cfg.ControlPanel.Redis.Password, []byte(h.cfg.ControlPanel.Secret))
+	store, err := redistore.NewRediStore(4, "tcp", h.cfg.ControlPanel.Redis.Address, h.cfg.ControlPanel.Redis.Password, []byte(h.cfg.ControlPanel.Secret))
 	if err != nil {
-		log.WithError(err).Fatal("Failed to initialize Redis store")
+		log.WithError(err).Fatal("Failed to initialize Redis session store")
 	}
-
-	sessionStore.Options(sessions.Options{
+	store.Options = &sessions.Options{
 		MaxAge:   60 * 60 * 24 * 30,
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
-	})
-	sessionsRedis.SetKeyPrefix(sessionStore, "session:")
-	h.engine.Use(sessions.Sessions("session", sessionStore))
+	}
+	store.SetKeyPrefix("session:")
+	h.engine.Use(session.Middleware(store))
 }
 
 func syncRemoteVMState(ctx context.Context, cfg *config.Config, gameServer *GameServer, h *Handler) error {
@@ -239,18 +243,9 @@ func syncRemoteVMState(ctx context.Context, cfg *config.Config, gameServer *Game
 }
 
 func NewHandler(cfg *config.Config, bindAddr string) (*Handler, error) {
-	if cfg.Debug.Web {
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
-	engine := gin.Default()
-	engine.SetTrustedProxies([]string{"127.0.0.1"})
-
 	h := &Handler{
 		cfg:           cfg,
-		engine:        engine,
+		engine:        echo.New(),
 		bind:          bindAddr,
 		serverRunning: false,
 	}
@@ -275,5 +270,5 @@ func NewHandler(cfg *config.Config, bindAddr string) (*Handler, error) {
 }
 
 func (h *Handler) Start() error {
-	return h.engine.Run(h.bind)
+	return h.engine.Start(h.bind)
 }

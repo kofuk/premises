@@ -10,46 +10,42 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/controlpanel/monitor"
 	"github.com/kofuk/premises/controlpanel/pollable"
+	"github.com/labstack/echo/v4"
 )
 
-func (h *Handler) handleRunnerPollAction(c *gin.Context) {
-	runnerId := c.GetString("runner-id")
-	if runnerId == "" {
+func (h *Handler) handleRunnerPollAction(c echo.Context) error {
+	runnerId, ok := c.Get("runner-id").(string)
+	if !ok || runnerId == "" {
 		slog.Error("Server ID is not set")
-		c.Status(http.StatusInternalServerError)
-		return
+		return c.String(http.StatusInternalServerError, "")
 	}
 
-	action, err := h.runnerAction.Wait(c.Request.Context(), runnerId)
+	action, err := h.runnerAction.Wait(c.Request().Context(), runnerId)
 	if err != nil {
 		if err == pollable.Cancelled {
-			return
+			return nil
 		}
 		slog.Error("Error waiting action", slog.Any("error", err))
-		c.Status(http.StatusInternalServerError)
-		return
+		return c.String(http.StatusInternalServerError, "")
 	}
 
-	c.Header("Content-Type", "application/json")
-	c.Writer.Write([]byte(action))
+	return c.JSONBlob(http.StatusOK, []byte(action))
 }
 
-func (h *Handler) handlePushStatus(c *gin.Context) {
-	runnerId := c.GetString("runner-id")
-	if runnerId == "" {
+func (h *Handler) handlePushStatus(c echo.Context) error {
+	runnerId, ok := c.Get("runner-id").(string)
+	if !ok || runnerId == "" {
 		slog.Error("Runner ID is not set")
-		return
+		return c.String(http.StatusInternalServerError, "")
 	}
 
-	body, err := io.ReadAll(c.Request.Body)
+	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		slog.Error("Error reading status", slog.Any("error", err))
-		c.Status(http.StatusInternalServerError)
-		return
+		return c.String(http.StatusInternalServerError, "")
 	}
 
 	events := bytes.Split(body, []byte{0})
@@ -64,26 +60,26 @@ func (h *Handler) handlePushStatus(c *gin.Context) {
 		var event runner.Event
 		if err := json.Unmarshal(eventData, &event); err != nil {
 			slog.Error("Unable to unmarshal status data", slog.Any("error", err))
-			c.Status(http.StatusBadRequest)
-			return
+			return c.String(http.StatusBadRequest, "")
 		}
 
 		if event.Type == runner.EventStatus && event.Status.EventCode == runner.EventShutdown {
-			go h.shutdownServer(context.Background(), h.GameServer, c.GetHeader("Authorization"))
-			return
+			go h.shutdownServer(context.Background(), h.GameServer, c.Request().Header.Get("Authorization"))
+			return c.String(http.StatusOK, "")
 		}
 
 		if err := monitor.HandleEvent(context.Background(), runnerId, h.Streaming, h.cfg, &h.KVS, h.dnsService, &event); err != nil {
 			slog.Error("Unable to handle event", slog.Any("error", err))
-			c.Status(http.StatusInternalServerError)
-			return
+			return c.String(http.StatusInternalServerError, "")
 		}
 	}
+
+	return nil
 }
 
-func (h *Handler) handleGetInstallScript(c *gin.Context) {
+func (h *Handler) handleGetInstallScript(c echo.Context) error {
 	var protocol string
-	if c.Query("s") == "0" {
+	if c.QueryParam("s") == "0" {
 		protocol = "http"
 	} else {
 		protocol = "https"
@@ -112,44 +108,46 @@ echo 'Success! Premises should be started shortly!'
 
 exit
 } && run
-`, protocol, c.Request.Host)
+`, protocol, c.Request().Host)
 
-	c.Writer.WriteString(script)
+	return c.String(http.StatusOK, script)
 }
 
-func (h *Handler) handleGetStartupScript(c *gin.Context) {
-	authKey := c.GetHeader("Authorization")
+func (h *Handler) handleGetStartupScript(c echo.Context) error {
+	authKey := c.Request().Header.Get("Authorization")
 	if !strings.HasPrefix(authKey, "Setup-Code ") {
-		c.Status(http.StatusBadRequest)
-		return
+		c.Response().Status = http.StatusBadRequest
+		return nil
 	}
 	authKey = strings.TrimPrefix(authKey, "Setup-Code ")
 
 	var script string
-	if err := h.KVS.Get(c.Request.Context(), fmt.Sprintf("startup:%s", authKey), &script); err != nil {
+	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("startup:%s", authKey), &script); err != nil {
 		slog.Error("Invalid auth code", slog.Any("error", err))
-		c.Status(http.StatusBadRequest)
-		return
+		c.Response().Status = http.StatusBadRequest
+		return nil
 	}
 
-	c.Writer.WriteString(script)
+	return c.String(http.StatusOK, script)
 }
 
-func (h *Handler) authKeyMiddleware(c *gin.Context) {
-	authKey := c.GetHeader("Authorization")
+func (h *Handler) authKeyMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		authKey := c.Request().Header.Get("Authorization")
 
-	var runnerId string
-	if err := h.KVS.Get(c.Request.Context(), fmt.Sprintf("runner:%s", authKey), &runnerId); err != nil {
-		slog.Error("Invalid auth key", slog.Any("error", err))
-		c.Status(http.StatusBadRequest)
-		c.Abort()
-		return
+		var runnerId string
+		if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("runner:%s", authKey), &runnerId); err != nil {
+			slog.Error("Invalid auth key", slog.Any("error", err))
+			return c.String(http.StatusBadRequest, "")
+		}
+
+		c.Set("runner-id", runnerId)
+
+		return next(c)
 	}
-
-	c.Set("runner-id", runnerId)
 }
 
-func (h *Handler) setupRunnerRoutes(group *gin.RouterGroup) {
+func (h *Handler) setupRunnerRoutes(group *echo.Group) {
 	group.GET("/install", h.handleGetInstallScript)
 	group.GET("/startup", h.handleGetStartupScript)
 

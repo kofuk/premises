@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/base32"
@@ -16,8 +17,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/securecookie"
 	runnerEntity "github.com/kofuk/premises/common/entity/runner"
@@ -28,6 +27,8 @@ import (
 	"github.com/kofuk/premises/controlpanel/model"
 	"github.com/kofuk/premises/controlpanel/monitor"
 	"github.com/kofuk/premises/controlpanel/streaming"
+	"github.com/labstack/echo-contrib/session"
+	"github.com/labstack/echo/v4"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -38,9 +39,16 @@ const (
 	CacheKeySystemInfoPrefix = "system-info"
 )
 
-func (h *Handler) handleApiSessionData(c *gin.Context) {
-	session := sessions.Default(c)
-	userID, ok := session.Get("user_id").(uint)
+func (h *Handler) handleApiSessionData(c echo.Context) error {
+	session, err := session.Get("session", c)
+	if err != nil {
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	userID, ok := session.Values["user_id"].(uint)
 
 	sessionData := entity.SessionData{
 		LoggedIn: ok,
@@ -48,60 +56,60 @@ func (h *Handler) handleApiSessionData(c *gin.Context) {
 
 	if ok {
 		var userName string
-		if err := h.db.NewSelect().Model((*model.User)(nil)).Column("name").Where("id = ? AND deleted_at IS NULL", userID).Scan(c.Request.Context(), &userName); err != nil {
+		if err := h.db.NewSelect().Model((*model.User)(nil)).Column("name").Where("id = ? AND deleted_at IS NULL", userID).Scan(c.Request().Context(), &userName); err != nil {
 			log.WithError(err).Error("User not found")
-			c.JSON(http.StatusOK, entity.ErrorResponse{
+			return c.JSON(http.StatusOK, entity.ErrorResponse{
 				Success:   false,
 				ErrorCode: entity.ErrInternal,
 			})
-			return
 		}
 		sessionData.UserName = userName
 	}
 
-	c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SessionData]{
+	return c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SessionData]{
 		Success: true,
 		Data:    sessionData,
 	})
 }
 
-func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName string) func(c *gin.Context) {
-	return func(c *gin.Context) {
+func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName string) func(c echo.Context) error {
+	return func(c echo.Context) error {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
 		writeEvent := func(message []byte) error {
-			if _, err := c.Writer.WriteString("event: " + eventName + "\n"); err != nil {
+			writer := bufio.NewWriter(c.Response().Writer)
+
+			if _, err := writer.WriteString("event: " + eventName + "\n"); err != nil {
 				return err
 			}
 
-			data := []byte("data: ")
-			data = append(data, message...)
-			data = append(data, []byte("\n\n")...)
+			writer.WriteString("data: ")
+			writer.Write(message)
+			writer.WriteString("\n\n")
+			writer.Flush()
 
-			if _, err := c.Writer.Write(data); err != nil {
-				return err
+			if flusher, ok := c.Response().Writer.(http.Flusher); ok {
+				flusher.Flush()
 			}
-			c.Writer.Flush()
 			return nil
 		}
 
-		subscription, statusHistory, err := h.Streaming.SubscribeEvent(c.Request.Context(), stream)
+		subscription, statusHistory, err := h.Streaming.SubscribeEvent(c.Request().Context(), stream)
 		if err != nil {
 			log.WithError(err).Error("Failed to connect to stream")
-			c.Status(http.StatusInternalServerError)
-			return
+			return c.String(http.StatusInternalServerError, "")
 		}
 		defer subscription.Close()
 
-		c.Writer.Header().Set("Content-Type", "text/event-stream")
-		c.Writer.Header().Set("Cache-Control", "no-store")
-		c.Writer.Header().Set("X-Accel-Buffering", "no")
+		c.Response().Header().Set("Content-Type", "text/event-stream")
+		c.Response().Header().Set("Cache-Control", "no-store")
+		c.Response().Header().Set("X-Accel-Buffering", "no")
 
 		for _, entry := range statusHistory {
 			if err := writeEvent(entry); err != nil {
 				log.WithError(err).Error("Failed to write data")
-				return
+				return err
 			}
 		}
 
@@ -117,75 +125,20 @@ func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName st
 				}
 
 			case <-ticker.C:
-				if _, err := c.Writer.WriteString(": uhaha\n"); err != nil {
+				if _, err := c.Response().Writer.Write([]byte(": uhaha\n")); err != nil {
 					log.WithError(err).Error("Failed to write keep-alive message")
 					break out
 				}
-				c.Writer.Flush()
+				if flusher, ok := c.Response().Writer.(http.Flusher); ok {
+					flusher.Flush()
+				}
 
-			case <-c.Request.Context().Done():
+			case <-c.Request().Context().Done():
 				break out
 			}
 		}
-	}
-}
 
-func (h *Handler) handleApiSystemStat(c *gin.Context) {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	c.Writer.Header().Set("Content-Type", "text/event-stream")
-	c.Writer.Header().Set("Cache-Control", "no-store")
-	c.Writer.Header().Set("X-Accel-Buffering", "no")
-
-	writeEvent := func(status []byte) error {
-		if _, err := c.Writer.WriteString("event: systemstat\n"); err != nil {
-			return err
-		}
-
-		data := []byte("data: ")
-		data = append(data, status...)
-		data = append(data, []byte("\n\n")...)
-
-		if _, err := c.Writer.Write(data); err != nil {
-			return err
-		}
-		c.Writer.Flush()
 		return nil
-	}
-
-	stream := h.Streaming.GetStream(streaming.SysstatStream)
-
-	subscription, _, err := h.Streaming.SubscribeEvent(c.Request.Context(), stream)
-	if err != nil {
-		log.WithError(err).Error("Failed to connect to stream")
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	defer subscription.Close()
-
-	defer subscription.Close()
-	eventChannel := subscription.Channel()
-
-end:
-	for {
-		select {
-		case status := <-eventChannel:
-			if err := writeEvent([]byte(status.Payload)); err != nil {
-				log.WithError(err).Error("Failed to write server-sent event")
-				break end
-			}
-
-		case <-ticker.C:
-			if _, err := c.Writer.WriteString(": uhaha\n"); err != nil {
-				log.WithError(err).Error("Failed to write keep-alive message")
-				break end
-			}
-			c.Writer.Flush()
-
-		case <-c.Request.Context().Done():
-			break end
-		}
 	}
 }
 
@@ -491,124 +444,114 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 	}
 }
 
-func (h *Handler) handleApiLaunch(c *gin.Context) {
-	if err := c.Request.ParseForm(); err != nil {
+func (h *Handler) handleApiLaunch(c echo.Context) error {
+	if err := c.Request().ParseForm(); err != nil {
 		log.WithError(err).Error("Failed to parse form")
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
-		return
 	}
 
 	h.serverMutex.Lock()
 	defer h.serverMutex.Unlock()
 
 	if h.serverRunning {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrServerRunning,
 		})
-		return
 	}
 
-	gameConfig, err := h.createConfigFromPostData(c.Request.Context(), c.Request.Form, h.cfg)
+	gameConfig, err := h.createConfigFromPostData(c.Request().Context(), c.Request().Form, h.cfg)
 	if err != nil {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInvalidConfig,
 		})
-		return
 	}
 
 	h.serverRunning = true
 
-	machineType := c.PostForm("machine-type")
+	machineType := c.Request().PostFormValue("machine-type")
 	h.serverState.machineType = machineType
 	memSizeGB, _ := strconv.Atoi(strings.Replace(machineType, "g", "", 1))
 
 	go h.LaunchServer(context.Background(), gameConfig, h.GameServer, memSizeGB)
 
-	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
 
-func (h *Handler) handleApiReconfigure(c *gin.Context) {
-	if err := c.Request.ParseForm(); err != nil {
+func (h *Handler) handleApiReconfigure(c echo.Context) error {
+	if err := c.Request().ParseForm(); err != nil {
 		log.WithError(err).Error("Failed to parse form")
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
-		return
 	}
 
-	formValues := c.Request.Form
+	formValues := c.Request().Form
 	formValues.Set("machine-type", h.serverState.machineType)
 
-	gameConfig, err := h.createConfigFromPostData(c.Request.Context(), formValues, h.cfg)
+	gameConfig, err := h.createConfigFromPostData(c.Request().Context(), formValues, h.cfg)
 	if err != nil {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInvalidConfig,
 		})
-		return
 	}
 
-	if err := h.runnerAction.Push(c.Request.Context(), "default", runnerEntity.Action{
+	if err := h.runnerAction.Push(c.Request().Context(), "default", runnerEntity.Action{
 		Type:   runnerEntity.ActionReconfigure,
 		Config: gameConfig,
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
 		})
-		return
 	}
 
-	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
 
-func (h *Handler) handleApiStop(c *gin.Context) {
-	if err := h.runnerAction.Push(c.Request.Context(), "default", runnerEntity.Action{
+func (h *Handler) handleApiStop(c echo.Context) error {
+	if err := h.runnerAction.Push(c.Request().Context(), "default", runnerEntity.Action{
 		Type: runnerEntity.ActionStop,
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
 		})
-		return
 	}
 
-	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
 
-func (h *Handler) handleApiBackups(c *gin.Context) {
-	if val, err := h.redis.Get(c.Request.Context(), CacheKeyBackups).Result(); err == nil {
-		c.Header("Content-Type", "application/json")
-		c.Writer.Write([]byte(val))
-		return
+func (h *Handler) handleApiBackups(c echo.Context) error {
+	if val, err := h.redis.Get(c.Request().Context(), CacheKeyBackups).Result(); err == nil {
+		return c.JSONBlob(http.StatusOK, []byte(val))
 	} else if err != redis.Nil {
 		log.WithError(err).Error("Error retrieving backups from cache")
 	}
 
 	log.WithField("cache_key", CacheKeyBackups).Info("cache miss")
 
-	backups, err := h.backup.GetWorlds(c.Request.Context())
+	backups, err := h.backup.GetWorlds(c.Request().Context())
 	if err != nil {
 		log.WithError(err).Error("Failed to retrieve backup list")
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBackup,
 		})
-		return
 	}
 
 	resp := entity.SuccessfulResponse[[]entity.WorldBackup]{
@@ -619,31 +562,27 @@ func (h *Handler) handleApiBackups(c *gin.Context) {
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		log.WithError(err).Error("Failed to marshal backpu list")
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
-		return
 	}
 
-	if _, err := h.redis.Set(c.Request.Context(), CacheKeyBackups, jsonResp, 3*time.Minute).Result(); err != nil {
+	if _, err := h.redis.Set(c.Request().Context(), CacheKeyBackups, jsonResp, 3*time.Minute).Result(); err != nil {
 		log.WithError(err).Error("Failed to store backup list")
 	}
 
-	c.Status(http.StatusOK)
-	c.Header("Content-Type", "application/json")
-	c.Writer.Write(jsonResp)
+	return c.JSON(http.StatusOK, resp)
 }
 
-func (h *Handler) handleApiMcversions(c *gin.Context) {
-	versions, err := h.MCVersions.GetVersions(c.Request.Context())
+func (h *Handler) handleApiMcversions(c echo.Context) error {
+	versions, err := h.MCVersions.GetVersions(c.Request().Context())
 	if err != nil {
 		log.WithError(err).Error("Failed to retrieve Minecraft versions")
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
-		return
 	}
 
 	versionsEntity := make([]entity.MCVersion, 0)
@@ -669,219 +608,227 @@ func (h *Handler) handleApiMcversions(c *gin.Context) {
 		})
 	}
 
-	c.JSON(http.StatusOK, entity.SuccessfulResponse[[]entity.MCVersion]{
+	return c.JSON(http.StatusOK, entity.SuccessfulResponse[[]entity.MCVersion]{
 		Success: true,
 		Data:    versionsEntity,
 	})
 }
 
-func (h *Handler) handleApiSystemInfo(c *gin.Context) {
-	data, err := monitor.GetSystemInfo(c.Request.Context(), h.cfg, &h.KVS)
+func (h *Handler) handleApiSystemInfo(c echo.Context) error {
+	data, err := monitor.GetSystemInfo(c.Request().Context(), h.cfg, &h.KVS)
 	if err != nil {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
-		return
 	}
-	c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SystemInfo]{
+	return c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SystemInfo]{
 		Success: true,
 		Data:    *data,
 	})
 }
 
-func (h *Handler) handleApiWorldInfo(c *gin.Context) {
-	data, err := monitor.GetWorldInfo(c.Request.Context(), h.cfg, &h.KVS)
+func (h *Handler) handleApiWorldInfo(c echo.Context) error {
+	data, err := monitor.GetWorldInfo(c.Request().Context(), h.cfg, &h.KVS)
 	if err != nil {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
-		return
 	}
-	c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.WorldInfo]{
+	return c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.WorldInfo]{
 		Success: true,
 		Data:    *data,
 	})
 }
 
-func (h *Handler) handleApiQuickUndoSnapshot(c *gin.Context) {
+func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
 	var config entity.SnapshotConfiguration
-	if err := c.BindJSON(&config); err != nil {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+	if err := c.Bind(&config); err != nil {
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
-		return
 	}
 
 	if config.Slot < 0 || 10 <= config.Slot {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
-		return
 	}
 
-	if err := h.runnerAction.Push(c.Request.Context(), "default", runnerEntity.Action{
+	if err := h.runnerAction.Push(c.Request().Context(), "default", runnerEntity.Action{
 		Type: runnerEntity.ActionSnapshot,
 		Snapshot: runnerEntity.SnapshotConfig{
 			Slot: config.Slot,
 		},
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
 		})
-		return
 	}
 
-	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
 
-func (h *Handler) handleApiQuickUndoUndo(c *gin.Context) {
+func (h *Handler) handleApiQuickUndoUndo(c echo.Context) error {
 	var config entity.SnapshotConfiguration
-	if err := c.BindJSON(&config); err != nil {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+	if err := c.Bind(&config); err != nil {
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
-		return
 	}
 
 	if config.Slot < 0 || 10 <= config.Slot {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
-		return
 	}
 
-	if err := h.runnerAction.Push(c.Request.Context(), "default", runnerEntity.Action{
+	if err := h.runnerAction.Push(c.Request().Context(), "default", runnerEntity.Action{
 		Type: runnerEntity.ActionUndo,
 		Snapshot: runnerEntity.SnapshotConfig{
 			Slot: config.Slot,
 		},
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
 		})
-		return
 	}
 
-	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
 
-func setupApiQuickUndoRoutes(h *Handler, group *gin.RouterGroup) {
+func setupApiQuickUndoRoutes(h *Handler, group *echo.Group) {
 	group.POST("/snapshot", h.handleApiQuickUndoSnapshot)
 	group.POST("/undo", h.handleApiQuickUndoUndo)
 }
 
-func (h *Handler) handleApiUsersChangePassword(c *gin.Context) {
-	session := sessions.Default(c)
-	userID := session.Get("user_id")
-
-	var req entity.UpdatePassword
-	if err := c.BindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrBadRequest,
-		})
-		return
-	}
-
-	if !isAllowedPassword(req.NewPassword) {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrPasswordRule,
-		})
-		return
-	}
-
-	var password string
-	if err := h.db.NewSelect().Model((*model.User)(nil)).Column("password").Where("id = ? AND deleted_at IS NULL", userID).Scan(c.Request.Context(), &password); err != nil {
-		log.WithError(err).Error("User not found")
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
+	session, err := session.Get("session", c)
+	if err != nil {
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
-		return
+	}
+
+	userID, ok := session.Values["user_id"].(uint)
+	if !ok {
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	var req entity.UpdatePassword
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	if !isAllowedPassword(req.NewPassword) {
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrPasswordRule,
+		})
+	}
+
+	var password string
+	if err := h.db.NewSelect().Model((*model.User)(nil)).Column("password").Where("id = ? AND deleted_at IS NULL", userID).Scan(c.Request().Context(), &password); err != nil {
+		log.WithError(err).Error("User not found")
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(req.Password)); err != nil {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
 		})
-		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
 		log.WithError(err).Error("error hashing password")
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
-		return
 	}
 
-	if _, err := h.db.NewUpdate().Model((*model.User)(nil)).Set("password = ?", string(hashedPassword)).Set("initialized = ?", true).Where("id = ? AND deleted_at IS NULL", userID).Exec(c.Request.Context()); err != nil {
+	if _, err := h.db.NewUpdate().Model((*model.User)(nil)).Set("password = ?", string(hashedPassword)).Set("initialized = ?", true).Where("id = ? AND deleted_at IS NULL", userID).Exec(c.Request().Context()); err != nil {
 		log.WithError(err).Error("error updating password")
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
-		return
 	}
 
-	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
 
-func (h *Handler) handleApiUsersAdd(c *gin.Context) {
-	session := sessions.Default(c)
-	userID := session.Get("user_id").(uint)
+func (h *Handler) handleApiUsersAdd(c echo.Context) error {
+	session, err := session.Get("session", c)
+	if err != nil {
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	userID, ok := session.Values["user_id"].(uint)
+	if !ok {
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
 
 	var req entity.PasswordCredential
-	if err := c.BindJSON(&req); err != nil {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
-		return
 	}
 
 	if len(req.UserName) == 0 || len(req.UserName) > 32 {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
-		return
 	}
 	if !isAllowedPassword(req.Password) {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasswordRule,
 		})
-		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		log.WithError(err).Error("error hashing password")
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
-		return
 	}
 
 	user := &model.User{
@@ -891,59 +838,63 @@ func (h *Handler) handleApiUsersAdd(c *gin.Context) {
 		Initialized:   false,
 	}
 
-	if _, err := h.db.NewInsert().Model(user).Exec(c.Request.Context()); err != nil {
+	if _, err := h.db.NewInsert().Model(user).Exec(c.Request().Context()); err != nil {
 		log.WithError(err).Error("error registering user")
-		c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrDupUserName,
 		})
-		return
 	}
 
-	c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
 
-func setupApiUsersRoutes(h *Handler, group *gin.RouterGroup) {
+func setupApiUsersRoutes(h *Handler, group *echo.Group) {
 	group.POST("/change-password", h.handleApiUsersChangePassword)
 	group.POST("/add", h.handleApiUsersAdd)
 }
 
-func (h *Handler) middlewareSessionCheck(c *gin.Context) {
-	// 1. Verify that the request is sent from allowed origin (if needed).
-	if c.Request.Method == http.MethodPost || (c.Request.Method == http.MethodGet && c.GetHeader("Upgrade") == "WebSocket") {
-		if c.GetHeader("Origin") != h.cfg.ControlPanel.Origin {
-			log.WithField("origin", c.GetHeader("Origin")).Error("origin not allowed")
-			c.JSON(http.StatusOK, entity.ErrorResponse{
-				Success:   false,
-				ErrorCode: entity.ErrBadRequest,
-			})
-			c.Abort()
-			return
+func (h *Handler) middlewareSessionCheck(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		// 1. Verify that the request is sent from allowed origin (if needed).
+		if c.Request().Method == http.MethodPost || (c.Request().Method == http.MethodGet && c.Request().Header.Get("Upgrade") == "WebSocket") {
+			if c.Request().Header.Get("Origin") != h.cfg.ControlPanel.Origin {
+				log.WithField("origin", c.Request().Header.Get("Origin")).Error("origin not allowed")
+				return c.JSON(http.StatusOK, entity.ErrorResponse{
+					Success:   false,
+					ErrorCode: entity.ErrBadRequest,
+				})
+			}
 		}
-	}
 
-	// 2. Verify that the client is logged in.
-	session := sessions.Default(c)
-	if session.Get("user_id") == nil {
-		c.JSON(http.StatusOK, entity.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrRequiresAuth,
-		})
-		c.Abort()
-		return
+		// 2. Verify that the client is logged in.
+		session, err := session.Get("session", c)
+		if err != nil {
+			return c.JSON(http.StatusOK, entity.ErrorResponse{
+				Success:   false,
+				ErrorCode: entity.ErrInternal,
+			})
+		}
+
+		if _, ok := session.Values["user_id"]; !ok {
+			return c.JSON(http.StatusOK, entity.ErrorResponse{
+				Success:   false,
+				ErrorCode: entity.ErrRequiresAuth,
+			})
+		}
+		return next(c)
 	}
 }
 
-func (h *Handler) setupApiRoutes(group *gin.RouterGroup) {
+func (h *Handler) setupApiRoutes(group *echo.Group) {
 	group.GET("/session-data", h.handleApiSessionData)
 	needsAuth := group.Group("")
 	needsAuth.Use(h.middlewareSessionCheck)
 	needsAuth.GET("/streaming/events", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.StandardStream), "statuschanged"))
 	needsAuth.GET("/streaming/info", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.InfoStream), "notify"))
 	needsAuth.GET("/streaming/sysstat", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.SysstatStream), "systemstat"))
-	needsAuth.GET("/systemstat", h.handleApiSystemStat)
 	needsAuth.POST("/launch", h.handleApiLaunch)
 	needsAuth.POST("/reconfigure", h.handleApiReconfigure)
 	needsAuth.POST("/stop", h.handleApiStop)

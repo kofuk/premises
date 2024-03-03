@@ -22,6 +22,9 @@ const api = async <T, U>(endpoint: string, method: string = 'get', body?: T) => 
   const options = {method} as any;
   if (body) {
     options.body = JSON.stringify(body);
+    options.headers = {
+      'Content-Type': 'application/json'
+    };
   }
 
   const resp = await fetch(`${domain}${endpoint}`, options).then((resp) => resp.json());
