@@ -23,7 +23,7 @@ require (
 	github.com/labstack/echo/v4 v4.11.4
 	github.com/mackerelio/go-osstat v0.2.4
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/ulikunitz/xz v0.5.11
 	github.com/uptrace/bun v1.1.17
 	github.com/uptrace/bun/dialect/pgdialect v1.1.17
