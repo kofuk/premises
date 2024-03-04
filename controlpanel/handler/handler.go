@@ -26,6 +26,7 @@ import (
 	"github.com/kofuk/premises/controlpanel/streaming"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	log "github.com/sirupsen/logrus"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -243,9 +244,26 @@ func syncRemoteVMState(ctx context.Context, cfg *config.Config, gameServer *Game
 }
 
 func NewHandler(cfg *config.Config, bindAddr string) (*Handler, error) {
+	engine := echo.New()
+	engine.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogURI:    true,
+		LogMethod: true,
+		LogStatus: true,
+		LogValuesFunc: func(c echo.Context, values middleware.RequestLoggerValues) error {
+			slog.Info("Incoming request",
+				slog.String("uri", values.URI),
+				slog.String("method", values.Method),
+				slog.Int("status", values.Status),
+			)
+			return nil
+		},
+	}))
+	engine.HideBanner = true
+	engine.HidePort = true
+
 	h := &Handler{
 		cfg:           cfg,
-		engine:        echo.New(),
+		engine:        engine,
 		bind:          bindAddr,
 		serverRunning: false,
 	}
