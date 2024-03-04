@@ -27,7 +27,6 @@ import (
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	log "github.com/sirupsen/logrus"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
@@ -132,11 +131,12 @@ func prepareDependencies(cfg *config.Config, h *Handler) error {
 
 func setupRoutes(h *Handler) {
 	if h.cfg.Debug.Web {
-		log.Info("Proxying vite dev server")
+		slog.Info("Proxying vite dev server")
 
 		remoteUrl, err := url.Parse("http://localhost:5173")
 		if err != nil {
-			log.Fatal(err)
+			slog.Error("[BUG] Failed to parse dev server URL", slog.Any("error", err))
+			os.Exit(1)
 		}
 
 		proxy := httputil.NewSingleHostReverseProxy(remoteUrl)
@@ -160,7 +160,7 @@ func setupRoutes(h *Handler) {
 
 			entryFile, err := os.Open("gen/index.html")
 			if err != nil {
-				log.WithError(err).Error("Unable to open index.html")
+				slog.Error("Unable to open index.html", slog.Any("error", err))
 				c.JSON(http.StatusOK, entity.ErrorResponse{
 					Success:   false,
 					ErrorCode: entity.ErrInternal,
@@ -180,7 +180,8 @@ func setupRoutes(h *Handler) {
 func setupSessions(h *Handler) {
 	store, err := redistore.NewRediStore(4, "tcp", h.cfg.ControlPanel.Redis.Address, h.cfg.ControlPanel.Redis.Password, []byte(h.cfg.ControlPanel.Secret))
 	if err != nil {
-		log.WithError(err).Fatal("Failed to initialize Redis session store")
+		slog.Error("Failed to initialize Redis session store", slog.Any("error", err))
+		os.Exit(1)
 	}
 	store.Options = &sessions.Options{
 		MaxAge:   60 * 60 * 24 * 30,
@@ -209,7 +210,7 @@ func syncRemoteVMState(ctx context.Context, cfg *config.Config, gameServer *Game
 				stdStream,
 				streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch),
 			); err != nil {
-				log.WithError(err).Error("Failed to write status data to Redis channel")
+				slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 			}
 
 			return nil
@@ -218,7 +219,7 @@ func syncRemoteVMState(ctx context.Context, cfg *config.Config, gameServer *Game
 
 	if gameServer.VMRunning(ctx, id) {
 		if gameServer.ImageExists(ctx) {
-			log.Info("Server seems to be running, but remote image exists")
+			slog.Info("Server seems to be running, but remote image exists")
 			gameServer.DeleteImage(ctx)
 		}
 

@@ -5,15 +5,12 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/handler"
 )
 
 func main() {
-	log.SetReportCaller(true)
-
 	if err := godotenv.Load(); err != nil {
 		// We haven't initialized slog handler yet, so prepare an ephemeral one to output this.
 		slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{

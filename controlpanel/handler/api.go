@@ -29,7 +29,6 @@ import (
 	"github.com/kofuk/premises/controlpanel/streaming"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -57,7 +56,7 @@ func (h *Handler) handleApiSessionData(c echo.Context) error {
 	if ok {
 		var userName string
 		if err := h.db.NewSelect().Model((*model.User)(nil)).Column("name").Where("id = ? AND deleted_at IS NULL", userID).Scan(c.Request().Context(), &userName); err != nil {
-			log.WithError(err).Error("User not found")
+			slog.Error("User not found", slog.Any("error", err))
 			return c.JSON(http.StatusOK, entity.ErrorResponse{
 				Success:   false,
 				ErrorCode: entity.ErrInternal,
@@ -97,7 +96,7 @@ func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName st
 
 		subscription, statusHistory, err := h.Streaming.SubscribeEvent(c.Request().Context(), stream)
 		if err != nil {
-			log.WithError(err).Error("Failed to connect to stream")
+			slog.Error("Failed to connect to stream", slog.Any("error", err))
 			return c.String(http.StatusInternalServerError, "")
 		}
 		defer subscription.Close()
@@ -108,7 +107,7 @@ func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName st
 
 		for _, entry := range statusHistory {
 			if err := writeEvent(entry); err != nil {
-				log.WithError(err).Error("Failed to write data")
+				slog.Error("Failed to write data", slog.Any("error", err))
 				return err
 			}
 		}
@@ -120,13 +119,13 @@ func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName st
 			select {
 			case status := <-eventChannel:
 				if err := writeEvent([]byte(status.Payload)); err != nil {
-					log.WithError(err).Error("Failed to write server-sent event")
+					slog.Error("Failed to write server-sent event", slog.Any("error", err))
 					break out
 				}
 
 			case <-ticker.C:
 				if _, err := c.Response().Writer.Write([]byte(": uhaha\n")); err != nil {
-					log.WithError(err).Error("Failed to write keep-alive message")
+					slog.Error("Failed to write keep-alive message", slog.Any("error", err))
 					break out
 				}
 				if flusher, ok := c.Response().Writer.(http.Flusher); ok {
@@ -214,17 +213,17 @@ func (h *Handler) notifyNonRecoverableFailure(cfg *config.Config, detail string)
 
 		req, err := http.NewRequest(http.MethodPost, cfg.ControlPanel.AlertWebhookUrl, bytes.NewBuffer(body))
 		if err != nil {
-			log.WithError(err).Error("Failed to create new request")
+			slog.Error("Failed to create new request", slog.Any("error", err))
 			return
 		}
 		req.Header.Set("Content-Type", "application/json")
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			log.WithError(err).Error("Failed to send request")
+			slog.Error("Failed to send request", slog.Any("error", err))
 			return
 		}
 		d, _ := io.ReadAll(resp.Body)
-		log.Println(string(d))
+		slog.Info("Webhook response", slog.String("body", string(d)))
 	}
 }
 
@@ -243,7 +242,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 		stdStream,
 		streaming.NewStandardMessage(entity.EvStopRunner, entity.PageLoading),
 	); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
+		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
 
 	var id string
@@ -253,7 +252,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
+			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
 		h.notifyNonRecoverableFailure(h.cfg, "Runner ID is not set")
 		return
@@ -265,7 +264,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
+			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
 		h.notifyNonRecoverableFailure(h.cfg, "Failed to stop VM")
 		return
@@ -276,7 +275,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EvStopRunner, 40, entity.PageLoading),
 	); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
+		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
 
 	if !gameServer.SaveImage(ctx, id) {
@@ -285,7 +284,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
+			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
 		h.notifyNonRecoverableFailure(h.cfg, "Failed to save image")
 		return
@@ -296,7 +295,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EvStopRunner, 80, entity.PageLoading),
 	); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
+		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
 
 	if !gameServer.DeleteVM(ctx, id) {
@@ -305,7 +304,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
+			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
 		h.notifyNonRecoverableFailure(h.cfg, "Failed to delete VM")
 		return
@@ -325,11 +324,11 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 		stdStream,
 		streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch),
 	); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
+		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
 
 	if err := h.Streaming.ClearHistory(ctx, h.Streaming.GetStream(streaming.SysstatStream)); err != nil {
-		log.WithError(err).Error("Unable to clear sysstat history")
+		slog.Error("Unable to clear sysstat history", slog.Any("error", err))
 	}
 }
 
@@ -345,7 +344,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
 		); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
+			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
 
 		h.serverRunning = false
@@ -357,7 +356,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 		stdStream,
 		streaming.NewStandardMessage(entity.EvCreateRunner, entity.PageLoading),
 	); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
+		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
 
 	if err := h.Streaming.PublishEvent(
@@ -365,26 +364,26 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EvCreateRunner, 10, entity.PageLoading),
 	); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
+		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
 
-	log.Info("Generating startup script...")
+	slog.Info("Generating startup script...")
 	startupScript, err := conoha.GenerateStartupScript(gameConfig)
 	if err != nil {
-		log.WithError(err).Error("Failed to generate startup script")
+		slog.Error("Failed to generate startup script", slog.Any("error", err))
 
 		if err := h.Streaming.PublishEvent(
 			ctx,
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
 		); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
+			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
 
 		h.serverRunning = false
 		return
 	}
-	log.Info("Generating startup script...Done")
+	slog.Info("Generating startup script...Done")
 
 	id := gameServer.SetUp(ctx, gameConfig, memSizeGB, startupScript)
 	if id == "" {
@@ -398,7 +397,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 			stdStream,
 			streaming.NewStandardMessageWithTextData(entity.EvManualSetup, authCode, entity.PageManualSetup),
 		); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
+			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
 
 		if err := h.KVS.Set(ctx, fmt.Sprintf("startup:%s", authCode), string(startupScript), 30*time.Minute); err != nil {
@@ -419,7 +418,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EvCreateRunner, 50, entity.PageLoading),
 	); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
+		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
 
 	if !gameServer.DeleteImage(ctx) {
@@ -428,7 +427,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
 		); err != nil {
-			log.WithError(err).Error("Failed to write status data to Redis channel")
+			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
 
 		h.serverRunning = false
@@ -440,13 +439,13 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EvCreateRunner, 80, entity.PageLoading),
 	); err != nil {
-		log.WithError(err).Error("Failed to write status data to Redis channel")
+		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
 }
 
 func (h *Handler) handleApiLaunch(c echo.Context) error {
 	if err := c.Request().ParseForm(); err != nil {
-		log.WithError(err).Error("Failed to parse form")
+		slog.Error("Failed to parse form", slog.Any("error", err))
 		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
@@ -486,7 +485,7 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 
 func (h *Handler) handleApiReconfigure(c echo.Context) error {
 	if err := c.Request().ParseForm(); err != nil {
-		log.WithError(err).Error("Failed to parse form")
+		slog.Error("Failed to parse form", slog.Any("error", err))
 		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
@@ -540,14 +539,14 @@ func (h *Handler) handleApiBackups(c echo.Context) error {
 	if val, err := h.redis.Get(c.Request().Context(), CacheKeyBackups).Result(); err == nil {
 		return c.JSONBlob(http.StatusOK, []byte(val))
 	} else if err != redis.Nil {
-		log.WithError(err).Error("Error retrieving backups from cache")
+		slog.Error("Error retrieving backups from cache", slog.Any("error", err))
 	}
 
-	log.WithField("cache_key", CacheKeyBackups).Info("cache miss")
+	slog.Info("cache miss", slog.String("cache_key", CacheKeyBackups))
 
 	backups, err := h.backup.GetWorlds(c.Request().Context())
 	if err != nil {
-		log.WithError(err).Error("Failed to retrieve backup list")
+		slog.Error("Failed to retrieve backup list", slog.Any("error", err))
 		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBackup,
@@ -561,7 +560,7 @@ func (h *Handler) handleApiBackups(c echo.Context) error {
 
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
-		log.WithError(err).Error("Failed to marshal backpu list")
+		slog.Error("Failed to marshal backpu list", slog.Any("error", err))
 		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -569,7 +568,7 @@ func (h *Handler) handleApiBackups(c echo.Context) error {
 	}
 
 	if _, err := h.redis.Set(c.Request().Context(), CacheKeyBackups, jsonResp, 3*time.Minute).Result(); err != nil {
-		log.WithError(err).Error("Failed to store backup list")
+		slog.Error("Failed to store backup list", slog.Any("error", err))
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -578,7 +577,7 @@ func (h *Handler) handleApiBackups(c echo.Context) error {
 func (h *Handler) handleApiMcversions(c echo.Context) error {
 	versions, err := h.MCVersions.GetVersions(c.Request().Context())
 	if err != nil {
-		log.WithError(err).Error("Failed to retrieve Minecraft versions")
+		slog.Error("Failed to retrieve Minecraft versions", slog.Any("error", err))
 		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -749,7 +748,7 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 
 	var password string
 	if err := h.db.NewSelect().Model((*model.User)(nil)).Column("password").Where("id = ? AND deleted_at IS NULL", userID).Scan(c.Request().Context(), &password); err != nil {
-		log.WithError(err).Error("User not found")
+		slog.Error("User not found", slog.Any("error", err))
 		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -764,7 +763,7 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		log.WithError(err).Error("error hashing password")
+		slog.Error("error hashing password", slog.Any("error", err))
 		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -772,7 +771,7 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 	}
 
 	if _, err := h.db.NewUpdate().Model((*model.User)(nil)).Set("password = ?", string(hashedPassword)).Set("initialized = ?", true).Where("id = ? AND deleted_at IS NULL", userID).Exec(c.Request().Context()); err != nil {
-		log.WithError(err).Error("error updating password")
+		slog.Error("error updating password", slog.Any("error", err))
 		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -824,7 +823,7 @@ func (h *Handler) handleApiUsersAdd(c echo.Context) error {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		log.WithError(err).Error("error hashing password")
+		slog.Error("error hashing password", slog.Any("error", err))
 		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -839,7 +838,7 @@ func (h *Handler) handleApiUsersAdd(c echo.Context) error {
 	}
 
 	if _, err := h.db.NewInsert().Model(user).Exec(c.Request().Context()); err != nil {
-		log.WithError(err).Error("error registering user")
+		slog.Error("error registering user", slog.Any("error", err))
 		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrDupUserName,
@@ -861,7 +860,7 @@ func (h *Handler) middlewareSessionCheck(next echo.HandlerFunc) echo.HandlerFunc
 		// 1. Verify that the request is sent from allowed origin (if needed).
 		if c.Request().Method == http.MethodPost || (c.Request().Method == http.MethodGet && c.Request().Header.Get("Upgrade") == "WebSocket") {
 			if c.Request().Header.Get("Origin") != h.cfg.ControlPanel.Origin {
-				log.WithField("origin", c.Request().Header.Get("Origin")).Error("origin not allowed")
+				slog.Error("origin not allowed", slog.String("origin", c.Request().Header.Get("Origin")))
 				return c.JSON(http.StatusOK, entity.ErrorResponse{
 					Success:   false,
 					ErrorCode: entity.ErrBadRequest,

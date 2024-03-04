@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -17,7 +18,6 @@ import (
 
 	"github.com/kofuk/premises/common/retry"
 	"github.com/kofuk/premises/controlpanel/config"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -117,7 +117,7 @@ func DeleteImage(ctx context.Context, cfg *config.Config, token, imageID string)
 	}
 	url.Path = path.Join(url.Path, "v2/images", imageID)
 
-	log.Info("Deleting image...")
+	slog.Info("Deleting image...")
 	err = retry.Retry(func() error {
 		req, err := makeRequest(ctx, http.MethodDelete, url.String(), token)
 		if err != nil {
@@ -126,11 +126,11 @@ func DeleteImage(ctx context.Context, cfg *config.Config, token, imageID string)
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			log.WithError(err).Error("Failed to send request")
+			slog.Error("Failed to send request", slog.Any("error", err))
 			return err
 		}
 
-		log.WithField("status_code", resp.StatusCode).Info("Requested deleting image")
+		slog.Info("Requested deleting image", slog.Int("status_code", resp.StatusCode))
 
 		if resp.StatusCode == 204 {
 			return nil
@@ -141,7 +141,7 @@ func DeleteImage(ctx context.Context, cfg *config.Config, token, imageID string)
 	if err != nil {
 		return err
 	}
-	log.Info("Deleting image...Done")
+	slog.Info("Deleting image...Done")
 
 	return nil
 }
@@ -163,7 +163,7 @@ func DeleteVM(ctx context.Context, cfg *config.Config, token, vmID string) error
 			return err
 		}
 
-		log.WithField("status_code", resp.StatusCode).Info("Requested deleting VM")
+		slog.Info("Requested deleting VM", slog.Int("status_code", resp.StatusCode))
 
 		if resp.StatusCode == 204 {
 			return nil

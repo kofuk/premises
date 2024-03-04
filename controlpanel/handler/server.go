@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/common/retry"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
-	log "github.com/sirupsen/logrus"
 )
 
 type GameServer struct {
@@ -38,14 +38,14 @@ func (s *GameServer) getToken(ctx context.Context) (string, error) {
 	} else {
 		expires, err := time.Parse(time.RFC3339, s.expires)
 		if err != nil || expires.Before(time.Now().Add(10*time.Minute)) {
-			log.Info("Refreshing token...")
+			slog.Info("Refreshing token...")
 			token, expires, err := conoha.GetToken(ctx, s.cfg)
 			if err != nil {
 				return "", err
 			}
 			s.token = token
 			s.expires = expires
-			log.Info("Refreshing token...Done")
+			slog.Info("Refreshing token...Done")
 		}
 	}
 
@@ -55,14 +55,14 @@ func (s *GameServer) getToken(ctx context.Context) (string, error) {
 func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSizeGB int, startupScript []byte) string {
 	token, err := s.getToken(ctx)
 	if err != nil {
-		log.WithError(err).Error("Failed to get token")
+		slog.Error("Failed to get token", slog.Any("error", err))
 		return ""
 	}
 
-	log.Info("Finding security group...")
+	slog.Info("Finding security group...")
 	sgs, err := conoha.GetSecurityGroups(ctx, s.cfg, token)
 	if err != nil {
-		log.WithError(err).Error("Failed to get security groups")
+		slog.Error("Failed to get security groups", slog.Any("error", err))
 		return ""
 	}
 	hasSecGroup := false
@@ -73,10 +73,10 @@ func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSi
 		}
 	}
 	if !hasSecGroup {
-		log.Info("Createing security group...")
+		slog.Info("Createing security group...")
 		sgId, err := conoha.CreateSecurityGroup(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
 		if err != nil {
-			log.WithError(err).Error("Failed to create security group")
+			slog.Error("Failed to create security group", slog.Any("error", err))
 			return ""
 		}
 		if err := conoha.CreateSecurityGroupRule(ctx, s.cfg, token, conoha.SecurityGroupRule{
@@ -88,62 +88,62 @@ func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSi
 			Protocol:        "tcp",
 			RemoteIP:        "0.0.0.0/0",
 		}); err != nil {
-			log.WithError(err).Error("Failed to create security group rule")
+			slog.Error("Failed to create security group rule", slog.Any("error", err))
 			return ""
 		}
-		log.Info("Createing security group...Done")
+		slog.Info("Createing security group...Done")
 
 	}
-	log.Info("Finding security group...Done")
+	slog.Info("Finding security group...Done")
 
-	log.Info("Retrieving flavors...")
+	slog.Info("Retrieving flavors...")
 	flavors, err := conoha.GetFlavors(ctx, s.cfg, token)
 	if err != nil {
-		log.WithError(err).Error("Failed to get flavors")
+		slog.Error("Failed to get flavors", slog.Any("error", err))
 		return ""
 	}
 	flavorId, err := conoha.FindMatchingFlavor(flavors, memSizeGB*1024)
 	if err != nil {
-		log.WithError(err).Error("Matching flavor not found")
+		slog.Error("Matching flavor not found", slog.Any("error", err))
 		return ""
 	}
 
-	log.WithField("selected_flavor", flavorId).Info("Retriving flavors...Done")
+	slog.Info("Retriving flavors...Done", slog.String("selected_flavor", flavorId))
 
-	log.Info("Retriving image ID...")
+	slog.Info("Retriving image ID...")
 	imageID, imageStatus, err := conoha.GetImageID(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
-		log.WithError(err).Error("Failed to get image ID")
+		slog.Error("Failed to get image ID", slog.Any("error", err))
 		return ""
 	} else if imageStatus != "active" {
-		log.Error("Image is not active")
+		slog.Error("Image is not active")
 		return ""
 	}
-	log.WithField("image_id", imageID).Info("Retriving image ID...Done")
+	slog.Info("Retriving image ID...Done", slog.String("image_id", imageID))
 
-	log.Info("Creating VM...")
+	slog.Info("Creating VM...")
 	id, err := conoha.CreateVM(ctx, s.cfg, s.cfg.Conoha.NameTag, token, imageID, flavorId, startupScript)
 	if err != nil {
-		log.WithError(err).Error("Failed to create VM")
+		slog.Error("Failed to create VM", slog.Any("error", err))
 		return ""
 	}
-	log.Info("Creating VM...")
+	slog.Info("Creating VM...")
 
-	log.Info("Waiting for VM to be created...")
+	slog.Info("Waiting for VM to be created...")
 	err = retry.Retry(func() error {
 		vms, err := conoha.GetVMDetail(ctx, s.cfg, token, id)
 		if err != nil {
-			log.WithError(err).Info("Waiting for VM to be created...")
+			slog.Info("Waiting for VM to be created...", slog.Any("error", err))
 			return err
 		} else if vms.Status == "BUILD" {
-			log.WithField("vm_status", vms.Status).Info("Waiting for VM to be created...")
+			slog.Info("Waiting for VM to be created...", slog.String("vm_status", vms.Status))
 			return errors.New("VM is building")
 		}
 
 		return nil
 	}, 30*time.Minute)
 	if err != nil {
-		log.WithError(err).Error("Timeout creating VM")
+		slog.Error("Timeout creating VM", slog.Any("error", err))
 		return ""
 	}
 
@@ -153,7 +153,7 @@ func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSi
 func (s *GameServer) FindVM(ctx context.Context) (string, error) {
 	token, err := s.getToken(ctx)
 	if err != nil {
-		log.WithError(err).Error("Failed to get token")
+		slog.Error("Failed to get token", slog.Any("error", err))
 		return "", err
 	}
 
@@ -168,17 +168,17 @@ func (s *GameServer) FindVM(ctx context.Context) (string, error) {
 func (s *GameServer) VMRunning(ctx context.Context, id string) bool {
 	token, err := s.getToken(ctx)
 	if err != nil {
-		log.WithError(err).Error("Failed to get token")
+		slog.Error("Failed to get token", slog.Any("error", err))
 		return false
 	}
 
-	log.Info("Getting VM information...")
+	slog.Info("Getting VM information...")
 	detail, err := conoha.GetVMDetail(ctx, s.cfg, token, id)
 	if err != nil {
-		log.WithError(err).Error("Failed to get VM detail")
+		slog.Error("Failed to get VM detail", slog.Any("error", err))
 		return false
 	}
-	log.Info("Getting VM information...Done")
+	slog.Info("Getting VM information...Done")
 
 	return detail.Status == "ACTIVE"
 }
@@ -186,26 +186,26 @@ func (s *GameServer) VMRunning(ctx context.Context, id string) bool {
 func (s *GameServer) StopVM(ctx context.Context, id string) bool {
 	token, err := s.getToken(ctx)
 	if err != nil {
-		log.WithError(err).Error("Failed to get token")
+		slog.Error("Failed to get token", slog.Any("error", err))
 		return false
 	}
 
-	log.Info("Requesting to Stop VM...")
+	slog.Info("Requesting to Stop VM...")
 	if err := conoha.StopVM(ctx, s.cfg, token, id); err != nil {
-		log.WithError(err).Error("Failed to stop VM")
+		slog.Error("Failed to stop VM", slog.Any("error", err))
 		return false
 	}
-	log.Info("Requesting to Stop VM...Done")
+	slog.Info("Requesting to Stop VM...Done")
 
 	// Wait for VM to stop
-	log.Info("Waiting for the VM to stop...")
+	slog.Info("Waiting for the VM to stop...")
 	err = retry.Retry(func() error {
 		detail, err := conoha.GetVMDetail(ctx, s.cfg, token, id)
 		if err != nil {
-			log.WithError(err).Error("Failed to get VM information")
+			slog.Error("Failed to get VM information", slog.Any("error", err))
 			return err
 		}
-		log.WithField("status", detail.Status).Info("Waiting for the VM to stop...")
+		slog.Info("Waiting for the VM to stop...", slog.String("status", detail.Status))
 		if detail.Status != "SHUTOFF" {
 			return errors.New("Not yet stopped")
 		}
@@ -213,10 +213,10 @@ func (s *GameServer) StopVM(ctx context.Context, id string) bool {
 		return nil
 	}, 30*time.Minute)
 	if err != nil {
-		log.WithError(err).Error("Failed to stop VM")
+		slog.Error("Failed to stop VM", slog.Any("error", err))
 		return false
 	}
-	log.Info("Waiting for the VM to stop...Done")
+	slog.Info("Waiting for the VM to stop...Done")
 
 	return true
 }
@@ -224,16 +224,16 @@ func (s *GameServer) StopVM(ctx context.Context, id string) bool {
 func (s *GameServer) DeleteVM(ctx context.Context, id string) bool {
 	token, err := s.getToken(ctx)
 	if err != nil {
-		log.WithError(err).Error("Failed to get token")
+		slog.Error("Failed to get token", slog.Any("error", err))
 		return false
 	}
 
-	log.Info("Deleting VM...")
+	slog.Info("Deleting VM...")
 	if err := conoha.DeleteVM(ctx, s.cfg, token, id); err != nil {
-		log.WithError(err).Error("Failed to delete VM")
+		slog.Error("Failed to delete VM", slog.Any("error", err))
 		return false
 	}
-	log.Info("Deleting VM...Done")
+	slog.Info("Deleting VM...Done")
 
 	return true
 }
@@ -241,21 +241,21 @@ func (s *GameServer) DeleteVM(ctx context.Context, id string) bool {
 func (s *GameServer) ImageExists(ctx context.Context) bool {
 	token, err := s.getToken(ctx)
 	if err != nil {
-		log.WithError(err).Error("Failed to get token")
+		slog.Error("Failed to get token", slog.Any("error", err))
 		return false
 	}
 
-	log.Info("Getting image information...")
+	slog.Info("Getting image information...")
 	_, imageStatus, err := conoha.GetImageID(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
-		log.WithError(err).Error("Failed to get image information")
+		slog.Error("Failed to get image information", slog.Any("error", err))
 		return false
 	} else if imageStatus != "active" {
-		log.Info("Getting image information...Done")
-		log.WithField("status", imageStatus).Info("Image is not active")
+		slog.Info("Getting image information...Done")
+		slog.Info("Image is not active", slog.String("status", imageStatus))
 		return false
 	}
-	log.Info("Getting image information...Done")
+	slog.Info("Getting image information...Done")
 
 	return true
 }
@@ -263,46 +263,46 @@ func (s *GameServer) ImageExists(ctx context.Context) bool {
 func (s *GameServer) SaveImage(ctx context.Context, id string) bool {
 	token, err := s.getToken(ctx)
 	if err != nil {
-		log.WithError(err).Error("Failed to get token")
+		slog.Error("Failed to get token", slog.Any("error", err))
 		return false
 	}
 
-	log.Info("Retrieving to volume information...")
+	slog.Info("Retrieving to volume information...")
 	vm, err := conoha.GetVMDetail(ctx, s.cfg, token, id)
 	if err != nil {
-		log.WithError(err).Error("Error retrieving VM detail")
+		slog.Error("Error retrieving VM detail", slog.Any("error", err))
 		return false
 	}
 	if len(vm.Volumes) == 0 {
-		log.Error("No volume attached to the VM")
+		slog.Error("No volume attached to the VM")
 		return false
 	}
-	log.Info("Retrieving to volume information...Done")
+	slog.Info("Retrieving to volume information...Done")
 
-	log.Info("Requesting to create image...")
+	slog.Info("Requesting to create image...")
 	if err := conoha.CreateImage(ctx, s.cfg, token, vm.Volumes[0].ID, s.cfg.Conoha.NameTag); err != nil {
-		log.WithError(err).Error("Failed to create image")
+		slog.Error("Failed to create image", slog.Any("error", err))
 		return false
 	}
-	log.Info("Requesting to create image...Done")
+	slog.Info("Requesting to create image...Done")
 
-	log.Info("Waiting for image to be created...")
+	slog.Info("Waiting for image to be created...")
 	err = retry.Retry(func() error {
 		_, imageStatus, err := conoha.GetImageID(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
 		if err != nil {
-			log.WithError(err).Error("Error getting image information")
+			slog.Error("Error getting image information", slog.Any("error", err))
 		}
 		if imageStatus == "active" {
 			return nil
 		}
-		log.WithField("image_status", imageStatus).Info("Waiting for image to be created...")
+		slog.Info("Waiting for image to be created...", slog.String("image_status", imageStatus))
 		return fmt.Errorf("Image is not active (status=%s)", imageStatus)
 	}, 30*time.Minute)
 	if err != nil {
-		log.WithError(err).Error("Failed save image")
+		slog.Error("Failed save image", slog.Any("error", err))
 		return false
 	}
-	log.Info("Waiting for image to be created...Done")
+	slog.Info("Waiting for image to be created...Done")
 
 	return true
 }
@@ -310,24 +310,24 @@ func (s *GameServer) SaveImage(ctx context.Context, id string) bool {
 func (s *GameServer) DeleteImage(ctx context.Context) bool {
 	token, err := s.getToken(ctx)
 	if err != nil {
-		log.WithError(err).Error("Failed to get token")
+		slog.Error("Failed to get token", slog.Any("error", err))
 		return false
 	}
 
-	log.Info("Getting image information...")
+	slog.Info("Getting image information...")
 	imageID, imageStatus, err := conoha.GetImageID(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
-		log.WithError(err).Error("Failed to get image ID")
+		slog.Error("Failed to get image ID", slog.Any("error", err))
 		return false
 	} else if imageStatus != "active" {
-		log.WithField("image_status", imageStatus).Error("Image is not active")
+		slog.Error("Image is not active", slog.String("image_status", imageStatus))
 		return false
 	}
-	log.WithField("image_id", imageID).WithField("image_status", imageStatus).Info("Getting image information...Done")
+	slog.Info("Getting image information...Done", slog.String("image_id", imageID), slog.String("image_status", imageStatus))
 
-	log.Info("Deleting image...")
+	slog.Info("Deleting image...")
 	if err := conoha.DeleteImage(ctx, s.cfg, token, imageID); err != nil {
-		log.WithError(err).Error("Seems we got undocumented response from image API; checking image existence...")
+		slog.Error("Seems we got undocumented response from image API; checking image existence...", slog.Any("error", err))
 		err := retry.Retry(func() error {
 			if !s.ImageExists(ctx) {
 				return nil
@@ -339,7 +339,7 @@ func (s *GameServer) DeleteImage(ctx context.Context) bool {
 			return false
 		}
 	}
-	log.Info("Deleting image...Done")
+	slog.Info("Deleting image...Done")
 
 	return true
 }

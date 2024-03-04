@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -8,7 +9,6 @@ import (
 	"github.com/kofuk/premises/controlpanel/model"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,7 +19,7 @@ func (h *Handler) handleLogin(c echo.Context) error {
 
 	var cred entity.PasswordCredential
 	if err := c.Bind(&cred); err != nil {
-		log.WithError(err).Error("Failed to bind data")
+		slog.Error("Failed to bind data", slog.Any("error", err))
 		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
@@ -141,7 +141,7 @@ func (h *Handler) handleLoginResetPassword(c echo.Context) error {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		log.WithError(err).Error("error registering user")
+		slog.Error("error registering user", slog.Any("error", err))
 		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -149,7 +149,7 @@ func (h *Handler) handleLoginResetPassword(c echo.Context) error {
 	}
 
 	if _, err := h.db.NewUpdate().Model((*model.User)(nil)).Set("password = ?", string(hashedPassword)).Set("initialized = ?", true).Where("id = ? AND deleted_at IS NULL", userId).Exec(c.Request().Context()); err != nil {
-		log.WithError(err).Error("error updating password")
+		slog.Error("error updating password", slog.Any("error", err))
 		return c.JSON(http.StatusOK, entity.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
