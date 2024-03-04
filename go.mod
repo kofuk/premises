@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.51.1
 	github.com/aws/smithy-go v1.20.1
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff
-	github.com/cloudflare/cloudflare-go v0.88.0
+	github.com/cloudflare/cloudflare-go v0.89.0
 	github.com/docker/docker v25.0.3+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/go-redis/redis/v8 v8.11.5
