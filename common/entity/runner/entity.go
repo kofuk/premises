@@ -8,37 +8,10 @@ type EventType string
 
 const (
 	EventHello   EventType = "hello"
-	EventStatus            = "status"
-	EventSysstat           = "sysstat"
-	EventInfo              = "info"
-	EventStarted           = "started"
-)
-
-const (
-	EventShutdown      entity.EventCode = iota + 1 // 1
-	EventSysInit                                   // 2
-	EventGameDownload                              // 3
-	EventWorldDownload                             // 4
-	EventWorldPrepare                              // 5
-	EventWorldUpload                               // 6
-	EventLoading                                   // 7
-	EventRunning                                   // 8
-	EventStopping                                  // 9
-	EventCrashed                                   // 10
-	EventClean                                     // 11
-)
-
-// Event codes that should be provided UI to retry.
-const (
-	EventGameErr   entity.EventCode = iota + 50 // 50
-	EventWorldErr                               // 51
-	EventLaunchErr                              // 52
-)
-
-const (
-	InfoSnapshotDone  entity.InfoCode = iota + 1 // 1
-	InfoSnapshotError                            // 2
-	InfoNoSnapshot                               // 3
+	EventStatus  EventType = "status"
+	EventSysstat EventType = "sysstat"
+	EventInfo    EventType = "info"
+	EventStarted EventType = "started"
 )
 
 type StatusExtra struct {

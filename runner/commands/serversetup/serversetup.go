@@ -7,7 +7,8 @@ import (
 	"os/exec"
 	"os/user"
 
-	entity "github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/common/entity"
+	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/systemutil"
 )
@@ -71,9 +72,9 @@ func getIPAddr() (v4Addrs []string, v6Addrs []string, err error) {
 func (self *ServerSetup) sendServerHello() {
 	systemVersion := systemutil.GetSystemVersion()
 
-	eventData := entity.Event{
-		Type: entity.EventHello,
-		Hello: &entity.HelloExtra{
+	eventData := runner.Event{
+		Type: runner.EventHello,
+		Hello: &runner.HelloExtra{
 			Version: systemVersion.PremisesVersion,
 			Host:    systemVersion.HostOS,
 		},
@@ -91,9 +92,9 @@ func (self *ServerSetup) sendServerHello() {
 }
 
 func (self *ServerSetup) notifyStatus() {
-	if err := exterior.SendMessage("serverStatus", entity.Event{
-		Type: entity.EventStatus,
-		Status: &entity.StatusExtra{
+	if err := exterior.SendMessage("serverStatus", runner.Event{
+		Type: runner.EventStatus,
+		Status: &runner.StatusExtra{
 			EventCode: entity.EventSysInit,
 		},
 	}); err != nil {

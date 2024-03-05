@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/kofuk/premises/common/entity"
-	webEntity "github.com/kofuk/premises/common/entity/web"
+	"github.com/kofuk/premises/common/entity/web"
 )
 
 type StreamingService struct {
@@ -57,15 +57,15 @@ func (self Stream) GetChannelID() string {
 
 type Message any
 
-func NewStandardMessage(eventCode entity.EventCode, pageCode webEntity.PageCode) Message {
-	return &webEntity.StandardMessage{
+func NewStandardMessage(eventCode entity.EventCode, pageCode web.PageCode) Message {
+	return &web.StandardMessage{
 		EventCode: eventCode,
 		PageCode:  pageCode,
 	}
 }
 
-func NewStandardMessageWithProgress(eventCode entity.EventCode, progress int, pageCode webEntity.PageCode) Message {
-	msg := &webEntity.StandardMessage{
+func NewStandardMessageWithProgress(eventCode entity.EventCode, progress int, pageCode web.PageCode) Message {
+	msg := &web.StandardMessage{
 		EventCode: eventCode,
 		PageCode:  pageCode,
 	}
@@ -73,8 +73,8 @@ func NewStandardMessageWithProgress(eventCode entity.EventCode, progress int, pa
 	return msg
 }
 
-func NewStandardMessageWithTextData(eventCode entity.EventCode, textData string, pageCode webEntity.PageCode) Message {
-	msg := &webEntity.StandardMessage{
+func NewStandardMessageWithTextData(eventCode entity.EventCode, textData string, pageCode web.PageCode) Message {
+	msg := &web.StandardMessage{
 		EventCode: eventCode,
 		PageCode:  pageCode,
 	}
@@ -83,14 +83,14 @@ func NewStandardMessageWithTextData(eventCode entity.EventCode, textData string,
 }
 
 func NewInfoMessage(infoCode entity.InfoCode, isError bool) Message {
-	return &webEntity.InfoMessage{
+	return &web.InfoMessage{
 		InfoCode: infoCode,
 		IsError:  isError,
 	}
 }
 
 func NewSysstatMessage(cpuUsage float64, time int64) Message {
-	return &webEntity.SysstatMessage{
+	return &web.SysstatMessage{
 		CPUUsage: cpuUsage,
 		Time:     time,
 	}

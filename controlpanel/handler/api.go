@@ -19,8 +19,9 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/securecookie"
-	runnerEntity "github.com/kofuk/premises/common/entity/runner"
-	entity "github.com/kofuk/premises/common/entity/web"
+	"github.com/kofuk/premises/common/entity"
+	"github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
 	"github.com/kofuk/premises/controlpanel/gameconfig"
@@ -41,7 +42,7 @@ const (
 func (h *Handler) handleApiSessionData(c echo.Context) error {
 	session, err := session.Get("session", c)
 	if err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -49,7 +50,7 @@ func (h *Handler) handleApiSessionData(c echo.Context) error {
 
 	userID, ok := session.Values["user_id"].(uint)
 
-	sessionData := entity.SessionData{
+	sessionData := web.SessionData{
 		LoggedIn: ok,
 	}
 
@@ -57,7 +58,7 @@ func (h *Handler) handleApiSessionData(c echo.Context) error {
 		var userName string
 		if err := h.db.NewSelect().Model((*model.User)(nil)).Column("name").Where("id = ? AND deleted_at IS NULL", userID).Scan(c.Request().Context(), &userName); err != nil {
 			slog.Error("User not found", slog.Any("error", err))
-			return c.JSON(http.StatusOK, entity.ErrorResponse{
+			return c.JSON(http.StatusOK, web.ErrorResponse{
 				Success:   false,
 				ErrorCode: entity.ErrInternal,
 			})
@@ -65,7 +66,7 @@ func (h *Handler) handleApiSessionData(c echo.Context) error {
 		sessionData.UserName = userName
 	}
 
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SessionData]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.SessionData]{
 		Success: true,
 		Data:    sessionData,
 	})
@@ -145,7 +146,7 @@ func isValidMemSize(memSize int) bool {
 	return memSize == 1 || memSize == 2 || memSize == 4 || memSize == 8 || memSize == 16 || memSize == 32 || memSize == 64
 }
 
-func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Values, cfg *config.Config) (*runnerEntity.Config, error) {
+func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Values, cfg *config.Config) (*runner.Config, error) {
 	if !values.Has("server-version") {
 		return nil, errors.New("Server version is not set")
 	}
@@ -240,7 +241,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 	if err := h.Streaming.PublishEvent(
 		ctx,
 		stdStream,
-		streaming.NewStandardMessage(entity.EvStopRunner, entity.PageLoading),
+		streaming.NewStandardMessage(entity.EventStopRunner, web.PageLoading),
 	); err != nil {
 		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
@@ -273,7 +274,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 	if err := h.Streaming.PublishEvent(
 		ctx,
 		stdStream,
-		streaming.NewStandardMessageWithProgress(entity.EvStopRunner, 40, entity.PageLoading),
+		streaming.NewStandardMessageWithProgress(entity.EventStopRunner, 40, web.PageLoading),
 	); err != nil {
 		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
@@ -293,7 +294,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 	if err := h.Streaming.PublishEvent(
 		ctx,
 		stdStream,
-		streaming.NewStandardMessageWithProgress(entity.EvStopRunner, 80, entity.PageLoading),
+		streaming.NewStandardMessageWithProgress(entity.EventStopRunner, 80, web.PageLoading),
 	); err != nil {
 		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
@@ -322,7 +323,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 	if err := h.Streaming.PublishEvent(
 		ctx,
 		stdStream,
-		streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch),
+		streaming.NewStandardMessage(entity.EventStopped, web.PageLaunch),
 	); err != nil {
 		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
@@ -332,7 +333,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 	}
 }
 
-func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Config, gameServer *GameServer, memSizeGB int) {
+func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, gameServer *GameServer, memSizeGB int) {
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
 	infoStream := h.Streaming.GetStream(streaming.InfoStream)
 
@@ -354,7 +355,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 	if err := h.Streaming.PublishEvent(
 		ctx,
 		stdStream,
-		streaming.NewStandardMessage(entity.EvCreateRunner, entity.PageLoading),
+		streaming.NewStandardMessage(entity.EventCreateRunner, web.PageLoading),
 	); err != nil {
 		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
@@ -362,7 +363,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 	if err := h.Streaming.PublishEvent(
 		ctx,
 		stdStream,
-		streaming.NewStandardMessageWithProgress(entity.EvCreateRunner, 10, entity.PageLoading),
+		streaming.NewStandardMessageWithProgress(entity.EventCreateRunner, 10, web.PageLoading),
 	); err != nil {
 		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
@@ -395,7 +396,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 		if err := h.Streaming.PublishEvent(
 			ctx,
 			stdStream,
-			streaming.NewStandardMessageWithTextData(entity.EvManualSetup, authCode, entity.PageManualSetup),
+			streaming.NewStandardMessageWithTextData(entity.EventManualSetup, authCode, web.PageManualSetup),
 		); err != nil {
 			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
@@ -416,7 +417,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 	if err := h.Streaming.PublishEvent(
 		ctx,
 		stdStream,
-		streaming.NewStandardMessageWithProgress(entity.EvCreateRunner, 50, entity.PageLoading),
+		streaming.NewStandardMessageWithProgress(entity.EventCreateRunner, 50, web.PageLoading),
 	); err != nil {
 		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
@@ -437,7 +438,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 	if err := h.Streaming.PublishEvent(
 		ctx,
 		stdStream,
-		streaming.NewStandardMessageWithProgress(entity.EvCreateRunner, 80, entity.PageLoading),
+		streaming.NewStandardMessageWithProgress(entity.EventCreateRunner, 80, web.PageLoading),
 	); err != nil {
 		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
@@ -446,7 +447,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runnerEntity.Con
 func (h *Handler) handleApiLaunch(c echo.Context) error {
 	if err := c.Request().ParseForm(); err != nil {
 		slog.Error("Failed to parse form", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -456,7 +457,7 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 	defer h.serverMutex.Unlock()
 
 	if h.serverRunning {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrServerRunning,
 		})
@@ -464,7 +465,7 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 
 	gameConfig, err := h.createConfigFromPostData(c.Request().Context(), c.Request().Form, h.cfg)
 	if err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInvalidConfig,
 		})
@@ -478,7 +479,7 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 
 	go h.LaunchServer(context.Background(), gameConfig, h.GameServer, memSizeGB)
 
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
@@ -486,7 +487,7 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 func (h *Handler) handleApiReconfigure(c echo.Context) error {
 	if err := c.Request().ParseForm(); err != nil {
 		slog.Error("Failed to parse form", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -497,40 +498,40 @@ func (h *Handler) handleApiReconfigure(c echo.Context) error {
 
 	gameConfig, err := h.createConfigFromPostData(c.Request().Context(), formValues, h.cfg)
 	if err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInvalidConfig,
 		})
 	}
 
-	if err := h.runnerAction.Push(c.Request().Context(), "default", runnerEntity.Action{
-		Type:   runnerEntity.ActionReconfigure,
+	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
+		Type:   runner.ActionReconfigure,
 		Config: gameConfig,
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
 		})
 	}
 
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
 
 func (h *Handler) handleApiStop(c echo.Context) error {
-	if err := h.runnerAction.Push(c.Request().Context(), "default", runnerEntity.Action{
-		Type: runnerEntity.ActionStop,
+	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
+		Type: runner.ActionStop,
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
 		})
 	}
 
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
@@ -547,13 +548,13 @@ func (h *Handler) handleApiBackups(c echo.Context) error {
 	backups, err := h.backup.GetWorlds(c.Request().Context())
 	if err != nil {
 		slog.Error("Failed to retrieve backup list", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBackup,
 		})
 	}
 
-	resp := entity.SuccessfulResponse[[]entity.WorldBackup]{
+	resp := web.SuccessfulResponse[[]web.WorldBackup]{
 		Success: true,
 		Data:    backups,
 	}
@@ -561,7 +562,7 @@ func (h *Handler) handleApiBackups(c echo.Context) error {
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		slog.Error("Failed to marshal backpu list", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -578,13 +579,13 @@ func (h *Handler) handleApiMcversions(c echo.Context) error {
 	versions, err := h.MCVersions.GetVersions(c.Request().Context())
 	if err != nil {
 		slog.Error("Failed to retrieve Minecraft versions", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
 	}
 
-	versionsEntity := make([]entity.MCVersion, 0)
+	versionsEntity := make([]web.MCVersion, 0)
 	for _, ver := range versions {
 		channel := ""
 		if ver.Type == "release" {
@@ -599,7 +600,7 @@ func (h *Handler) handleApiMcversions(c echo.Context) error {
 			channel = "unknown"
 		}
 
-		versionsEntity = append(versionsEntity, entity.MCVersion{
+		versionsEntity = append(versionsEntity, web.MCVersion{
 			Name:        ver.ID,
 			IsStable:    ver.Type == "release",
 			Channel:     channel,
@@ -607,7 +608,7 @@ func (h *Handler) handleApiMcversions(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[[]entity.MCVersion]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[[]web.MCVersion]{
 		Success: true,
 		Data:    versionsEntity,
 	})
@@ -616,12 +617,12 @@ func (h *Handler) handleApiMcversions(c echo.Context) error {
 func (h *Handler) handleApiSystemInfo(c echo.Context) error {
 	data, err := monitor.GetSystemInfo(c.Request().Context(), h.cfg, &h.KVS)
 	if err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
 	}
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SystemInfo]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.SystemInfo]{
 		Success: true,
 		Data:    *data,
 	})
@@ -630,81 +631,81 @@ func (h *Handler) handleApiSystemInfo(c echo.Context) error {
 func (h *Handler) handleApiWorldInfo(c echo.Context) error {
 	data, err := monitor.GetWorldInfo(c.Request().Context(), h.cfg, &h.KVS)
 	if err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
 	}
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.WorldInfo]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.WorldInfo]{
 		Success: true,
 		Data:    *data,
 	})
 }
 
 func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
-	var config entity.SnapshotConfiguration
+	var config web.SnapshotConfiguration
 	if err := c.Bind(&config); err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 
 	if config.Slot < 0 || 10 <= config.Slot {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 
-	if err := h.runnerAction.Push(c.Request().Context(), "default", runnerEntity.Action{
-		Type: runnerEntity.ActionSnapshot,
-		Snapshot: runnerEntity.SnapshotConfig{
+	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
+		Type: runner.ActionSnapshot,
+		Snapshot: runner.SnapshotConfig{
 			Slot: config.Slot,
 		},
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
 		})
 	}
 
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
 
 func (h *Handler) handleApiQuickUndoUndo(c echo.Context) error {
-	var config entity.SnapshotConfiguration
+	var config web.SnapshotConfiguration
 	if err := c.Bind(&config); err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 
 	if config.Slot < 0 || 10 <= config.Slot {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 
-	if err := h.runnerAction.Push(c.Request().Context(), "default", runnerEntity.Action{
-		Type: runnerEntity.ActionUndo,
-		Snapshot: runnerEntity.SnapshotConfig{
+	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
+		Type: runner.ActionUndo,
+		Snapshot: runner.SnapshotConfig{
 			Slot: config.Slot,
 		},
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
 		})
 	}
 
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
@@ -717,7 +718,7 @@ func setupApiQuickUndoRoutes(h *Handler, group *echo.Group) {
 func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 	session, err := session.Get("session", c)
 	if err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -725,22 +726,22 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 
 	userID, ok := session.Values["user_id"].(uint)
 	if !ok {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
 	}
 
-	var req entity.UpdatePassword
+	var req web.UpdatePassword
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 
 	if !isAllowedPassword(req.NewPassword) {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasswordRule,
 		})
@@ -749,13 +750,13 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 	var password string
 	if err := h.db.NewSelect().Model((*model.User)(nil)).Column("password").Where("id = ? AND deleted_at IS NULL", userID).Scan(c.Request().Context(), &password); err != nil {
 		slog.Error("User not found", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(req.Password)); err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
 		})
@@ -764,7 +765,7 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
 		slog.Error("error hashing password", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -772,13 +773,13 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 
 	if _, err := h.db.NewUpdate().Model((*model.User)(nil)).Set("password = ?", string(hashedPassword)).Set("initialized = ?", true).Where("id = ? AND deleted_at IS NULL", userID).Exec(c.Request().Context()); err != nil {
 		slog.Error("error updating password", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
 	}
 
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
@@ -786,7 +787,7 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 func (h *Handler) handleApiUsersAdd(c echo.Context) error {
 	session, err := session.Get("session", c)
 	if err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -794,28 +795,28 @@ func (h *Handler) handleApiUsersAdd(c echo.Context) error {
 
 	userID, ok := session.Values["user_id"].(uint)
 	if !ok {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
 	}
 
-	var req entity.PasswordCredential
+	var req web.PasswordCredential
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 
 	if len(req.UserName) == 0 || len(req.UserName) > 32 {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 	if !isAllowedPassword(req.Password) {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasswordRule,
 		})
@@ -824,7 +825,7 @@ func (h *Handler) handleApiUsersAdd(c echo.Context) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		slog.Error("error hashing password", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -839,13 +840,13 @@ func (h *Handler) handleApiUsersAdd(c echo.Context) error {
 
 	if _, err := h.db.NewInsert().Model(user).Exec(c.Request().Context()); err != nil {
 		slog.Error("error registering user", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrDupUserName,
 		})
 	}
 
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
@@ -861,7 +862,7 @@ func (h *Handler) middlewareSessionCheck(next echo.HandlerFunc) echo.HandlerFunc
 		if c.Request().Method == http.MethodPost || (c.Request().Method == http.MethodGet && c.Request().Header.Get("Upgrade") == "WebSocket") {
 			if c.Request().Header.Get("Origin") != h.cfg.ControlPanel.Origin {
 				slog.Error("origin not allowed", slog.String("origin", c.Request().Header.Get("Origin")))
-				return c.JSON(http.StatusOK, entity.ErrorResponse{
+				return c.JSON(http.StatusOK, web.ErrorResponse{
 					Success:   false,
 					ErrorCode: entity.ErrBadRequest,
 				})
@@ -871,14 +872,14 @@ func (h *Handler) middlewareSessionCheck(next echo.HandlerFunc) echo.HandlerFunc
 		// 2. Verify that the client is logged in.
 		session, err := session.Get("session", c)
 		if err != nil {
-			return c.JSON(http.StatusOK, entity.ErrorResponse{
+			return c.JSON(http.StatusOK, web.ErrorResponse{
 				Success:   false,
 				ErrorCode: entity.ErrInternal,
 			})
 		}
 
 		if _, ok := session.Values["user_id"]; !ok {
-			return c.JSON(http.StatusOK, entity.ErrorResponse{
+			return c.JSON(http.StatusOK, web.ErrorResponse{
 				Success:   false,
 				ErrorCode: entity.ErrRequiresAuth,
 			})

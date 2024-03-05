@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/serverprop"
 	"github.com/kofuk/premises/runner/exterior"
@@ -225,7 +226,7 @@ func MonitorServer(config *runner.Config, srv *ServerInstance, stdout io.ReadClo
 			if err := exterior.SendMessage("serverStatus", runner.Event{
 				Type: runner.EventStatus,
 				Status: &runner.StatusExtra{
-					EventCode: runner.EventLoading,
+					EventCode: entity.EventLoading,
 				},
 			}); err != nil {
 				slog.Error("Unable to write send message", slog.Any("error", err))
@@ -240,7 +241,7 @@ func MonitorServer(config *runner.Config, srv *ServerInstance, stdout io.ReadClo
 			if err := exterior.SendMessage("serverStatus", runner.Event{
 				Type: runner.EventStatus,
 				Status: &runner.StatusExtra{
-					EventCode: runner.EventLoading,
+					EventCode: entity.EventLoading,
 					Progress:  progress,
 				},
 			}); err != nil {
@@ -250,7 +251,7 @@ func MonitorServer(config *runner.Config, srv *ServerInstance, stdout io.ReadClo
 			if err := exterior.SendMessage("serverStatus", runner.Event{
 				Type: runner.EventStatus,
 				Status: &runner.StatusExtra{
-					EventCode: runner.EventRunning,
+					EventCode: entity.EventRunning,
 				},
 			}); err != nil {
 				slog.Error("Unable to write send message", slog.Any("error", err))
@@ -265,7 +266,7 @@ func MonitorServer(config *runner.Config, srv *ServerInstance, stdout io.ReadClo
 			if err := exterior.SendMessage("serverStatus", runner.Event{
 				Type: runner.EventStatus,
 				Status: &runner.StatusExtra{
-					EventCode: runner.EventStopping,
+					EventCode: entity.EventStopping,
 				},
 			}); err != nil {
 				slog.Error("Unable to write send message", slog.Any("error", err))

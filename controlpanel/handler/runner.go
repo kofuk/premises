@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/controlpanel/monitor"
 	"github.com/kofuk/premises/controlpanel/pollable"
@@ -63,7 +64,7 @@ func (h *Handler) handlePushStatus(c echo.Context) error {
 			return c.String(http.StatusBadRequest, "")
 		}
 
-		if event.Type == runner.EventStatus && event.Status.EventCode == runner.EventShutdown {
+		if event.Type == runner.EventStatus && event.Status.EventCode == entity.EventShutdown {
 			go h.shutdownServer(context.Background(), h.GameServer, c.Request().Header.Get("Authorization"))
 			return c.String(http.StatusOK, "")
 		}

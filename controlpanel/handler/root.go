@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	entity "github.com/kofuk/premises/common/entity/web"
+	"github.com/kofuk/premises/common/entity"
+	"github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/model"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -17,10 +18,10 @@ func (h *Handler) handleLogin(c echo.Context) error {
 		return c.String(http.StatusBadGateway, "")
 	}
 
-	var cred entity.PasswordCredential
+	var cred web.PasswordCredential
 	if err := c.Bind(&cred); err != nil {
 		slog.Error("Failed to bind data", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -28,14 +29,14 @@ func (h *Handler) handleLogin(c echo.Context) error {
 
 	user := model.User{}
 	if err := h.db.NewSelect().Model(&user).Column("id", "password", "initialized").Where("name = ? AND deleted_at IS NULL", cred.UserName).Scan(c.Request().Context()); err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
 		})
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(cred.Password)) != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
 		})
@@ -43,7 +44,7 @@ func (h *Handler) handleLogin(c echo.Context) error {
 
 	session, err := session.Get("session", c)
 	if err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -53,9 +54,9 @@ func (h *Handler) handleLogin(c echo.Context) error {
 		session.Values["change_password_user_id"] = user.ID
 		session.Save(c.Request(), c.Response())
 
-		return c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SessionState]{
+		return c.JSON(http.StatusOK, web.SuccessfulResponse[web.SessionState]{
 			Success: true,
-			Data: entity.SessionState{
+			Data: web.SessionState{
 				NeedsChangePassword: true,
 			},
 		})
@@ -64,9 +65,9 @@ func (h *Handler) handleLogin(c echo.Context) error {
 	session.Values["user_id"] = user.ID
 	session.Save(c.Request(), c.Response())
 
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[entity.SessionState]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.SessionState]{
 		Success: true,
-		Data: entity.SessionState{
+		Data: web.SessionState{
 			NeedsChangePassword: false,
 		},
 	})
@@ -75,7 +76,7 @@ func (h *Handler) handleLogin(c echo.Context) error {
 func (h *Handler) handleLogout(c echo.Context) error {
 	session, err := session.Get("session", c)
 	if err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -83,7 +84,7 @@ func (h *Handler) handleLogout(c echo.Context) error {
 	delete(session.Values, "user_id")
 	session.Save(c.Request(), c.Response())
 
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
@@ -108,7 +109,7 @@ func (h *Handler) handleLoginResetPassword(c echo.Context) error {
 
 	session, err := session.Get("session", c)
 	if err != nil {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -116,7 +117,7 @@ func (h *Handler) handleLoginResetPassword(c echo.Context) error {
 
 	userIdVal, ok := session.Values["change_password_user_id"]
 	if !ok {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -124,7 +125,7 @@ func (h *Handler) handleLoginResetPassword(c echo.Context) error {
 
 	userId, ok := userIdVal.(uint)
 	if !ok {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -133,7 +134,7 @@ func (h *Handler) handleLoginResetPassword(c echo.Context) error {
 	password := c.Request().PostFormValue("password")
 
 	if !isAllowedPassword(password) {
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasswordRule,
 		})
@@ -142,7 +143,7 @@ func (h *Handler) handleLoginResetPassword(c echo.Context) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		slog.Error("error registering user", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -150,7 +151,7 @@ func (h *Handler) handleLoginResetPassword(c echo.Context) error {
 
 	if _, err := h.db.NewUpdate().Model((*model.User)(nil)).Set("password = ?", string(hashedPassword)).Set("initialized = ?", true).Where("id = ? AND deleted_at IS NULL", userId).Exec(c.Request().Context()); err != nil {
 		slog.Error("error updating password", slog.Any("error", err))
-		return c.JSON(http.StatusOK, entity.ErrorResponse{
+		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -160,7 +161,7 @@ func (h *Handler) handleLoginResetPassword(c echo.Context) error {
 	delete(session.Values, "change_password_user_id")
 	session.Save(c.Request(), c.Response())
 
-	return c.JSON(http.StatusOK, entity.SuccessfulResponse[any]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }

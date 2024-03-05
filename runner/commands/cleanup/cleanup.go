@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/kofuk/premises/common/entity"
-	runnerEntity "github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/systemutil"
 )
@@ -53,9 +53,9 @@ func unmountData() {
 }
 
 func notifyStatus(eventCode entity.EventCode) {
-	if err := exterior.SendMessage("serverStatus", runnerEntity.Event{
-		Type: runnerEntity.EventStatus,
-		Status: &runnerEntity.StatusExtra{
+	if err := exterior.SendMessage("serverStatus", runner.Event{
+		Type: runner.EventStatus,
+		Status: &runner.StatusExtra{
 			EventCode: eventCode,
 		},
 	}); err != nil {
@@ -93,7 +93,7 @@ func copyLogData() {
 }
 
 func CleanUp() {
-	notifyStatus(runnerEntity.EventClean)
+	notifyStatus(entity.EventClean)
 
 	slog.Info("Removing snaphots...")
 	removeSnapshots()
@@ -111,5 +111,5 @@ func CleanUp() {
 	slog.Info("Copying log file if it is dev runner")
 	copyLogData()
 
-	notifyStatus(runnerEntity.EventShutdown)
+	notifyStatus(entity.EventShutdown)
 }

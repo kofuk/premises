@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
 	"github.com/kofuk/premises/runner/commands/privileged"
@@ -86,7 +87,7 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 			if err := exterior.DispatchMessage("serverStatus", runner.Event{
 				Type: runner.EventInfo,
 				Info: &runner.InfoExtra{
-					InfoCode: runner.InfoSnapshotError,
+					InfoCode: entity.InfoSnapshotError,
 					IsError:  true,
 				},
 			}); err != nil {
@@ -99,7 +100,7 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 		if err := exterior.DispatchMessage("serverStatus", runner.Event{
 			Type: runner.EventInfo,
 			Info: &runner.InfoExtra{
-				InfoCode: runner.InfoSnapshotDone,
+				InfoCode: entity.InfoSnapshotDone,
 				IsError:  false,
 			},
 		}); err != nil {
@@ -112,7 +113,7 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 				if err := exterior.DispatchMessage("serverStatus", runner.Event{
 					Type: runner.EventInfo,
 					Info: &runner.InfoExtra{
-						InfoCode: runner.InfoNoSnapshot,
+						InfoCode: entity.InfoNoSnapshot,
 						IsError:  true,
 					},
 				}); err != nil {

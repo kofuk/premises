@@ -15,7 +15,8 @@ import (
 	"github.com/boj/redistore"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/sessions"
-	entity "github.com/kofuk/premises/common/entity/web"
+	"github.com/kofuk/premises/common/entity"
+	"github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/backup"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/dns"
@@ -161,7 +162,7 @@ func setupRoutes(h *Handler) {
 			entryFile, err := os.Open("gen/index.html")
 			if err != nil {
 				slog.Error("Unable to open index.html", slog.Any("error", err))
-				c.JSON(http.StatusOK, entity.ErrorResponse{
+				c.JSON(http.StatusOK, web.ErrorResponse{
 					Success:   false,
 					ErrorCode: entity.ErrInternal,
 				})
@@ -208,7 +209,7 @@ func syncRemoteVMState(ctx context.Context, cfg *config.Config, gameServer *Game
 			if err := h.Streaming.PublishEvent(
 				ctx,
 				stdStream,
-				streaming.NewStandardMessage(entity.EvStopped, entity.PageLaunch),
+				streaming.NewStandardMessage(entity.EventStopped, web.PageLaunch),
 			); err != nil {
 				slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 			}

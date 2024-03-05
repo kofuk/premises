@@ -4,31 +4,9 @@ import (
 	"github.com/kofuk/premises/common/entity"
 )
 
-type ErrorCode int
-
-const (
-	ErrBadRequest       ErrorCode = iota + 1 // 1
-	ErrInternal                              // 2
-	ErrCredential                            // 3
-	ErrServerRunning                         // 4
-	ErrServerNotRunning                      // 5
-	ErrRemote                                // 6
-	ErrInvalidConfig                         // 7
-	ErrPasswordRule                          // 8
-	ErrDupUserName                           // 9
-	ErrRequiresAuth                          // 10
-	ErrBackup                                // 11
-)
-
-const (
-	InfoErrRunnerPrepare entity.InfoCode = iota + 100 // 100
-	InfoErrRunnerStop                                 // 101
-	InfoErrDNS                                        // 102
-)
-
 type ErrorResponse struct {
-	Success   bool      `json:"success"`
-	ErrorCode ErrorCode `json:"errorCode"`
+	Success   bool             `json:"success"`
+	ErrorCode entity.ErrorCode `json:"errorCode"`
 }
 
 type SuccessfulResponse[T any] struct {
@@ -84,15 +62,6 @@ type WorldInfo struct {
 	WorldName string `json:"worldName"`
 	Seed      string `json:"seed"`
 }
-
-const (
-	EvStopped      entity.EventCode = 100
-	EvCreateRunner entity.EventCode = 101
-	EvWaitConn     entity.EventCode = 102
-	EvConnLost     entity.EventCode = 103
-	EvStopRunner   entity.EventCode = 104
-	EvManualSetup  entity.EventCode = 105
-)
 
 type PageCode int
 

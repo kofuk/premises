@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/common/s3wrap"
 	"github.com/kofuk/premises/runner/exterior"
@@ -85,7 +86,7 @@ func (self *BackupService) DownloadWorldData(config *runner.Config) error {
 					if err := exterior.SendMessage("serverStatus", runner.Event{
 						Type: runner.EventStatus,
 						Status: &runner.StatusExtra{
-							EventCode: runner.EventWorldDownload,
+							EventCode: entity.EventWorldDownload,
 							Progress:  int(percentage),
 						},
 					}); err != nil {
@@ -231,7 +232,7 @@ func (self *BackupService) doUploadWorldData(config *runner.Config, options *Upl
 						if err := exterior.SendMessage("serverStatus", runner.Event{
 							Type: runner.EventStatus,
 							Status: &runner.StatusExtra{
-								EventCode: runner.EventWorldUpload,
+								EventCode: entity.EventWorldUpload,
 								Progress:  int(percentage),
 							},
 						}); err != nil {

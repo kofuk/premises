@@ -8,9 +8,9 @@ import (
 	"net"
 	"time"
 
-	entityTypes "github.com/kofuk/premises/common/entity"
-	runnerEntity "github.com/kofuk/premises/common/entity/runner"
-	entity "github.com/kofuk/premises/common/entity/web"
+	"github.com/kofuk/premises/common/entity"
+	"github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
 	"github.com/kofuk/premises/controlpanel/dns"
@@ -26,11 +26,11 @@ type StatusData struct {
 	CPUUsage float64 `json:"cpuUsage"`
 }
 
-func GetPageCodeByEventCode(event entityTypes.EventCode) entity.PageCode {
-	if event == runnerEntity.EventRunning {
-		return entity.PageRunning
+func GetPageCodeByEventCode(event entity.EventCode) web.PageCode {
+	if event == entity.EventRunning {
+		return web.PageRunning
 	}
-	return entity.PageLoading
+	return web.PageLoading
 }
 
 func UpdateRunnerID(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueStore, ipv4Addr string) error {
@@ -58,13 +58,13 @@ func UpdateRunnerID(ctx context.Context, cfg *config.Config, cache *kvs.KeyValue
 	return nil
 }
 
-func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.StreamingService, cfg *config.Config, kvs *kvs.KeyValueStore, dnsService *dns.DNSService, event *runnerEntity.Event) error {
+func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.StreamingService, cfg *config.Config, kvs *kvs.KeyValueStore, dnsService *dns.DNSService, event *runner.Event) error {
 	stdStream := strmProvider.GetStream(streaming.StandardStream)
 	infoStream := strmProvider.GetStream(streaming.InfoStream)
 	sysstatStream := strmProvider.GetStream(streaming.SysstatStream)
 
 	switch event.Type {
-	case runnerEntity.EventHello:
+	case runner.EventHello:
 		if event.Hello == nil {
 			return errors.New("Invalid event message: has no Hello")
 		}
@@ -92,7 +92,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 			}
 		}
 
-	case runnerEntity.EventStatus:
+	case runner.EventStatus:
 		if event.Status == nil {
 			return errors.New("Invalid event message: has no Status")
 		}
@@ -105,7 +105,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 			return err
 		}
 
-	case runnerEntity.EventSysstat:
+	case runner.EventSysstat:
 		if event.Sysstat == nil {
 			return errors.New("Invalid event message: has no Sysstat")
 		}
@@ -118,7 +118,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 			return err
 		}
 
-	case runnerEntity.EventInfo:
+	case runner.EventInfo:
 		if event.Info == nil {
 			return errors.New("Invalid event message: has no Info")
 		}
@@ -131,7 +131,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 			return err
 		}
 
-	case runnerEntity.EventStarted:
+	case runner.EventStarted:
 		if event.Started == nil {
 			return errors.New("Invalid event message: has no Started")
 		}
@@ -143,8 +143,8 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 	return nil
 }
 
-func GetSystemInfo(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueStore) (*entity.SystemInfo, error) {
-	var serverHello runnerEntity.HelloExtra
+func GetSystemInfo(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueStore) (*web.SystemInfo, error) {
+	var serverHello runner.HelloExtra
 	if err := cache.Get(ctx, "runner-info:default", &serverHello); err != nil {
 		return nil, err
 	}
@@ -154,20 +154,20 @@ func GetSystemInfo(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueS
 		ipAddr = &serverHello.Addr.IPv4[0]
 	}
 
-	return &entity.SystemInfo{
+	return &web.SystemInfo{
 		PremisesVersion: serverHello.Version,
 		HostOS:          serverHello.Host,
 		IPAddress:       ipAddr,
 	}, nil
 }
 
-func GetWorldInfo(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueStore) (*entity.WorldInfo, error) {
-	var startedData runnerEntity.StartedExtra
+func GetWorldInfo(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueStore) (*web.WorldInfo, error) {
+	var startedData runner.StartedExtra
 	if err := cache.Get(ctx, "world-info:default", &startedData); err != nil {
 		return nil, err
 	}
 
-	return &entity.WorldInfo{
+	return &web.WorldInfo{
 		Version:   startedData.ServerVersion,
 		WorldName: startedData.World.Name,
 		Seed:      startedData.World.Seed,
