@@ -3,11 +3,11 @@ import React, {useEffect, useState} from 'react';
 import {useSnackbar} from 'notistack';
 import {useTranslation} from 'react-i18next';
 
-import {Box, List, Skeleton} from '@mui/material';
+import {Box, List} from '@mui/material';
 
 import {APIError, getSystemInfo} from '@/api';
 import {SystemInfo as SystemInfoEntity} from '@/api/entities';
-import {CopyableListItem} from '@/components';
+import {CopyableListItem, DelayedSkeleton} from '@/components';
 
 const SystemInfo = () => {
   const [t] = useTranslation();
@@ -31,13 +31,31 @@ const SystemInfo = () => {
     <Box>
       <List disablePadding>
         <CopyableListItem title={t('system_info_ip_addr')}>
-          {systemInfo ? systemInfo.ipAddr || 'unknown' : <Skeleton animation="wave" height={24} width="25%" />}
+          {systemInfo ? (
+            systemInfo.ipAddr || 'unknown'
+          ) : (
+            <DelayedSkeleton width="25%">
+              <Box sx={{opacity: 0}}>-</Box>
+            </DelayedSkeleton>
+          )}
         </CopyableListItem>
         <CopyableListItem title={t('system_info_host_os')}>
-          {systemInfo ? systemInfo.hostOs : <Skeleton animation="wave" height={24} width="25%" />}
+          {systemInfo ? (
+            systemInfo.hostOs
+          ) : (
+            <DelayedSkeleton width="25%">
+              <Box sx={{opacity: 0}}>-</Box>
+            </DelayedSkeleton>
+          )}
         </CopyableListItem>
         <CopyableListItem title={t('system_info_server_version')}>
-          {systemInfo ? systemInfo.premisesVersion : <Skeleton animation="wave" height={24} width="25%" />}
+          {systemInfo ? (
+            systemInfo.premisesVersion
+          ) : (
+            <DelayedSkeleton width="25%">
+              <Box sx={{opacity: 0}}>-</Box>
+            </DelayedSkeleton>
+          )}
         </CopyableListItem>
       </List>
     </Box>
