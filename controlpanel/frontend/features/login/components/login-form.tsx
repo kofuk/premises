@@ -52,7 +52,7 @@ const LoginForm = () => {
 
   return (
     <Box display="flex" justifyContent="center">
-      <Card sx={{minWidth: 350, p: 3, mt: 5}}>
+      <Card sx={{minWidth: 350, p: 3, mt: 5}} variant="outlined">
         <CardContent>
           <Typography component="h1" sx={{mb: 3}} variant="h4">
             {t('title_login')}

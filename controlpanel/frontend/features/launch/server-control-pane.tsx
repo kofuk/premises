@@ -34,7 +34,7 @@ const ServerControlPane = () => {
   }, []);
 
   return (
-    <Card sx={{p: 2, mt: 12}}>
+    <Card sx={{p: 2, mt: 12}} variant="outlined">
       <MenuContainer
         items={[
           {

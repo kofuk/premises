@@ -21,7 +21,7 @@ const ManualSetupPage = () => {
   const [t] = useTranslation();
 
   return (
-    <Card sx={{p: 6, mt: 12}}>
+    <Card sx={{p: 6, mt: 12}} variant="outlined">
       <Stack spacing={3}>
         <Typography component="div" variant="body1">
           {t('manual_setup_summary')}
