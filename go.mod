@@ -9,7 +9,7 @@ require (
 	github.com/aws/smithy-go v1.20.1
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff
 	github.com/cloudflare/cloudflare-go v0.89.0
-	github.com/docker/docker v25.0.3+incompatible
+	github.com/docker/docker v25.0.4+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.6.0
