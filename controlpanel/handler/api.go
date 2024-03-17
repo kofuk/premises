@@ -77,16 +77,20 @@ func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName st
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
+		jsonRequested := c.Request().Header.Get("Accept") == "application/ld+json"
+
 		writeEvent := func(message []byte) error {
 			writer := bufio.NewWriter(c.Response().Writer)
 
-			if _, err := writer.WriteString("event: " + eventName + "\n"); err != nil {
-				return err
+			if jsonRequested {
+				writer.Write(message)
+				writer.WriteRune('\n')
+			} else {
+				writer.WriteString("event: " + eventName + "\n")
+				writer.WriteString("data: ")
+				writer.Write(message)
+				writer.WriteString("\n\n")
 			}
-
-			writer.WriteString("data: ")
-			writer.Write(message)
-			writer.WriteString("\n\n")
 			writer.Flush()
 
 			if flusher, ok := c.Response().Writer.(http.Flusher); ok {
@@ -102,15 +106,21 @@ func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName st
 		}
 		defer subscription.Close()
 
-		c.Response().Header().Set("Content-Type", "text/event-stream")
+		if !jsonRequested {
+			c.Response().Header().Set("Content-Type", "text/event-stream")
+			c.Response().Header().Set("X-Accel-Buffering", "no")
+		}
 		c.Response().Header().Set("Cache-Control", "no-store")
-		c.Response().Header().Set("X-Accel-Buffering", "no")
 
 		for _, entry := range statusHistory {
 			if err := writeEvent(entry); err != nil {
 				slog.Error("Failed to write data", slog.Any("error", err))
 				return err
 			}
+		}
+
+		if jsonRequested {
+			return nil
 		}
 
 		eventChannel := subscription.Channel()
