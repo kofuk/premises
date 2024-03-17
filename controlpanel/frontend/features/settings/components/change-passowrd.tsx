@@ -5,7 +5,7 @@ import {Helmet} from 'react-helmet-async';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 
-import {Stack, TextField, Typography} from '@mui/material';
+import {Paper, Stack, TextField, Typography} from '@mui/material';
 import {Box} from '@mui/system';
 
 import {changePassword} from '@/api';
@@ -36,7 +36,7 @@ const ChangePassword = () => {
   };
 
   return (
-    <>
+    <Paper variant="outlined">
       <Typography sx={{mt: 3}} variant="h4">
         {t('change_password_header')}
       </Typography>
@@ -99,7 +99,7 @@ const ChangePassword = () => {
           {t('change_password_header')} - {t('app_name')}
         </title>
       </Helmet>
-    </>
+    </Paper>
   );
 };
 

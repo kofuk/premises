@@ -107,7 +107,7 @@
   "password_confirm": "パスワードを確認",
   "settings": "設定",
   "settings_account_security": "アカウントとセキュリティ",
-  "settings_server_management": "サーバの管理",
+  "settings_server_management": "サーバ管理",
   "change_password_header": "パスワードを変更",
   "change_password_current": "現在のパスワード",
   "change_password_new": "新しいパスワード",

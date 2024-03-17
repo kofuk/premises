@@ -3,6 +3,8 @@ import React from 'react';
 import {Helmet} from 'react-helmet-async';
 import {useTranslation} from 'react-i18next';
 
+import {Box} from '@mui/material';
+
 import LoadingPage from './components/loading-page';
 import ManualSetupPage from './components/manual-setup-page';
 import ServerConfigPane from './server-config-pane';
@@ -40,7 +42,7 @@ const LaunchPage = () => {
   const mainPane: React.ReactElement = createMainPane(page);
   return (
     <>
-      {mainPane}
+      <Box sx={{maxWidth: 1000, m: '0 auto', p: 2}}>{mainPane}</Box>
 
       <Helmet>
         <title>{t('app_name')}</title>

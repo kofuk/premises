@@ -1,8 +1,6 @@
 import React, {Suspense, useEffect} from 'react';
 import {Outlet, useNavigate} from 'react-router-dom';
 
-import {Box} from '@mui/material';
-
 import Navbar from './components/navbar';
 
 import {Loading, StatusCollector} from '@/components';
@@ -22,11 +20,9 @@ const UI = () => {
       <>
         <Navbar />
 
-        <Box sx={{maxWidth: 1000, m: '0 auto', p: 2}}>
-          <Suspense fallback={<Loading />}>
-            <Outlet />
-          </Suspense>
-        </Box>
+        <Suspense fallback={<Loading />}>
+          <Outlet />
+        </Suspense>
 
         <StatusCollector />
       </>

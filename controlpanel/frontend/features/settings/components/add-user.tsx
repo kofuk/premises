@@ -5,7 +5,7 @@ import {Helmet} from 'react-helmet-async';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 
-import {Box, Stack, TextField, Typography} from '@mui/material';
+import {Box, Paper, Stack, TextField, Typography} from '@mui/material';
 
 import {APIError, addUser} from '@/api';
 import {LoadingButtonWithResult} from '@/components';
@@ -38,7 +38,7 @@ const AddUser = () => {
   };
 
   return (
-    <>
+    <Paper variant="outlined">
       <Typography sx={{mt: 3}} variant="h4">
         {t('add_user_header')}
       </Typography>
@@ -102,7 +102,7 @@ const AddUser = () => {
           {t('add_user_header')} - {t('app_name')}
         </title>
       </Helmet>
-    </>
+    </Paper>
   );
 };
 

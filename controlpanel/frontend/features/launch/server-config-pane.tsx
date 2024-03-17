@@ -176,7 +176,7 @@ const ServerConfigPane = () => {
   const stepCount = configItems.length;
 
   return (
-    <Card sx={{p: 2, mt: 12}} variant="outlined">
+    <Card sx={{p: 2, mt: 6}} variant="outlined">
       {configItems}
       <Box sx={{textAlign: 'end'}}>
         <Button disabled={currentStep !== stepCount} onClick={handleStart} startIcon={<StartIcon />} type="button" variant="contained">

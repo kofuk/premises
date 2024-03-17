@@ -4,6 +4,8 @@ import {useNavigate} from 'react-router-dom';
 import {Helmet} from 'react-helmet-async';
 import {useTranslation} from 'react-i18next';
 
+import {Box} from '@mui/material';
+
 import LoginForm from './components/login-form';
 
 import {useAuth} from '@/utils/auth';
@@ -21,7 +23,9 @@ const LoginPage = () => {
 
   return (
     <>
-      <LoginForm />
+      <Box sx={{maxWidth: 1000, m: '0 auto', p: 2}}>
+        <LoginForm />
+      </Box>
       <Helmet>
         <title>{t('title_login')}</title>
       </Helmet>
