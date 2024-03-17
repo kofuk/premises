@@ -289,18 +289,6 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
 
-	if !gameServer.SaveImage(ctx, id) {
-		if err := h.Streaming.PublishEvent(
-			ctx,
-			infoStream,
-			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
-		); err != nil {
-			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-		}
-		h.notifyNonRecoverableFailure(h.cfg, "Failed to save image")
-		return
-	}
-
 	if err := h.Streaming.PublishEvent(
 		ctx,
 		stdStream,
@@ -430,19 +418,6 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 		streaming.NewStandardMessageWithProgress(entity.EventCreateRunner, 50, web.PageLoading),
 	); err != nil {
 		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-	}
-
-	if !gameServer.DeleteImage(ctx) {
-		if err := h.Streaming.PublishEvent(
-			ctx,
-			infoStream,
-			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
-		); err != nil {
-			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-		}
-
-		h.serverRunning = false
-		return
 	}
 
 	if err := h.Streaming.PublishEvent(

@@ -110,42 +110,6 @@ func CreateImage(ctx context.Context, cfg *config.Config, token, volumeId, image
 	return nil
 }
 
-func DeleteImage(ctx context.Context, cfg *config.Config, token, imageID string) error {
-	url, err := url.Parse(cfg.Conoha.Services.Image)
-	if err != nil {
-		return err
-	}
-	url.Path = path.Join(url.Path, "v2/images", imageID)
-
-	slog.Info("Deleting image...")
-	err = retry.Retry(func() error {
-		req, err := makeRequest(ctx, http.MethodDelete, url.String(), token)
-		if err != nil {
-			return err
-		}
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			slog.Error("Failed to send request", slog.Any("error", err))
-			return err
-		}
-
-		slog.Info("Requested deleting image", slog.Int("status_code", resp.StatusCode))
-
-		if resp.StatusCode == 204 {
-			return nil
-		}
-
-		return fmt.Errorf("Failed to delete the image: %d", resp.StatusCode)
-	}, 3*time.Minute)
-	if err != nil {
-		return err
-	}
-	slog.Info("Deleting image...Done")
-
-	return nil
-}
-
 func DeleteVM(ctx context.Context, cfg *config.Config, token, vmID string) error {
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
@@ -173,9 +137,12 @@ func DeleteVM(ctx context.Context, cfg *config.Config, token, vmID string) error
 	}, 3*time.Minute)
 }
 
+type BlockDeviceMapping struct {
+	UUID string `json:"uuid"`
+}
+
 type CreateVMReq struct {
 	Server struct {
-		ImageRef  string `json:"imageRef"`
 		FlavorRef string `json:"flavorRef"`
 		UserData  string `json:"user_data"`
 		MetaData  struct {
@@ -184,6 +151,7 @@ type CreateVMReq struct {
 		SecurityGroups []struct {
 			Name string `json:"name"`
 		} `json:"security_groups"`
+		BlockDevices []BlockDeviceMapping `json:"block_device_mapping_v2"`
 	} `json:"server"`
 }
 
@@ -199,15 +167,15 @@ func base64Encode(data []byte) []byte {
 	return result
 }
 
-func CreateVM(ctx context.Context, cfg *config.Config, nameTag, token, imageRef, flavorRef string, startupScript []byte) (string, error) {
+func CreateVM(ctx context.Context, cfg *config.Config, nameTag, token, volumeId, flavorRef string, startupScript []byte) (string, error) {
 	var reqBody CreateVMReq
-	reqBody.Server.ImageRef = imageRef
 	reqBody.Server.FlavorRef = flavorRef
 	reqBody.Server.UserData = string(base64Encode(startupScript))
 	reqBody.Server.MetaData.InstanceNameTag = nameTag
 	reqBody.Server.SecurityGroups = []struct {
 		Name string `json:"name"`
 	}{{nameTag}}
+	reqBody.Server.BlockDevices = append(reqBody.Server.BlockDevices, BlockDeviceMapping{UUID: volumeId})
 
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
@@ -223,13 +191,14 @@ func CreateVM(ctx context.Context, cfg *config.Config, nameTag, token, imageRef,
 	if err != nil {
 		return "", err
 	}
-	if resp.StatusCode != 202 {
-		return "", fmt.Errorf("Failed to create VM: %d", resp.StatusCode)
-	}
 
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
+	}
+
+	if resp.StatusCode != 202 {
+		return "", fmt.Errorf("Failed to create VM: %d", resp.StatusCode)
 	}
 
 	var result CreateVMResp
@@ -361,51 +330,85 @@ func FindVM(ctx context.Context, cfg *config.Config, token string, condition Fin
 	return nil, errors.New("No such VM")
 }
 
-type ImageResp struct {
-	Images []struct {
-		ID     string `json:"id"`
-		Name   string `json:"name"`
-		Status string `json:"status"`
-	} `json:"images"`
+type VolumeResp struct {
+	Volumes []struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"volumes"`
 }
 
-func GetImageID(ctx context.Context, cfg *config.Config, token, tag string) (string, string, error) {
-	url, err := url.Parse(cfg.Conoha.Services.Image)
+func GetVolumeID(ctx context.Context, cfg *config.Config, token, tag string) (string, error) {
+	url, err := url.Parse(cfg.Conoha.Services.Volume)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-	url.Path = path.Join(url.Path, "v2/images")
+	url.Path = path.Join(url.Path, "volumes")
 
 	req, err := makeRequest(ctx, http.MethodGet, url.String(), token)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-	query := req.URL.Query()
-	query.Add("name", tag)
-	req.URL.RawQuery = query.Encode()
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	if resp.StatusCode != 200 {
-		return "", "", fmt.Errorf("Failed to retrieve image list: %d", resp.StatusCode)
+		return "", fmt.Errorf("Failed to retrieve volume list: %d", resp.StatusCode)
 	}
 
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	var result ImageResp
+	var result VolumeResp
 	if err := json.Unmarshal(respData, &result); err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	if len(result.Images) == 0 {
-		return "", "", errors.New("No such image")
+	for _, volume := range result.Volumes {
+		if volume.Name == tag {
+			return volume.ID, nil
+		}
 	}
 
-	return result.Images[0].ID, result.Images[0].Status, nil
+	return "", errors.New("Volume not found")
+}
+
+type VolumeRenameReq struct {
+	Volume struct {
+		Name string `json:"name"`
+	} `json:"volume"`
+}
+
+func RenameVolume(ctx context.Context, cfg *config.Config, token, volumeId, name string) error {
+	url, err := url.Parse(cfg.Conoha.Services.Volume)
+	if err != nil {
+		return err
+	}
+	url.Path = path.Join(url.Path, "volumes", volumeId)
+
+	reqBody := VolumeRenameReq{}
+	reqBody.Volume.Name = name
+
+	req, err := makeJSONRequest(ctx, http.MethodPut, url.String(), token, reqBody)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	if _, err := io.ReadAll(resp.Body); err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Rename volume failed: %d", resp.StatusCode)
+	}
+
+	return nil
 }
 
 type Flavor struct {

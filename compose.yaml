@@ -7,7 +7,6 @@ services:
       - 'premises_conoha_password'
       - 'premises_conoha_tenantId'
       - 'premises_conoha_services_identity'
-      - 'premises_conoha_services_image'
       - 'premises_conoha_services_compute'
       - 'premises_conoha_services_network'
       - 'premises_conoha_services_volume'

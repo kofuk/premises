@@ -194,7 +194,7 @@ func setupSessions(h *Handler) {
 	h.engine.Use(session.Middleware(store))
 }
 
-func syncRemoteVMState(ctx context.Context, cfg *config.Config, gameServer *GameServer, h *Handler) error {
+func syncRemoteVMState(ctx context.Context, gameServer *GameServer, h *Handler) error {
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
 
 	var id string
@@ -219,11 +219,6 @@ func syncRemoteVMState(ctx context.Context, cfg *config.Config, gameServer *Game
 	}
 
 	if gameServer.VMRunning(ctx, id) {
-		if gameServer.ImageExists(ctx) {
-			slog.Info("Server seems to be running, but remote image exists")
-			gameServer.DeleteImage(ctx)
-		}
-
 		h.serverRunning = true
 
 		slog.Info("Successfully synced runner state")
@@ -233,9 +228,6 @@ func syncRemoteVMState(ctx context.Context, cfg *config.Config, gameServer *Game
 
 	slog.Info("Recovering system state...")
 
-	if !gameServer.ImageExists(ctx) && !gameServer.SaveImage(ctx, id) {
-		return errors.New("Invalid state")
-	}
 	if !gameServer.DeleteVM(ctx, id) {
 		return errors.New("Failed to delete VM")
 	}
@@ -282,7 +274,7 @@ func NewHandler(cfg *config.Config, bindAddr string) (*Handler, error) {
 
 	setupSessions(h)
 
-	syncRemoteVMState(context.Background(), cfg, h.GameServer, h)
+	syncRemoteVMState(context.Background(), h.GameServer, h)
 
 	setupRoutes(h)
 

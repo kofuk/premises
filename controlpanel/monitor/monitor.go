@@ -33,7 +33,7 @@ func GetPageCodeByEventCode(event entity.EventCode) web.PageCode {
 	return web.PageLoading
 }
 
-func UpdateRunnerID(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueStore, ipv4Addr string) error {
+func AttachRunner(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueStore, ipv4Addr string) error {
 	var id string
 	if err := cache.Get(ctx, "runner-id:default", &id); err == nil {
 		return nil
@@ -55,6 +55,14 @@ func UpdateRunnerID(ctx context.Context, cfg *config.Config, cache *kvs.KeyValue
 		return err
 	}
 
+	if len(vm.Volumes) == 0 {
+		return errors.New("No volume attached to the VM")
+	}
+
+	if err := conoha.RenameVolume(ctx, cfg, token, vm.Volumes[0].ID, cfg.Conoha.NameTag); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -73,7 +81,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 		}
 
 		if len(event.Hello.Addr.IPv4) != 0 {
-			if err := UpdateRunnerID(ctx, cfg, kvs, event.Hello.Addr.IPv4[0]); err != nil {
+			if err := AttachRunner(ctx, cfg, kvs, event.Hello.Addr.IPv4[0]); err != nil {
 				slog.Error("Error updating runner ID", slog.Any("error", err))
 			}
 

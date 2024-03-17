@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -110,19 +109,16 @@ func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSi
 
 	slog.Info("Retriving flavors...Done", slog.String("selected_flavor", flavorId))
 
-	slog.Info("Retriving image ID...")
-	imageID, imageStatus, err := conoha.GetImageID(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
+	slog.Info("Retriving volume ID...")
+	volumeId, err := conoha.GetVolumeID(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
 	if err != nil {
 		slog.Error("Failed to get image ID", slog.Any("error", err))
 		return ""
-	} else if imageStatus != "active" {
-		slog.Error("Image is not active")
-		return ""
 	}
-	slog.Info("Retriving image ID...Done", slog.String("image_id", imageID))
+	slog.Info("Retriving image ID...Done", slog.String("volume_id", volumeId))
 
 	slog.Info("Creating VM...")
-	id, err := conoha.CreateVM(ctx, s.cfg, s.cfg.Conoha.NameTag, token, imageID, flavorId, startupScript)
+	id, err := conoha.CreateVM(ctx, s.cfg, s.cfg.Conoha.NameTag, token, volumeId, flavorId, startupScript)
 	if err != nil {
 		slog.Error("Failed to create VM", slog.Any("error", err))
 		return ""
@@ -234,112 +230,6 @@ func (s *GameServer) DeleteVM(ctx context.Context, id string) bool {
 		return false
 	}
 	slog.Info("Deleting VM...Done")
-
-	return true
-}
-
-func (s *GameServer) ImageExists(ctx context.Context) bool {
-	token, err := s.getToken(ctx)
-	if err != nil {
-		slog.Error("Failed to get token", slog.Any("error", err))
-		return false
-	}
-
-	slog.Info("Getting image information...")
-	_, imageStatus, err := conoha.GetImageID(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
-	if err != nil {
-		slog.Error("Failed to get image information", slog.Any("error", err))
-		return false
-	} else if imageStatus != "active" {
-		slog.Info("Getting image information...Done")
-		slog.Info("Image is not active", slog.String("status", imageStatus))
-		return false
-	}
-	slog.Info("Getting image information...Done")
-
-	return true
-}
-
-func (s *GameServer) SaveImage(ctx context.Context, id string) bool {
-	token, err := s.getToken(ctx)
-	if err != nil {
-		slog.Error("Failed to get token", slog.Any("error", err))
-		return false
-	}
-
-	slog.Info("Retrieving to volume information...")
-	vm, err := conoha.GetVMDetail(ctx, s.cfg, token, id)
-	if err != nil {
-		slog.Error("Error retrieving VM detail", slog.Any("error", err))
-		return false
-	}
-	if len(vm.Volumes) == 0 {
-		slog.Error("No volume attached to the VM")
-		return false
-	}
-	slog.Info("Retrieving to volume information...Done")
-
-	slog.Info("Requesting to create image...")
-	if err := conoha.CreateImage(ctx, s.cfg, token, vm.Volumes[0].ID, s.cfg.Conoha.NameTag); err != nil {
-		slog.Error("Failed to create image", slog.Any("error", err))
-		return false
-	}
-	slog.Info("Requesting to create image...Done")
-
-	slog.Info("Waiting for image to be created...")
-	err = retry.Retry(func() error {
-		_, imageStatus, err := conoha.GetImageID(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
-		if err != nil {
-			slog.Error("Error getting image information", slog.Any("error", err))
-		}
-		if imageStatus == "active" {
-			return nil
-		}
-		slog.Info("Waiting for image to be created...", slog.String("image_status", imageStatus))
-		return fmt.Errorf("Image is not active (status=%s)", imageStatus)
-	}, 30*time.Minute)
-	if err != nil {
-		slog.Error("Failed save image", slog.Any("error", err))
-		return false
-	}
-	slog.Info("Waiting for image to be created...Done")
-
-	return true
-}
-
-func (s *GameServer) DeleteImage(ctx context.Context) bool {
-	token, err := s.getToken(ctx)
-	if err != nil {
-		slog.Error("Failed to get token", slog.Any("error", err))
-		return false
-	}
-
-	slog.Info("Getting image information...")
-	imageID, imageStatus, err := conoha.GetImageID(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
-	if err != nil {
-		slog.Error("Failed to get image ID", slog.Any("error", err))
-		return false
-	} else if imageStatus != "active" {
-		slog.Error("Image is not active", slog.String("image_status", imageStatus))
-		return false
-	}
-	slog.Info("Getting image information...Done", slog.String("image_id", imageID), slog.String("image_status", imageStatus))
-
-	slog.Info("Deleting image...")
-	if err := conoha.DeleteImage(ctx, s.cfg, token, imageID); err != nil {
-		slog.Error("Seems we got undocumented response from image API; checking image existence...", slog.Any("error", err))
-		err := retry.Retry(func() error {
-			if !s.ImageExists(ctx) {
-				return nil
-			}
-
-			return errors.New("Image exists")
-		}, 1*time.Minute)
-		if err != nil {
-			return false
-		}
-	}
-	slog.Info("Deleting image...Done")
 
 	return true
 }
