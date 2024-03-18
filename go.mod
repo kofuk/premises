@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/aws/aws-sdk-go-v2 v1.25.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.7
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.51.4
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.52.1
 	github.com/aws/smithy-go v1.20.1
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff
 	github.com/cloudflare/cloudflare-go v0.89.0
