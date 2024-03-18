@@ -1,17 +1,21 @@
 FROM golang:latest AS controlpanel_build
 WORKDIR /build
-COPY . .
-RUN cd /build/controlpanel && make
+COPY ./go.* .
+COPY ./common ./common
+COPY ./controlpanel ./controlpanel
+RUN ls && cd /build/controlpanel && make
 
 FROM node:21 AS frontend_build
 WORKDIR /build
-COPY /controlpanel .
+COPY ./controlpanel .
 RUN npm ci
 RUN npm run build
 
 FROM rust:alpine AS tool_build
 WORKDIR /build
-COPY . .
+COPY ./Cargo.* .
+COPY ./pmctl ./pmctl
+COPY ./mcserver-fake ./mcserver-fake
 RUN apk --no-cache add musl-dev
 RUN cargo build --release
 
