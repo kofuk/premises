@@ -61,6 +61,7 @@ jobs:
         with:
           node-version-file: .node-version
       - uses: actions/cache/restore@v4
+        id: cache
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-controlpanel-${{ hashFiles('controlpanel/package-lock.json') }}
@@ -70,7 +71,7 @@ jobs:
         run: |
           npm ci
       - uses: actions/cache/save@v4
-        if: ${{ !startsWith(github.ref_name, 'dependabot/') }}
+        if: ${{ steps.cache.outputs.cache-hit != 'true' && !startsWith(github.ref_name, 'dependabot/') }}
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-controlpanel-${{ hashFiles('controlpanel/package-lock.json') }}
@@ -116,6 +117,7 @@ jobs:
         with:
           node-version-file: .node-version
       - uses: actions/cache/restore@v4
+        id: cache
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-e2e-${{ hashFiles('e2e-tests/package-lock.json') }}
@@ -123,7 +125,7 @@ jobs:
             ${{ runner.os }}-node-e2e-
       - run: npm ci
       - uses: actions/cache/save@v4
-        if: ${{ !startsWith(github.ref_name, 'dependabot/') }}
+        if: ${{ steps.cache.outputs.cache-hit != 'true' && !startsWith(github.ref_name, 'dependabot/') }}
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-e2e-${{ hashFiles('e2e-tests/package-lock.json') }}
