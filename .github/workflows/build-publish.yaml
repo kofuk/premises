@@ -60,7 +60,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-controlpanel-${{ hashFiles('controlpanel/package-lock.json') }}
@@ -69,6 +69,11 @@ jobs:
       - name: Install dependencies
         run: |
           npm ci
+      - uses: actions/cache/save@v4
+        if: ${{ !startsWith(github.ref_name, 'dependabot/') }}
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-controlpanel-${{ hashFiles('controlpanel/package-lock.json') }}
       - name: Check code formatted
         run: |
           npm run fmt:check
@@ -92,7 +97,7 @@ jobs:
           tags: ghcr.io/kofuk/premises:latest
           outputs: type=docker,dest=image.tar
           cache-from: type=gha
-          cache-to: type=gha
+          cache-to: ${{ !startsWith(github.ref_name, 'dependabot/') && 'type=gha,mode=max' }}
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -110,15 +115,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-e2e-${{ hashFiles('e2e-tests/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-e2e-
+      - run: npm ci
+      - uses: actions/cache/save@v4
+        if: ${{ !startsWith(github.ref_name, 'dependabot/') }}
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-e2e-${{ hashFiles('e2e-tests/package-lock.json') }}
       - name: Check code formatted
         run: |
-          npm ci
           npm run fmt:check
 
   check-all-ok:
