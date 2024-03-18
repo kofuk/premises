@@ -51,8 +51,6 @@ func (h *Handler) handlePushStatus(c echo.Context) error {
 
 	events := bytes.Split(body, []byte{0})
 
-	slog.Debug("Event from runner", slog.Int("estimated_count", len(events)-1))
-
 	for _, eventData := range events {
 		if len(eventData) == 0 {
 			continue
@@ -68,6 +66,8 @@ func (h *Handler) handlePushStatus(c echo.Context) error {
 			go h.shutdownServer(context.Background(), h.GameServer, c.Request().Header.Get("Authorization"))
 			return c.String(http.StatusOK, "")
 		}
+
+		slog.Debug("Event from runner", slog.Any("payload", event))
 
 		if err := monitor.HandleEvent(context.Background(), runnerId, h.Streaming, h.cfg, &h.KVS, h.dnsService, &event); err != nil {
 			slog.Error("Unable to handle event", slog.Any("error", err))

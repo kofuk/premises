@@ -78,38 +78,6 @@ func StopVM(ctx context.Context, cfg *config.Config, token, vmID string) error {
 	return nil
 }
 
-type CreateImageReq struct {
-	CreateImage struct {
-		Name string `json:"image_name"`
-	} `json:"os-volume_upload_image"`
-}
-
-func CreateImage(ctx context.Context, cfg *config.Config, token, volumeId, imageName string) error {
-	var reqBody CreateImageReq
-	reqBody.CreateImage.Name = imageName
-
-	url, err := url.Parse(cfg.Conoha.Services.Volume)
-	if err != nil {
-		return err
-	}
-	url.Path = path.Join(url.Path, "volumes", volumeId, "action")
-
-	req, err := makeJSONRequest(ctx, http.MethodPost, url.String(), token, reqBody)
-	if err != nil {
-		return err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusAccepted {
-		return fmt.Errorf("Failed to create image: %d", resp.StatusCode)
-	}
-
-	return nil
-}
-
 func DeleteVM(ctx context.Context, cfg *config.Config, token, vmID string) error {
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {

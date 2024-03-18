@@ -52,7 +52,7 @@ __run() {
 
     mkdir -p "${PREMISES_BASEDIR}/bin"
 
-    if ! command -v curl &>/dev/null || ! command -v wget &>/dev/null; then
+    if ! command -v curl &>/dev/null && ! command -v wget &>/dev/null; then
         # Unfortunately, first initialization can't be done without installing curl.
         DEBIAN_FRONTEND=noninteractive xaptget update -y
         DEBIAN_FRONTEND=noninteractive xaptget install -y curl

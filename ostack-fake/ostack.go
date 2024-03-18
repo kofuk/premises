@@ -14,21 +14,22 @@ import (
 	"github.com/kofuk/premises/ostack-fake/dockerstack"
 	"github.com/kofuk/premises/ostack-fake/entity"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 //go:embed flavors.json
 var flavorData []byte
 
 type Ostack struct {
-	r             *echo.Echo
-	m             sync.Mutex
-	docker        *docker.Client
-	tenantId      string
-	user          string
-	password      string
-	token         string
-	deletedImages map[string]bool
-	secGroups     map[string]entity.SecurityGroup
+	r           *echo.Echo
+	m           sync.Mutex
+	docker      *docker.Client
+	tenantId    string
+	user        string
+	password    string
+	token       string
+	secGroups   map[string]entity.SecurityGroup
+	volumeNames map[string]string
 }
 
 type OstackOption func(ostack *Ostack)
@@ -75,8 +76,8 @@ func (self *Ostack) ServeGetToken(c echo.Context) error {
 	return c.JSON(http.StatusCreated, resp)
 }
 
-func (self *Ostack) ServeGetServerDetails(c echo.Context) error {
-	servers, err := dockerstack.GetServerDetails(c.Request().Context(), self.docker)
+func (self *Ostack) ServeListServerDetails(c echo.Context) error {
+	servers, err := dockerstack.ListServerDetails(c.Request().Context(), self.docker)
 	if err != nil {
 		slog.Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, nil)
@@ -134,6 +135,31 @@ func (self *Ostack) ServeServerAction(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
 
+	imageName, ok := self.volumeNames[serverId]
+	if !ok {
+		servers, err := dockerstack.ListServerDetails(c.Request().Context(), self.docker)
+		if err != nil {
+			slog.Error(err.Error())
+			return c.JSON(http.StatusInternalServerError, nil)
+		}
+
+		for _, s := range servers.Servers {
+			if s.ID == serverId {
+				imageName = s.Metadata.InstanceNameTag
+			}
+		}
+	}
+
+	slog.Debug("Creating image",
+		slog.String("image_name", imageName),
+		slog.String("volume_id", serverId),
+	)
+
+	if err := dockerstack.CreateImage(c.Request().Context(), self.docker, serverId, imageName); err != nil {
+		slog.Error(err.Error())
+		return c.JSON(http.StatusInternalServerError, nil)
+	}
+
 	return c.JSON(http.StatusAccepted, nil)
 }
 
@@ -144,52 +170,61 @@ func (self *Ostack) ServeDeleteServer(c echo.Context) error {
 		slog.Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
-	return c.JSON(http.StatusNoContent, nil)
+	return c.String(http.StatusNoContent, "")
 }
 
-func (self *Ostack) ServeGetFlavors(c echo.Context) error {
+func (self *Ostack) ServeListFlavors(c echo.Context) error {
 	c.Response().Header().Add("Content-Type", "application/json")
 	c.Response().Writer.Write(flavorData)
 	return nil
 }
 
-func (self *Ostack) ServeGetImages(c echo.Context) error {
+func (self *Ostack) ServeListVolumes(c echo.Context) error {
 	self.m.Lock()
 	defer self.m.Unlock()
 
-	images, err := dockerstack.GetImages(c.Request().Context(), self.docker)
+	volumes, err := dockerstack.ListVolumes(c.Request().Context(), self.docker)
 	if err != nil {
 		slog.Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
 
-	visibleImage := make([]entity.Image, 0)
-	for _, image := range images.Images {
-		if !self.deletedImages[image.ID] {
-			visibleImage = append(visibleImage, image)
+	for i := 0; i < len(volumes.Volumes); i++ {
+		if name, ok := self.volumeNames[volumes.Volumes[i].ID]; ok {
+			volumes.Volumes[i].Name = name
 		}
 	}
-	images.Images = visibleImage
 
-	return c.JSON(http.StatusOK, images)
+	slog.Debug("list volumes", slog.Any("volumes", volumes.Volumes))
+
+	return c.JSON(http.StatusOK, volumes)
 }
 
-func (self *Ostack) ServeDeleteImages(c echo.Context) error {
+func (self *Ostack) ServeUpdateVolume(c echo.Context) error {
 	self.m.Lock()
 	defer self.m.Unlock()
 
-	imageId := c.Param("image")
-	// No one can delete image of running container.
-	// We save removed image ID and emulate Open Stack behavior.
-	self.deletedImages[imageId] = true
-	return c.JSON(http.StatusNoContent, nil)
+	var req entity.UpdateVolumeReq
+	if err := c.Bind(&req); err != nil {
+		slog.Error(err.Error())
+		return c.JSON(http.StatusBadRequest, nil)
+	}
+
+	volumeId := c.Param("volume")
+	volumeId = strings.TrimPrefix(volumeId, "volume_")
+
+	slog.Debug("Saving image names", slog.String("volume_id", volumeId), slog.String("name", req.Volume.Name))
+
+	self.volumeNames[volumeId] = req.Volume.Name
+
+	return c.JSON(http.StatusOK, nil)
 }
 
-func (self *Ostack) ServeGetSecurityGroups(c echo.Context) error {
+func (self *Ostack) ServeListSecurityGroups(c echo.Context) error {
 	self.m.Lock()
 	defer self.m.Unlock()
 
-	var result entity.SecurityGroupResp
+	var result entity.ListSecurityGroupsResp
 	result.SecurityGroups = make([]entity.SecurityGroup, 0)
 	for _, sg := range self.secGroups {
 		result.SecurityGroups = append(result.SecurityGroups, sg)
@@ -201,7 +236,7 @@ func (self *Ostack) ServeCreateSecurityGroup(c echo.Context) error {
 	self.m.Lock()
 	defer self.m.Unlock()
 
-	var req entity.SecurityGroupReq
+	var req entity.CreateSecurityGroupReq
 	if err := c.Bind(&req); err != nil {
 		slog.Error(err.Error())
 		return c.JSON(http.StatusBadRequest, nil)
@@ -230,7 +265,7 @@ func (self *Ostack) ServeCreateSecurityGroup(c echo.Context) error {
 
 	self.secGroups[id] = sg
 
-	return c.JSON(http.StatusCreated, entity.SecurityGroupReq{
+	return c.JSON(http.StatusCreated, entity.CreateSecurityGroupReq{
 		SecurityGroup: sg,
 	})
 }
@@ -239,7 +274,7 @@ func (self *Ostack) ServeCreateSecurityGroupRule(c echo.Context) error {
 	self.m.Lock()
 	defer self.m.Unlock()
 
-	var req entity.SecurityGroupRuleReq
+	var req entity.CreateSecurityGroupRuleReq
 	if err := c.Bind(&req); err != nil {
 		slog.Error(err.Error())
 		return c.JSON(http.StatusBadRequest, nil)
@@ -256,28 +291,6 @@ func (self *Ostack) ServeCreateSecurityGroupRule(c echo.Context) error {
 	return c.JSON(http.StatusCreated, req)
 }
 
-func (self *Ostack) ServeVolumeAction(c echo.Context) error {
-	volumeId := c.Param("volume")
-	if !strings.HasPrefix(volumeId, "volume_") {
-		slog.Error("Invalid volume", slog.String("volume_id", volumeId))
-		return c.JSON(http.StatusNotFound, nil)
-	}
-
-	var req entity.VolumeActionReq
-	if err := c.Bind(&req); err != nil {
-		slog.Error(err.Error())
-		return c.JSON(http.StatusBadRequest, nil)
-	}
-
-	if err := dockerstack.CreateImage(c.Request().Context(), self.docker, strings.TrimPrefix(volumeId, "volume_"), req.UploadImage.ImageName); err != nil {
-		slog.Error(err.Error())
-		return c.JSON(http.StatusInternalServerError, nil)
-	}
-
-	// OpenStack actually returnes status of the image, but we don't emulate it because Premises don't check the response body.
-	return c.JSON(http.StatusAccepted, nil)
-}
-
 func (self *Ostack) setupRoutes() {
 	self.r.POST("/identity/v3/auth/tokens", self.ServeGetToken)
 
@@ -290,18 +303,17 @@ func (self *Ostack) setupRoutes() {
 		}
 	})
 
-	needsAuthEndpoint.GET("/image/v2/images", self.ServeGetImages)
-	needsAuthEndpoint.DELETE("/image/v2/images/:image", self.ServeDeleteImages)
 	needsAuthEndpoint.POST("/compute/v2.1/servers", self.ServeLaunchServer)
-	needsAuthEndpoint.GET("/compute/v2.1/servers/detail", self.ServeGetServerDetails)
+	needsAuthEndpoint.GET("/compute/v2.1/servers/detail", self.ServeListServerDetails)
 	needsAuthEndpoint.GET("/compute/v2.1/servers/:id", self.ServeGetServerDetail)
 	needsAuthEndpoint.POST("/compute/v2.1/servers/:server/action", self.ServeServerAction)
 	needsAuthEndpoint.DELETE("/compute/v2.1/servers/:server", self.ServeDeleteServer)
-	needsAuthEndpoint.GET("/compute/v2.1/flavors/detail", self.ServeGetFlavors)
-	needsAuthEndpoint.GET("/network/v2.0/security-groups", self.ServeGetSecurityGroups)
+	needsAuthEndpoint.GET("/compute/v2.1/flavors/detail", self.ServeListFlavors)
+	needsAuthEndpoint.GET("/network/v2.0/security-groups", self.ServeListSecurityGroups)
 	needsAuthEndpoint.POST("/network/v2.0/security-groups", self.ServeCreateSecurityGroup)
 	needsAuthEndpoint.POST("/network/v2.0/security-group-rules", self.ServeCreateSecurityGroupRule)
-	needsAuthEndpoint.POST("/volume/v3/volumes/:volume/action", self.ServeVolumeAction)
+	needsAuthEndpoint.GET("/volume/v3/volumes", self.ServeListVolumes)
+	needsAuthEndpoint.PUT("/volume/v3/volumes/:volume", self.ServeUpdateVolume)
 }
 
 func NewOstack(options ...OstackOption) (*Ostack, error) {
@@ -310,11 +322,15 @@ func NewOstack(options ...OstackOption) (*Ostack, error) {
 		return nil, err
 	}
 
+	engine := echo.New()
+	engine.Use(middleware.Logger())
+	engine.HideBanner = true
+
 	ostack := &Ostack{
-		r:             echo.New(),
-		docker:        docker,
-		deletedImages: make(map[string]bool),
-		secGroups:     make(map[string]entity.SecurityGroup),
+		r:           engine,
+		docker:      docker,
+		secGroups:   make(map[string]entity.SecurityGroup),
+		volumeNames: make(map[string]string),
 	}
 
 	ostack.setupRoutes()

@@ -35,7 +35,8 @@ type ServerDetailMetadata struct {
 }
 
 type Volume struct {
-	ID string `json:"id"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type ServerDetail struct {
@@ -47,30 +48,19 @@ type ServerDetail struct {
 	Volumes   []Volume                         `json:"os-extended-volumes:volumes_attached"`
 }
 
-type ServerDetailsResp struct {
+type ListServerDetailsResp struct {
 	Servers []ServerDetail `json:"servers"`
 }
 
-type ServerDetailResp struct {
+type GetServerDetailResp struct {
 	Server ServerDetail `json:"server"`
 }
 
-type ImageReq struct {
-	Name string
-}
-
-type Image struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Status string `json:"status"`
-}
-
-type ImageResp struct {
-	Images []Image `json:"images"`
+type ListVolumesResp struct {
+	Volumes []Volume `json:"volumes"`
 }
 
 type Server struct {
-	ImageRef  string `json:"imageRef"`
 	FlavorRef string `json:"flavorRef"`
 	UserData  string `json:"user_data"`
 	MetaData  struct {
@@ -79,6 +69,9 @@ type Server struct {
 	SecurityGroups []struct {
 		Name string `json:"name"`
 	} `json:"security_groups"`
+	BlockDevices []struct {
+		UUID string `json:"uuid"`
+	} `json:"block_device_mapping_v2"`
 }
 
 type LaunchServerReq struct {
@@ -106,15 +99,15 @@ type SecurityGroup struct {
 	SecurityGroupRules []SecurityGroupRule `json:"security_group_rules"`
 }
 
-type SecurityGroupResp struct {
+type ListSecurityGroupsResp struct {
 	SecurityGroups []SecurityGroup `json:"security_groups"`
 }
 
-type SecurityGroupReq struct {
+type CreateSecurityGroupReq struct {
 	SecurityGroup SecurityGroup `json:"security_group"`
 }
 
-type SecurityGroupRuleReq struct {
+type CreateSecurityGroupRuleReq struct {
 	SecurityGroupRule SecurityGroupRule `json:"security_group_rule"`
 }
 
@@ -122,4 +115,10 @@ type VolumeActionReq struct {
 	UploadImage struct {
 		ImageName string `json:"image_name"`
 	} `json:"os-volume_upload_image"`
+}
+
+type UpdateVolumeReq struct {
+	Volume struct {
+		Name string `json:"name"`
+	} `json:"volume"`
 }
