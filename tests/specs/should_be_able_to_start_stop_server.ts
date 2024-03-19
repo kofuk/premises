@@ -1,6 +1,6 @@
 import codes from "../lib/codes.ts";
 
-const TARGET_HOST = Deno.env.get("TARGET_HOST");
+const TARGET_HOST = Deno.env.get("TARGET_HOST")!;
 
 const login = async (): Promise<string> => {
   const resp = await fetch(`${TARGET_HOST}/login`, {
@@ -14,11 +14,15 @@ const login = async (): Promise<string> => {
 
   const { success, errorCode } = await resp.json();
   if (!success) {
-    console.error(`Login error: ${codes.error(errorCode)}`);
-    Deno.exit(1);
+    throw Error(`Login error: ${codes.error(errorCode)}`);
   }
 
-  return resp.headers.get("Set-Cookie");
+  const cookie = resp.headers.get("Set-Cookie");
+  if (cookie === null) {
+    throw Error(`Session cookie is not set`);
+  }
+
+  return cookie;
 };
 
 console.log("Login");

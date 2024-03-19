@@ -3,7 +3,7 @@ import locale from "../../controlpanel/frontend/i18n/en.json" with {
 };
 
 const error = (code: number): string => {
-  const message = locale[`error.code_${code}`];
+  const message = (locale as any)[`error.code_${code}`];
   if (message == null) {
     throw Error(`No message found for error code: ${code}`);
   }

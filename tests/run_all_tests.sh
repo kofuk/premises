@@ -14,5 +14,5 @@ EOF
 dir="$(cd "$(dirname "${BASH_SOURCE:-0}")"; pwd)"
 
 for spec in "${specs[@]}"; do
-    deno run --allow-net --allow-env "${dir}/specs/${spec}"
+    deno run --check --allow-net --allow-env "${dir}/specs/${spec}"
 done
