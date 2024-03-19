@@ -1,3 +1,5 @@
+import codes from "../lib/codes.ts";
+
 const TARGET_HOST = Deno.env.get("TARGET_HOST");
 
 const login = async (): Promise<string> => {
@@ -10,9 +12,9 @@ const login = async (): Promise<string> => {
     body: JSON.stringify({ userName: "user1", password: "password1" }),
   });
 
-  const { success } = await resp.json();
+  const { success, errorCode } = await resp.json();
   if (!success) {
-    console.error("Login error");
+    console.error(`Login error: ${codes.error(errorCode)}`);
     Deno.exit(1);
   }
 
@@ -33,7 +35,7 @@ const cookies = await login();
   params.set("seed", "");
   params.set("level-type", "default");
 
-  const { success } = await fetch(`${TARGET_HOST}/api/launch`, {
+  const { success, errorCode } = await fetch(`${TARGET_HOST}/api/launch`, {
     method: "POST",
     headers: {
       "Origin": TARGET_HOST,
@@ -43,7 +45,7 @@ const cookies = await login();
     body: params.toString(),
   }).then((resp) => resp.json());
   if (!success) {
-    console.error("Launch failed");
+    console.error(`Launch failed: ${codes.error(errorCode)}`);
     Deno.exit(1);
   }
 }
@@ -61,10 +63,9 @@ for (let i = 0; i < 18; i++) {
     },
   }).then((resp) => resp.json());
 
-  if (pageCode === 3) {
-    // control page
+  if (pageCode === codes.PAGE.RUNNING) {
     break;
-  } else if (pageCode === 4) {
+  } else if (pageCode === codes.PAGE.MANUAL_SETUP) {
     // manual setup page
     console.error("Unexpected page");
     Deno.exit(1);
@@ -73,7 +74,7 @@ for (let i = 0; i < 18; i++) {
 
 {
   console.log("Stop server");
-  const { success } = await fetch(`${TARGET_HOST}/api/stop`, {
+  const { success, errorCode } = await fetch(`${TARGET_HOST}/api/stop`, {
     method: "POST",
     headers: {
       "Origin": TARGET_HOST,
@@ -81,7 +82,7 @@ for (let i = 0; i < 18; i++) {
     },
   }).then((resp) => resp.json());
   if (!success) {
-    console.error("Stop failed");
+    console.error(`Stop failed: ${codes.error(errorCode)}`);
     Deno.exit(1);
   }
 }
@@ -99,10 +100,10 @@ for (let i = 0; i < 18; i++) {
     },
   }).then((resp) => resp.json());
 
-  if (pageCode === 1) {
+  if (pageCode === codes.PAGE.LAUNCH) {
     // control page
     break;
-  } else if (pageCode === 4) {
+  } else if (pageCode === codes.PAGE.MANUAL_SETUP) {
     // manual setup page
     console.error("Unexpected page");
     Deno.exit(1);
