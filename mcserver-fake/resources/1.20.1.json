@@ -1,7 +1,12 @@
 {
   "downloads": {
     "server": {
-      "url": "https://storage.googleapis.com/premises/devtools/mcserver-fake/mcserver-fake"
+      "url": "https://storage.googleapis.com/premises/devtools/mcserver-fake/mcserver-fake",
+      "x-premises": {
+        "launchCommand": [
+          "{server_jar}"
+        ]
+      }
     }
   },
   "id": "1.20.1",
