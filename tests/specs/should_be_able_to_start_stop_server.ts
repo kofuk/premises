@@ -1,8 +1,12 @@
-import codes from "../lib/codes.ts";
+import { assertEquals } from "https://deno.land/std@0.83.0/testing/asserts.ts";
+
 import api, { login, params, streamEvent } from "../lib/api.ts";
+import codes from "../lib/codes.ts";
 
 console.log("Login");
 const cookie = await login("user1", "password1");
+
+const worldName = `test-${(Math.random() * 1000000) >> 0}`;
 
 console.log("Launch server");
 await api(
@@ -10,10 +14,10 @@ await api(
   cookie,
   params({
     "machine-type": "2g",
-    "server-version": "1.20.4",
+    "server-version": "1.20.1",
     "prefer-detect": "true",
     "world-source": "new-world",
-    "world-name": `test-${Math.random()}`,
+    "world-name": worldName,
     "seed": "",
     "level-type": "default",
   }),
@@ -31,6 +35,20 @@ for (let i = 0; i < 18; i++) {
     throw new Error("Unexpected page");
   }
 }
+
+// It takes some time to initialize world info data.
+console.log("Check launched world");
+for (let i = 0; i < 10; i++) {
+  try {
+    await api("GET /api/worldinfo", cookie);
+    break;
+  } catch (_: any) {}
+
+  await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
+}
+const worldInfo = await api("GET /api/worldinfo", cookie);
+assertEquals(worldInfo["version"], "1.20.1");
+assertEquals(worldInfo["worldName"], worldName);
 
 console.log("Stop server");
 await api("POST /api/stop", cookie);

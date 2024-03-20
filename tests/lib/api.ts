@@ -48,7 +48,7 @@ const request = async (
 const api = async (
   methodAndPath: string,
   cookie?: string,
-  body?: any|URLSearchParams,
+  body?: any | URLSearchParams,
 ): Promise<any> => {
   const response = await request(methodAndPath, cookie, body).then((
     response,
