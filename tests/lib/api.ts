@@ -1,3 +1,5 @@
+// deno-lint-ignore-file no-explicit-any
+
 import codes from "../lib/codes.ts";
 
 const TARGET_HOST = Deno.env.get("TARGET_HOST")!;
@@ -11,7 +13,7 @@ type ApiResponse = {
 const request = async (
   methodAndPath: string,
   cookie?: string | null,
-  body?: any | URLSearchParams | null,
+  body?: URLSearchParams | any | null,
   options?: {
     accept: string;
   },
@@ -48,15 +50,15 @@ const request = async (
 const api = async (
   methodAndPath: string,
   cookie?: string,
-  body?: any | URLSearchParams,
+  body?: URLSearchParams | any,
 ): Promise<any> => {
-  const response = await request(methodAndPath, cookie, body).then((
-    response,
-  ) => response.json());
+  const response: ApiResponse = await request(methodAndPath, cookie, body).then(
+    (response) => response.json(),
+  );
 
   if (!response.success) {
     throw new Error(
-      `API error: ${methodAndPath}: ${codes.error(response.errorCode)}`,
+      `API error: ${methodAndPath}: ${codes.error(response.errorCode!)}`,
     );
   }
 
@@ -97,7 +99,7 @@ export const streamEvent = async (
   return response;
 };
 
-export const params = (params: any): URLSearchParams => {
+export const params = (params: { [key: string]: string }): URLSearchParams => {
   const result = new URLSearchParams();
   for (const key of Object.keys(params)) {
     result.set(key, params[key]);

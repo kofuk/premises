@@ -3,6 +3,7 @@ import locale from "../../controlpanel/frontend/i18n/en.json" with {
 };
 
 const error = (code: number): string => {
+  // deno-lint-ignore no-explicit-any
   const message = (locale as any)[`error.code_${code}`];
   if (message == null) {
     throw Error(`No message found for error code: ${code}`);

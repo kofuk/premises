@@ -42,7 +42,9 @@ for (let i = 0; i < 10; i++) {
   try {
     await api("GET /api/worldinfo", cookie);
     break;
-  } catch (_: any) {}
+  } catch (_: unknown) {
+    // Check error later
+  }
 
   await new Promise((resolve) => setTimeout(resolve, 2 * 1000));
 }
