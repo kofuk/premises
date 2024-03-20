@@ -38,6 +38,8 @@ services:
     restart: always
     ports:
       - '8000:8000'
+    extra_hosts:
+      - host.docker.internal:host-gateway
   redis:
     image: 'redis:7-alpine'
     healthcheck:
@@ -59,4 +61,7 @@ services:
       timeout: 30s
       retries: 30
     volumes:
-      - ./data:/var/lib/postgresql/data
+      - db:/var/lib/postgresql/data
+
+volumes:
+  db:

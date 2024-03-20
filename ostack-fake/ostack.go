@@ -48,6 +48,14 @@ func Token(token string) OstackOption {
 	}
 }
 
+func (self *Ostack) ServeGetHealth(c echo.Context) error {
+	ver, err := self.docker.ServerVersion(c.Request().Context())
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, ver)
+}
+
 func (self *Ostack) ServeGetToken(c echo.Context) error {
 	var req entity.GetTokenReq
 	if err := c.Bind(&req); err != nil {
@@ -293,6 +301,7 @@ func (self *Ostack) ServeCreateSecurityGroupRule(c echo.Context) error {
 
 func (self *Ostack) setupRoutes() {
 	self.r.POST("/identity/v3/auth/tokens", self.ServeGetToken)
+	self.r.GET("/health", self.ServeGetHealth)
 
 	needsAuthEndpoint := self.r.Group("", func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
@@ -343,5 +352,5 @@ func NewOstack(options ...OstackOption) (*Ostack, error) {
 }
 
 func (self *Ostack) Start() error {
-	return self.r.Start("127.0.0.1:8010")
+	return self.r.Start("0.0.0.0:8010")
 }
