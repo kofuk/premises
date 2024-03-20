@@ -35,6 +35,8 @@ for (let i = 0; i < 18; i++) {
     throw new Error("Unexpected page");
   }
 }
+const { pageCode } = await streamEvent("/api/streaming/events", cookie);
+assertEquals(pageCode, codes.PAGE.RUNNING);
 
 // It takes some time to initialize world info data.
 console.log("Check launched world");

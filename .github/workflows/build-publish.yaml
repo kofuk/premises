@@ -145,6 +145,11 @@ jobs:
         run: |
           mkdir bin
           echo "$(pwd)/bin" >>"${GITHUB_PATH}"
+      - name: Download runner
+        uses: actions/download-artifact@v4
+        with:
+          name: runner
+          path: ./bin
       - name: Download test tool
         uses: actions/download-artifact@v4
         with:
@@ -154,9 +159,9 @@ jobs:
         run: docker load --input image.tar
       - name: Prepare services
         run: |
-          echo '::group::Make tools executable'
+          mkdir /tmp/premises
+          mv bin/premises-runner /tmp/premises
           chmod +x bin/*
-          echo '::endgroup::'
 
           echo '::group::Launch MinIO'
           docker run -d -p 9001:9001 -p 9000:9000 -e MINIO_ROOT_USER=premises -e MINIO_ROOT_PASSWORD=password --entrypoint /bin/bash quay.io/minio/minio '-c' 'mkdir -p /data/premises && minio server /data --console-address :9001'
