@@ -35,7 +35,13 @@ func DetectAndUpdateVersion(config *runner.Config) error {
 		return err
 	}
 
-	fetcher := lm.New()
+	var options []lm.Option
+
+	if config.Server.ManifestOverride != "" {
+		options = append(options, lm.ManifestURL(config.Server.ManifestOverride))
+	}
+
+	fetcher := lm.New(options...)
 	versions, err := fetcher.GetVersionInfo(context.TODO())
 	if err != nil {
 		return err

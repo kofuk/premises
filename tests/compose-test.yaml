@@ -1,0 +1,6 @@
+services:
+  web:
+    environment:
+      - 'PREMISES_MC_MANIFEST_URL=https://storage.googleapis.com/premises/devtools/mcserver-fake/version_manifest.json'
+    extra_hosts:
+      - host.docker.internal:host-gateway

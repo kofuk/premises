@@ -167,12 +167,14 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Value
 		result.C.ControlPanel = strings.Replace(h.cfg.ControlPanel.Origin, "http://localhost", "http://host.docker.internal", 1)
 	}
 
-	serverDownloadURL, err := h.MCVersions.GetDownloadURL(ctx, values.Get("server-version"))
+	serverDownloadURL, launchCommand, err := h.MCVersions.GetServerInfo(ctx, values.Get("server-version"))
 	if err != nil {
 		return nil, err
 	}
 	result.SetServer(values.Get("server-version"), serverDownloadURL)
 	result.SetDetectServerVersion(values.Get("prefer-detect") == "true")
+	result.C.Server.ManifestOverride = h.MCVersions.GetOverridenManifestUrl()
+	result.C.Server.CustomCommand = launchCommand
 
 	if !values.Has("machine-type") {
 		return nil, errors.New("Machine type is not set")

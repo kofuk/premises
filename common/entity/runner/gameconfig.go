@@ -3,9 +3,11 @@ package runner
 type Config struct {
 	AuthKey string `json:"authKey"`
 	Server  struct {
-		PreferDetected bool   `json:"preferDetected"`
-		Version        string `json:"name"`
-		DownloadUrl    string `json:"downloadUrl"`
+		PreferDetected   bool     `json:"preferDetected"`
+		Version          string   `json:"name"`
+		DownloadUrl      string   `json:"downloadUrl"`
+		ManifestOverride string   `json:"manifestOverride"`
+		CustomCommand    []string `json:"customCommand"`
 	} `json:"server"`
 	World struct {
 		ShouldGenerate bool   `json:"shouldGenerate"`

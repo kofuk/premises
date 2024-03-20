@@ -277,6 +277,26 @@ mod rcon {
                         Packet::new(req_id, 0, format!("Made {user} a server operator"))
                             .send_to_stream(strm);
                     }
+                    ["list"] => {
+                        Packet::new(
+                            req_id,
+                            0,
+                            "There are 0 of a max of 20 players online:".to_string(),
+                        )
+                        .send_to_stream(strm);
+                    }
+                    ["seed"] => {
+                        Packet::new(req_id, 0, "Seed: [2215139433894533904]".to_string())
+                            .send_to_stream(strm);
+                    }
+                    ["save-all"] => {
+                        Packet::new(
+                            req_id,
+                            0,
+                            "Saving the game (this may take a moment!)Saved the game".to_string(),
+                        )
+                        .send_to_stream(strm);
+                    }
                     _ => {
                         Packet::new(
                             req_id,

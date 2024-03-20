@@ -31,7 +31,7 @@ enum UserCommand {
         user: String,
         #[clap(short = 't', long = "new-name", required = true, help = "New username")]
         new_name: String,
-    }
+    },
 }
 
 #[derive(Subcommand)]
@@ -93,9 +93,7 @@ fn main() {
                     exit(1);
                 }
             },
-            UserCommand::Rename { user, new_name } => {
-                user::rename(database, user, new_name)
-            }
+            UserCommand::Rename { user, new_name } => user::rename(database, user, new_name),
         },
     }
 }

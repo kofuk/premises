@@ -369,9 +369,20 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 			allocSize = totalMemMiB - 1024
 		}
 	}
-	javaArgs := []string{fmt.Sprintf("-Xmx%dM", allocSize), fmt.Sprintf("-Xms%dM", allocSize), "-jar", fs.LocateServer(config.Server.Version), "nogui"}
+
+	var launchCommand []string
+	if len(config.Server.CustomCommand) > 0 {
+		launchCommand = config.Server.CustomCommand
+		for i := 0; i < len(launchCommand); i++ {
+			if launchCommand[i] == "{server_jar}" {
+				launchCommand[i] = fs.LocateServer(config.Server.Version)
+			}
+		}
+	} else {
+		launchCommand = []string{"java", fmt.Sprintf("-Xmx%dM", allocSize), fmt.Sprintf("-Xms%dM", allocSize), "-jar", fs.LocateServer(config.Server.Version), "nogui"}
+	}
 	go func() {
-		slog.Info("Launching Minecraft server", slog.String("server_name", config.Server.Version), slog.Any("commandline", javaArgs))
+		slog.Info("Launching Minecraft server", slog.String("server_name", config.Server.Version), slog.Any("commandline", launchCommand))
 		launchCount := 0
 		prevLaunch := time.Now()
 		for !srv.ShouldStop && !srv.RestartRequested {
@@ -390,7 +401,7 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 					break
 				}
 			}
-			cmd := exec.Command("java", javaArgs...)
+			cmd := exec.Command(launchCommand[0], launchCommand[1:]...)
 			cmd.Dir = fs.LocateWorldData("")
 			cmdStdout, _ := cmd.StdoutPipe()
 			cmd.Stderr = os.Stderr

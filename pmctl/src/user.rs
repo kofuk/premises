@@ -47,8 +47,7 @@ where
     }
 }
 
-pub fn rename(db: Database, user: String, new_name: String)
-{
+pub fn rename(db: Database, user: String, new_name: String) {
     if let Err(msg) = db.rename_user(user, new_name) {
         println!("{msg}");
         exit(1);

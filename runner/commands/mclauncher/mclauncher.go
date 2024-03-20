@@ -78,6 +78,24 @@ func downloadWorldIfNeeded(config *runner.Config) error {
 	return nil
 }
 
+func isExecutableFile(path string) bool {
+	file, err := os.Open(path)
+	if err != nil {
+		slog.Error("Unable to open file", slog.Any("error", err))
+		return false
+	}
+	defer file.Close()
+
+	buf := make([]byte, 4)
+	if _, err := file.Read(buf); err != nil {
+		slog.Error("Unable to read file", slog.Any("error", err))
+		return false
+	}
+
+	// ELF or shell script
+	return (buf[0] == 0x7F && buf[1] == 'E' && buf[2] == 'L' && buf[3] == 'F') || (buf[0] == '#' && buf[1] == '!')
+}
+
 func downloadServerJarIfNeeded(config *runner.Config) error {
 	if _, err := os.Stat(fs.LocateServer(config.Server.Version)); err == nil {
 		slog.Info("No need to download server.jar")
@@ -111,6 +129,12 @@ func downloadServerJarIfNeeded(config *runner.Config) error {
 		return err
 	}
 	outFile.Close()
+
+	if isExecutableFile(fs.LocateServer(config.Server.Version) + ".download") {
+		if err := os.Chmod(fs.LocateServer(config.Server.Version)+".download", 0755); err != nil {
+			return err
+		}
+	}
 
 	if err := os.Rename(fs.LocateServer(config.Server.Version)+".download", fs.LocateServer(config.Server.Version)); err != nil {
 		return err

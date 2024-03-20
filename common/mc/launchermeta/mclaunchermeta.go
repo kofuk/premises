@@ -76,7 +76,10 @@ func (lm *LauncherMeta) GetVersionInfo(ctx context.Context) ([]VersionInfo, erro
 }
 
 type ServerInfo struct {
-	URL string `json:"url"`
+	URL            string `json:"url"`
+	CustomProperty struct {
+		LaunchCommand []string `json:"launchCommand"`
+	} `json:"x-premises"`
 }
 
 type versionMetaData struct {
