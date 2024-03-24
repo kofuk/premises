@@ -1,6 +1,7 @@
 package backup
 
 import (
+	"archive/zip"
 	"context"
 	"errors"
 	"fmt"
@@ -359,12 +360,54 @@ func extractXzWorldArchive(inFile io.Reader, outDir string) error {
 func extractZipWorldArchive(inFile, outDir string) error {
 	slog.Info("Extracting Zip...")
 
-	unzipCmd := exec.Command("unzip", inFile)
-	unzipCmd.Dir = outDir
-	unzipCmd.Stdout = os.Stdout
-	unzipCmd.Stderr = os.Stderr
-	if err := unzipCmd.Run(); err != nil {
+	r, err := zip.OpenReader(inFile)
+	if err != nil {
 		return err
+	}
+	defer r.Close()
+
+	for _, f := range r.File {
+		if filepath.IsAbs(f.Name) {
+			return errors.New("File name in zip file can't be absolute")
+		}
+
+		if strings.HasSuffix(f.Name, "/") {
+			// If the name ends with "/", it is a directory.
+			// (technically it can have a content, but we don't care about it)
+			continue
+		}
+
+		absName := filepath.Join(outDir, f.Name)
+
+		// XXX  This shouldn't work on case-insensitive systems such as Windows.
+		//      But we currently support only Ubuntu, so will use this for now!
+		if !strings.HasPrefix(absName, outDir) {
+			return errors.New("Zip file contains invalid directory")
+		}
+
+		if err := os.MkdirAll(filepath.Dir(absName), 0755); err != nil {
+			return err
+		}
+
+		outFile, err := os.Create(absName)
+		if err != nil {
+			return err
+		}
+
+		rc, err := f.Open()
+		if err != nil {
+			outFile.Close()
+			return err
+		}
+
+		if _, err := io.Copy(outFile, rc); err != nil {
+			rc.Close()
+			outFile.Close()
+			return err
+		}
+
+		rc.Close()
+		outFile.Close()
 	}
 
 	slog.Info("Extracting Zip...Done")

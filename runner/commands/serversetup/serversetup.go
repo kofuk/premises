@@ -17,7 +17,6 @@ var requiredProgs = []string{
 	"mkfs.btrfs",
 	"java",
 	"ufw",
-	"unzip",
 }
 
 type ServerSetup struct{}
@@ -109,7 +108,7 @@ func (self *ServerSetup) initializeServer() {
 	systemutil.AptGet("update", "-y")
 
 	slog.Info("Installing packages")
-	systemutil.AptGet("install", "-y", "btrfs-progs", "openjdk-17-jre-headless", "ufw", "unzip")
+	systemutil.AptGet("install", "-y", "btrfs-progs", "openjdk-17-jre-headless", "ufw")
 
 	if _, err := user.LookupId("1000"); err != nil {
 		slog.Info("Adding user")
