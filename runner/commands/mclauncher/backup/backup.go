@@ -20,6 +20,7 @@ import (
 	"github.com/kofuk/premises/common/s3wrap"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/util"
 	"github.com/ulikunitz/xz"
 )
 
@@ -106,7 +107,7 @@ func (self *BackupService) DownloadWorldData(config *runner.Config) error {
 	}
 	defer file.Close()
 
-	if _, err := io.Copy(&ProgressWriter{writer: file, notify: progress}, resp.Body); err != nil {
+	if _, err := io.Copy(&util.ProgressWriter{W: file, Ch: progress}, resp.Body); err != nil {
 		return err
 	}
 	slog.Info("Downloading world archive...Done")
@@ -248,7 +249,7 @@ func (self *BackupService) doUploadWorldData(config *runner.Config, options *Upl
 	}()
 
 	key := fmt.Sprintf("%s/%s", config.World.Name, makeBackupName())
-	if err := self.s3.PutObject(context.Background(), self.bucket, key, &ProgressReader{reader: file, notify: progress}, fileInfo.Size()); err != nil {
+	if err := self.s3.PutObject(context.Background(), self.bucket, key, &util.ProgressReader{R: file, Ch: progress}, fileInfo.Size()); err != nil {
 		return fmt.Errorf("Unable to upload %s: %w", key, err)
 	}
 	slog.Info("Uploading world archive...Done")
