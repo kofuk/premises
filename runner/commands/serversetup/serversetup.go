@@ -131,11 +131,14 @@ func (self *ServerSetup) initializeServer() {
 
 	if _, err := os.Stat("/opt/premises/gamedata.img"); os.IsNotExist(err) {
 		slog.Info("Creating image file to save game data")
-		size := "8G"
+		size := 8 * 1024 * 1024 * 1024 // 8 GiB
 		if isDevEnv() {
-			size = "1G"
+			size = 1 * 1024 * 1024 * 1024 // 1 GiB
 		}
-		systemutil.Cmd("fallocate", []string{"-l", size, "/opt/premises/gamedata.img"}, nil)
+		if err := systemutil.Fallocate("/opt/premises/gamedata.img", int64(size)); err != nil {
+			slog.Error("Unable to create gamedata.img", slog.Any("error", err))
+			return
+		}
 
 		slog.Info("Creating filesystem for gamedata.img")
 		systemutil.Cmd("mkfs.btrfs", []string{"/opt/premises/gamedata.img"}, nil)
@@ -154,5 +157,7 @@ func (self ServerSetup) Run() {
 	systemutil.Cmd("mount", []string{"/opt/premises/gamedata.img", "/opt/premises/gamedata"}, nil)
 
 	slog.Info("Ensure data directory owned by execution user")
-	systemutil.Cmd("chown", []string{"-R", "1000:1000", "/opt/premises"}, nil)
+	if err := systemutil.ChownRecursive("/opt/premises", 1000, 1000); err != nil {
+		slog.Error("Error changing ownership", slog.Any("error", err))
+	}
 }
