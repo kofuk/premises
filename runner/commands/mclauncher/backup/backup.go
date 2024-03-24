@@ -292,10 +292,13 @@ func (self *BackupService) RemoveOldBackups(config *runner.Config) error {
 	return nil
 }
 
-func extractZstWorldArchive(inFile io.Reader, outDir string) error {
-	slog.Info("Extracting Zstandard...")
+func extractZstWorldArchive(inFile, outDir string) error {
+	file, err := os.Open(inFile)
+	if err != nil {
+		return err
+	}
 
-	zstReader, err := zstd.NewReader(inFile, zstd.WithDecoderConcurrency(runtime.NumCPU()))
+	zstReader, err := zstd.NewReader(file, zstd.WithDecoderConcurrency(runtime.NumCPU()))
 	if err != nil {
 		return err
 	}
@@ -313,20 +316,21 @@ func extractZstWorldArchive(inFile io.Reader, outDir string) error {
 
 	tarCmd.Wait()
 
-	slog.Info("Extracting Zstandard...Done")
-
 	return nil
 }
 
-func extractXzWorldArchive(inFile io.Reader, outDir string) error {
-	slog.Info("Extracting XZ...")
-
+func extractXzWorldArchive(inFile, outDir string) error {
 	numThreads := runtime.NumCPU() - 1
 	if numThreads < 1 {
 		numThreads = 1
 	}
 
-	xzReader, err := xz.NewReader(inFile)
+	file, err := os.Open(inFile)
+	if err != nil {
+		return err
+	}
+
+	xzReader, err := xz.NewReader(file)
 	if err != nil {
 		return err
 	}
@@ -352,14 +356,10 @@ func extractXzWorldArchive(inFile io.Reader, outDir string) error {
 
 	tarCmd.Wait()
 
-	slog.Info("Extracting XZ...Done")
-
 	return nil
 }
 
 func extractZipWorldArchive(inFile, outDir string) error {
-	slog.Info("Extracting Zip...")
-
 	r, err := zip.OpenReader(inFile)
 	if err != nil {
 		return err
@@ -410,21 +410,29 @@ func extractZipWorldArchive(inFile, outDir string) error {
 		outFile.Close()
 	}
 
-	slog.Info("Extracting Zip...Done")
-
 	return nil
 }
 
-func ExtractWorldArchiveIfNeeded() error {
-	if _, err := os.Stat(fs.LocateDataFile("world.tar.zst")); os.IsNotExist(err) {
-		if _, err := os.Stat(fs.LocateDataFile("world.tar.xz")); os.IsNotExist(err) {
-			if _, err := os.Stat(fs.LocateDataFile("world.zip")); os.IsNotExist(err) {
-				slog.Info("No world archive exists; continue...")
-				return nil
-			}
+func worldArchiveExists() bool {
+	candidates := []string{
+		"world.tar.zst",
+		"world.tar.xz",
+		"world.zip",
+	}
+
+	for _, name := range candidates {
+		if _, err := os.Stat(fs.LocateDataFile(name)); err == nil {
+			return true
 		}
-	} else if err != nil {
-		return err
+	}
+
+	return false
+}
+
+func ExtractWorldArchiveIfNeeded() error {
+	if !worldArchiveExists() {
+		// No archive to extract. Continue.
+		return nil
 	}
 
 	if err := os.RemoveAll(fs.LocateWorldData("world")); err != nil {
@@ -448,47 +456,38 @@ func ExtractWorldArchiveIfNeeded() error {
 		return err
 	}
 
-	inFile, err := os.Open(fs.LocateDataFile("world.tar.zst"))
-	if err != nil {
-		inFile, err := os.Open(fs.LocateDataFile("world.tar.xz"))
-		if err != nil {
-			_, err := os.Stat(fs.LocateDataFile("world.zip"))
-			if err != nil {
-				return err
-			}
+	extractors := []struct {
+		name     string
+		fn       func(inFile, outDir string) error
+		fileName string
+	}{
+		{
+			name:     "zip",
+			fn:       extractZipWorldArchive,
+			fileName: fs.LocateDataFile("world.zip"),
+		},
+		{
+			name:     "xz",
+			fn:       extractXzWorldArchive,
+			fileName: fs.LocateDataFile("world.tar.xz"),
+		},
+		{
+			name:     "zstd",
+			fn:       extractZstWorldArchive,
+			fileName: fs.LocateDataFile("world.tar.zst"),
+		},
+	}
 
-			if err := extractZipWorldArchive(fs.LocateDataFile("world.zip"), tempDir); err != nil {
-				return err
-			}
+	for _, extractor := range extractors {
+		slog.Info(fmt.Sprintf("Try extract archive using %s extractor", extractor.name))
 
-			slog.Info("Extracting world archive...Done")
-
-			if err := os.Remove(fs.LocateDataFile("world.zip")); err != nil {
-				return err
-			}
-		} else {
-			defer inFile.Close()
-
-			if err := extractXzWorldArchive(inFile, tempDir); err != nil {
-				return err
-			}
-
-			slog.Info("Extracting world archive...Done")
-
-			if err := os.Remove(fs.LocateDataFile("world.tar.xz")); err != nil {
-				return err
-			}
+		err := extractor.fn(extractor.fileName, tempDir)
+		if err == nil {
+			slog.Info("Archive extraction succeeded")
+			os.Remove(extractor.fileName)
+			break
 		}
-	} else {
-		defer inFile.Close()
-
-		if err := extractZstWorldArchive(inFile, tempDir); err != nil {
-			return err
-		}
-
-		slog.Info("Extracting world archive...Done")
-
-		if err := os.Remove(fs.LocateDataFile("world.tar.zst")); err != nil {
+		if !os.IsNotExist(err) {
 			return err
 		}
 	}
