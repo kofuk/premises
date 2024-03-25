@@ -362,15 +362,14 @@ func extractXzWorldArchive(inFile, outDir string) error {
 func extractZipWorldArchive(inFile, outDir string) error {
 	r, err := zip.OpenReader(inFile)
 	if err != nil {
+		if err == zip.ErrInsecurePath {
+			r.Close()
+		}
 		return err
 	}
 	defer r.Close()
 
 	for _, f := range r.File {
-		if filepath.IsAbs(f.Name) {
-			return errors.New("File name in zip file can't be absolute")
-		}
-
 		if strings.HasSuffix(f.Name, "/") {
 			// If the name ends with "/", it is a directory.
 			// (technically it can have a content, but we don't care about it)
@@ -378,12 +377,6 @@ func extractZipWorldArchive(inFile, outDir string) error {
 		}
 
 		absName := filepath.Join(outDir, f.Name)
-
-		// XXX  This shouldn't work on case-insensitive systems such as Windows.
-		//      But we currently support only Ubuntu, so will use this for now!
-		if !strings.HasPrefix(absName, outDir) {
-			return errors.New("Zip file contains invalid directory")
-		}
 
 		if err := os.MkdirAll(filepath.Dir(absName), 0755); err != nil {
 			return err
