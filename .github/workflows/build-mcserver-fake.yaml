@@ -1,8 +1,6 @@
 name: Build mcserver-fake
 on:
   push:
-    branches:
-      - master
     paths:
       - 'mcserver-fake/**'
 
@@ -21,10 +19,12 @@ jobs:
           cd mcserver-fake
           cargo build --release
       - uses: google-github-actions/auth@v2
+        if: github.ref_name == 'master'
         with:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GOOGLE_SERVICE_ACCOUNT }}
       - name: Publish mcserver-fake
+        if: github.ref_name == 'master'
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: target/release/mcserver-fake
@@ -32,6 +32,7 @@ jobs:
           parent: false
           process_gcloudignore: false
       - name: Publish metadata
+        if: github.ref_name == 'master'
         uses: google-github-actions/upload-cloud-storage@v2
         with:
           path: mcserver-fake/resources/
