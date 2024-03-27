@@ -49,7 +49,7 @@ func (self *Server) HandleMonitor() {
 			slog.Error("Error writing status", slog.Any("error", err))
 			return
 		}
-		io.ReadAll(resp.Body)
+		io.Copy(io.Discard, resp.Body)
 
 		buf.Reset()
 	}
@@ -125,7 +125,7 @@ func (self *Server) PollAction() {
 			slog.Error("Error forwarding action", slog.Any("error", err))
 			continue
 		}
-		io.ReadAll(resp.Body)
+		io.Copy(io.Discard, resp.Body)
 	}
 }
 

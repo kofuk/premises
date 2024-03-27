@@ -31,7 +31,7 @@ func sendMessage(msgType string, userData any, dispatch bool) error {
 	if err != nil {
 		return err
 	}
-	defer io.ReadAll(resp.Body)
+	defer io.Copy(io.Discard, resp.Body)
 
 	if resp.StatusCode == http.StatusOK {
 		return nil
