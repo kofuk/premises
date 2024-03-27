@@ -101,13 +101,13 @@ func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSi
 		slog.Error("Failed to get flavors", slog.Any("error", err))
 		return ""
 	}
-	flavorId, err := conoha.FindMatchingFlavor(flavors, memSizeGB*1024)
+	flavor, err := conoha.FindMatchingFlavor(flavors, memSizeGB*1024)
 	if err != nil {
 		slog.Error("Matching flavor not found", slog.Any("error", err))
 		return ""
 	}
 
-	slog.Info("Retriving flavors...Done", slog.String("selected_flavor", flavorId))
+	slog.Info("Retriving flavors...Done", slog.Any("selected_flavor", flavor))
 
 	slog.Info("Retriving volume ID...")
 	volumeId, err := conoha.GetVolumeID(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
@@ -118,7 +118,7 @@ func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSi
 	slog.Info("Retriving image ID...Done", slog.String("volume_id", volumeId))
 
 	slog.Info("Creating VM...")
-	id, err := conoha.CreateVM(ctx, s.cfg, s.cfg.Conoha.NameTag, token, volumeId, flavorId, startupScript)
+	id, err := conoha.CreateVM(ctx, s.cfg, s.cfg.Conoha.NameTag, token, volumeId, flavor, startupScript)
 	if err != nil {
 		slog.Error("Failed to create VM", slog.Any("error", err))
 		return ""

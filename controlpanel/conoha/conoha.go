@@ -11,7 +11,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"strings"
 	"time"
@@ -51,6 +50,23 @@ func makeRequest(ctx context.Context, method, url, token string) (*http.Request,
 	return req, nil
 }
 
+type APIError struct {
+	Code     int    `json:"code"`
+	ErrorMsg string `json:"error"`
+}
+
+func ErrorFrom(statusCode int, respData []byte) APIError {
+	var result APIError
+	if err := json.Unmarshal(respData, &result); err != nil {
+		result.Code = statusCode
+	}
+	return result
+}
+
+func (err APIError) Error() string {
+	return fmt.Sprintf("APIError: %d: %s", err.Code, err.ErrorMsg)
+}
+
 func StopVM(ctx context.Context, cfg *config.Config, token, vmID string) error {
 	url, err := url.Parse(cfg.Conoha.Services.Compute)
 	if err != nil {
@@ -69,10 +85,10 @@ func StopVM(ctx context.Context, cfg *config.Config, token, vmID string) error {
 		return err
 	}
 
-	io.Copy(os.Stdout, resp.Body)
+	respData, err := io.ReadAll(resp.Body)
 
-	if resp.StatusCode != 202 {
-		return fmt.Errorf("Failed to stop the VM: %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusAccepted {
+		return ErrorFrom(resp.StatusCode, respData)
 	}
 
 	return nil
@@ -97,11 +113,16 @@ func DeleteVM(ctx context.Context, cfg *config.Config, token, vmID string) error
 
 		slog.Info("Requested deleting VM", slog.Int("status_code", resp.StatusCode))
 
-		if resp.StatusCode == 204 {
+		respData, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		if resp.StatusCode == http.StatusNoContent {
 			return nil
 		}
 
-		return fmt.Errorf("Failed to delete the VM: %d", resp.StatusCode)
+		return ErrorFrom(resp.StatusCode, respData)
 	}, 3*time.Minute)
 }
 
@@ -135,9 +156,9 @@ func base64Encode(data []byte) []byte {
 	return result
 }
 
-func CreateVM(ctx context.Context, cfg *config.Config, nameTag, token, volumeId, flavorRef string, startupScript []byte) (string, error) {
+func CreateVM(ctx context.Context, cfg *config.Config, nameTag, token, volumeId string, flavor Flavor, startupScript []byte) (string, error) {
 	var reqBody CreateVMReq
-	reqBody.Server.FlavorRef = flavorRef
+	reqBody.Server.FlavorRef = flavor.ID
 	reqBody.Server.UserData = string(base64Encode(startupScript))
 	reqBody.Server.MetaData.InstanceNameTag = nameTag
 	reqBody.Server.SecurityGroups = []struct {
@@ -165,8 +186,8 @@ func CreateVM(ctx context.Context, cfg *config.Config, nameTag, token, volumeId,
 		return "", err
 	}
 
-	if resp.StatusCode != 202 {
-		return "", fmt.Errorf("Failed to create VM: %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusAccepted {
+		return "", ErrorFrom(resp.StatusCode, respData)
 	}
 
 	var result CreateVMResp
@@ -212,16 +233,17 @@ func GetVMDetail(ctx context.Context, cfg *config.Config, token, id string) (*VM
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, errors.New("No such VM")
-	}
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("Failed to retrieve VM details: %d", resp.StatusCode)
-	}
 
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, errors.New("No such VM")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, ErrorFrom(resp.StatusCode, respData)
 	}
 
 	var result VMDetailResp
@@ -272,16 +294,17 @@ func FindVM(ctx context.Context, cfg *config.Config, token string, condition Fin
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, errors.New("No such VM")
-	}
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("Failed to retrieve VM details: %d", resp.StatusCode)
-	}
 
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, errors.New("No such VM")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, ErrorFrom(resp.StatusCode, respData)
 	}
 
 	var result VMDetailListResp
@@ -320,13 +343,14 @@ func GetVolumeID(ctx context.Context, cfg *config.Config, token, tag string) (st
 	if err != nil {
 		return "", err
 	}
-	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("Failed to retrieve volume list: %d", resp.StatusCode)
-	}
 
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", ErrorFrom(resp.StatusCode, respData)
 	}
 
 	var result VolumeResp
@@ -368,12 +392,13 @@ func RenameVolume(ctx context.Context, cfg *config.Config, token, volumeId, name
 		return err
 	}
 
-	if _, err := io.ReadAll(resp.Body); err != nil {
+	respData, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("Rename volume failed: %d", resp.StatusCode)
+		return ErrorFrom(resp.StatusCode, respData)
 	}
 
 	return nil
@@ -386,6 +411,8 @@ type Flavor struct {
 	Disk       int    `json:"disk"`
 	VCPUs      int    `json:"vcpus"`
 	RXTXFactor int    `json:"rxtx_factor"`
+	Disabled   bool   `json:"OS-FLV-DISABLED:disabled"`
+	Public     bool   `json:"os-flavor-access:is_public"`
 }
 
 type FlavorsResp struct {
@@ -407,28 +434,40 @@ func GetFlavors(ctx context.Context, cfg *config.Config, token string) ([]Flavor
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("Failed to retrieve flavor list: %d", resp.StatusCode)
-	}
 
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	var result FlavorsResp
-	if err := json.Unmarshal(respData, &result); err != nil {
+	if resp.StatusCode != http.StatusOK {
+		return nil, ErrorFrom(resp.StatusCode, respData)
+	}
+
+	var flavors FlavorsResp
+	if err := json.Unmarshal(respData, &flavors); err != nil {
 		return nil, err
 	}
 
-	return result.Flavors, nil
+	var result []Flavor
+	for _, flavor := range flavors.Flavors {
+		if flavor.Disabled || !flavor.Public {
+			continue
+		}
+		result = append(result, flavor)
+	}
+
+	return result, nil
 }
 
-func FindMatchingFlavor(flavors []Flavor, memSize int) (string, error) {
+func FindMatchingFlavor(flavors []Flavor, memSize int) (Flavor, error) {
 	var memMatch []Flavor
 	for _, fl := range flavors {
-		if !strings.HasPrefix(fl.Name, "g2l-") {
+		if !strings.HasPrefix(fl.Name, "g2l-t-") {
 			// "g2w-" is Windows and "g2d-" is Database?
+
+			// "g2l-p-" seems to be private flavor.
+			// If we call "POST /servers" with such flavorRef, it will be rejected saying "Invalid flavor specification. This flavor is can not be used for public API."
 			continue
 		}
 		if fl.RAM == memSize {
@@ -437,9 +476,9 @@ func FindMatchingFlavor(flavors []Flavor, memSize int) (string, error) {
 	}
 
 	if len(memMatch) == 0 {
-		return "", errors.New("Matching flavor not found")
+		return Flavor{}, errors.New("Matching flavor not found")
 	} else {
-		return memMatch[0].ID, nil
+		return memMatch[0], nil
 	}
 }
 
@@ -546,12 +585,14 @@ func CreateSecurityGroupRule(ctx context.Context, cfg *config.Config, token stri
 	if err != nil {
 		return err
 	}
-	if _, err := io.ReadAll(resp.Body); err != nil {
+
+	respData, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return err
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("Failed to create security group rule: %d", resp.StatusCode)
+		return ErrorFrom(resp.StatusCode, respData)
 	}
 
 	return nil
@@ -603,15 +644,17 @@ func GetToken(ctx context.Context, cfg *config.Config) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	if resp.StatusCode != http.StatusCreated {
-		return "", "", fmt.Errorf("Authentication failed: %d", resp.StatusCode)
-	}
-	respBody, err := io.ReadAll(resp.Body)
+
+	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", "", err
 	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return "", "", ErrorFrom(resp.StatusCode, respData)
+	}
 	var ident GetTokenResp
-	if err := json.Unmarshal(respBody, &ident); err != nil {
+	if err := json.Unmarshal(respData, &ident); err != nil {
 		return "", "", err
 	}
 	return resp.Header.Get("x-subject-token"), ident.Token.ExpiresAt, nil

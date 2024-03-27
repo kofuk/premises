@@ -122,3 +122,17 @@ type UpdateVolumeReq struct {
 		Name string `json:"name"`
 	} `json:"volume"`
 }
+
+type ListFlavorsResp struct {
+	Flavors []struct {
+		ID         string `json:"id"`
+		Name       string `json:"name"`
+		RAM        int    `json:"ram"`
+		Disk       int    `json:"disk"`
+		Swap       string `json:"swap"`
+		VCPUS      int    `json:"vcpus"`
+		RxTxFactor int    `json:"rxtx_factor"`
+		Disabled   bool   `json:"OS-FLV-DISABLED:disabled"`
+		Public     bool   `json:"os-flavor-access:is_public"`
+	} `json:"flavors"`
+}

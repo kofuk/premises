@@ -3,6 +3,8 @@ package main
 import (
 	"crypto/subtle"
 	_ "embed"
+	"encoding/json"
+	"log"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -19,6 +21,13 @@ import (
 
 //go:embed flavors.json
 var flavorData []byte
+var listFlavorsResp entity.ListFlavorsResp
+
+func init() {
+	if err := json.Unmarshal(flavorData, &listFlavorsResp); err != nil {
+		log.Fatal(err)
+	}
+}
 
 type Ostack struct {
 	r           *echo.Echo
@@ -104,7 +113,7 @@ func (self *Ostack) ServeGetServerDetail(c echo.Context) error {
 	return c.JSON(http.StatusOK, servers)
 }
 
-func (self *Ostack) ServeLaunchServer(c echo.Context) error {
+func (self *Ostack) ServeCreateServer(c echo.Context) error {
 	self.m.Lock()
 	defer self.m.Unlock()
 
@@ -124,6 +133,24 @@ outer:
 			slog.Error("Unknown security group")
 			return c.JSON(http.StatusBadRequest, nil)
 		}
+	}
+
+	// Validate flavorRef
+	flavorFound := false
+	for _, flavor := range listFlavorsResp.Flavors {
+		if flavor.ID == req.Server.FlavorRef {
+			if flavor.Disabled || !flavor.Public || !strings.HasPrefix(flavor.Name, "g2l-t-") {
+				// Unavailable flavor
+				return c.JSON(http.StatusBadRequest, nil)
+			}
+
+			flavorFound = true
+			break
+		}
+	}
+	if !flavorFound {
+		// Unknown flavor
+		return c.JSON(http.StatusBadRequest, nil)
 	}
 
 	server, err := dockerstack.LaunchServer(c.Request().Context(), self.docker, req)
@@ -312,7 +339,7 @@ func (self *Ostack) setupRoutes() {
 		}
 	})
 
-	needsAuthEndpoint.POST("/compute/v2.1/servers", self.ServeLaunchServer)
+	needsAuthEndpoint.POST("/compute/v2.1/servers", self.ServeCreateServer)
 	needsAuthEndpoint.GET("/compute/v2.1/servers/detail", self.ServeListServerDetails)
 	needsAuthEndpoint.GET("/compute/v2.1/servers/:id", self.ServeGetServerDetail)
 	needsAuthEndpoint.POST("/compute/v2.1/servers/:server/action", self.ServeServerAction)
