@@ -16,7 +16,3 @@ updates:
     directory: /controlpanel
     schedule:
       interval: weekly
-  - package-ecosystem: npm
-    directory: /e2e-tests
-    schedule:
-      interval: weekly
