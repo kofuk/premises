@@ -10,32 +10,25 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    container:
-      image: rust:alpine
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
       - name: Build mcserver-fake
         run: |
           cd mcserver-fake
-          cargo build --release
+          CGO_ENABLED=0 go build .
       - uses: google-github-actions/auth@v2
         if: github.ref_name == 'master'
         with:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GOOGLE_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+        if: github.ref_name == 'master'
       - name: Publish mcserver-fake
         if: github.ref_name == 'master'
-        uses: google-github-actions/upload-cloud-storage@v2
-        with:
-          path: target/release/mcserver-fake
-          destination: premises/devtools/mcserver-fake
-          parent: false
-          process_gcloudignore: false
-      - name: Publish metadata
-        if: github.ref_name == 'master'
-        uses: google-github-actions/upload-cloud-storage@v2
-        with:
-          path: mcserver-fake/resources/
-          destination: premises/devtools/mcserver-fake
-          parent: false
-          process_gcloudignore: false
+        run: |
+          gcloud storage cp mcserver-fake/mcserver-fake gs://premises/devtools/mcserver-fake/
+          gcloud storage cp -R mcserver-fake/resources/* gs://premises/devtools/mcserver-fake/

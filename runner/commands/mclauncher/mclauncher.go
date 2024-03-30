@@ -203,7 +203,7 @@ func Run() {
 	}); err != nil {
 		slog.Error("Unable to write send message", slog.Any("error", err))
 	}
-	if err := backup.PrepareUploadData(backup.UploadOptions{}); err != nil {
+	if err := backup.PrepareUploadData(); err != nil {
 		slog.Error("Failed to create world archive", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", runner.Event{
@@ -225,7 +225,7 @@ func Run() {
 	}); err != nil {
 		slog.Error("Unable to write send message", slog.Any("error", err))
 	}
-	if err := backup.New(config.AWS.AccessKey, config.AWS.SecretKey, config.S3.Endpoint, config.S3.Bucket).UploadWorldData(config, backup.UploadOptions{}); err != nil {
+	if err := backup.New(config.AWS.AccessKey, config.AWS.SecretKey, config.S3.Endpoint, config.S3.Bucket).UploadWorldData(config); err != nil {
 		slog.Error("Failed to upload world data", slog.Any("error", err))
 		srv.StartupFailed = true
 		if err := exterior.SendMessage("serverStatus", runner.Event{

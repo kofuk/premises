@@ -1,14 +1,15 @@
 package backup
 
 import (
+	"archive/tar"
 	"archive/zip"
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	goFs "io/fs"
 	"log/slog"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -132,15 +133,8 @@ func (self *BackupService) GetLatestKey(world string) (string, error) {
 	return objs[0].Key, nil
 }
 
-func (self *BackupService) UploadWorldData(config *runner.Config, options UploadOptions) error {
-	if options.SourceDir == "" {
-		options.SourceDir = fs.LocateWorldData("")
-	}
-	if options.TmpFileName == "" {
-		options.TmpFileName = "world.tar.zst"
-	}
-
-	return self.doUploadWorldData(config, &options)
+func (self *BackupService) UploadWorldData(config *runner.Config) error {
+	return self.doUploadWorldData(config)
 }
 
 func SaveLastWorldHash(config *runner.Config, hash string) error {
@@ -185,15 +179,10 @@ func getFileExtension(name string) string {
 	return name[index:]
 }
 
-type UploadOptions struct {
-	TmpFileName string
-	SourceDir   string
-}
-
-func (self *BackupService) doUploadWorldData(config *runner.Config, options *UploadOptions) error {
+func (self *BackupService) doUploadWorldData(config *runner.Config) error {
 	slog.Info("Uploading world archive...")
 
-	archivePath := fs.LocateDataFile(options.TmpFileName)
+	archivePath := fs.LocateDataFile("world.tar.zst")
 
 	file, err := os.Open(archivePath)
 	if err != nil {
@@ -255,7 +244,7 @@ func (self *BackupService) doUploadWorldData(config *runner.Config, options *Upl
 	}
 	slog.Info("Uploading world archive...Done")
 
-	if err := os.Remove(fs.LocateDataFile(options.TmpFileName)); err != nil {
+	if err := os.Remove(archivePath); err != nil {
 		return err
 	}
 
@@ -292,6 +281,43 @@ func (self *BackupService) RemoveOldBackups(config *runner.Config) error {
 	return nil
 }
 
+func extractTar(r io.Reader, outDir string) error {
+	tr := tar.NewReader(r)
+	for {
+		th, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		switch th.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(filepath.Join(outDir, th.Name), 0755); err != nil {
+				return err
+			}
+
+		case tar.TypeReg:
+			outFile, err := os.Create(filepath.Join(outDir, th.Name))
+			if err != nil {
+				return err
+			}
+
+			if _, err := io.Copy(outFile, tr); err != nil {
+				outFile.Close()
+				return err
+			}
+			outFile.Close()
+
+		default:
+			return fmt.Errorf("Unsupported header type: %v", th.Typeflag)
+		}
+	}
+
+	return nil
+}
+
 func extractZstWorldArchive(inFile, outDir string) error {
 	file, err := os.Open(inFile)
 	if err != nil {
@@ -304,17 +330,9 @@ func extractZstWorldArchive(inFile, outDir string) error {
 	}
 	defer zstReader.Close()
 
-	tarCmd := exec.Command("tar", "-x")
-	tarCmd.Dir = outDir
-	tarCmd.Stdin = zstReader
-	tarCmd.Stderr = os.Stderr
-	tarCmd.Stdout = os.Stdout
-
-	if err := tarCmd.Start(); err != nil {
+	if err := extractTar(zstReader, outDir); err != nil {
 		return err
 	}
-
-	tarCmd.Wait()
 
 	return nil
 }
@@ -329,32 +347,16 @@ func extractXzWorldArchive(inFile, outDir string) error {
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
 	xzReader, err := xz.NewReader(file)
 	if err != nil {
 		return err
 	}
 
-	tarCmd := exec.Command("tar", "-x")
-	tarCmd.Dir = outDir
-	tarCmd.Stderr = os.Stderr
-	tarCmd.Stdout = os.Stdout
-
-	tarStdin, err := tarCmd.StdinPipe()
-	if err != nil {
+	if err := extractTar(xzReader, outDir); err != nil {
 		return err
 	}
-	defer tarStdin.Close()
-
-	if err := tarCmd.Start(); err != nil {
-		return err
-	}
-
-	if _, err := io.Copy(tarStdin, xzReader); err != nil {
-		return err
-	}
-
-	tarCmd.Wait()
 
 	return nil
 }
@@ -496,36 +498,97 @@ func ExtractWorldArchiveIfNeeded() error {
 	return nil
 }
 
-func doPrepareUploadData(options *UploadOptions) error {
+func writeTar(to io.Writer, baseDir string, dirs ...string) error {
+	tw := tar.NewWriter(to)
+	defer tw.Close()
+
+	creationTime := time.Now()
+
+	for _, dir := range dirs {
+		filesystem := os.DirFS(filepath.Join(baseDir, dir))
+
+		err := goFs.WalkDir(filesystem, ".", func(path string, d goFs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+
+			hdr := &tar.Header{
+				Typeflag:   tar.TypeDir,
+				Name:       filepath.Join(dir, path),
+				Size:       0,
+				Uid:        1000,
+				Gid:        1000,
+				ModTime:    creationTime,
+				AccessTime: creationTime,
+				ChangeTime: creationTime,
+				Format:     tar.FormatGNU,
+			}
+
+			switch {
+			case d.Type().IsDir():
+				hdr.Typeflag = tar.TypeDir
+				hdr.Mode = 0755
+				if err := tw.WriteHeader(hdr); err != nil {
+					return err
+				}
+
+			case d.Type().IsRegular():
+				file, err := os.Open(filepath.Join(baseDir, dir, path))
+				if err != nil {
+					return err
+				}
+
+				stat, err := file.Stat()
+				if err != nil {
+					file.Close()
+					return err
+				}
+
+				hdr.Typeflag = tar.TypeReg
+				hdr.Mode = 0644
+				hdr.Size = stat.Size()
+				if err := tw.WriteHeader(hdr); err != nil {
+					file.Close()
+					return err
+				}
+
+				if _, err := io.Copy(tw, file); err != nil {
+					file.Close()
+					return err
+				}
+				file.Close()
+
+			default:
+				return errors.New("Unsupported file type")
+			}
+
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func createArchive() error {
 	slog.Info("Creating world archive...")
 
-	tarArgs := []string{"-c", "world"}
-
+	dirs := []string{"world"}
 	// "Paper" mod server saves world data in separate dirs.
-	if s, err := os.Stat(filepath.Join(options.SourceDir, "world_nether")); err == nil && s.IsDir() {
-		tarArgs = append(tarArgs, "world_nether")
+	if s, err := os.Stat(fs.LocateWorldData("world_nether")); err == nil && s.IsDir() {
+		dirs = append(dirs, "world_nether")
 	}
-	if s, err := os.Stat(filepath.Join(options.SourceDir, "world_the_end")); err == nil && s.IsDir() {
-		tarArgs = append(tarArgs, "world_the_end")
+	if s, err := os.Stat(fs.LocateWorldData("world_the_end")); err == nil && s.IsDir() {
+		dirs = append(dirs, "world_the_end")
 	}
 
-	tarCmd := exec.Command("tar", tarArgs...)
-	tarCmd.Dir = options.SourceDir
-	tarStdout, err := tarCmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	defer tarStdout.Close()
-
-	outFile, err := os.Create(fs.LocateDataFile(options.TmpFileName))
+	outFile, err := os.Create(fs.LocateDataFile("world.tar.zst"))
 	if err != nil {
 		return err
 	}
 	defer outFile.Close()
-
-	if err := tarCmd.Start(); err != nil {
-		return err
-	}
 
 	zstWriter, err := zstd.NewWriter(outFile, zstd.WithEncoderConcurrency(runtime.NumCPU()), zstd.WithEncoderLevel(zstd.SpeedBestCompression))
 	if err != nil {
@@ -533,22 +596,14 @@ func doPrepareUploadData(options *UploadOptions) error {
 	}
 	defer zstWriter.Close()
 
-	if _, err := io.Copy(zstWriter, tarStdout); err != nil {
+	if err := writeTar(zstWriter, fs.LocateWorldData(""), dirs...); err != nil {
 		return err
 	}
-
-	tarCmd.Wait()
 
 	slog.Info("Creating world archive...Done")
 	return nil
 }
 
-func PrepareUploadData(options UploadOptions) error {
-	if options.SourceDir == "" {
-		options.SourceDir = fs.LocateWorldData("")
-	}
-	if options.TmpFileName == "" {
-		options.TmpFileName = "world.tar.zst"
-	}
-	return doPrepareUploadData(&options)
+func PrepareUploadData() error {
+	return createArchive()
 }
