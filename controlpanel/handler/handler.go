@@ -2,7 +2,6 @@ package handler
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -15,6 +14,8 @@ import (
 	"github.com/boj/redistore"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/sessions"
+	"github.com/kofuk/premises/common/db"
+	"github.com/kofuk/premises/common/db/model/migrations"
 	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/backup"
@@ -22,15 +23,12 @@ import (
 	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/kvs"
 	"github.com/kofuk/premises/controlpanel/mcversions"
-	"github.com/kofuk/premises/controlpanel/model/migrations"
 	"github.com/kofuk/premises/controlpanel/pollable"
 	"github.com/kofuk/premises/controlpanel/streaming"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/dialect/pgdialect"
-	"github.com/uptrace/bun/driver/pgdriver"
 	"github.com/uptrace/bun/extra/bundebug"
 	"github.com/uptrace/bun/migrate"
 )
@@ -59,17 +57,12 @@ type Handler struct {
 }
 
 func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
-	conn := pgdriver.NewConnector(
-		pgdriver.WithAddr(fmt.Sprintf("%s:%d", cfg.ControlPanel.Postgres.Address, cfg.ControlPanel.Postgres.Port)),
-		pgdriver.WithUser(cfg.ControlPanel.Postgres.User),
-		pgdriver.WithPassword(cfg.ControlPanel.Postgres.Password),
-		pgdriver.WithDatabase(cfg.ControlPanel.Postgres.DBName),
-		pgdriver.WithInsecure(true),
-		pgdriver.WithConnParams(map[string]interface{}{
-			"TimeZone": "Etc/UTC",
-		}),
+	db := db.NewClient(
+		fmt.Sprintf("%s:%d", cfg.ControlPanel.Postgres.Address, cfg.ControlPanel.Postgres.Port),
+		cfg.ControlPanel.Postgres.User,
+		cfg.ControlPanel.Postgres.Password,
+		cfg.ControlPanel.Postgres.DBName,
 	)
-	db := bun.NewDB(sql.OpenDB(conn), pgdialect.New())
 	if cfg.Debug.Web {
 		db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
 	}

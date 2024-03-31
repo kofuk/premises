@@ -195,7 +195,7 @@ jobs:
           echo '::endgroup::'
 
           echo '::group::Create test user'
-          docker compose --env-file tests/test.env exec web pmctl user add -u user1 -p password1
+          docker compose --env-file tests/test.env exec web pmctl user add -u user1 -p password1 --initialized
           echo '::endgroup::'
 
           echo '::group::Build base image for ostack-fake'
