@@ -11,6 +11,7 @@ import (
 	"log"
 	"math/rand"
 	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -143,11 +144,9 @@ func SignedToEulaTxt() (bool, error) {
 }
 
 type Server struct {
-	RconPassword   string
-	RconPort       int
-	m              sync.Mutex
-	WhitelistUsers []string
-	OpUsers        []string
+	RconPassword string
+	RconPort     int
+	State        *State
 }
 
 type RconPacket struct {
@@ -250,22 +249,14 @@ func (s *Server) commandLoop(conn io.ReadWriter) error {
 			if len(cmd) != 3 || cmd[1] != "add" {
 				return "", errors.New("Invalid argument")
 			}
-			s.m.Lock()
-			defer s.m.Unlock()
-
-			s.WhitelistUsers = append(s.WhitelistUsers, cmd[2])
-
+			s.State.AddToWhitelist(cmd[2])
 			return fmt.Sprintf("Added %s to the whitelist", cmd[2]), nil
 		},
 		"op": func(cmd []string) (string, error) {
 			if len(cmd) != 2 {
 				return "", errors.New("Not enought argument")
 			}
-			s.m.Lock()
-			defer s.m.Unlock()
-
-			s.OpUsers = append(s.OpUsers, cmd[1])
-
+			s.State.AddToOp(cmd[1])
 			return fmt.Sprintf("Made %s a server operator", cmd[1]), nil
 
 		},
@@ -375,6 +366,9 @@ func (s *Server) Run() {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
+	e.GET("/state", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, s.State.ToPublicState())
+	})
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -468,7 +462,17 @@ func main() {
 		s.RconPort = port
 	}
 
+	state, err := CreateState()
+	if err != nil {
+		log.Fatal(err)
+	}
+	s.State = state
+
 	s.Run()
+
+	if err := state.Save(); err != nil {
+		log.Fatal(err)
+	}
 
 	PrintStopServerLog()
 }
