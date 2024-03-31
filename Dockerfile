@@ -1,4 +1,4 @@
-FROM golang:latest AS controlpanel_build
+FROM golang:1.22 AS controlpanel_build
 WORKDIR /build
 COPY ./go.* .
 COPY ./common ./common
@@ -20,7 +20,6 @@ FROM rust:alpine AS tool_build
 WORKDIR /build
 COPY ./Cargo.* .
 COPY ./pmctl ./pmctl
-COPY ./mcserver-fake ./mcserver-fake
 RUN apk --no-cache add musl-dev
 RUN cargo build --release
 
