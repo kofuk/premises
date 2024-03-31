@@ -360,7 +360,30 @@ func (s *Server) startRcon() error {
 	return nil
 }
 
+func (s *Server) createLevelDat() error {
+	if _, err := os.Stat("world/level.dat"); err == nil {
+		// If there's level.dat already, do nothing.
+		return nil
+	}
+
+	if err := os.MkdirAll("world", 0755); err != nil {
+		return err
+	}
+
+	f, err := os.Create("world/level.dat")
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return nil
+}
+
 func (s *Server) Run() {
+	if err := s.createLevelDat(); err != nil {
+		log.Fatal(err)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	e := echo.New()

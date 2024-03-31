@@ -46,10 +46,6 @@ func CreateState() (*State, error) {
 }
 
 func (s *State) Save() error {
-	if err := os.MkdirAll("world", 0755); err != nil {
-		return err
-	}
-
 	f, err := os.Create("world/.fake_state")
 	if err != nil {
 		return err
