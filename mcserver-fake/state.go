@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/google/uuid"
@@ -106,8 +107,10 @@ func (s *State) ToPublicState() PublicState {
 		op = append(op, k)
 	}
 
+	serverName := strings.TrimSuffix(filepath.Base(os.Args[0]), ".jar")
+
 	return PublicState{
-		ServerName:       filepath.Base(os.Args[0]),
+		ServerName:       serverName,
 		PrevWorldVersion: s.PrevWoldVersion,
 		WorldVersion:     s.WorldVersion,
 		Whitelist:        whitelist,
