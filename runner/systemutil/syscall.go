@@ -30,19 +30,24 @@ func Fallocate(path string, size int64) error {
 	if file == nil {
 		return errors.New("Bad file descriptor")
 	}
+	// We don't need to call Close for the file because close(2) for associated fd should be called later.
 
 	writer := bufio.NewWriter(file)
 	defer writer.Flush()
 
 	buf := make([]byte, 1024)
-	written := 0
-	for int(size)-written >= len(buf) {
-		if _, err := writer.Write(buf); err != nil {
+	remain := int(size)
+	for remain >= len(buf) {
+		n, err := writer.Write(buf)
+		if err != nil {
 			return err
 		}
+		remain -= n
 	}
-	if _, err := writer.Write(buf[:int(size)-written]); err != nil {
-		return err
+	if remain > 0 {
+		if _, err := writer.Write(buf[:remain]); err != nil {
+			return err
+		}
 	}
 
 	return nil
