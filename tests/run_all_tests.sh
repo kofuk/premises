@@ -3,12 +3,15 @@ set -euo pipefail
 
 specs=(
     'should_be_able_to_start_stop_server.ts'
+    'should_start_server_using_saved_world.ts'
 )
 
 export TARGET_HOST="${TARGET_HOST:-http://localhost:8000}"
+export USING_MCSERVER_FAKE="${USING_MCSERVER_FAKE:-no}"
 
 cat <<EOF
-Target Host: ${TARGET_HOST}
+Target Host:                 ${TARGET_HOST}
+Using Fake Minecraft Server: ${USING_MCSERVER_FAKE}
 EOF
 
 dir="$(cd "$(dirname "${BASH_SOURCE:-0}")"; pwd)"

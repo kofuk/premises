@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-explicit-any
 
-import codes from "../lib/codes.ts";
+import codes from "./codes.ts";
 
 const TARGET_HOST = Deno.env.get("TARGET_HOST")!;
 

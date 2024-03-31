@@ -203,6 +203,9 @@ jobs:
           echo '::endgroup::'
       - name: Run test
         run: |
+          export TARGET_HOST='http://localhost:8000'
+          export USING_MCSERVER_FAKE='yes'
+
           cd tests
           ./run_all_tests.sh
 
