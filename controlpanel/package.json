@@ -31,7 +31,7 @@
     "@mui/lab": "^5.0.0-alpha.169",
     "@mui/material": "^5.15.14",
     "i18next": "^23.10.1",
-    "i18next-browser-languagedetector": "^7.2.0",
+    "i18next-browser-languagedetector": "^7.2.1",
     "notistack": "^3.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
