@@ -35,7 +35,6 @@ import (
 
 type serverState struct {
 	selectedWorld string
-	machineType   string
 }
 
 type Handler struct {

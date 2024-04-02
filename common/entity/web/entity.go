@@ -63,6 +63,26 @@ type WorldInfo struct {
 	Seed      string `json:"seed"`
 }
 
+type PendingConfig struct {
+	ID            string `json:"id"`
+	MachineType   string `json:"machineType"`
+	ServerVersion string `json:"serverVersion"`
+	GuessVersion  bool   `json:"guessServerVersion"`
+	WorldSource   string `json:"worldSource"`
+	WorldName     string `json:"worldName"`
+	BackupGen     string `json:"backupGen"`
+	LevelType     string `json:"levelType"`
+	Seed          string `json:"seed"`
+}
+
+type LaunchReq struct {
+	ID string `json:"id"`
+}
+
+type CreateConfigResp struct {
+	ID string `json:"id"`
+}
+
 type PageCode int
 
 const (

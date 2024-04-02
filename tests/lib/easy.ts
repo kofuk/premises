@@ -1,6 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.83.0/testing/asserts.ts";
 
-import api, { params, streamEvent } from "../lib/api.ts";
+import api, { streamEvent } from "../lib/api.ts";
 import codes from "../lib/codes.ts";
 
 const waitServerLaunched = async (cookie: string) => {
@@ -31,23 +31,31 @@ const waitServerLaunched = async (cookie: string) => {
   }
 };
 
+const createConfig = async (
+  cookie: string,
+  worldName: string,
+): Promise<string> => {
+  const { id } = await api("POST /api/config", cookie);
+
+  await api("PUT /api/config", cookie, {
+    id,
+    machineType: "2g",
+    serverVersion: "1.20.1",
+    guessServerVersion: true,
+    worldSource: "new-world",
+    worldName,
+    levelType: "default",
+  });
+
+  return id;
+};
+
 export const launchNewWorld = async (
   cookie: string,
   worldName: string,
 ): Promise<void> => {
-  await api(
-    "POST /api/launch",
-    cookie,
-    params({
-      "machine-type": "2g",
-      "server-version": "1.20.1",
-      "prefer-detect": "true",
-      "world-source": "new-world",
-      "world-name": worldName,
-      "seed": "",
-      "level-type": "default",
-    }),
-  );
+  const id = await createConfig(cookie, worldName);
+  await api("POST /api/launch", cookie, { id });
 
   await waitServerLaunched(cookie);
 };
@@ -56,18 +64,14 @@ export const launchExistingWorld = async (
   cookie: string,
   worldName: string,
 ): Promise<void> => {
-  await api(
-    "POST /api/launch",
-    cookie,
-    params({
-      "machine-type": "2g",
-      "server-version": "1.20.1",
-      "prefer-detect": "true",
-      "world-source": "backups",
-      "world-name": worldName,
-      "backup-generation": "@/latest",
-    }),
-  );
+  const id = await createConfig(cookie, worldName);
+  await api("PUT /api/config", cookie, {
+    id,
+    worldSource: "backups",
+    worldName,
+    backupGen: "@/latest",
+  });
+  await api("POST /api/launch", cookie, { id });
 
   await waitServerLaunched(cookie);
 };

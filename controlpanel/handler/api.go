@@ -12,12 +12,13 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
+	"dario.cat/mergo"
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"github.com/gorilla/securecookie"
 	"github.com/kofuk/premises/common/db/model"
 	"github.com/kofuk/premises/common/entity"
@@ -156,8 +157,8 @@ func isValidMemSize(memSize int) bool {
 	return memSize == 1 || memSize == 2 || memSize == 4 || memSize == 8 || memSize == 16 || memSize == 32 || memSize == 64
 }
 
-func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Values, cfg *config.Config) (*runner.Config, error) {
-	if !values.Has("server-version") {
+func (h *Handler) createConfigFromPostData(ctx context.Context, config web.PendingConfig, cfg *config.Config) (*runner.Config, error) {
+	if config.ServerVersion == "" {
 		return nil, errors.New("Server version is not set")
 	}
 	result := gameconfig.New()
@@ -167,37 +168,27 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, values url.Value
 		result.C.ControlPanel = strings.Replace(h.cfg.ControlPanel.Origin, "http://localhost", "http://host.docker.internal", 1)
 	}
 
-	serverDownloadURL, launchCommand, err := h.MCVersions.GetServerInfo(ctx, values.Get("server-version"))
+	serverDownloadURL, launchCommand, err := h.MCVersions.GetServerInfo(ctx, config.ServerVersion)
 	if err != nil {
 		return nil, err
 	}
-	result.SetServer(values.Get("server-version"), serverDownloadURL)
-	result.SetDetectServerVersion(values.Get("prefer-detect") == "true")
+	result.SetServer(config.ServerVersion, serverDownloadURL)
+	result.SetDetectServerVersion(config.GuessVersion)
 	result.C.Server.ManifestOverride = h.MCVersions.GetOverridenManifestUrl()
 	result.C.Server.CustomCommand = launchCommand
 
-	if !values.Has("machine-type") {
-		return nil, errors.New("Machine type is not set")
-	}
-	memSizeGB, err := strconv.Atoi(strings.Replace(values.Get("machine-type"), "g", "", 1))
-	if err != nil {
-		return nil, err
-	}
-	if !isValidMemSize(memSizeGB) {
-		return nil, errors.New("Invalid machine type")
-	}
 	result.GenerateAuthKey()
 
-	if values.Get("world-source") == "backups" {
-		if err := result.SetWorld(values.Get("world-name"), values.Get("backup-generation")); err != nil {
+	if config.WorldSource == "backups" {
+		if err := result.SetWorld(config.WorldName, config.BackupGen); err != nil {
 			return nil, err
 		}
 	} else {
-		if !values.Has("world-name") {
+		if config.WorldName == "" {
 			return nil, errors.New("World name is not set")
 		}
-		result.GenerateWorld(values.Get("world-name"), values.Get("seed"))
-		if err := result.SetLevelType(values.Get("level-type")); err != nil {
+		result.GenerateWorld(config.WorldName, config.Seed)
+		if err := result.SetLevelType(config.LevelType); err != nil {
 			return nil, err
 		}
 	}
@@ -432,8 +423,18 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 }
 
 func (h *Handler) handleApiLaunch(c echo.Context) error {
-	if err := c.Request().ParseForm(); err != nil {
-		slog.Error("Failed to parse form", slog.Any("error", err))
+	var req web.LaunchReq
+	if err := c.Bind(&req); err != nil {
+		slog.Error("Failed to parse request", slog.Any("error", err))
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	var config web.PendingConfig
+	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("pending-config:%s", req.ID), &config); err != nil {
+		slog.Error("Failed to get pending config", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
@@ -450,7 +451,7 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 		})
 	}
 
-	gameConfig, err := h.createConfigFromPostData(c.Request().Context(), c.Request().Form, h.cfg)
+	gameConfig, err := h.createConfigFromPostData(c.Request().Context(), config, h.cfg)
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
@@ -460,9 +461,20 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 
 	h.serverRunning = true
 
-	machineType := c.Request().PostFormValue("machine-type")
-	h.serverState.machineType = machineType
-	memSizeGB, _ := strconv.Atoi(strings.Replace(machineType, "g", "", 1))
+	memSizeGB, err := strconv.Atoi(strings.Replace(config.MachineType, "g", "", 1))
+	if err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+	if !isValidMemSize(memSizeGB) {
+		slog.Error("Invalid mem size")
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
 
 	go h.LaunchServer(context.Background(), gameConfig, h.GameServer, memSizeGB)
 
@@ -472,18 +484,25 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 }
 
 func (h *Handler) handleApiReconfigure(c echo.Context) error {
-	if err := c.Request().ParseForm(); err != nil {
-		slog.Error("Failed to parse form", slog.Any("error", err))
+	var req web.LaunchReq
+	if err := c.Bind(&req); err != nil {
+		slog.Error("Failed to parse request", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 
-	formValues := c.Request().Form
-	formValues.Set("machine-type", h.serverState.machineType)
+	var config web.PendingConfig
+	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("pending-config:%s", req.ID), &config); err != nil {
+		slog.Error("Failed to get pending config", slog.Any("error", err))
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
 
-	gameConfig, err := h.createConfigFromPostData(c.Request().Context(), formValues, h.cfg)
+	gameConfig, err := h.createConfigFromPostData(c.Request().Context(), config, h.cfg)
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
@@ -626,6 +645,65 @@ func (h *Handler) handleApiWorldInfo(c echo.Context) error {
 	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.WorldInfo]{
 		Success: true,
 		Data:    *data,
+	})
+}
+
+func (h *Handler) handleApiCreateConfig(c echo.Context) error {
+	id := uuid.NewString()
+
+	config := web.PendingConfig{
+		ID: id,
+	}
+
+	if err := h.KVS.Set(c.Request().Context(), fmt.Sprintf("pending-config:%s", id), config, 24*7*time.Hour); err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.CreateConfigResp]{
+		Success: true,
+		Data: web.CreateConfigResp{
+			ID: id,
+		},
+	})
+}
+
+func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
+	var newConfig web.PendingConfig
+	if err := c.Bind(&newConfig); err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	var config web.PendingConfig
+	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("pending-config:%s", newConfig.ID), &config); err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	if err := mergo.Merge(&config, &newConfig); err != nil {
+		slog.Error("Error merging config", slog.Any("error", err))
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	if err := h.KVS.Set(c.Request().Context(), fmt.Sprintf("pending-config:%s", newConfig.ID), config, 7*24*time.Hour); err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.PendingConfig]{
+		Success: true,
+		Data:    config,
 	})
 }
 
@@ -889,6 +967,8 @@ func (h *Handler) setupApiRoutes(group *echo.Group) {
 	needsAuth.GET("/mcversions", h.handleApiMcversions)
 	needsAuth.GET("/systeminfo", h.handleApiSystemInfo)
 	needsAuth.GET("/worldinfo", h.handleApiWorldInfo)
+	needsAuth.POST("/config", h.handleApiCreateConfig)
+	needsAuth.PUT("/config", h.handleApiUpdateConfig)
 	setupApiQuickUndoRoutes(h, needsAuth.Group("/quickundo"))
 	setupApiUsersRoutes(h, needsAuth.Group("/users"))
 }
