@@ -1,7 +1,6 @@
 package systemutil
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -32,20 +31,17 @@ func Fallocate(path string, size int64) error {
 	}
 	// We don't need to call Close for the file because close(2) for associated fd should be called later.
 
-	writer := bufio.NewWriter(file)
-	defer writer.Flush()
-
 	buf := make([]byte, 1024)
 	remain := int(size)
 	for remain >= len(buf) {
-		n, err := writer.Write(buf)
+		n, err := file.Write(buf)
 		if err != nil {
 			return err
 		}
 		remain -= n
 	}
 	if remain > 0 {
-		if _, err := writer.Write(buf[:remain]); err != nil {
+		if _, err := file.Write(buf[:remain]); err != nil {
 			return err
 		}
 	}
