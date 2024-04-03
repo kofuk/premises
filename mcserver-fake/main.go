@@ -485,7 +485,7 @@ func main() {
 		s.RconPort = port
 	}
 
-	state, err := CreateState()
+	state, err := CreateState(serverProperties)
 	if err != nil {
 		log.Fatal(err)
 	}

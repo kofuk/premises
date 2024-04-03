@@ -16,19 +16,21 @@ type State struct {
 	WorldVersion    string              `json:"worldVersion"`
 	WhitelistUsers  map[string]struct{} `json:"whitelist"`
 	OpUsers         map[string]struct{} `json:"op"`
+	ServerProps     ServerProperties    `json:"serverProps"`
 }
 
-func newState() *State {
+func newState(serverProps ServerProperties) *State {
 	return &State{
 		WorldVersion: uuid.NewString(),
+		ServerProps:  serverProps,
 	}
 }
 
-func CreateState() (*State, error) {
+func CreateState(serverProps ServerProperties) (*State, error) {
 	f, err := os.Open("world/.fake_state")
 	if err != nil {
 		if os.IsNotExist(err) {
-			return newState(), nil
+			return newState(serverProps), nil
 		}
 		return nil, err
 	}
@@ -37,10 +39,11 @@ func CreateState() (*State, error) {
 	dec := json.NewDecoder(f)
 	state := new(State)
 	if err := dec.Decode(state); err != nil {
-		return newState(), nil
+		return newState(serverProps), nil
 	}
 	state.PrevWoldVersion = state.WorldVersion
 	state.WorldVersion = uuid.NewString()
+	state.ServerProps = serverProps
 
 	return state, nil
 }
@@ -82,11 +85,12 @@ func (s *State) AddToOp(user string) {
 }
 
 type PublicState struct {
-	ServerName       string   `json:"version"`
-	PrevWorldVersion string   `json:"worldVersionPrev"`
-	WorldVersion     string   `json:"worldVersion"`
-	Whitelist        []string `json:"whitelist"`
-	Op               []string `json:"op"`
+	ServerName       string            `json:"version"`
+	PrevWorldVersion string            `json:"worldVersionPrev"`
+	WorldVersion     string            `json:"worldVersion"`
+	Whitelist        []string          `json:"whitelist"`
+	Op               []string          `json:"op"`
+	ServerProps      map[string]string `json:"serverProps"`
 }
 
 func (s *State) ToPublicState() PublicState {
@@ -111,5 +115,6 @@ func (s *State) ToPublicState() PublicState {
 		WorldVersion:     s.WorldVersion,
 		Whitelist:        whitelist,
 		Op:               op,
+		ServerProps:      s.ServerProps,
 	}
 }
