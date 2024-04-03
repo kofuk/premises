@@ -105,7 +105,7 @@ const ServerConfigPane = () => {
     );
   }
 
-  if (config.worldSource === WorldLocation.Backups) {
+  if (!config.worldSource || config.worldSource === WorldLocation.Backups) {
     {
       const stepIndex = configItems.length;
       configItems.push(
