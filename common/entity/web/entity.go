@@ -65,14 +65,14 @@ type WorldInfo struct {
 
 type PendingConfig struct {
 	ID            string `json:"id"`
-	MachineType   string `json:"machineType"`
-	ServerVersion string `json:"serverVersion"`
-	GuessVersion  bool   `json:"guessServerVersion"`
-	WorldSource   string `json:"worldSource"`
-	WorldName     string `json:"worldName"`
-	BackupGen     string `json:"backupGen"`
-	LevelType     string `json:"levelType"`
-	Seed          string `json:"seed"`
+	MachineType   *string `json:"machineType,omitempty"`
+	ServerVersion *string `json:"serverVersion,omitempty"`
+	GuessVersion  *bool   `json:"guessServerVersion,omitempty"`
+	WorldSource   *string `json:"worldSource,omitempty"`
+	WorldName     *string `json:"worldName,omitempty"`
+	BackupGen     *string `json:"backupGen,omitempty"`
+	LevelType     *string `json:"levelType,omitempty"`
+	Seed          *string `json:"seed,omitempty"`
 }
 
 type LaunchReq struct {

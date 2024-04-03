@@ -158,7 +158,7 @@ func isValidMemSize(memSize int) bool {
 }
 
 func (h *Handler) createConfigFromPostData(ctx context.Context, config web.PendingConfig, cfg *config.Config) (*runner.Config, error) {
-	if config.ServerVersion == "" {
+	if config.ServerVersion == nil || *config.ServerVersion == "" {
 		return nil, errors.New("Server version is not set")
 	}
 	result := gameconfig.New()
@@ -168,27 +168,39 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 		result.C.ControlPanel = strings.Replace(h.cfg.ControlPanel.Origin, "http://localhost", "http://host.docker.internal", 1)
 	}
 
-	serverDownloadURL, launchCommand, err := h.MCVersions.GetServerInfo(ctx, config.ServerVersion)
+	serverDownloadURL, launchCommand, err := h.MCVersions.GetServerInfo(ctx, *config.ServerVersion)
 	if err != nil {
 		return nil, err
 	}
-	result.SetServer(config.ServerVersion, serverDownloadURL)
-	result.SetDetectServerVersion(config.GuessVersion)
+	result.SetServer(*config.ServerVersion, serverDownloadURL)
+	result.SetDetectServerVersion(*config.GuessVersion)
 	result.C.Server.ManifestOverride = h.MCVersions.GetOverridenManifestUrl()
 	result.C.Server.CustomCommand = launchCommand
 
 	result.GenerateAuthKey()
 
-	if config.WorldSource == "backups" {
-		if err := result.SetWorld(config.WorldName, config.BackupGen); err != nil {
+	if config.WorldSource != nil && *config.WorldSource == "backups" {
+		if config.WorldName == nil || config.BackupGen == nil {
+			return nil, errors.New("Both worldName and backupGen must be set if worldSource is backups")
+		}
+
+		if err := result.SetWorld(*config.WorldName, *config.BackupGen); err != nil {
 			return nil, err
 		}
 	} else {
-		if config.WorldName == "" {
+		if config.WorldName == nil || *config.WorldName == "" {
 			return nil, errors.New("World name is not set")
 		}
-		result.GenerateWorld(config.WorldName, config.Seed)
-		if err := result.SetLevelType(config.LevelType); err != nil {
+		seed := ""
+		if config.Seed != nil {
+			seed = *config.Seed
+		}
+		levelType := "default"
+		if config.LevelType != nil {
+			levelType = *config.LevelType
+		}
+		result.GenerateWorld(*config.WorldName, seed)
+		if err := result.SetLevelType(levelType); err != nil {
 			return nil, err
 		}
 	}
@@ -461,7 +473,13 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 
 	h.serverRunning = true
 
-	memSizeGB, err := strconv.Atoi(strings.Replace(config.MachineType, "g", "", 1))
+	if config.MachineType == nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+	memSizeGB, err := strconv.Atoi(strings.Replace(*config.MachineType, "g", "", 1))
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
@@ -686,7 +704,7 @@ func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 		})
 	}
 
-	if err := mergo.Merge(&config, &newConfig); err != nil {
+	if err := mergo.Merge(&config, &newConfig, mergo.WithOverride, mergo.WithoutDereference); err != nil {
 		slog.Error("Error merging config", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
