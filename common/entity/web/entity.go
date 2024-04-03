@@ -64,7 +64,7 @@ type WorldInfo struct {
 }
 
 type PendingConfig struct {
-	ID            string `json:"id"`
+	ID            string  `json:"id"`
 	MachineType   *string `json:"machineType,omitempty"`
 	ServerVersion *string `json:"serverVersion,omitempty"`
 	GuessVersion  *bool   `json:"guessServerVersion,omitempty"`
