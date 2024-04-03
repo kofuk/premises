@@ -5,6 +5,7 @@ import {PendingConfig} from '@/api/entities';
 import {Loading} from '@/components';
 
 type ConfigContextType = {
+  configId: string;
   updateConfig: (config: PendingConfig) => Promise<void>;
   launch: () => Promise<void>;
   reconfigure: () => Promise<void>;
@@ -16,8 +17,18 @@ export const ConfigProvider = ({children}: {children: ReactNode}) => {
   const [configId, setConfigId] = useState<string | null>(null);
   useEffect(() => {
     (async () => {
-      const data = await createConfig();
-      setConfigId(data.id);
+      let configShareId = null;
+
+      const hash = location.hash;
+
+      if (hash && hash.length > 1) {
+        const params = new URLSearchParams(hash.substr(1));
+        configShareId = params.get('configShareId');
+        location.hash = '';
+      }
+
+      const data = await createConfig({configShareId});
+      setConfigId(data.id!);
     })();
   }, []);
 
@@ -39,6 +50,7 @@ export const ConfigProvider = ({children}: {children: ReactNode}) => {
   };
 
   const value = {
+    configId: configId!,
     updateConfig,
     launch,
     reconfigure

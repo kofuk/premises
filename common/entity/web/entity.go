@@ -80,8 +80,8 @@ type LaunchReq struct {
 	ID string `json:"id"`
 }
 
-type CreateConfigResp struct {
-	ID string `json:"id"`
+type CreateConfigReq struct {
+	ConfigShareId *string `json:"configShareId"`
 }
 
 type PageCode int

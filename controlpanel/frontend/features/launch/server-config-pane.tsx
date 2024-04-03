@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
-import {PlayArrow as StartIcon} from '@mui/icons-material';
+import {Share as ShareIcon, PlayArrow as StartIcon} from '@mui/icons-material';
 import {Box, Button, Card} from '@mui/material';
 
 import {useLaunchConfig} from './components/launch-config';
@@ -20,7 +20,7 @@ const ServerConfigPane = () => {
   const [worldSource, setWorldSource] = useState(WorldLocation.Backups);
   const [currentStep, setCurrentStep] = useState(0);
 
-  const {launch} = useLaunchConfig();
+  const {launch, configId} = useLaunchConfig();
 
   const handleStart = () => {
     (async () => {
@@ -30,6 +30,12 @@ const ServerConfigPane = () => {
         console.error(err);
       }
     })();
+  };
+
+  const handleShareConfig = () => {
+    const url = new URL(location.href);
+    url.hash = '#configShareId=' + configId;
+    navigator.clipboard.writeText(url.toString());
   };
 
   const handleRequestFocus = (step: number) => {
@@ -129,7 +135,10 @@ const ServerConfigPane = () => {
     <Card sx={{p: 2, mt: 6}} variant="outlined">
       {configItems}
       <Box sx={{textAlign: 'end'}}>
-        <Button disabled={currentStep !== stepCount} onClick={handleStart} startIcon={<StartIcon />} type="button" variant="contained">
+        <Button disabled={currentStep !== stepCount} onClick={handleShareConfig} startIcon={<ShareIcon />} type="button" variant="outlined">
+          {t('share_config')}
+        </Button>
+        <Button disabled={currentStep !== stepCount} onClick={handleStart} startIcon={<StartIcon />} sx={{mx: 1}} type="button" variant="contained">
           {t('launch_server')}
         </Button>
       </Box>

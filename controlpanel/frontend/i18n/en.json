@@ -131,5 +131,6 @@
   "manual_setup_execute_command": "To do so, run the following command on the server to run Minecraft server:",
   "manual_setup_auth_code": "The above command will ask you to type the auth code. Your auth code is",
   "cancel": "Cancel",
-  "add": "Add"
+  "add": "Add",
+  "share_config": "Share configuration"
 }

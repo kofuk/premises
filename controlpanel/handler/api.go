@@ -670,23 +670,36 @@ func (h *Handler) handleApiWorldInfo(c echo.Context) error {
 }
 
 func (h *Handler) handleApiCreateConfig(c echo.Context) error {
-	id := uuid.NewString()
-
-	config := web.PendingConfig{
-		ID: id,
+	var req web.CreateConfigReq
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
 	}
 
-	if err := h.KVS.Set(c.Request().Context(), fmt.Sprintf("pending-config:%s", id), config, 24*7*time.Hour); err != nil {
+	var config web.PendingConfig
+
+	if req.ConfigShareId != nil {
+		if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("pending-config:%s", *req.ConfigShareId), &config); err != nil {
+			return c.JSON(http.StatusOK, web.ErrorResponse{
+				Success:   false,
+				ErrorCode: entity.ErrInternal,
+			})
+		}
+	}
+
+	config.ID = uuid.NewString()
+
+	if err := h.KVS.Set(c.Request().Context(), fmt.Sprintf("pending-config:%s", config.ID), config, 24*7*time.Hour); err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
 	}
-	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.CreateConfigResp]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.PendingConfig]{
 		Success: true,
-		Data: web.CreateConfigResp{
-			ID: id,
-		},
+		Data:    config,
 	})
 }
 

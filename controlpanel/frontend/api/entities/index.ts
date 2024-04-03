@@ -73,6 +73,6 @@ export type LaunchReq = {
   id: string;
 };
 
-export type CreateConfigResp = {
-  id: string;
+export type CreateConfigReq = {
+  configShareId: string | null;
 };
