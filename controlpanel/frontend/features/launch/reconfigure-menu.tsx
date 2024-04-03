@@ -15,10 +15,9 @@ import WorldSource, {WorldLocation} from '@/features/launch/config-item/world-so
 const ReconfigureMenu = () => {
   const [t] = useTranslation();
 
-  const [worldSource, setWorldSource] = useState(WorldLocation.Backups);
   const [currentStep, setCurrentStep] = useState(0);
 
-  const {reconfigure} = useLaunchConfig();
+  const {reconfigure, config} = useLaunchConfig();
 
   const handleStart = () => {
     (async () => {
@@ -63,13 +62,12 @@ const ReconfigureMenu = () => {
         isFocused={currentStep === stepIndex}
         nextStep={handleNextStep}
         requestFocus={() => handleRequestFocus(stepIndex)}
-        setWorldSource={setWorldSource}
         stepNum={stepIndex + 1}
       />
     );
   }
 
-  if (worldSource === WorldLocation.Backups) {
+  if (config.worldSource === WorldLocation.Backups) {
     {
       const stepIndex = configItems.length;
       configItems.push(

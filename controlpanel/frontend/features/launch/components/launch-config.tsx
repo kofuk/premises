@@ -5,7 +5,7 @@ import {PendingConfig} from '@/api/entities';
 import {Loading} from '@/components';
 
 type ConfigContextType = {
-  configId: string;
+  config: PendingConfig;
   updateConfig: (config: PendingConfig) => Promise<void>;
   launch: () => Promise<void>;
   reconfigure: () => Promise<void>;
@@ -14,7 +14,7 @@ type ConfigContextType = {
 const ConfigContext = React.createContext<ConfigContextType>(null!);
 
 export const ConfigProvider = ({children}: {children: ReactNode}) => {
-  const [configId, setConfigId] = useState<string | null>(null);
+  const [remoteConfig, setRemoteConfig] = useState<PendingConfig | null>(null);
   useEffect(() => {
     (async () => {
       let configShareId = null;
@@ -24,33 +24,32 @@ export const ConfigProvider = ({children}: {children: ReactNode}) => {
       if (hash && hash.length > 1) {
         const params = new URLSearchParams(hash.substr(1));
         configShareId = params.get('configShareId');
-        location.hash = '';
       }
 
       const data = await createConfig({configShareId});
-      setConfigId(data.id!);
+      setRemoteConfig(data);
     })();
   }, []);
 
-  if (configId === null) {
+  if (remoteConfig === null) {
     return <Loading />;
   }
 
   const updateConfig = async (config: PendingConfig): Promise<void> => {
-    config.id = configId;
-    await apiUpdateConfig(config);
+    config.id = remoteConfig!.id;
+    setRemoteConfig(await apiUpdateConfig(config));
   };
 
   const launch = async (): Promise<void> => {
-    await apiLaunch({id: configId as string});
+    await apiLaunch({id: remoteConfig!.id!});
   };
 
   const reconfigure = async (): Promise<void> => {
-    await apiReconfigure({id: configId as string});
+    await apiReconfigure({id: remoteConfig!.id!});
   };
 
   const value = {
-    configId: configId!,
+    config: remoteConfig!,
     updateConfig,
     launch,
     reconfigure

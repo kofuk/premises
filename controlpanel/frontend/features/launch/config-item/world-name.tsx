@@ -15,9 +15,9 @@ import {ItemProp} from '@/features/launch/config-item/prop';
 const WorldName = ({isFocused, nextStep, requestFocus, stepNum}: ItemProp) => {
   const [t] = useTranslation();
 
-  const [worldName, setWorldName] = useState('');
+  const {updateConfig, config} = useLaunchConfig();
 
-  const {updateConfig} = useLaunchConfig();
+  const [worldName, setWorldName] = useState(config.worldName || '');
 
   const saveAndContinue = () => {
     (async () => {

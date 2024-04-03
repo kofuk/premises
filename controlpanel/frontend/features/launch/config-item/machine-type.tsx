@@ -44,8 +44,9 @@ const machines: Machine[] = [
 const MachineType = ({isFocused, nextStep, requestFocus, stepNum}: ItemProp) => {
   const [t] = useTranslation();
 
-  const [machineType, setMachineType] = useState('4g');
-  const {updateConfig} = useLaunchConfig();
+  const {updateConfig, config} = useLaunchConfig();
+
+  const [machineType, setMachineType] = useState(config.machineType || '4g');
 
   const handleChange = (event: Event, newValue: number | number[]) => {
     setMachineType(machines[newValue as number].name);

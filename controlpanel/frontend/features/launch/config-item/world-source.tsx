@@ -15,24 +15,17 @@ export enum WorldLocation {
   NewWorld = 'new-world'
 }
 
-const WorldSource = ({
-  isFocused,
-  nextStep,
-  requestFocus,
-  stepNum,
-  setWorldSource: propagateWorldSource
-}: ItemProp & {setWorldSource: (val: WorldLocation) => void}) => {
+const WorldSource = ({isFocused, nextStep, requestFocus, stepNum}: ItemProp) => {
   const [t] = useTranslation();
 
-  const [worldSource, setWorldSource] = useState(WorldLocation.Backups);
+  const {updateConfig, config} = useLaunchConfig();
+
+  const [worldSource, setWorldSource] = useState(config.worldSource || WorldLocation.Backups);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const source = (event.target as HTMLInputElement).value == WorldLocation.Backups ? WorldLocation.Backups : WorldLocation.NewWorld;
     setWorldSource(source);
-    propagateWorldSource(source);
   };
-
-  const {updateConfig} = useLaunchConfig();
 
   const saveAndContinue = () => {
     (async () => {

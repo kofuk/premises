@@ -45,17 +45,19 @@ type McVersion = {
 const ServerVersion = ({isFocused, nextStep, requestFocus, stepNum}: ItemProp) => {
   const [t] = useTranslation();
 
-  const [serverVersion, setServerVersion] = useState('');
-  const [preferDetect, setPreferDetect] = useState(true);
-  const [serverProps, setServerProps] = useState<{key: string; value: string}[]>([]);
+  const {updateConfig, config} = useLaunchConfig();
+
+  const [serverVersion, setServerVersion] = useState(config.serverVersion || '');
+  const [preferDetect, setPreferDetect] = useState(config.guessServerVersion === undefined ? true : config.guessServerVersion);
+  const [serverProps, setServerProps] = useState<{key: string; value: string}[]>(
+    config.serverPropOverride ? Object.keys(config.serverPropOverride!).map((k) => ({key: k, value: config.serverPropOverride![k]})) : []
+  );
   const [serverPropsDialogOpen, setServerPropsDialogOpen] = useState(false);
 
   const [showStable, setShowStable] = useState(true);
   const [showSnapshot, setShowSnapshot] = useState(false);
   const [showAlpha, setShowAlpha] = useState(false);
   const [showBeta, setShowBeta] = useState(false);
-
-  const {updateConfig} = useLaunchConfig();
 
   const saveAndContinue = () => {
     (async () => {

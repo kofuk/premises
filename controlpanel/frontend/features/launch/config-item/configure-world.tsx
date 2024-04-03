@@ -25,10 +25,10 @@ type LevelTypeInfo = {
 const ConfigureWorld = ({isFocused, nextStep, requestFocus, stepNum}: ItemProp) => {
   const [t] = useTranslation();
 
-  const [levelType, setLevelType] = useState(LevelType.Default);
-  const [seed, setSeed] = useState('');
+  const {updateConfig, config} = useLaunchConfig();
 
-  const {updateConfig} = useLaunchConfig();
+  const [levelType, setLevelType] = useState(config.levelType || LevelType.Default);
+  const [seed, setSeed] = useState(config.seed || '');
 
   const saveAndContinue = () => {
     (async () => {

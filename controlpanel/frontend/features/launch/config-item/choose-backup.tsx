@@ -17,10 +17,10 @@ import {Loading} from '@/components';
 const ChooseBackup = ({isFocused, nextStep, requestFocus, stepNum}: ItemProp) => {
   const [t] = useTranslation();
 
-  const [worldName, setWorldName] = useState('');
-  const [backupGeneration, setBackupGeneration] = useState('@/latest');
+  const {updateConfig, config} = useLaunchConfig();
 
-  const {updateConfig} = useLaunchConfig();
+  const [worldName, setWorldName] = useState(config.worldName || '');
+  const [backupGeneration, setBackupGeneration] = useState(config.backupGen || '@/latest');
 
   const saveAndContinue = () => {
     (async () => {
