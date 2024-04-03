@@ -4,8 +4,10 @@ import {useTranslation} from 'react-i18next';
 
 import {Box, Button} from '@mui/material';
 
+import {useLaunchConfig} from './components/launch-config';
+
 import ChooseBackup from '@/features/launch/config-item/choose-backup';
-import ConfigureWorld, {LevelType} from '@/features/launch/config-item/configure-world';
+import ConfigureWorld from '@/features/launch/config-item/configure-world';
 import ServerVersion from '@/features/launch/config-item/server-version';
 import WorldName from '@/features/launch/config-item/world-name';
 import WorldSource, {WorldLocation} from '@/features/launch/config-item/world-source';
@@ -13,52 +15,19 @@ import WorldSource, {WorldLocation} from '@/features/launch/config-item/world-so
 const ReconfigureMenu = () => {
   const [t] = useTranslation();
 
-  const [serverVersion, setServerVersion] = useState('');
-  const [preferDetect, setPreferDetect] = useState(true);
   const [worldSource, setWorldSource] = useState(WorldLocation.Backups);
-  const [worldName, setWorldName] = useState('');
-  const [backupGeneration, setBackupGeneration] = useState('@/latest');
-  const [seed, setSeed] = useState('');
-  const [levelType, setLevelType] = useState(LevelType.Default);
   const [currentStep, setCurrentStep] = useState(0);
+
+  const {reconfigure} = useLaunchConfig();
 
   const handleStart = () => {
     (async () => {
-      const data = new URLSearchParams();
-      data.append('server-version', serverVersion);
-      data.append('prefer-detect', preferDetect.toString());
-      data.append('world-source', worldSource);
-      if (worldSource === WorldLocation.Backups) {
-        data.append('world-name', worldName);
-        data.append('backup-generation', backupGeneration);
-      } else {
-        data.append('world-name', worldName);
-        data.append('seed', seed);
-        data.append('level-type', levelType);
-      }
-
       try {
-        const result = await fetch('/api/reconfigure', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: data.toString()
-        }).then((resp) => resp.json());
-        if (!result['success']) {
-          throw new Error(t(`error.code_${result['errorCode']}`));
-        }
+        await reconfigure();
       } catch (err) {
         console.error(err);
       }
     })();
-  };
-
-  const xSetWorldSource = (worldSource: WorldLocation) => {
-    setWorldSource(worldSource);
-    if (worldSource !== WorldLocation.Backups) {
-      setWorldName(worldName);
-    }
   };
 
   const handleRequestFocus = (step: number) => {
@@ -81,11 +50,7 @@ const ReconfigureMenu = () => {
         key="serverVersion"
         isFocused={currentStep === stepIndex}
         nextStep={handleNextStep}
-        preferDetect={preferDetect}
         requestFocus={() => handleRequestFocus(stepIndex)}
-        serverVersion={serverVersion}
-        setPreferDetect={setPreferDetect}
-        setServerVersion={setServerVersion}
         stepNum={stepIndex + 1}
       />
     );
@@ -98,9 +63,8 @@ const ReconfigureMenu = () => {
         isFocused={currentStep === stepIndex}
         nextStep={handleNextStep}
         requestFocus={() => handleRequestFocus(stepIndex)}
-        setWorldSource={xSetWorldSource}
+        setWorldSource={setWorldSource}
         stepNum={stepIndex + 1}
-        worldSource={worldSource}
       />
     );
   }
@@ -111,14 +75,10 @@ const ReconfigureMenu = () => {
       configItems.push(
         <ChooseBackup
           key="chooseBackup"
-          backupGeneration={backupGeneration}
           isFocused={currentStep === stepIndex}
           nextStep={handleNextStep}
           requestFocus={() => handleRequestFocus(stepIndex)}
-          setBackupGeneration={setBackupGeneration}
-          setWorldName={setWorldName}
           stepNum={stepIndex + 1}
-          worldName={worldName}
         />
       );
     }
@@ -131,9 +91,7 @@ const ReconfigureMenu = () => {
           isFocused={currentStep === stepIndex}
           nextStep={handleNextStep}
           requestFocus={() => handleRequestFocus(stepIndex)}
-          setWorldName={setWorldName}
           stepNum={stepIndex + 1}
-          worldName={worldName}
         />
       );
     }
@@ -143,12 +101,8 @@ const ReconfigureMenu = () => {
         <ConfigureWorld
           key="configureWorld"
           isFocused={currentStep === stepIndex}
-          levelType={levelType}
           nextStep={handleNextStep}
           requestFocus={() => handleRequestFocus(stepIndex)}
-          seed={seed}
-          setLevelType={setLevelType}
-          setSeed={setSeed}
           stepNum={stepIndex + 1}
         />
       );

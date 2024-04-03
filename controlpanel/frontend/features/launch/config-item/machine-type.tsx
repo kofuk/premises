@@ -1,9 +1,11 @@
-import React from 'react';
+import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
 import {ArrowDownward as NextIcon} from '@mui/icons-material';
 import {Box, Button, Slider} from '@mui/material';
+
+import {useLaunchConfig} from '../components/launch-config';
 
 import ConfigContainer from '@/features/launch/config-item/config-container';
 import {ItemProp} from '@/features/launch/config-item/prop';
@@ -39,21 +41,21 @@ const machines: Machine[] = [
   new Machine('64g', 64, 24, 96.8)
 ];
 
-const MachineType = ({
-  isFocused,
-  nextStep,
-  requestFocus,
-  stepNum,
-  machineType,
-  setMachineType
-}: ItemProp & {
-  machineType: string;
-  setMachineType: (val: string) => void;
-}) => {
+const MachineType = ({isFocused, nextStep, requestFocus, stepNum}: ItemProp) => {
   const [t] = useTranslation();
+
+  const [machineType, setMachineType] = useState('4g');
+  const {updateConfig} = useLaunchConfig();
 
   const handleChange = (event: Event, newValue: number | number[]) => {
     setMachineType(machines[newValue as number].name);
+  };
+
+  const saveAndContinue = () => {
+    (async () => {
+      await updateConfig({machineType});
+      nextStep();
+    })();
   };
 
   return (
@@ -70,7 +72,7 @@ const MachineType = ({
         />
       </Box>
       <Box sx={{textAlign: 'end'}}>
-        <Button endIcon={<NextIcon />} onClick={nextStep} type="button" variant="outlined">
+        <Button endIcon={<NextIcon />} onClick={saveAndContinue} type="button" variant="outlined">
           {t('next')}
         </Button>
       </Box>

@@ -5,6 +5,8 @@ import {useTranslation} from 'react-i18next';
 import {ArrowDownward as NextIcon} from '@mui/icons-material';
 import {Box, Button, FormControl, FormControlLabel, FormGroup, InputLabel, MenuItem, Select, Switch} from '@mui/material';
 
+import {useLaunchConfig} from '../components/launch-config';
+
 import ConfigContainer from './config-container';
 import {ItemProp} from './prop';
 
@@ -18,27 +20,28 @@ type McVersion = {
   releaseDate: string;
 };
 
-const ServerVersion = ({
-  isFocused,
-  nextStep,
-  requestFocus,
-  stepNum,
-  serverVersion,
-  setServerVersion,
-  preferDetect,
-  setPreferDetect
-}: ItemProp & {
-  serverVersion: string;
-  setServerVersion: (val: string) => void;
-  preferDetect: boolean;
-  setPreferDetect: (prefer: boolean) => void;
-}) => {
+const ServerVersion = ({isFocused, nextStep, requestFocus, stepNum}: ItemProp) => {
   const [t] = useTranslation();
+
+  const [serverVersion, setServerVersion] = useState('');
+  const [preferDetect, setPreferDetect] = useState(true);
 
   const [showStable, setShowStable] = useState(true);
   const [showSnapshot, setShowSnapshot] = useState(false);
   const [showAlpha, setShowAlpha] = useState(false);
   const [showBeta, setShowBeta] = useState(false);
+
+  const {updateConfig} = useLaunchConfig();
+
+  const saveAndContinue = () => {
+    (async () => {
+      await updateConfig({
+        serverVersion,
+        guessServerVersion: preferDetect
+      });
+      nextStep();
+    })();
+  };
 
   const {data: mcVersions, isLoading} = useMCVersions();
   useEffect(() => {
@@ -157,7 +160,7 @@ const ServerVersion = ({
         </>
       )}
       <Box sx={{textAlign: 'end'}}>
-        <Button endIcon={<NextIcon />} onClick={nextStep} type="button" variant="outlined">
+        <Button endIcon={<NextIcon />} onClick={saveAndContinue} type="button" variant="outlined">
           {t('next')}
         </Button>
       </Box>

@@ -5,8 +5,10 @@ import {useTranslation} from 'react-i18next';
 import {PlayArrow as StartIcon} from '@mui/icons-material';
 import {Box, Button, Card} from '@mui/material';
 
+import {useLaunchConfig} from './components/launch-config';
+
 import ChooseBackup from '@/features/launch/config-item/choose-backup';
-import ConfigureWorld, {LevelType} from '@/features/launch/config-item/configure-world';
+import ConfigureWorld from '@/features/launch/config-item/configure-world';
 import MachineType from '@/features/launch/config-item/machine-type';
 import ServerVersion from '@/features/launch/config-item/server-version';
 import WorldName from '@/features/launch/config-item/world-name';
@@ -15,54 +17,19 @@ import WorldSource, {WorldLocation} from '@/features/launch/config-item/world-so
 const ServerConfigPane = () => {
   const [t] = useTranslation();
 
-  const [machineType, setMachineType] = useState('4g');
-  const [serverVersion, setServerVersion] = useState('');
-  const [preferDetect, setPreferDetect] = useState(true);
   const [worldSource, setWorldSource] = useState(WorldLocation.Backups);
-  const [worldName, setWorldName] = useState('');
-  const [backupGeneration, setBackupGeneration] = useState('@/latest');
-  const [seed, setSeed] = useState('');
-  const [levelType, setLevelType] = useState(LevelType.Default);
   const [currentStep, setCurrentStep] = useState(0);
+
+  const {launch} = useLaunchConfig();
 
   const handleStart = () => {
     (async () => {
-      const data = new URLSearchParams();
-      data.append('machine-type', machineType);
-      data.append('server-version', serverVersion);
-      data.append('prefer-detect', preferDetect.toString());
-      data.append('world-source', worldSource);
-      if (worldSource === WorldLocation.Backups) {
-        data.append('world-name', worldName);
-        data.append('backup-generation', backupGeneration);
-      } else {
-        data.append('world-name', worldName);
-        data.append('seed', seed);
-        data.append('level-type', levelType);
-      }
-
       try {
-        const result = await fetch('/api/launch', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: data.toString()
-        }).then((resp) => resp.json());
-        if (!result['success']) {
-          throw new Error(t(`error.code_${result['errorCode']}`));
-        }
+        await launch();
       } catch (err) {
         console.error(err);
       }
     })();
-  };
-
-  const xSetWorldSource = (worldSource: WorldLocation) => {
-    setWorldSource(worldSource);
-    if (worldSource !== WorldLocation.Backups) {
-      setWorldName('');
-    }
   };
 
   const handleRequestFocus = (step: number) => {
@@ -84,10 +51,8 @@ const ServerConfigPane = () => {
       <MachineType
         key="machineType"
         isFocused={currentStep === stepIndex}
-        machineType={machineType}
         nextStep={handleNextStep}
         requestFocus={() => handleRequestFocus(stepIndex)}
-        setMachineType={setMachineType}
         stepNum={stepIndex + 1}
       />
     );
@@ -99,11 +64,7 @@ const ServerConfigPane = () => {
         key="serverVersion"
         isFocused={currentStep === stepIndex}
         nextStep={handleNextStep}
-        preferDetect={preferDetect}
         requestFocus={() => handleRequestFocus(stepIndex)}
-        serverVersion={serverVersion}
-        setPreferDetect={setPreferDetect}
-        setServerVersion={setServerVersion}
         stepNum={stepIndex + 1}
       />
     );
@@ -116,9 +77,8 @@ const ServerConfigPane = () => {
         isFocused={currentStep === stepIndex}
         nextStep={handleNextStep}
         requestFocus={() => handleRequestFocus(stepIndex)}
-        setWorldSource={xSetWorldSource}
+        setWorldSource={setWorldSource}
         stepNum={stepIndex + 1}
-        worldSource={worldSource}
       />
     );
   }
@@ -129,14 +89,10 @@ const ServerConfigPane = () => {
       configItems.push(
         <ChooseBackup
           key="chooseBackup"
-          backupGeneration={backupGeneration}
           isFocused={currentStep === stepIndex}
           nextStep={handleNextStep}
           requestFocus={() => handleRequestFocus(stepIndex)}
-          setBackupGeneration={setBackupGeneration}
-          setWorldName={setWorldName}
           stepNum={stepIndex + 1}
-          worldName={worldName}
         />
       );
     }
@@ -149,9 +105,7 @@ const ServerConfigPane = () => {
           isFocused={currentStep === stepIndex}
           nextStep={handleNextStep}
           requestFocus={() => handleRequestFocus(stepIndex)}
-          setWorldName={setWorldName}
           stepNum={stepIndex + 1}
-          worldName={worldName}
         />
       );
     }
@@ -161,12 +115,8 @@ const ServerConfigPane = () => {
         <ConfigureWorld
           key="configureWorld"
           isFocused={currentStep === stepIndex}
-          levelType={levelType}
           nextStep={handleNextStep}
           requestFocus={() => handleRequestFocus(stepIndex)}
-          seed={seed}
-          setLevelType={setLevelType}
-          setSeed={setSeed}
           stepNum={stepIndex + 1}
         />
       );

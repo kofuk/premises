@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 
 import {useSnackbar} from 'notistack';
 import {useTranslation} from 'react-i18next';
@@ -6,21 +6,31 @@ import {useTranslation} from 'react-i18next';
 import {ArrowDownward as NextIcon} from '@mui/icons-material';
 import {Alert, Box, Button, FormControl, FormControlLabel, InputLabel, MenuItem, Select, SelectChangeEvent, Switch} from '@mui/material';
 
+import {useLaunchConfig} from '../components/launch-config';
+
 import ConfigContainer from './config-container';
 import {ItemProp} from './prop';
 
 import {APIError, useBackups} from '@/api';
 import {Loading} from '@/components';
 
-type Props = ItemProp & {
-  worldName: string;
-  backupGeneration: string;
-  setWorldName: (val: string) => void;
-  setBackupGeneration: (val: string) => void;
-};
-
-const ChooseBackup = ({isFocused, nextStep, requestFocus, stepNum, worldName, backupGeneration, setWorldName, setBackupGeneration}: Props) => {
+const ChooseBackup = ({isFocused, nextStep, requestFocus, stepNum}: ItemProp) => {
   const [t] = useTranslation();
+
+  const [worldName, setWorldName] = useState('');
+  const [backupGeneration, setBackupGeneration] = useState('@/latest');
+
+  const {updateConfig} = useLaunchConfig();
+
+  const saveAndContinue = () => {
+    (async () => {
+      await updateConfig({
+        worldName,
+        backupGen: backupGeneration
+      });
+      nextStep();
+    })();
+  };
 
   const {enqueueSnackbar} = useSnackbar();
 
@@ -124,7 +134,7 @@ const ChooseBackup = ({isFocused, nextStep, requestFocus, stepNum, worldName, ba
         <>
           {content}
           <Box sx={{textAlign: 'end'}}>
-            <Button endIcon={<NextIcon />} onClick={nextStep} type="button" variant="outlined">
+            <Button endIcon={<NextIcon />} onClick={saveAndContinue} type="button" variant="outlined">
               {t('next')}
             </Button>
           </Box>

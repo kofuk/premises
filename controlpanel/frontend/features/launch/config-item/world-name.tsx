@@ -1,27 +1,32 @@
-import React from 'react';
+import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
 import {ArrowDownward as NextIcon} from '@mui/icons-material';
 import {Alert, Box, Button, TextField} from '@mui/material';
 
+import {useLaunchConfig} from '../components/launch-config';
+
 import {useBackups} from '@/api';
 import {Loading} from '@/components';
 import ConfigContainer from '@/features/launch/config-item/config-container';
 import {ItemProp} from '@/features/launch/config-item/prop';
 
-const WorldName = ({
-  isFocused,
-  nextStep,
-  requestFocus,
-  stepNum,
-  worldName,
-  setWorldName
-}: ItemProp & {
-  worldName: string;
-  setWorldName: (val: string) => void;
-}) => {
+const WorldName = ({isFocused, nextStep, requestFocus, stepNum}: ItemProp) => {
   const [t] = useTranslation();
+
+  const [worldName, setWorldName] = useState('');
+
+  const {updateConfig} = useLaunchConfig();
+
+  const saveAndContinue = () => {
+    (async () => {
+      await updateConfig({
+        worldName
+      });
+      nextStep();
+    })();
+  };
 
   const {data: backups, isLoading} = useBackups();
 
@@ -74,7 +79,7 @@ const WorldName = ({
         <Button
           disabled={worldName.length === 0 || duplicateName || invalidName}
           endIcon={<NextIcon />}
-          onClick={nextStep}
+          onClick={saveAndContinue}
           type="button"
           variant="outlined"
         >

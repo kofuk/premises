@@ -55,3 +55,23 @@ export type StatusExtraData = {
 export type SnapshotConfiguration = {
   slot: number;
 };
+
+export type PendingConfig = {
+  id?: string;
+  machineType?: string;
+  serverVersion?: string;
+  guessServerVersion?: boolean;
+  worldSource?: string;
+  worldName?: string;
+  backupGen?: string;
+  levelType?: string;
+  seed?: string;
+};
+
+export type LaunchReq = {
+  id: string;
+};
+
+export type CreateConfigResp = {
+  id: string;
+};

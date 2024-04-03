@@ -1,9 +1,11 @@
-import React from 'react';
+import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
 import {ArrowDownward as NextIcon} from '@mui/icons-material';
 import {Box, Button, FormControlLabel, Radio, RadioGroup} from '@mui/material';
+
+import {useLaunchConfig} from '../components/launch-config';
 
 import ConfigContainer from '@/features/launch/config-item/config-container';
 import {ItemProp} from '@/features/launch/config-item/prop';
@@ -18,13 +20,27 @@ const WorldSource = ({
   nextStep,
   requestFocus,
   stepNum,
-  worldSource,
-  setWorldSource
-}: ItemProp & {worldSource: WorldLocation; setWorldSource: (val: WorldLocation) => void}) => {
+  setWorldSource: propagateWorldSource
+}: ItemProp & {setWorldSource: (val: WorldLocation) => void}) => {
   const [t] = useTranslation();
 
+  const [worldSource, setWorldSource] = useState(WorldLocation.Backups);
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setWorldSource((event.target as HTMLInputElement).value == WorldLocation.Backups ? WorldLocation.Backups : WorldLocation.NewWorld);
+    const source = (event.target as HTMLInputElement).value == WorldLocation.Backups ? WorldLocation.Backups : WorldLocation.NewWorld;
+    setWorldSource(source);
+    propagateWorldSource(source);
+  };
+
+  const {updateConfig} = useLaunchConfig();
+
+  const saveAndContinue = () => {
+    (async () => {
+      await updateConfig({
+        worldSource
+      });
+      nextStep();
+    })();
   };
 
   return (
@@ -35,7 +51,7 @@ const WorldSource = ({
       </RadioGroup>
 
       <Box sx={{textAlign: 'end'}}>
-        <Button endIcon={<NextIcon />} onClick={nextStep} type="button" variant="outlined">
+        <Button endIcon={<NextIcon />} onClick={saveAndContinue} type="button" variant="outlined">
           {t('next')}
         </Button>
       </Box>

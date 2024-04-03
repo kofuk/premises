@@ -1,9 +1,11 @@
-import React from 'react';
+import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
 import {ArrowDownward as NextIcon} from '@mui/icons-material';
 import {Box, Button, FormControl, InputLabel, MenuItem, Select, Stack, TextField} from '@mui/material';
+
+import {useLaunchConfig} from '../components/launch-config';
 
 import ConfigContainer from './config-container';
 import {ItemProp} from './prop';
@@ -20,22 +22,23 @@ type LevelTypeInfo = {
   label: string;
 };
 
-const ConfigureWorld = ({
-  isFocused,
-  nextStep,
-  requestFocus,
-  stepNum,
-  levelType,
-  seed,
-  setLevelType,
-  setSeed
-}: ItemProp & {
-  levelType: LevelType;
-  seed: string;
-  setLevelType: (val: LevelType) => void;
-  setSeed: (val: string) => void;
-}) => {
+const ConfigureWorld = ({isFocused, nextStep, requestFocus, stepNum}: ItemProp) => {
   const [t] = useTranslation();
+
+  const [levelType, setLevelType] = useState(LevelType.Default);
+  const [seed, setSeed] = useState('');
+
+  const {updateConfig} = useLaunchConfig();
+
+  const saveAndContinue = () => {
+    (async () => {
+      await updateConfig({
+        levelType,
+        seed
+      });
+      nextStep();
+    })();
+  };
 
   const levelTypes: LevelTypeInfo[] = [
     {levelType: LevelType.Default, label: t('world_type_default')},
@@ -71,7 +74,7 @@ const ConfigureWorld = ({
       </Stack>
 
       <Box sx={{textAlign: 'end', mt: 1}}>
-        <Button endIcon={<NextIcon />} onClick={nextStep} type="button" variant="outlined">
+        <Button endIcon={<NextIcon />} onClick={saveAndContinue} type="button" variant="outlined">
           {t('next')}
         </Button>
       </Box>

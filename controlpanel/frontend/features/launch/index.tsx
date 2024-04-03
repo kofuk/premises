@@ -5,16 +5,13 @@ import {useTranslation} from 'react-i18next';
 
 import {Box} from '@mui/material';
 
+import {ConfigProvider} from './components/launch-config';
 import LoadingPage from './components/loading-page';
 import ManualSetupPage from './components/manual-setup-page';
 import ServerConfigPane from './server-config-pane';
 import ServerControlPane from './server-control-pane';
 
 import {useRunnerStatus} from '@/utils/runner-status';
-
-// For bootstrap based screen. We should remove this after migrating to styled-component completed.
-//import 'bootstrap/scss/bootstrap.scss';
-/////
 
 const PAGE_LAUNCH = 1;
 const PAGE_LOADING = 2;
@@ -41,13 +38,13 @@ const LaunchPage = () => {
 
   const mainPane: React.ReactElement = createMainPane(page);
   return (
-    <>
+    <ConfigProvider>
       <Box sx={{maxWidth: 1000, m: '0 auto', p: 2}}>{mainPane}</Box>
 
       <Helmet>
         <title>{t('app_name')}</title>
       </Helmet>
-    </>
+    </ConfigProvider>
   );
 };
 
