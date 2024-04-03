@@ -53,7 +53,13 @@
   "stop_server": "Stop",
   "config_choose_backup": "World",
   "config_configure_world": "Configure World",
-  "config_server_version": "Game Version",
+  "config_server_settings": "Server Settings",
+  "server_version": "Server Settings",
+  "advanced_server_settings": "Advanced Settings",
+  "additional_server_properties": "Add to server.properties",
+  "additional_server_properties_add": "Add",
+  "server_props_key": "Key",
+  "server_props_value": "Value",
   "config_machine_type": "Machine Type",
   "config_world_name": "World Name",
   "config_world_source": "World Source",
@@ -123,5 +129,7 @@
   "use_latest_backup": "Use latest backup",
   "manual_setup_summary": "Manual setup is required to run Minecraft server because we can't find any existing server data.",
   "manual_setup_execute_command": "To do so, run the following command on the server to run Minecraft server:",
-  "manual_setup_auth_code": "The above command will ask you to type the auth code. Your auth code is"
+  "manual_setup_auth_code": "The above command will ask you to type the auth code. Your auth code is",
+  "cancel": "Cancel",
+  "add": "Add"
 }

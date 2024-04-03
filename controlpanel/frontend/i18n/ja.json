@@ -53,7 +53,13 @@
   "stop_server": "停止",
   "config_choose_backup": "ワールド",
   "config_configure_world": "ワールドの構成",
-  "config_server_version": "ゲームのバージョン",
+  "config_server_settings": "サーバーの設定",
+  "server_version": "サーバーのバージョン",
+  "advanced_server_settings": "詳細設定",
+  "additional_server_properties": "server.properties に値を追加",
+  "additional_server_properties_add": "追加",
+  "server_props_key": "キー",
+  "server_props_value": "値",
   "config_machine_type": "マシンタイプ",
   "config_world_name": "ワールド名",
   "config_world_source": "ワールドの読み込み先",
@@ -71,7 +77,7 @@
   "version_show_snapshot": "スナップショット",
   "version_show_beta": "ベータ版",
   "version_show_alpha": "アルファ版",
-  "version_detect": "ワールドからサーバのバージョンを検出する（可能な場合）",
+  "version_detect": "ワールドからサーバーのバージョンを検出する（可能な場合）",
   "world_name": "ワールド名",
   "world_name_error_invalid": "ワールド名は 1 文字以上の英数字にしてください",
   "world_name_error_duplicate": "同名のワールド名がすでに存在します",
@@ -123,5 +129,7 @@
   "use_latest_backup": "最新のバックアップを使う",
   "manual_setup_summary": "サーバのデータが存在しないため、手動でのセットアップが必要です。",
   "manual_setup_execute_command": "セットアップするには、Minecraft サーバを実行したいサーバで次のコマンドを実行してください。",
-  "manual_setup_auth_code": "Auth code の入力を求められたら、次のコードを入力してください。"
+  "manual_setup_auth_code": "Auth code の入力を求められたら、次のコードを入力してください。",
+  "cancel": "キャンセル",
+  "add": "追加"
 }
