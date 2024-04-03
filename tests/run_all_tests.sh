@@ -4,6 +4,7 @@ set -euo pipefail
 specs=(
     'should_be_able_to_start_stop_server.ts'
     'should_start_server_using_saved_world.ts'
+    'override_server_properties.ts'
 )
 
 export TARGET_HOST="${TARGET_HOST:-http://localhost:8000}"

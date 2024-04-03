@@ -281,6 +281,7 @@ func generateServerProps(config *runner.Config) error {
 	serverProps.SetDifficulty(config.World.Difficulty)
 	serverProps.SetLevelType(config.World.LevelType)
 	serverProps.SetSeed(config.World.Seed)
+	serverProps.OverrideProperties(config.Server.ServerPropOverride)
 	serverPropsFile, err := os.Create(fs.LocateWorldData("server.properties"))
 	if err != nil {
 		return err

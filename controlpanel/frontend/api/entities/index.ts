@@ -66,6 +66,7 @@ export type PendingConfig = {
   backupGen?: string;
   levelType?: string;
   seed?: string;
+  serverPropOverride?: string[];
 };
 
 export type LaunchReq = {

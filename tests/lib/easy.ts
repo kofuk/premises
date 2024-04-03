@@ -3,7 +3,7 @@ import { assertEquals } from "https://deno.land/std@0.83.0/testing/asserts.ts";
 import api, { streamEvent } from "../lib/api.ts";
 import codes from "../lib/codes.ts";
 
-const waitServerLaunched = async (cookie: string) => {
+export const waitServerLaunched = async (cookie: string) => {
   for (let i = 0; i < 18; i++) {
     console.log(".");
     await new Promise((resolve) => setTimeout(resolve, 10 * 1000));
@@ -31,7 +31,7 @@ const waitServerLaunched = async (cookie: string) => {
   }
 };
 
-const createConfig = async (
+export const createBaseConfig = async (
   cookie: string,
   worldName: string,
 ): Promise<string> => {
@@ -54,7 +54,7 @@ export const launchNewWorld = async (
   cookie: string,
   worldName: string,
 ): Promise<void> => {
-  const id = await createConfig(cookie, worldName);
+  const id = await createBaseConfig(cookie, worldName);
   await api("POST /api/launch", cookie, { id });
 
   await waitServerLaunched(cookie);
@@ -64,7 +64,7 @@ export const launchExistingWorld = async (
   cookie: string,
   worldName: string,
 ): Promise<void> => {
-  const id = await createConfig(cookie, worldName);
+  const id = await createBaseConfig(cookie, worldName);
   await api("PUT /api/config", cookie, {
     id,
     worldSource: "backups",

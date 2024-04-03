@@ -204,6 +204,9 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 			return nil, err
 		}
 	}
+	if config.ServerPropOverride != nil {
+		result.C.Server.ServerPropOverride = *config.ServerPropOverride
+	}
 
 	result.SetOperators(cfg.Game.Operators)
 	result.SetWhitelist(cfg.Game.Whitelist)

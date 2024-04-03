@@ -58,6 +58,21 @@ var serverProperties = map[string]string{
 	"white-list":                        "true",
 }
 
+// These properties are not allowed users to override by configuration, because it
+// 1. breaks environment which runner assumes
+// 2. unsafe for public server to change value
+var overrideBlockedProps = map[string]struct{}{
+	"enable-jmx-monitoring": {},
+	"enable-query":          {},
+	"enable-rcon":           {},
+	"level-name":            {},
+	"rcon.password":         {},
+	"rcon.port":             {},
+	"server-ip":             {},
+	"server-port":           {},
+	"white-list":            {},
+}
+
 type ServerProperties struct {
 	props map[string]string
 }
@@ -86,6 +101,15 @@ func (p *ServerProperties) SetLevelType(levelType string) error {
 	}
 	p.props["level-type"] = levelType
 	return nil
+}
+
+func (p *ServerProperties) OverrideProperties(props map[string]string) {
+	for k, v := range props {
+		if _, ok := overrideBlockedProps[k]; ok {
+			continue
+		}
+		p.props[k] = v
+	}
 }
 
 func (p *ServerProperties) SetSeed(seed string) {
