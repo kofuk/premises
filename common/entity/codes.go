@@ -24,6 +24,7 @@ const (
 )
 
 const (
+	NoEvent            EventCode = 0
 	EventShutdown      EventCode = 1
 	EventSysInit       EventCode = 2
 	EventGameDownload  EventCode = 3

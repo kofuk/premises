@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/kofuk/premises/common/entity"
-	runnerEntity "github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
 	log "github.com/sirupsen/logrus"
 )
@@ -69,10 +69,10 @@ func (self *JobSequence) runJob(state *State, job Job) bool {
 
 	eventCode := job.GetEventCode()
 
-	if eventCode != runnerEntity.NoEvent {
-		if err := exterior.SendMessage("serverStatus", runnerEntity.Event{
-			Type: runnerEntity.EventStatus,
-			Status: &runnerEntity.StatusExtra{
+	if eventCode != entity.NoEvent {
+		if err := exterior.SendMessage("serverStatus", runner.Event{
+			Type: runner.EventStatus,
+			Status: &runner.StatusExtra{
 				EventCode: eventCode,
 			},
 		}); err != nil {
@@ -87,13 +87,13 @@ func (self *JobSequence) runJob(state *State, job Job) bool {
 		defer wg.Done()
 
 		for progress := range reportProgress {
-			if eventCode == runnerEntity.NoEvent {
+			if eventCode == entity.NoEvent {
 				continue
 			}
 
-			if err := exterior.SendMessage("serverStatus", runnerEntity.Event{
-				Type: runnerEntity.EventStatus,
-				Status: &runnerEntity.StatusExtra{
+			if err := exterior.SendMessage("serverStatus", runner.Event{
+				Type: runner.EventStatus,
+				Status: &runner.StatusExtra{
 					EventCode: eventCode,
 					Progress:  progress,
 				},
@@ -114,10 +114,10 @@ func (self *JobSequence) runJob(state *State, job Job) bool {
 		return true
 	}
 
-	if result.FailureEventCode != runnerEntity.NoEvent {
-		if err := exterior.SendMessage("serverStatus", runnerEntity.Event{
-			Type: runnerEntity.EventStatus,
-			Status: &runnerEntity.StatusExtra{
+	if result.FailureEventCode != entity.NoEvent {
+		if err := exterior.SendMessage("serverStatus", runner.Event{
+			Type: runner.EventStatus,
+			Status: &runner.StatusExtra{
 				EventCode: result.FailureEventCode,
 			},
 		}); err != nil {
