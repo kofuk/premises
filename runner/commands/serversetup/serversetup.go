@@ -1,6 +1,7 @@
 package serversetup
 
 import (
+	"fmt"
 	"log/slog"
 	"net"
 	"os"
@@ -9,8 +10,15 @@ import (
 
 	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/runner/config"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/systemutil"
+)
+
+const (
+	// The latest JRE should be installed, as it is used as a fallback version for Java installations.
+	// It is important to keep Java up-to-date as it is backwards compatible (not forward compatible).
+	latestAvailableJre = "openjdk-21-jre-headless"
 )
 
 var requiredProgs = []string{
@@ -108,7 +116,7 @@ func (self *ServerSetup) initializeServer() {
 	systemutil.AptGet("update", "-y")
 
 	slog.Info("Installing packages")
-	systemutil.AptGet("install", "-y", "btrfs-progs", "openjdk-17-jre-headless", "ufw")
+	systemutil.AptGet("install", "-y", "btrfs-progs", latestAvailableJre, "ufw")
 
 	if _, err := user.LookupId("1000"); err != nil {
 		slog.Info("Adding user")
@@ -144,6 +152,22 @@ func (self *ServerSetup) initializeServer() {
 	}
 }
 
+func (self *ServerSetup) installRequiredJavaVersion() {
+	config, err := config.Load()
+	if err != nil {
+		slog.Error("Unable to load config", slog.Any("error", err))
+		return
+	}
+
+	installArgs := []string{"install", "-y", latestAvailableJre}
+	if config.Server.JavaVersion != 0 {
+		installArgs = append(installArgs, fmt.Sprintf("openjdk-%d-jre-headless", config.Server.JavaVersion))
+	}
+
+	systemutil.AptGet("update", "-y")
+	systemutil.AptGet(installArgs...)
+}
+
 func (self ServerSetup) Run() {
 	self.sendServerHello()
 
@@ -151,6 +175,9 @@ func (self ServerSetup) Run() {
 		slog.Info("Server seems not to be initialized. Will run full initialization")
 		self.initializeServer()
 	}
+
+	slog.Info("Installing required Java version")
+	self.installRequiredJavaVersion()
 
 	slog.Info("Mounting gamedata.img")
 	systemutil.Cmd("mount", []string{"/opt/premises/gamedata.img", "/opt/premises/gamedata"}, nil)

@@ -75,17 +75,24 @@ func (lm *LauncherMeta) GetVersionInfo(ctx context.Context) ([]VersionInfo, erro
 	return meta.Versions, nil
 }
 
-type ServerInfo struct {
-	URL            string `json:"url"`
-	CustomProperty struct {
-		LaunchCommand []string `json:"launchCommand"`
-	} `json:"x-premises"`
+type versionMetaResp struct {
+	Downloads struct {
+		Server struct {
+			URL            string `json:"url"`
+			CustomProperty struct {
+				LaunchCommand []string `json:"launchCommand"`
+			} `json:"x-premises"`
+		} `json:"server"`
+	} `json:"downloads"`
+	JavaVersion struct {
+		Marjor int `json:"majorVersion"`
+	} `json:"javaVersion"`
 }
 
-type versionMetaData struct {
-	Downloads struct {
-		Server ServerInfo `json:"server"`
-	} `json:"downloads"`
+type ServerInfo struct {
+	DownloadURL   string
+	LaunchCommand []string
+	JavaVersion   int
 }
 
 func (lm *LauncherMeta) GetServerInfo(ctx context.Context, version VersionInfo) (*ServerInfo, error) {
@@ -108,10 +115,16 @@ func (lm *LauncherMeta) GetServerInfo(ctx context.Context, version VersionInfo) 
 		return nil, fmt.Errorf("Failed to get version metadata")
 	}
 
-	var versinfo versionMetaData
-	if err := json.Unmarshal(data, &versinfo); err != nil {
+	var versionMeta versionMetaResp
+	if err := json.Unmarshal(data, &versionMeta); err != nil {
 		return nil, err
 	}
 
-	return &versinfo.Downloads.Server, nil
+	result := &ServerInfo{
+		DownloadURL:   versionMeta.Downloads.Server.URL,
+		LaunchCommand: versionMeta.Downloads.Server.CustomProperty.LaunchCommand,
+		JavaVersion:   versionMeta.JavaVersion.Marjor,
+	}
+
+	return result, nil
 }

@@ -56,10 +56,10 @@ func (self MCVersionsService) GetVersions(ctx context.Context) ([]lm.VersionInfo
 	return versions, nil
 }
 
-func (self MCVersionsService) GetServerInfo(ctx context.Context, version string) (string, []string, error) {
+func (self MCVersionsService) GetServerInfo(ctx context.Context, version string) (*lm.ServerInfo, error) {
 	versions, err := self.GetVersions(ctx)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
 	var versionInfo lm.VersionInfo
@@ -70,15 +70,15 @@ func (self MCVersionsService) GetServerInfo(ctx context.Context, version string)
 		}
 	}
 	if versionInfo.ID == "" {
-		return "", nil, errors.New("No matching version found")
+		return nil, errors.New("No matching version found")
 	}
 
 	serverInfo, err := self.lm.GetServerInfo(ctx, versionInfo)
 	if err != nil {
-		return "", nil, err
+		return nil, err
 	}
 
-	return serverInfo.URL, serverInfo.CustomProperty.LaunchCommand, nil
+	return serverInfo, nil
 }
 
 func (self MCVersionsService) GetOverridenManifestUrl() string {

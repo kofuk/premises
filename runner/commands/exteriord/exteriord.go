@@ -14,7 +14,7 @@ import (
 	"github.com/kofuk/premises/runner/config"
 )
 
-func Run() {
+func Run(args []string) {
 	signal.Ignore(syscall.SIGHUP)
 
 	config, err := config.Load()

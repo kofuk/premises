@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -161,7 +162,7 @@ func (srv *ServerInstance) QuickUndo(slot int) error {
 	return nil
 }
 
-func LaunchInteractiveRcon() {
+func LaunchInteractiveRcon(args []string) {
 	rcon := NewRcon("127.0.0.1:25575", "x")
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -319,6 +320,41 @@ func processQuickUndo(slot int) error {
 	return nil
 }
 
+func getJavaPathFromInstalledVersion(version int) (string, error) {
+	output, err := systemutil.CmdOutput("update-alternatives", []string{"--list", "java"})
+	if err != nil {
+		return "", err
+	}
+
+	candidates := strings.Split(strings.TrimRight(output, "\r\n"), "\n")
+	slog.Debug("Installed java versions", slog.Any("versions", candidates))
+
+	for _, path := range candidates {
+		if strings.Index(path, fmt.Sprintf("-%d-", version)) >= 0 {
+			return path, nil
+		}
+	}
+
+	return "", errors.New("Not found")
+}
+
+func findJavaPath(version int) string {
+	if version == 0 {
+		slog.Info("Version not specified. Using the system default")
+		return "java"
+	}
+
+	path, err := getJavaPathFromInstalledVersion(version)
+	if err != nil {
+		slog.Warn("Error finding java installation. Using the system default", slog.Any("error", err))
+		return "java"
+	}
+
+	slog.Info("Found java installation matching requested version", slog.String("path", path), slog.Int("requested_version", version))
+
+	return path
+}
+
 func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 	if _, err := os.Stat(fs.LocateServer(config.Server.Version)); err != nil {
 		return err
@@ -380,7 +416,14 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 			}
 		}
 	} else {
-		launchCommand = []string{"java", fmt.Sprintf("-Xmx%dM", allocSize), fmt.Sprintf("-Xms%dM", allocSize), "-jar", fs.LocateServer(config.Server.Version), "nogui"}
+		launchCommand = []string{
+			findJavaPath(config.Server.JavaVersion),
+			fmt.Sprintf("-Xmx%dM", allocSize),
+			fmt.Sprintf("-Xms%dM", allocSize),
+			"-jar",
+			fs.LocateServer(config.Server.Version),
+			"nogui",
+		}
 	}
 	go func() {
 		slog.Info("Launching Minecraft server", slog.String("server_name", config.Server.Version), slog.Any("commandline", launchCommand))

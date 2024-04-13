@@ -93,7 +93,7 @@ func downloadServerJarIfNeeded(config *runner.Config) error {
 	return nil
 }
 
-func Run() {
+func Run(args []string) {
 	slog.Info("Starting Premises Runner", slog.String("revision", metadata.Revision))
 
 	config, err := config.Load()

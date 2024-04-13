@@ -9,6 +9,7 @@ type Config struct {
 		ManifestOverride   string            `json:"manifestOverride"`
 		CustomCommand      []string          `json:"customCommand"`
 		ServerPropOverride map[string]string `json:"serverPropOverride"`
+		JavaVersion        int               `json:"javaVersion"`
 	} `json:"server"`
 	World struct {
 		ShouldGenerate bool   `json:"shouldGenerate"`

@@ -73,8 +73,8 @@ func DetectAndUpdateVersion(config *runner.Config) error {
 		return err
 	}
 
-	if serverInfo.URL != "" {
-		config.Server.DownloadUrl = serverInfo.URL
+	if serverInfo.DownloadURL != "" {
+		config.Server.DownloadUrl = serverInfo.DownloadURL
 		config.Server.Version = version
 
 		return nil

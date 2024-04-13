@@ -44,7 +44,7 @@ type LevelDat struct {
 	}
 }
 
-func Run() {
+func Run(args []string) {
 	levelDatFile, err := os.Open(fs.LocateWorldData("world/level.dat"))
 	if err != nil {
 		slog.Error("Failed to open level.dat", slog.Any("error", err))

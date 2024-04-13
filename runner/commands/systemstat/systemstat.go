@@ -10,7 +10,7 @@ import (
 	"github.com/kofuk/premises/runner/systemutil"
 )
 
-func Run() {
+func Run(args []string) {
 	cpuStat, err := systemutil.NewCPUUsage()
 	if err != nil {
 		slog.Error("Failed to initialize CPU usage", slog.Any("error", err))

@@ -21,7 +21,7 @@ import (
 
 type Command struct {
 	Description  string
-	Run          func()
+	Run          func(args []string)
 	RequiresRoot bool
 }
 
@@ -61,6 +61,7 @@ func (self App) Run(args []string) {
 	}
 
 	slog.SetDefault(slog.Default().With(slog.String("runner_command", cmdName)))
+	os.Setenv("PREMISES_RUNNER_COMMAND", cmdName)
 
 	if cmd.RequiresRoot {
 		if syscall.Getuid() != 0 {
@@ -69,7 +70,7 @@ func (self App) Run(args []string) {
 		}
 	}
 
-	cmd.Run()
+	cmd.Run(args[2:])
 }
 
 func main() {
@@ -111,7 +112,7 @@ func main() {
 			},
 			"setup": {
 				Description: "Setup server",
-				Run: func() {
+				Run: func(args []string) {
 					serverSetup := serversetup.ServerSetup{}
 					serverSetup.Run()
 				},
@@ -134,7 +135,7 @@ func main() {
 			},
 			"version": {
 				Description: "Print version (in machine-readable way) and exit",
-				Run: func() {
+				Run: func(args []string) {
 					fmt.Println(metadata.Revision)
 				},
 				RequiresRoot: false,

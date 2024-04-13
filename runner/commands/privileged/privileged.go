@@ -98,7 +98,7 @@ func sendMessage(w http.ResponseWriter, msg interface{}) error {
 	return nil
 }
 
-func Run() {
+func Run(args []string) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		slog.Info("Request received")
 

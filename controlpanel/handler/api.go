@@ -168,14 +168,15 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 		result.C.ControlPanel = strings.Replace(h.cfg.ControlPanel.Origin, "http://localhost", "http://host.docker.internal", 1)
 	}
 
-	serverDownloadURL, launchCommand, err := h.MCVersions.GetServerInfo(ctx, *config.ServerVersion)
+	serverInfo, err := h.MCVersions.GetServerInfo(ctx, *config.ServerVersion)
 	if err != nil {
 		return nil, err
 	}
-	result.SetServer(*config.ServerVersion, serverDownloadURL)
+	result.SetServer(*config.ServerVersion, serverInfo.DownloadURL)
 	result.SetDetectServerVersion(*config.GuessVersion)
 	result.C.Server.ManifestOverride = h.MCVersions.GetOverridenManifestUrl()
-	result.C.Server.CustomCommand = launchCommand
+	result.C.Server.CustomCommand = serverInfo.LaunchCommand
+	result.C.Server.JavaVersion = serverInfo.JavaVersion
 
 	result.GenerateAuthKey()
 
