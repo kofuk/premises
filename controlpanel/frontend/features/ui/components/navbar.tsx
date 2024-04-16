@@ -1,5 +1,5 @@
 import React from 'react';
-import {useNavigate} from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 
 import styled from '@emotion/styled';
 import {useTranslation} from 'react-i18next';
@@ -30,6 +30,19 @@ const WideOnly = styled.span`
   }
 `;
 
+const TitleLink = styled(Link)`
+  color: white;
+  text-decoration: none;
+  opacity: 1;
+  transition: 300ms opacity;
+  &:hover {
+    opacity: 0.8;
+  }
+  &:active {
+    opacity: 0.7;
+  }
+`;
+
 const NavBar = () => {
   const [t] = useTranslation();
 
@@ -54,7 +67,9 @@ const NavBar = () => {
     <RoundedAppBar>
       <Toolbar variant="dense">
         <Typography color="inherit" component="div" sx={{flexGrow: 1}} variant="h6">
-          <WideOnly>{t('app_name')}</WideOnly>
+          <TitleLink to="/launch">
+            <WideOnly>{t('app_name')}</WideOnly>
+          </TitleLink>
         </Typography>
 
         <StatusLabel message={message} progress={progress} />
