@@ -74,7 +74,7 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 		srv.ShouldStop = true
 		srv.Stop()
 	}
-	handleSnapshot := func(config runner.SnapshotConfig) {
+	handleSnapshot := func(config runner.SnapshotConfig, actor int) {
 		if err := srv.SaveAll(); err != nil {
 			slog.Error("Failed to run save-all", slog.Any("error", err))
 			return
@@ -88,6 +88,7 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 				Type: runner.EventInfo,
 				Info: &runner.InfoExtra{
 					InfoCode: entity.InfoSnapshotError,
+					Actor:    actor,
 					IsError:  true,
 				},
 			}); err != nil {
@@ -101,19 +102,21 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 			Type: runner.EventInfo,
 			Info: &runner.InfoExtra{
 				InfoCode: entity.InfoSnapshotDone,
+				Actor:    actor,
 				IsError:  false,
 			},
 		}); err != nil {
 			slog.Error("Unable to write send message", slog.Any("error", err))
 		}
 	}
-	handleUndo := func(config runner.SnapshotConfig) {
+	handleUndo := func(config runner.SnapshotConfig, actor int) {
 		go func() {
 			if _, err := os.Stat(filepath.Join(fs.LocateWorldData(fmt.Sprintf("ss@quick%d/world", config.Slot)))); err != nil {
 				if err := exterior.DispatchMessage("serverStatus", runner.Event{
 					Type: runner.EventInfo,
 					Info: &runner.InfoExtra{
 						InfoCode: entity.InfoNoSnapshot,
+						Actor:    actor,
 						IsError:  true,
 					},
 				}); err != nil {
@@ -162,14 +165,26 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 			break
 
 		case runner.ActionSnapshot:
-			handleSnapshot(action.Snapshot)
+			if action.Snapshot == nil {
+				slog.Error("Snapshot configuration is not specified")
+				return
+			}
+			handleSnapshot(*action.Snapshot, action.Actor)
 			break
 
 		case runner.ActionUndo:
-			handleUndo(action.Snapshot)
+			if action.Snapshot == nil {
+				slog.Error("Snapshot configuration is not specified")
+				return
+			}
+			handleUndo(*action.Snapshot, action.Actor)
 			break
 
 		case runner.ActionReconfigure:
+			if action.Config == nil {
+				slog.Error("New config is not specified")
+				return
+			}
 			handleReconfigure(action.Config)
 			break
 		}

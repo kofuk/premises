@@ -26,6 +26,7 @@ type SysstatExtra struct {
 
 type InfoExtra struct {
 	InfoCode entity.InfoCode `json:"infoCode"`
+	Actor    int             `json:"actor"`
 	IsError  bool            `json:"isError"`
 }
 
@@ -69,7 +70,8 @@ type SnapshotConfig struct {
 }
 
 type Action struct {
-	Type     ActionType     `json:"type"`
-	Config   *Config        `json:"config,omitempty"`
-	Snapshot SnapshotConfig `json:"snapshot"`
+	Type     ActionType      `json:"type"`
+	Actor    int             `json:"actor"`
+	Config   *Config         `json:"config,omitempty"`
+	Snapshot *SnapshotConfig `json:"snapshot,omitempty"`
 }

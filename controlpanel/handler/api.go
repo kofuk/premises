@@ -75,12 +75,32 @@ func (h *Handler) handleApiSessionData(c echo.Context) error {
 
 func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName string) func(c echo.Context) error {
 	return func(c echo.Context) error {
+		session, err := session.Get("session", c)
+		if err != nil {
+			return c.JSON(http.StatusOK, web.ErrorResponse{
+				Success:   false,
+				ErrorCode: entity.ErrInternal,
+			})
+		}
+
+		userID := session.Values["user_id"].(uint)
+
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
 		jsonRequested := c.Request().Header.Get("Accept") == "application/ld+json"
 
 		writeEvent := func(message []byte) error {
+			var partial struct {
+				Actor int `json:"actor"`
+			}
+			json.Unmarshal(message, &partial)
+
+			if partial.Actor != 0 && partial.Actor != int(userID) {
+				// Skip delivering messages that were triggered by other users.
+				return nil
+			}
+
 			writer := bufio.NewWriter(c.Response().Writer)
 
 			if jsonRequested {
@@ -743,6 +763,16 @@ func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 }
 
 func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
+	session, err := session.Get("session", c)
+	if err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	userID := session.Values["user_id"].(uint)
+
 	var config web.SnapshotConfiguration
 	if err := c.Bind(&config); err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -759,8 +789,9 @@ func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
 	}
 
 	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
-		Type: runner.ActionSnapshot,
-		Snapshot: runner.SnapshotConfig{
+		Type:  runner.ActionSnapshot,
+		Actor: int(userID),
+		Snapshot: &runner.SnapshotConfig{
 			Slot: config.Slot,
 		},
 	}); err != nil {
@@ -777,6 +808,16 @@ func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
 }
 
 func (h *Handler) handleApiQuickUndoUndo(c echo.Context) error {
+	session, err := session.Get("session", c)
+	if err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	userID := session.Values["user_id"].(uint)
+
 	var config web.SnapshotConfiguration
 	if err := c.Bind(&config); err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -793,8 +834,9 @@ func (h *Handler) handleApiQuickUndoUndo(c echo.Context) error {
 	}
 
 	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
-		Type: runner.ActionUndo,
-		Snapshot: runner.SnapshotConfig{
+		Type:  runner.ActionUndo,
+		Actor: int(userID),
+		Snapshot: &runner.SnapshotConfig{
 			Slot: config.Slot,
 		},
 	}); err != nil {
