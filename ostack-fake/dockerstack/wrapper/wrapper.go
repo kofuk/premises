@@ -28,13 +28,13 @@ func GetManagedContainers(ctx context.Context, docker *docker.Client) ([]types.C
 }
 
 func GetManagedImages(ctx context.Context, docker *docker.Client) ([]image.Summary, error) {
-	return docker.ImageList(ctx, types.ImageListOptions{
+	return docker.ImageList(ctx, image.ListOptions{
 		Filters: filters.NewArgs(filters.Arg("label", "org.kofuk.premises.managed")),
 	})
 }
 
 func FindDockerImageByOstackImageID(ctx context.Context, docker *docker.Client, imageId string) (string, error) {
-	image, err := docker.ImageList(ctx, types.ImageListOptions{
+	image, err := docker.ImageList(ctx, image.ListOptions{
 		Filters: filters.NewArgs(
 			filters.Arg("label", "org.kofuk.premises.managed"),
 			filters.Arg("label", fmt.Sprintf("org.kofuk.premises.id=%s", imageId)),
@@ -229,15 +229,15 @@ func CreateImage(ctx context.Context, docker *docker.Client, serverId, imageName
 }
 
 func removeOrUntagImage(ctx context.Context, docker *docker.Client, imageId string) error {
-	image, _, err := docker.ImageInspectWithRaw(ctx, imageId)
+	imageInspect, _, err := docker.ImageInspectWithRaw(ctx, imageId)
 	if err != nil {
 		return err
 	}
-	if len(image.RepoTags) > 0 {
-		imageId = image.RepoTags[0]
+	if len(imageInspect.RepoTags) > 0 {
+		imageId = imageInspect.RepoTags[0]
 	}
 
-	if _, err := docker.ImageRemove(ctx, imageId, types.ImageRemoveOptions{}); err != nil {
+	if _, err := docker.ImageRemove(ctx, imageId, image.RemoveOptions{}); err != nil {
 		return fmt.Errorf("Error removing image: %s: %w", imageId, err)
 	}
 	return nil
