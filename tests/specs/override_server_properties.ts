@@ -31,7 +31,7 @@ assertEquals(worldInfo["version"], "1.20.1");
 assertEquals(worldInfo["worldName"], worldName);
 
 if (usingFakeMinecraftServer()) {
-  const state = await fetch("http://localhost:25565/state").then((resp) =>
+  const state = await fetch("http://127.0.0.2:25565/state").then((resp) =>
     resp.json()
   );
   assertEquals(

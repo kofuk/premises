@@ -23,7 +23,7 @@ assertEquals(worldInfo["worldName"], worldName);
 let worldVersion: string | null = null;
 
 if (usingFakeMinecraftServer()) {
-  const state = await fetch("http://localhost:25565/state").then((resp) =>
+  const state = await fetch("http://127.0.0.2:25565/state").then((resp) =>
     resp.json()
   );
   assertEquals(state.worldVersionPrev, "");
@@ -41,7 +41,7 @@ console.log("Relaunch server");
 await launchExistingWorld(cookie, worldName);
 
 if (usingFakeMinecraftServer()) {
-  const state = await fetch("http://localhost:25565/state").then((resp) =>
+  const state = await fetch("http://127.0.0.2:25565/state").then((resp) =>
     resp.json()
   );
   assertEquals(state.worldVersionPrev, worldVersion);
