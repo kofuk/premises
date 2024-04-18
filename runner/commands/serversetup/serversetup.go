@@ -52,7 +52,7 @@ func isDevEnv() bool {
 
 func getIPAddr() (v4Addrs []string, v6Addrs []string, err error) {
 	if isDevEnv() {
-		return []string{"127.0.0.1"}, []string{"::1"}, nil
+		return []string{"127.0.0.2"}, nil, nil
 	}
 
 	addrs, err := net.InterfaceAddrs()
