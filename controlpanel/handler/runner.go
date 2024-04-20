@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/kofuk/premises/common/entity"
@@ -64,6 +65,20 @@ func (h *Handler) handlePushStatus(c echo.Context) error {
 
 		if event.Type == runner.EventStatus && event.Status.EventCode == entity.EventShutdown {
 			go h.shutdownServer(context.Background(), h.GameServer, c.Request().Header.Get("Authorization"))
+
+			url, _ := url.Parse(h.cfg.ControlPanel.ProxyAPI)
+			url.Path = "/clear"
+			q := url.Query()
+			q.Add("name", h.cfg.ControlPanel.GameDomain)
+			url.RawQuery = q.Encode()
+
+			resp, err := http.Post(url.String(), "text/plain", nil)
+			if err != nil {
+				slog.Error("Error updating proxy", slog.Any("error", err))
+			} else {
+				io.Copy(io.Discard, resp.Body)
+			}
+
 			return c.String(http.StatusOK, "")
 		}
 

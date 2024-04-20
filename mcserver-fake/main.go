@@ -11,14 +11,12 @@ import (
 	"log"
 	"math/rand"
 	"net"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/kofuk/premises/common/mc/protocol"
 )
 
 var (
@@ -26,7 +24,7 @@ var (
 )
 
 func Log(topic, level, message string) {
-	time.Sleep((time.Millisecond * time.Duration(rand.Intn(256))) << 2)
+	time.Sleep((time.Millisecond * time.Duration(rand.Intn(256))) << 1)
 
 	fmt.Printf("[%s] [%s/%s]: %s\n", time.Now().Format(time.TimeOnly), topic, level, message)
 }
@@ -384,34 +382,76 @@ func (s *Server) Run() {
 		log.Fatal(err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-
-	e := echo.New()
-	e.HideBanner = true
-	e.HidePort = true
-	e.GET("/state", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, s.State.ToPublicState())
-	})
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	go func() {
-		<-ctx.Done()
-
-		e.Shutdown(context.TODO())
-		wg.Done()
-	}()
-
-	go e.Start(":25565")
-
-	if err := s.startRcon(); err != nil {
+	l, err := net.Listen("tcp", ":25565")
+	if err != nil {
 		log.Fatal(err)
 	}
+	defer l.Close()
 
-	cancel()
+	ctx, cancel := context.WithCancel(context.Background())
 
-	wg.Wait()
+	go func() {
+		if err := s.startRcon(); err != nil {
+			log.Fatal(err)
+		}
+
+		cancel()
+		l.Close()
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		conn, err := l.Accept()
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		go func() {
+			defer conn.Close()
+
+			h := protocol.NewHandler(conn)
+
+			hs, err := h.ReadHandshake()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			if hs.NextState != 1 {
+				log.Println("This server only supports handshake")
+				return
+			}
+
+			status := protocol.Status{}
+			status.Version.Name = "0.10.0+fake"
+			status.Version.Protocol = hs.Version
+			status.Players.Max = 0
+			status.Players.Online = 0
+			status.Description.Text = "Fake Minecraft Server!"
+			status.EnforcesSecureChat = true
+			status.CustomData = s.State.ToPublicState()
+
+			if err := h.ReadStatusRequest(); err != nil {
+				log.Println(err)
+				return
+			}
+
+			if err := h.WriteStatus(status); err != nil {
+				log.Println(err)
+				return
+			}
+			if err := h.HandlePingPong(); err != nil {
+				log.Println(err)
+				return
+			}
+		}()
+	}
 }
 
 func PrintStartServerLog() {

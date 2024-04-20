@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
+	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/kofuk/premises/common/entity"
@@ -97,6 +100,20 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 						slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 					}
 				}
+			}
+
+			url, _ := url.Parse(cfg.ControlPanel.ProxyAPI)
+			url.Path = "/set"
+			q := url.Query()
+			q.Add("name", cfg.ControlPanel.GameDomain)
+			q.Add("addr", event.Hello.Addr.IPv4[0]+":25565")
+			url.RawQuery = q.Encode()
+
+			resp, err := http.Post(url.String(), "text/plain", nil)
+			if err != nil {
+				slog.Error("Error updating proxy", slog.Any("error", err))
+			} else {
+				io.Copy(io.Discard, resp.Body)
 			}
 		}
 

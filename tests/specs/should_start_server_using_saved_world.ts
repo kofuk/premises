@@ -7,6 +7,7 @@ import {
   stopServer,
 } from "../lib/easy.ts";
 import { usingFakeMinecraftServer } from "../lib/env.ts";
+import { getState } from "../lib/mcproto.ts";
 
 console.log("Login");
 const cookie = await login("user1", "password1");
@@ -23,11 +24,9 @@ assertEquals(worldInfo["worldName"], worldName);
 let worldVersion: string | null = null;
 
 if (usingFakeMinecraftServer()) {
-  const state = await fetch("http://127.0.0.2:25565/state").then((resp) =>
-    resp.json()
-  );
-  assertEquals(state.worldVersionPrev, "");
-  worldVersion = state.worldVersion as string;
+  const state = await getState();
+  assertEquals(state.serverState!.worldVersionPrev, "");
+  worldVersion = state.serverState!.worldVersion as string;
 }
 
 console.log("Stop server");
@@ -41,10 +40,8 @@ console.log("Relaunch server");
 await launchExistingWorld(cookie, worldName);
 
 if (usingFakeMinecraftServer()) {
-  const state = await fetch("http://127.0.0.2:25565/state").then((resp) =>
-    resp.json()
-  );
-  assertEquals(state.worldVersionPrev, worldVersion);
+  const state = await getState();
+  assertEquals(state.serverState!.worldVersionPrev, worldVersion);
 }
 
 console.log("Stop server");

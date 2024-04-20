@@ -194,6 +194,10 @@ jobs:
           done
           echo '::endgroup::'
 
+          echo '::group::Launch proxy'
+          docker container run --network host -e PREMISES_PROXY_BIND=127.0.0.1:25565 -d ghcr.io/kofuk/premises:latest proxy
+          echo '::endgroup::'
+
           echo '::group::Create test user'
           docker compose --env-file tests/test.env exec web pmctl user add -u user1 -p password1 --initialized
           echo '::endgroup::'

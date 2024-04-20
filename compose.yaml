@@ -30,6 +30,8 @@ services:
       - 'premises_controlPanel_postgres_user=premises'
       - 'premises_controlPanel_postgres_password=password'
       - 'premises_controlPanel_postgres_dbName=premises'
+      - 'premises_controlPanel_proxyApi=http://proxy:8001'
+      - 'premises_controlPanel_gameDomain'
     depends_on:
       redis:
         condition: service_healthy
@@ -38,6 +40,12 @@ services:
     restart: always
     ports:
       - '8000:8000'
+    command: [web]
+  proxy:
+    image: 'ghcr.io/kofuk/premises:latest'
+    ports:
+      - '25565:25565'
+    command: [proxy]
   redis:
     image: 'redis:7-alpine'
     healthcheck:

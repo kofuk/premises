@@ -7,6 +7,7 @@ import {
   waitServerLaunched,
 } from "../lib/easy.ts";
 import { usingFakeMinecraftServer } from "../lib/env.ts";
+import { getState } from "../lib/mcproto.ts";
 
 console.log("Login");
 const cookie = await login("user1", "password1");
@@ -31,11 +32,9 @@ assertEquals(worldInfo["version"], "1.20.1");
 assertEquals(worldInfo["worldName"], worldName);
 
 if (usingFakeMinecraftServer()) {
-  const state = await fetch("http://127.0.0.2:25565/state").then((resp) =>
-    resp.json()
-  );
+  const state = await getState();
   assertEquals(
-    state.serverProps["initial-enabled-packs"],
+    state.serverState!.serverProps["initial-enabled-packs"],
     "vanilla,update_1_21,bundle",
   );
 }

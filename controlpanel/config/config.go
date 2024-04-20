@@ -49,6 +49,8 @@ type Config struct {
 			Address  string `env:"address"`
 			Password string `env:"password"`
 		} `env:"redis"`
+		ProxyAPI        string `env:"proxyApi"`
+		GameDomain      string `env:"gameDomain"`
 		AlertWebhookUrl string `env:"alertWebhook"`
 	} `env:"controlPanel"`
 }

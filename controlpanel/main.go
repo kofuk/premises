@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"os"
 
@@ -8,7 +10,34 @@ import (
 
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/handler"
+	"github.com/kofuk/premises/controlpanel/proxy"
 )
+
+func startWeb() {
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		slog.Error("Failed to load config", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	handler, err := handler.NewHandler(cfg, ":8000")
+	if err != nil {
+		slog.Error("Failed to initialize handler", slog.Any("error", err))
+		os.Exit(1)
+	}
+	if err := handler.Start(); err != nil {
+		slog.Error("Error starting server", slog.Any("error", err))
+		os.Exit(1)
+	}
+}
+
+func startProxy() {
+	proxy := proxy.NewProxyHandler()
+	if err := proxy.Start(context.Background()); err != nil {
+		slog.Error("Error in proxy handler", slog.Any("error", err))
+		os.Exit(1)
+	}
+}
 
 func main() {
 	if err := godotenv.Load(); err != nil {
@@ -27,24 +56,19 @@ func main() {
 		Level:     logLevel,
 	})))
 
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		slog.Error("Failed to load config", slog.Any("error", err))
+	if len(os.Args) < 2 {
+		slog.Error("Mode not speficied")
 		os.Exit(1)
 	}
 
-	bindAddr := ":8000"
-	if len(os.Args) > 1 {
-		bindAddr = os.Args[1]
-	}
-
-	handler, err := handler.NewHandler(cfg, bindAddr)
-	if err != nil {
-		slog.Error("Failed to initialize handler", slog.Any("error", err))
-		os.Exit(1)
-	}
-	if err := handler.Start(); err != nil {
-		slog.Error("Error starting server", slog.Any("error", err))
+	mode := os.Args[1]
+	switch mode {
+	case "web":
+		startWeb()
+	case "proxy":
+		startProxy()
+	default:
+		slog.Error(fmt.Sprintf("Unknown mode: %s", mode))
 		os.Exit(1)
 	}
 }
