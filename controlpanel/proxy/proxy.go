@@ -148,6 +148,14 @@ func (p *ProxyHandler) handleConn(conn io.ReadWriteCloser) error {
 
 	upstrm, err := net.Dial("tcp", addr)
 	if err != nil {
+		// Connection error. We'll respond with dummy response (if possible).
+		if hs.NextState != 1 {
+			return err
+		}
+
+		if err2 := p.handleDummyServer(h, hs); err2 != nil {
+			return errors.Join(err, err2)
+		}
 		return err
 	}
 
