@@ -8,6 +8,8 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/kofuk/premises/common/nbt"
 	"github.com/kofuk/premises/runner/fs"
@@ -44,6 +46,19 @@ type LevelDat struct {
 	}
 }
 
+func toServerVersionName(name string) string {
+	if strings.Index(name, "Pre-Release") >= 0 {
+		if match, _ := regexp.Match("^1\\.14(\\.[12])? Pre-Release [1-5]$", []byte(name)); !match {
+			// The pre-release version (except for the specific versions) of level.dat stores
+			// a different string than the downloadable version name.
+			// We will fix this here.
+			name = strings.Replace(name, " Pre-Release ", "-pre", 1)
+		}
+	}
+
+	return name
+}
+
 func Run(args []string) {
 	levelDatFile, err := os.Open(fs.LocateWorldData("world/level.dat"))
 	if err != nil {
@@ -71,7 +86,7 @@ func Run(args []string) {
 	}
 
 	result := Result{
-		ServerVersion: levelDat.Data.Version.Name,
+		ServerVersion: toServerVersionName(levelDat.Data.Version.Name),
 	}
 
 	json, err := json.Marshal(result)

@@ -44,6 +44,7 @@ func DetectAndUpdateVersion(config *runner.Config) error {
 	if err != nil {
 		return err
 	}
+	slog.Debug("Server version detected", slog.String("version", version))
 
 	var options []lm.Option
 
@@ -76,6 +77,7 @@ func DetectAndUpdateVersion(config *runner.Config) error {
 	if serverInfo.DownloadURL != "" {
 		config.Server.DownloadUrl = serverInfo.DownloadURL
 		config.Server.Version = version
+		config.Server.JavaVersion = serverInfo.JavaVersion
 
 		return nil
 	}
