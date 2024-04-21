@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/kofuk/premises/common/mc/protocol"
 	"github.com/labstack/echo/v4"
@@ -127,11 +128,17 @@ func (p *ProxyHandler) handleDummyServer(h *protocol.Handler, hs *protocol.Hands
 func (p *ProxyHandler) handleConn(conn io.ReadWriteCloser) error {
 	defer conn.Close()
 
+	if conn, ok := conn.(net.Conn); ok {
+		if err := conn.SetDeadline(time.Now().Add(time.Minute)); err != nil {
+			slog.Error("Error setting socket deadline", slog.Any("error", err))
+		}
+	}
+
 	h := protocol.NewHandler(conn)
 
 	hs, err := h.ReadHandshake()
 	if err != nil {
-		return errors.New("Handshake error")
+		return fmt.Errorf("Handshake error: %w", err)
 	}
 
 	p.m.Lock()
@@ -157,6 +164,13 @@ func (p *ProxyHandler) handleConn(conn io.ReadWriteCloser) error {
 			return errors.Join(err, err2)
 		}
 		return err
+	}
+
+	if conn, ok := conn.(net.Conn); ok {
+		// Unset deadline, because the connection is handled by the upstream server.
+		if err := conn.SetDeadline(time.Time{}); err != nil {
+			slog.Error("Error setting socket deadline", slog.Any("error", err))
+		}
 	}
 
 	var eg errgroup.Group

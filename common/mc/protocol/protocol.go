@@ -158,6 +158,10 @@ func (h *Handler) ReadHandshake() (*Handshake, error) {
 	if err != nil {
 		return nil, err
 	}
+	if addrLen > 255 {
+		return nil, errors.New("Address is too long")
+	}
+
 	addrBuf := make([]byte, addrLen)
 	if _, err := h.r.Read(addrBuf); err != nil {
 		return nil, err
