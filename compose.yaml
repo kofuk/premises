@@ -29,7 +29,6 @@ services:
       - 'premises_controlPanel_postgres_dbName=premises'
       - 'premises_controlPanel_proxyApi=http://proxy:8001'
       - 'premises_controlPanel_gameDomain'
-      - 'premises_controlPanel_iconUrl'
     depends_on:
       redis:
         condition: service_healthy
@@ -41,6 +40,9 @@ services:
     command: [web]
   proxy:
     image: 'ghcr.io/kofuk/premises:latest'
+    environment:
+      - 'premises_controlPanel_postgres_port=5432' # TODO: We should remove this after #406 fixed.
+      - 'premises_controlPanel_iconUrl'
     ports:
       - '25565:25565'
     command: [proxy]
