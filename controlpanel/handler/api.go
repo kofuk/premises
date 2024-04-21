@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -336,10 +335,6 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 		}
 		h.notifyNonRecoverableFailure(h.cfg, "Failed to delete VM")
 		return
-	}
-
-	if h.dnsService != nil {
-		h.dnsService.UpdateV4(ctx, net.ParseIP("127.0.0.1"))
 	}
 
 	if err := h.KVS.Del(ctx, "runner-id:default", "runner-info:default", "world-info:default", fmt.Sprintf("runner:%s", authKey)); err != nil {

@@ -17,11 +17,6 @@ type Config struct {
 		} `env:"services"`
 		NameTag string `env:"nameTag"`
 	} `env:"conoha"`
-	Cloudflare struct {
-		Token          string `env:"token"`
-		ZoneID         string `env:"zoneId"`
-		GameDomainName string `env:"gameDomain"`
-	} `env:"cloudflare"`
 	S3 struct {
 		Endpoint string `env:"endpoint"`
 		Bucket   string `env:"bucket"`

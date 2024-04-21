@@ -84,7 +84,7 @@ func (h *Handler) handlePushStatus(c echo.Context) error {
 
 		slog.Debug("Event from runner", slog.Any("payload", event))
 
-		if err := monitor.HandleEvent(context.Background(), runnerId, h.Streaming, h.cfg, &h.KVS, h.dnsService, &event); err != nil {
+		if err := monitor.HandleEvent(context.Background(), runnerId, h.Streaming, h.cfg, &h.KVS, &event); err != nil {
 			slog.Error("Unable to handle event", slog.Any("error", err))
 			return c.String(http.StatusInternalServerError, "")
 		}

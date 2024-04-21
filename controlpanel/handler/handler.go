@@ -20,7 +20,6 @@ import (
 	"github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/backup"
 	"github.com/kofuk/premises/controlpanel/config"
-	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/kvs"
 	"github.com/kofuk/premises/controlpanel/mcversions"
 	"github.com/kofuk/premises/controlpanel/pollable"
@@ -52,7 +51,6 @@ type Handler struct {
 	Streaming     *streaming.StreamingService
 	backup        *backup.BackupService
 	runnerAction  *pollable.PollableActionService
-	dnsService    *dns.DNSService
 }
 
 func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
@@ -109,15 +107,6 @@ func prepareDependencies(cfg *config.Config, h *Handler) error {
 	h.GameServer = NewGameServer(h.cfg, h)
 
 	h.backup = backup.New(h.cfg.AWS.AccessKey, h.cfg.AWS.SecretKey, h.cfg.S3.Endpoint, h.cfg.S3.Bucket)
-
-	if h.cfg.Cloudflare.Token != "" {
-		cloudflareDNS, err := dns.NewCloudflareDNS(h.cfg.Cloudflare.Token, h.cfg.Cloudflare.ZoneID)
-		if err != nil {
-			return err
-		}
-
-		h.dnsService = dns.New(cloudflareDNS, h.cfg.Cloudflare.GameDomainName)
-	}
 
 	return nil
 }

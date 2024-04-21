@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -16,7 +15,6 @@ import (
 	"github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
-	"github.com/kofuk/premises/controlpanel/dns"
 	"github.com/kofuk/premises/controlpanel/kvs"
 	"github.com/kofuk/premises/controlpanel/streaming"
 )
@@ -69,7 +67,7 @@ func AttachRunner(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueSt
 	return nil
 }
 
-func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.StreamingService, cfg *config.Config, kvs *kvs.KeyValueStore, dnsService *dns.DNSService, event *runner.Event) error {
+func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.StreamingService, cfg *config.Config, kvs *kvs.KeyValueStore, event *runner.Event) error {
 	stdStream := strmProvider.GetStream(streaming.StandardStream)
 	infoStream := strmProvider.GetStream(streaming.InfoStream)
 	sysstatStream := strmProvider.GetStream(streaming.SysstatStream)
@@ -86,20 +84,6 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 		if len(event.Hello.Addr.IPv4) != 0 {
 			if err := AttachRunner(ctx, cfg, kvs, event.Hello.Addr.IPv4[0]); err != nil {
 				slog.Error("Error updating runner ID", slog.Any("error", err))
-			}
-
-			if dnsService != nil {
-				if err := dnsService.UpdateV4(ctx, net.ParseIP(event.Hello.Addr.IPv4[0])); err != nil {
-					slog.Error("Failed to update IPv4 address", slog.Any("error", err))
-
-					if err := strmProvider.PublishEvent(
-						ctx,
-						infoStream,
-						streaming.NewInfoMessage(entity.InfoErrDNS, true),
-					); err != nil {
-						slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-					}
-				}
 			}
 
 			url, _ := url.Parse(cfg.ControlPanel.ProxyAPI)
