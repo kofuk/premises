@@ -46,6 +46,9 @@ func (p *ProxyHandler) startInternalApi(ctx context.Context) error {
 
 		name := c.QueryParam("name")
 		addr := c.QueryParam("addr")
+
+		slog.Info("Setting proxy host", slog.String("name", name), slog.String("addr", addr))
+
 		p.servers[name] = addr
 
 		return c.String(http.StatusOK, "success")
@@ -56,6 +59,8 @@ func (p *ProxyHandler) startInternalApi(ctx context.Context) error {
 		defer p.m.Unlock()
 
 		name := c.QueryParam("name")
+
+		slog.Info("Removing proxy host", slog.String("name", name))
 
 		delete(p.servers, name)
 
