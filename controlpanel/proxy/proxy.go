@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -21,9 +22,10 @@ type ProxyHandler struct {
 	m        sync.Mutex
 	bindAddr string
 	servers  map[string]string
+	iconURL  string
 }
 
-func NewProxyHandler() *ProxyHandler {
+func NewProxyHandler(iconURL string) *ProxyHandler {
 	bindAddr := os.Getenv("PREMISES_PROXY_BIND")
 	if bindAddr == "" {
 		bindAddr = "0.0.0.0:25565"
@@ -32,6 +34,7 @@ func NewProxyHandler() *ProxyHandler {
 	return &ProxyHandler{
 		bindAddr: bindAddr,
 		servers:  make(map[string]string),
+		iconURL:  iconURL,
 	}
 }
 
@@ -74,6 +77,20 @@ func (p *ProxyHandler) startInternalApi(ctx context.Context) error {
 	return e.Start(":8001")
 }
 
+func retrieveFavicon(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return "data:image/png;base64," + base64.RawStdEncoding.EncodeToString(data), nil
+}
+
 func (p *ProxyHandler) handleDummyServer(h *protocol.Handler, hs *protocol.Handshake) error {
 	colors := []byte{'1', '2', '3', '4', '5', '6', '9', 'a', 'b', 'c', 'd', 'e', 'g'}
 	color := colors[rand.Intn(len(colors))]
@@ -85,6 +102,14 @@ func (p *ProxyHandler) handleDummyServer(h *protocol.Handler, hs *protocol.Hands
 	status.Players.Online = 0
 	status.Description.Text = fmt.Sprintf("§%[1]cServer §o\"%s\"§r§%[1]c is offline", color, hs.ServerAddr)
 	status.EnforcesSecureChat = true
+
+	if p.iconURL != "" {
+		if favicon, err := retrieveFavicon(p.iconURL); err != nil {
+			slog.Error("Error retrieving favicon", slog.Any("error", err))
+		} else {
+			status.Favicon = &favicon
+		}
+	}
 
 	if err := h.ReadStatusRequest(); err != nil {
 		return err

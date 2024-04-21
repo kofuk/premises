@@ -29,6 +29,7 @@ services:
       - 'premises_controlPanel_postgres_dbName=premises'
       - 'premises_controlPanel_proxyApi=http://proxy:8001'
       - 'premises_controlPanel_gameDomain'
+      - 'premises_controlPanel_iconUrl'
     depends_on:
       redis:
         condition: service_healthy

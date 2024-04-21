@@ -13,13 +13,7 @@ import (
 	"github.com/kofuk/premises/controlpanel/proxy"
 )
 
-func startWeb() {
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		slog.Error("Failed to load config", slog.Any("error", err))
-		os.Exit(1)
-	}
-
+func startWeb(cfg *config.Config) {
 	handler, err := handler.NewHandler(cfg, ":8000")
 	if err != nil {
 		slog.Error("Failed to initialize handler", slog.Any("error", err))
@@ -31,8 +25,8 @@ func startWeb() {
 	}
 }
 
-func startProxy() {
-	proxy := proxy.NewProxyHandler()
+func startProxy(cfg *config.Config) {
+	proxy := proxy.NewProxyHandler(cfg.ControlPanel.IconURL)
 	if err := proxy.Start(context.Background()); err != nil {
 		slog.Error("Error in proxy handler", slog.Any("error", err))
 		os.Exit(1)
@@ -61,12 +55,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		slog.Error("Failed to load config", slog.Any("error", err))
+		os.Exit(1)
+	}
+
 	mode := os.Args[1]
 	switch mode {
 	case "web":
-		startWeb()
+		startWeb(cfg)
 	case "proxy":
-		startProxy()
+		startProxy(cfg)
 	default:
 		slog.Error(fmt.Sprintf("Unknown mode: %s", mode))
 		os.Exit(1)

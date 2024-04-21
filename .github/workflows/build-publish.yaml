@@ -195,7 +195,7 @@ jobs:
           echo '::endgroup::'
 
           echo '::group::Launch proxy'
-          docker container run --network host -e PREMISES_PROXY_BIND=127.0.0.1:25565 -d ghcr.io/kofuk/premises:latest proxy
+          docker container run --env-file tests/test.env --network host -e PREMISES_PROXY_BIND=127.0.0.1:25565 -d ghcr.io/kofuk/premises:latest proxy
           echo '::endgroup::'
 
           echo '::group::Create test user'
