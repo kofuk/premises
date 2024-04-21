@@ -43,7 +43,7 @@ premises_controlPanel_postgres_port=5432
 premises_controlPanel_postgres_user='premises'
 premises_controlPanel_postgres_password='password'
 premises_controlPanel_postgres_dbName='premises'
-premises_controlPanel_locale='ja'
+premises_controlPanel_gameDomain='localhost'
 ```
 3. Launch all dependencies using helper script
 ```shell
