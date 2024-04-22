@@ -18,7 +18,7 @@ require (
 	github.com/gorilla/sessions v1.2.2
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.17.8
-	github.com/labstack/echo-contrib v0.17.0
+	github.com/labstack/echo-contrib v0.17.1
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/mackerelio/go-osstat v0.2.4
 	github.com/spf13/cobra v1.8.0
@@ -43,7 +43,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.3.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.17.5 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
