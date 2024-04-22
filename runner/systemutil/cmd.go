@@ -6,20 +6,28 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
+
+	"github.com/kofuk/premises/runner/fs"
 )
 
 var logNum uint64
 
 func createLog() (io.Writer, string, error) {
-	logPath := fmt.Sprintf("/tmp/command-%s-%d.log", os.Getenv("PREMISES_RUNNER_COMMAND"), atomic.AddUint64(&logNum, 1)-1)
-	log, err := os.Create(logPath)
-	if err != nil {
-		slog.Error("Unable to create log file", slog.Any("error", err))
-		return io.Discard, "<error>", err
+	for {
+		logPath := filepath.Join(fs.GetTempDir(), fmt.Sprintf("command-%d.log", atomic.AddUint64(&logNum, 1)-1))
+		log, err := os.OpenFile(logPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+		if err != nil {
+			if os.IsExist(err) {
+				continue
+			}
+			slog.Error("Unable to create log file", slog.Any("error", err))
+			return io.Discard, "<error>", err
+		}
+		return log, logPath, nil
 	}
-	return log, logPath, nil
 }
 
 func Cmd(path string, args []string, envs []string) error {

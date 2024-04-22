@@ -35,3 +35,11 @@ func RemoveIfExists(path string) error {
 
 	return nil
 }
+
+func GetTempDir() string {
+	return filepath.Join(baseDir, "tmp")
+}
+
+func MkdirTemp() (string, error) {
+	return os.MkdirTemp(GetTempDir(), "premises-temp")
+}

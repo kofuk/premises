@@ -111,11 +111,6 @@ func (self *ServerSetup) notifyStatus() {
 }
 
 func (self *ServerSetup) initializeServer() {
-	self.notifyStatus()
-
-	slog.Info("Updating package indices")
-	systemutil.AptGet("update", "-y")
-
 	slog.Info("Installing packages")
 	systemutil.AptGet("install", "-y", "btrfs-progs", latestAvailableJre, "ufw")
 
@@ -128,14 +123,7 @@ func (self *ServerSetup) initializeServer() {
 		slog.Info("Enabling ufw")
 		systemutil.Cmd("systemctl", []string{"enable", "--now", "ufw.service"}, nil)
 		systemutil.Cmd("ufw", []string{"enable"}, nil)
-
-		slog.Info("Adding ufw rules")
-		systemutil.Cmd("ufw", []string{"allow", "25565/tcp"}, nil)
-		systemutil.Cmd("ufw", []string{"allow", "8521/tcp"}, nil)
 	}
-
-	slog.Info("Creating data directories")
-	os.MkdirAll("/opt/premises/servers.d/../gamedata", 0755)
 
 	if _, err := os.Stat("/opt/premises/gamedata.img"); os.IsNotExist(err) {
 		slog.Info("Creating image file to save game data")
@@ -153,6 +141,12 @@ func (self *ServerSetup) initializeServer() {
 	}
 }
 
+func (self *ServerSetup) updateFirewallRules() {
+	systemutil.Cmd("ufw", []string{"allow", "25565/tcp"}, nil)
+	// Old runner requires 8521 to be exposed. Now, it's not needed so we delete it here.
+	systemutil.Cmd("ufw", []string{"delete", "allow", "8521/tcp"}, nil)
+}
+
 func (self *ServerSetup) installRequiredJavaVersion() {
 	config, err := config.Load()
 	if err != nil {
@@ -165,17 +159,26 @@ func (self *ServerSetup) installRequiredJavaVersion() {
 		installArgs = append(installArgs, fmt.Sprintf("openjdk-%d-jre-headless", config.Server.JavaVersion))
 	}
 
-	systemutil.AptGet("update", "-y")
 	systemutil.AptGet(installArgs...)
 }
 
 func (self ServerSetup) Run() {
 	self.sendServerHello()
+	self.notifyStatus()
+
+	slog.Info("Creating required directories (if not exists)")
+	os.MkdirAll("/opt/premises/servers.d/../gamedata/../tmp", 0755)
+
+	slog.Info("Updating package indices")
+	systemutil.AptGet("update", "-y")
 
 	if !isServerInitialized() {
 		slog.Info("Server seems not to be initialized. Will run full initialization")
 		self.initializeServer()
 	}
+
+	slog.Info("Updating ufw rules")
+	self.updateFirewallRules()
 
 	slog.Info("Installing required Java version")
 	self.installRequiredJavaVersion()

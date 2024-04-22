@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	goFs "io/fs"
+	gofs "io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -436,7 +436,7 @@ func ExtractWorldArchiveIfNeeded() error {
 
 	slog.Info("Extracting world archive...")
 
-	tempDir, err := os.MkdirTemp("/tmp", "premises-temp")
+	tempDir, err := fs.MkdirTemp()
 	if err != nil {
 		return err
 	}
@@ -497,7 +497,7 @@ func writeTar(to io.Writer, baseDir string, dirs ...string) error {
 	for _, dir := range dirs {
 		filesystem := os.DirFS(filepath.Join(baseDir, dir))
 
-		err := goFs.WalkDir(filesystem, ".", func(path string, d goFs.DirEntry, err error) error {
+		err := gofs.WalkDir(filesystem, ".", func(path string, d gofs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}

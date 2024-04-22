@@ -17,10 +17,25 @@ import (
 
 func removeFilesIgnoreError(paths ...string) {
 	for _, path := range paths {
-		if err := os.Remove(path); err != nil {
+		if err := os.RemoveAll(path); err != nil {
 			slog.Info("Failed to clean up file", slog.Any("error", err), slog.String("path", path))
 		}
 	}
+}
+
+func removeTempFiles() {
+	dirent, err := os.ReadDir("/opt/premises/tmp")
+	if err != nil {
+		slog.Error("Error reading temp dir", slog.Any("error", err))
+		return
+	}
+
+	var paths []string
+	for _, e := range dirent {
+		paths = append(paths, filepath.Join("/opt/premises/tmp", e.Name()))
+	}
+
+	removeFilesIgnoreError(paths...)
 }
 
 func removeSnapshots() {
@@ -100,6 +115,9 @@ func CleanUp(args []string) {
 
 	slog.Info("Unmounting data dir...")
 	unmountData()
+
+	slog.Info("Removing temp files...")
+	removeTempFiles()
 
 	slog.Info("Removing config files...")
 	removeFilesIgnoreError(
