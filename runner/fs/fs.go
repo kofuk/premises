@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"os"
 	"path/filepath"
 )
 
@@ -18,4 +19,19 @@ func LocateServer(serverName string) string {
 
 func LocateDataFile(path string) string {
 	return filepath.Join(baseDir, path)
+}
+
+func RemoveIfExists(path string) error {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	if err := os.RemoveAll(path); err != nil {
+		return err
+	}
+
+	return nil
 }

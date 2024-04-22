@@ -1,4 +1,4 @@
-package systemutil
+package fs
 
 import (
 	"errors"

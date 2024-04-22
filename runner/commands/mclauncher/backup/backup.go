@@ -430,18 +430,8 @@ func ExtractWorldArchiveIfNeeded() error {
 		return nil
 	}
 
-	if err := os.RemoveAll(fs.LocateWorldData("world")); err != nil {
+	if err := fs.RemoveIfExists(fs.LocateWorldData("world")); err != nil {
 		return err
-	}
-	if _, err := os.Stat(fs.LocateWorldData("world_nether")); err == nil {
-		if err := os.RemoveAll(fs.LocateWorldData("world_nether")); err != nil {
-			return err
-		}
-	}
-	if _, err := os.Stat(fs.LocateWorldData("world_the_end")); err == nil {
-		if err := os.RemoveAll(fs.LocateWorldData("world_the_end")); err != nil {
-			return err
-		}
 	}
 
 	slog.Info("Extracting world archive...")
@@ -575,15 +565,6 @@ func writeTar(to io.Writer, baseDir string, dirs ...string) error {
 func createArchive() error {
 	slog.Info("Creating world archive...")
 
-	dirs := []string{"world"}
-	// "Paper" mod server saves world data in separate dirs.
-	if s, err := os.Stat(fs.LocateWorldData("world_nether")); err == nil && s.IsDir() {
-		dirs = append(dirs, "world_nether")
-	}
-	if s, err := os.Stat(fs.LocateWorldData("world_the_end")); err == nil && s.IsDir() {
-		dirs = append(dirs, "world_the_end")
-	}
-
 	outFile, err := os.Create(fs.LocateDataFile("world.tar.zst"))
 	if err != nil {
 		return err
@@ -596,7 +577,7 @@ func createArchive() error {
 	}
 	defer zstWriter.Close()
 
-	if err := writeTar(zstWriter, fs.LocateWorldData(""), dirs...); err != nil {
+	if err := writeTar(zstWriter, fs.LocateWorldData(""), "world"); err != nil {
 		return err
 	}
 

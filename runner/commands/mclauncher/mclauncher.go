@@ -19,14 +19,8 @@ import (
 
 func downloadWorldIfNeeded(config *runner.Config) error {
 	if config.World.ShouldGenerate {
-		for _, dir := range []string{"world", "world_nether", "world_the_end"} {
-			if _, err := os.Stat(fs.LocateWorldData(dir)); err == nil {
-				if err := os.RemoveAll(fs.LocateWorldData(dir)); err != nil {
-					slog.Error("Failed to remove world folder", slog.Any("error", err))
-				}
-			} else if !os.IsNotExist(err) {
-				slog.Error("Failed to stat world dir", slog.Any("error", err))
-			}
+		if err := fs.RemoveIfExists(fs.LocateWorldData("world")); err != nil {
+			slog.Error("Unable to remove world directory", slog.Any("error", err))
 		}
 
 		return nil

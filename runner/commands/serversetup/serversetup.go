@@ -12,6 +12,7 @@ import (
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/config"
 	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/systemutil"
 )
 
@@ -142,7 +143,7 @@ func (self *ServerSetup) initializeServer() {
 		if isDevEnv() {
 			size = 1 * 1024 * 1024 * 1024 // 1 GiB
 		}
-		if err := systemutil.Fallocate("/opt/premises/gamedata.img", int64(size)); err != nil {
+		if err := fs.Fallocate("/opt/premises/gamedata.img", int64(size)); err != nil {
 			slog.Error("Unable to create gamedata.img", slog.Any("error", err))
 			return
 		}
@@ -183,7 +184,7 @@ func (self ServerSetup) Run() {
 	systemutil.Cmd("mount", []string{"/opt/premises/gamedata.img", "/opt/premises/gamedata"}, nil)
 
 	slog.Info("Ensure data directory owned by execution user")
-	if err := systemutil.ChownRecursive("/opt/premises", 1000, 1000); err != nil {
+	if err := fs.ChownRecursive("/opt/premises", 1000, 1000); err != nil {
 		slog.Error("Error changing ownership", slog.Any("error", err))
 	}
 }
