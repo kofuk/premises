@@ -30,7 +30,7 @@ require (
 	github.com/uptrace/bun/extra/bundebug v1.2.1
 	golang.org/x/crypto v0.22.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
-	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/sync v0.7.0
 )
 
 require (
