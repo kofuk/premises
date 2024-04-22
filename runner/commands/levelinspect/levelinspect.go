@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/kofuk/premises/common/nbt"
+	"github.com/kofuk/premises/common/mc/nbt"
 	"github.com/kofuk/premises/runner/fs"
 )
 
