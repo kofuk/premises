@@ -70,7 +70,7 @@ const QuickUndo = () => {
             <ArrowDropDownIcon />
           </Button>
         </ButtonGroup>
-        <Popper anchorEl={anchorRef.current} disablePortal open={menuOpen} sx={{zIndex: 1}} transition>
+        <Popper anchorEl={anchorRef.current} disablePortal open={menuOpen} popperOptions={{strategy: 'fixed'}} transition>
           {({TransitionProps, placement}) => (
             <Grow
               {...TransitionProps}

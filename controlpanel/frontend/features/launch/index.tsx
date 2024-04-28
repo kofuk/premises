@@ -8,7 +8,7 @@ import {Box} from '@mui/material';
 import {ConfigProvider} from './components/launch-config';
 import LoadingPage from './components/loading-page';
 import ManualSetupPage from './components/manual-setup-page';
-import ServerConfigPane from './server-config-pane';
+import LaunchPage from './server-config-pane';
 import ServerControlPane from './server-control-pane';
 
 import {useRunnerStatus} from '@/utils/runner-status';
@@ -18,22 +18,24 @@ const PAGE_LOADING = 2;
 const PAGE_RUNNING = 3;
 const PAGE_MANUAL_SETUP = 4;
 
-const LaunchPage = () => {
+const Launcher = () => {
   const [t] = useTranslation();
 
   const {pageCode: page} = useRunnerStatus();
 
   const createMainPane = (page: number) => {
-    if (page == PAGE_LAUNCH) {
-      return <ServerConfigPane />;
-    } else if (page == PAGE_LOADING) {
-      return <LoadingPage />;
-    } else if (page == PAGE_RUNNING) {
-      return <ServerControlPane />;
-    } else if (page == PAGE_MANUAL_SETUP) {
-      return <ManualSetupPage />;
+    switch (page) {
+      case PAGE_LAUNCH:
+        return <LaunchPage />;
+      case PAGE_LOADING:
+        return <LoadingPage />;
+      case PAGE_RUNNING:
+        return <ServerControlPane />;
+      case PAGE_MANUAL_SETUP:
+        return <ManualSetupPage />;
+      default:
+        throw new Error(`Unkwnon page: ${page}`);
     }
-    throw new Error(`Unkwnon page: ${page}`);
   };
 
   const mainPane: React.ReactElement = createMainPane(page);
@@ -48,4 +50,4 @@ const LaunchPage = () => {
   );
 };
 
-export default LaunchPage;
+export default Launcher;

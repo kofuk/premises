@@ -40,7 +40,9 @@ const ServerControlPane = () => {
           {
             title: t('menu_world_info'),
             icon: <WorldIcon />,
-            ui: <WorldInfo />
+            ui: <WorldInfo />,
+            variant: 'dialog',
+            cancellable: true
           },
           {
             title: t('menu_reconfigure'),
@@ -50,12 +52,16 @@ const ServerControlPane = () => {
           {
             title: 'QuickUndo',
             icon: <UndoIcon />,
-            ui: <QuickUndo />
+            ui: <QuickUndo />,
+            variant: 'dialog',
+            cancellable: true
           },
           {
             title: t('menu_system_info'),
             icon: <InfoIcon />,
-            ui: <SystemInfo />
+            ui: <SystemInfo />,
+            variant: 'dialog',
+            cancellable: true
           }
         ]}
         menuFooter={

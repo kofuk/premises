@@ -30,9 +30,7 @@ const CopyableListItem = ({title, children}: Prop) => {
 
   return (
     <>
-      <ListItem {...listItemProps}>
-        <ListItemText primary={title} secondary={children} />
-      </ListItem>
+      <ListItem {...listItemProps}>{typeof children === 'string' ? <ListItemText primary={title} secondary={children} /> : children}</ListItem>
       <Divider component="li" />
     </>
   );
