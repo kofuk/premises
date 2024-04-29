@@ -56,7 +56,7 @@ const MenuContainer = ({items, menuFooter}: Props) => {
     const itemElements = items
       .filter((e) => !e.disabled)
       .map((e, i) => (
-        <React.Fragment key={e.title}>
+        <React.Fragment key={`${i}`}>
           <ListItem disablePadding>
             <ListItemButton onClick={() => setSelectedItem(i)}>
               {e.icon && <ListItemIcon>{e.icon}</ListItemIcon>}

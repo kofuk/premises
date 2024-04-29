@@ -2,13 +2,12 @@ import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
-import {ArrowDownward as NextIcon} from '@mui/icons-material';
-import {Box, Button, Slider} from '@mui/material';
+import {Box, Slider, Stack, Typography} from '@mui/material';
 
-import {useLaunchConfig} from '../components/launch-config';
+import {useLaunchConfig} from '../launch-config';
+import {MenuItem} from '../menu-container';
 
-import ConfigContainer from '@/features/launch/config-item/config-container';
-import {ItemProp} from '@/features/launch/config-item/prop';
+import {valueLabel} from './common';
 
 class Machine {
   name: string;
@@ -24,7 +23,7 @@ class Machine {
   }
 
   getLabel = (): string => {
-    return `${this.memSize}GB RAM & ${this.nCores}-core CPU, ¥${this.price}/h`;
+    return `${this.memSize}GB RAM, ${this.nCores}-core CPU, ¥${this.price}/h`;
   };
 
   getMemSizeLabel = (): string => {
@@ -41,10 +40,9 @@ const machines: Machine[] = [
   new Machine('64g', 64, 24, 96.8)
 ];
 
-const MachineType = ({isFocused, nextStep, requestFocus, stepNum}: ItemProp) => {
+export const create = (): MenuItem => {
   const [t] = useTranslation();
-
-  const {updateConfig, config} = useLaunchConfig();
+  const {config, updateConfig} = useLaunchConfig();
 
   const [machineType, setMachineType] = useState(config.machineType || '4g');
 
@@ -52,33 +50,31 @@ const MachineType = ({isFocused, nextStep, requestFocus, stepNum}: ItemProp) => 
     setMachineType(machines[newValue as number].name);
   };
 
-  const saveAndContinue = () => {
-    (async () => {
-      await updateConfig({machineType});
-      nextStep();
-    })();
-  };
-
-  return (
-    <ConfigContainer isFocused={isFocused} nextStep={nextStep} requestFocus={requestFocus} stepNum={stepNum} title={t('config_machine_type')}>
-      <Box sx={{mx: 5}}>
+  return {
+    title: t('config_machine_type'),
+    ui: (
+      <Stack>
         <Slider
           marks={machines.map((e, i) => ({value: i, label: e.getMemSizeLabel()}))}
           max={machines.length - 1}
           min={0}
           onChange={handleChange}
+          sx={{mt: 2}}
           value={machines.findIndex((e) => e.name == machineType)}
-          valueLabelDisplay="auto"
-          valueLabelFormat={(i) => machines[i].getLabel()}
         />
-      </Box>
-      <Box sx={{textAlign: 'end'}}>
-        <Button endIcon={<NextIcon />} onClick={saveAndContinue} type="button" variant="outlined">
-          {t('next')}
-        </Button>
-      </Box>
-    </ConfigContainer>
-  );
+        <Box sx={{textAlign: 'center', mt: 2}}>
+          <Typography sx={{opacity: 0.8}}>{machines.find((e) => e.name == machineType)!.getLabel()}</Typography>
+        </Box>
+      </Stack>
+    ),
+    detail: valueLabel(config.machineType, (machineType) => machines.find((e) => e.name == machineType)!.getLabel()),
+    variant: 'dialog',
+    cancellable: true,
+    action: {
+      label: t('save'),
+      callback: () => {
+        updateConfig({machineType});
+      }
+    }
+  };
 };
-
-export default MachineType;

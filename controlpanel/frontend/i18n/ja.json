@@ -63,6 +63,7 @@
   "config_machine_type": "マシンタイプ",
   "config_world_name": "ワールド名",
   "config_world_source": "ワールドの読み込み先",
+  "config_game_extra": "サーバーの詳細設定",
   "world_type_default": "デフォルト",
   "world_type_superflat": "スーパーフラット",
   "world_type_large_biomes": "大きなバイオーム",
@@ -81,8 +82,8 @@
   "world_name": "ワールド名",
   "world_name_error_invalid": "ワールド名は 1 文字以上の英数字にしてください",
   "world_name_error_duplicate": "同名のワールド名がすでに存在します",
-  "use_backups": "バックアップを使用",
-  "generate_world": "新しい世界を生成",
+  "use_backups": "既存のワールド",
+  "generate_world": "新規作成",
   "menu_world_info": "ワールド情報",
   "menu_reconfigure": "サーバを再設定",
   "menu_system_info": "システム情報",
@@ -132,5 +133,10 @@
   "manual_setup_auth_code": "Auth code の入力を求められたら、次のコードを入力してください。",
   "cancel": "キャンセル",
   "add": "追加",
-  "share_config": "設定を共有"
+  "share_config": "設定を共有",
+  "value_not_set": "設定されていません",
+  "save": "保存",
+  "default_settings": "デフォルト設定",
+  "world_settings_label": "シード値: <{{seed}}>, ワールドのタイプ: {{levelType}}",
+  "value_count_label": "{{count}} 個の値"
 }

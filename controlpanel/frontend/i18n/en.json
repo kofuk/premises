@@ -63,6 +63,7 @@
   "config_machine_type": "Machine Type",
   "config_world_name": "World Name",
   "config_world_source": "World Source",
+  "config_game_extra": "Advanced Server Settings",
   "world_type_default": "Default",
   "world_type_superflat": "Superflat",
   "world_type_large_biomes": "Large Biomes",
@@ -81,8 +82,8 @@
   "world_name": "World Name",
   "world_name_error_invalid": "World name must consist of alphabet or numberic characters",
   "world_name_error_duplicate": "World with the same name already exists",
-  "use_backups": "Use backups",
-  "generate_world": "Generate a New World",
+  "use_backups": "Use Saved World",
+  "generate_world": "Create New",
   "menu_world_info": "World Information",
   "menu_reconfigure": "Reconfigure Server",
   "menu_system_info": "System Information",
@@ -132,5 +133,11 @@
   "manual_setup_auth_code": "The above command will ask you to type the auth code. Your auth code is",
   "cancel": "Cancel",
   "add": "Add",
-  "share_config": "Share configuration"
+  "share_config": "Share configuration",
+  "value_not_set": "Value not set",
+  "save": "Save",
+  "default_settings": "Default settings",
+  "world_settings_label": "Seed: <{{seed}}>, world type: {{levelType}}",
+  "value_count_label_one": "{{count}} value",
+  "value_count_label_other": "{{count}} values"
 }

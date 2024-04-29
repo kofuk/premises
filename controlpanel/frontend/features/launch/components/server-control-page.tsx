@@ -6,12 +6,11 @@ import {Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recha
 import {Info as InfoIcon, RestartAlt as RestartIcon, Stop as StopIcon, History as UndoIcon, Public as WorldIcon} from '@mui/icons-material';
 import {Box, Button, Card, Stack} from '@mui/material';
 
-import MenuContainer from './components/menu-container';
-import QuickUndo from './components/quickundo';
-import SystemInfo from './components/system-info';
-import WorldInfo from './components/world-info';
-
-import ReconfigureMenu from '@/features/launch/reconfigure-menu';
+import MenuContainer from './menu-container';
+import QuickUndo from './quickundo';
+import Reconfigure from './reconfigure';
+import SystemInfo from './system-info';
+import WorldInfo from './world-info';
 
 const ServerControlPane = () => {
   const [t] = useTranslation();
@@ -47,7 +46,7 @@ const ServerControlPane = () => {
           {
             title: t('menu_reconfigure'),
             icon: <RestartIcon />,
-            ui: <ReconfigureMenu />
+            ui: <Reconfigure />
           },
           {
             title: 'QuickUndo',

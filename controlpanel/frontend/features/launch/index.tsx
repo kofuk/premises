@@ -6,10 +6,10 @@ import {useTranslation} from 'react-i18next';
 import {Box} from '@mui/material';
 
 import {ConfigProvider} from './components/launch-config';
+import LaunchPage from './components/launch-page';
 import LoadingPage from './components/loading-page';
 import ManualSetupPage from './components/manual-setup-page';
-import LaunchPage from './server-config-pane';
-import ServerControlPane from './server-control-pane';
+import ServerControlPage from './components/server-control-page';
 
 import {useRunnerStatus} from '@/utils/runner-status';
 
@@ -30,7 +30,7 @@ const Launcher = () => {
       case PAGE_LOADING:
         return <LoadingPage />;
       case PAGE_RUNNING:
-        return <ServerControlPane />;
+        return <ServerControlPage />;
       case PAGE_MANUAL_SETUP:
         return <ManualSetupPage />;
       default:
