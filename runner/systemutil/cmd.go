@@ -30,7 +30,21 @@ func createLog() (io.Writer, string, error) {
 	}
 }
 
-func Cmd(path string, args []string, envs []string) error {
+type CmdOption func(cmd *exec.Cmd)
+
+func WithEnv(env string) CmdOption {
+	return func(cmd *exec.Cmd) {
+		cmd.Env = append(cmd.Env, env)
+	}
+}
+
+func WithWorkingDir(dir string) CmdOption {
+	return func(cmd *exec.Cmd) {
+		cmd.Dir = dir
+	}
+}
+
+func Cmd(path string, args []string, options ...CmdOption) error {
 	log, logPath, err := createLog()
 	if err != nil {
 		return err
@@ -44,7 +58,11 @@ func Cmd(path string, args []string, envs []string) error {
 	cmd := exec.Command(path, args...)
 	cmd.Stdout = log
 	cmd.Stderr = log
-	cmd.Env = append(cmd.Environ(), envs...)
+	cmd.Env = cmd.Environ()
+	for _, opt := range options {
+		opt(cmd)
+	}
+
 	if err := cmd.Run(); err != nil {
 		slog.Error("Command failed", slog.Any("error", err))
 		return err
@@ -52,11 +70,15 @@ func Cmd(path string, args []string, envs []string) error {
 	return nil
 }
 
-func CmdOutput(path string, args []string) (string, error) {
+func CmdOutput(path string, args []string, options ...CmdOption) (string, error) {
 	buf := new(strings.Builder)
 
 	cmd := exec.Command(path, args...)
 	cmd.Stdout = buf
+	for _, opt := range options {
+		opt(cmd)
+	}
+
 	if err := cmd.Run(); err != nil {
 		return "", err
 	}
@@ -64,9 +86,9 @@ func CmdOutput(path string, args []string) (string, error) {
 }
 
 func AptGet(args ...string) error {
-	if err := Cmd("apt-get", args, []string{"DEBIAN_FRONTEND=noninteractive"}); err == nil {
+	if err := Cmd("apt-get", args, WithEnv("DEBIAN_FRONTEND=noninteractive")); err == nil {
 		return nil
 	}
-	Cmd("dpkg", []string{"--configure", "-a"}, []string{"DEBIAN_FRONTEND=noninteractive"})
-	return Cmd("apt-get", args, []string{"DEBIAN_FRONTEND=noninteractive"})
+	Cmd("dpkg", []string{"--configure", "-a"}, WithEnv("DEBIAN_FRONTEND=noninteractive"))
+	return Cmd("apt-get", args, WithEnv("DEBIAN_FRONTEND=noninteractive"))
 }

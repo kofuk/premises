@@ -55,7 +55,7 @@ func removeSnapshots() {
 	}
 
 	if needsClean {
-		if err := systemutil.Cmd("btrfs", args, nil); err != nil {
+		if err := systemutil.Cmd("btrfs", args); err != nil {
 			slog.Error("Failed to remove snapshots", slog.Any("error", err))
 		}
 	}

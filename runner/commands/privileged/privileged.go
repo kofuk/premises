@@ -8,11 +8,11 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/kofuk/premises/runner/systemutil"
 )
 
 type RequestMsg struct {
@@ -55,9 +55,7 @@ func takeFsSnapshot(snapshotId string) (*SnapshotInfo, error) {
 	}
 
 	// Create read-only snapshot
-	cmd := exec.Command("btrfs", "subvolume", "snapshot", "-r", ".", snapshotInfo.Path)
-	cmd.Dir = gameDir
-	if err := cmd.Run(); err != nil {
+	if err := systemutil.Cmd("btrfs", []string{"subvolume", "snapshot", "-r", ".", snapshotInfo.Path}, systemutil.WithWorkingDir(gameDir)); err != nil {
 		return nil, err
 	}
 
@@ -71,15 +69,10 @@ func deleteFsSnapshot(id string) error {
 
 	gameDir := "/opt/premises/gamedata"
 
-	cmd := exec.Command("btrfs", "subvolume", "delete", "ss@"+id)
-	cmd.Dir = gameDir
-	if err := cmd.Run(); err != nil {
+	if err := systemutil.Cmd("btrfs", []string{"subvolume", "delete", "ss@" + id}, systemutil.WithWorkingDir(gameDir)); err != nil {
 		return err
 	}
-
-	cmd = exec.Command("btrfs", "balance", ".")
-	cmd.Dir = gameDir
-	if err := cmd.Run(); err != nil {
+	if err := systemutil.Cmd("btrfs", []string{"balance", "."}, systemutil.WithWorkingDir(gameDir)); err != nil {
 		return err
 	}
 

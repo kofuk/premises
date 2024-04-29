@@ -39,7 +39,7 @@ func isServerInitialized() bool {
 		}
 	}
 
-	if _, err := os.Stat("/opt/premises/gamedata"); os.IsNotExist(err) {
+	if _, err := os.Stat("/opt/premises/gamedata.img"); os.IsNotExist(err) {
 		return false
 	}
 
@@ -116,13 +116,13 @@ func (self *ServerSetup) initializeServer() {
 
 	if _, err := user.LookupId("1000"); err != nil {
 		slog.Info("Adding user")
-		systemutil.Cmd("useradd", []string{"-U", "-s", "/bin/bash", "-u", "1000", "premises"}, nil)
+		systemutil.Cmd("useradd", []string{"-U", "-s", "/bin/bash", "-u", "1000", "premises"})
 	}
 
 	if !isDevEnv() {
 		slog.Info("Enabling ufw")
-		systemutil.Cmd("systemctl", []string{"enable", "--now", "ufw.service"}, nil)
-		systemutil.Cmd("ufw", []string{"enable"}, nil)
+		systemutil.Cmd("systemctl", []string{"enable", "--now", "ufw.service"})
+		systemutil.Cmd("ufw", []string{"enable"})
 	}
 
 	if _, err := os.Stat("/opt/premises/gamedata.img"); os.IsNotExist(err) {
@@ -137,14 +137,14 @@ func (self *ServerSetup) initializeServer() {
 		}
 
 		slog.Info("Creating filesystem for gamedata.img")
-		systemutil.Cmd("mkfs.btrfs", []string{"/opt/premises/gamedata.img"}, nil)
+		systemutil.Cmd("mkfs.btrfs", []string{"/opt/premises/gamedata.img"})
 	}
 }
 
 func (self *ServerSetup) updateFirewallRules() {
-	systemutil.Cmd("ufw", []string{"allow", "25565/tcp"}, nil)
+	systemutil.Cmd("ufw", []string{"allow", "25565/tcp"})
 	// Old runner requires 8521 to be exposed. Now, it's not needed so we delete it here.
-	systemutil.Cmd("ufw", []string{"delete", "allow", "8521/tcp"}, nil)
+	systemutil.Cmd("ufw", []string{"delete", "allow", "8521/tcp"})
 }
 
 func (self *ServerSetup) installRequiredJavaVersion() {
@@ -184,7 +184,7 @@ func (self ServerSetup) Run() {
 	self.installRequiredJavaVersion()
 
 	slog.Info("Mounting gamedata.img")
-	systemutil.Cmd("mount", []string{"/opt/premises/gamedata.img", "/opt/premises/gamedata"}, nil)
+	systemutil.Cmd("mount", []string{"/opt/premises/gamedata.img", "/opt/premises/gamedata"})
 
 	slog.Info("Ensure data directory owned by execution user")
 	if err := fs.ChownRecursive("/opt/premises", 1000, 1000); err != nil {
