@@ -11,6 +11,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -685,6 +686,53 @@ func (h *Handler) handleApiWorldInfo(c echo.Context) error {
 	})
 }
 
+func (h *Handler) validateAndNormalizeConfig(config *web.PendingConfig) bool {
+	if config.MachineType == nil || !slices.Contains([]string{"2g", "4g", "8g", "16g", "32g", "64g"}, *config.MachineType) {
+		config.MachineType = nil
+		return false
+	}
+	if config.ServerVersion == nil || *config.ServerVersion == "" {
+		config.ServerVersion = nil
+		return false
+	}
+	if config.GuessVersion == nil {
+		config.GuessVersion = web.BoolP(false)
+	}
+	if config.WorldSource == nil {
+		return false
+	} else if !slices.Contains([]string{"backups", "new-world"}, *config.WorldSource) {
+		config.WorldSource = nil
+		return false
+	}
+	if config.WorldName == nil {
+		return false
+	} else if *config.WorldName == "" {
+		config.WorldName = nil
+		return false
+	}
+	if config.BackupGen == nil || *config.BackupGen == "" {
+		if *config.WorldSource == "new-world" {
+			config.BackupGen = nil
+		} else {
+			return false
+		}
+	}
+	if *config.WorldSource == "new-world" {
+		if config.LevelType != nil && !slices.Contains([]string{"default", "flat", "largeBiomes", "amplified", "buffet"}, *config.LevelType) {
+			config.LevelType = nil
+			return false
+		}
+		if config.Seed != nil && *config.Seed == "" {
+			config.Seed = nil
+		}
+	} else {
+		config.LevelType = nil
+		config.Seed = nil
+	}
+
+	return true
+}
+
 func (h *Handler) handleApiCreateConfig(c echo.Context) error {
 	var req web.CreateConfigReq
 	if err := c.Bind(&req); err != nil {
@@ -709,15 +757,20 @@ func (h *Handler) handleApiCreateConfig(c echo.Context) error {
 
 	config.ID = uuid.NewString()
 
+	isValid := h.validateAndNormalizeConfig(&config)
+
 	if err := h.KVS.Set(c.Request().Context(), fmt.Sprintf("pending-config:%s", config.ID), config, 24*7*time.Hour); err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
 	}
-	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.PendingConfig]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.ConfigAndValidity]{
 		Success: true,
-		Data:    config,
+		Data: web.ConfigAndValidity{
+			IsValid: isValid,
+			Config:  config,
+		},
 	})
 }
 
@@ -746,6 +799,8 @@ func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 		})
 	}
 
+	isValid := h.validateAndNormalizeConfig(&config)
+
 	if err := h.KVS.Set(c.Request().Context(), fmt.Sprintf("pending-config:%s", newConfig.ID), config, 7*24*time.Hour); err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
@@ -753,9 +808,12 @@ func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.PendingConfig]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.ConfigAndValidity]{
 		Success: true,
-		Data:    config,
+		Data: web.ConfigAndValidity{
+			IsValid: isValid,
+			Config:  config,
+		},
 	})
 }
 

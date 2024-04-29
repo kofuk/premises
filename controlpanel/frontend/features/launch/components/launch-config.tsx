@@ -7,6 +7,7 @@ import {Loading} from '@/components';
 type ConfigContextType = {
   config: PendingConfig;
   updateConfig: (config: PendingConfig) => Promise<void>;
+  isValid: boolean;
   launch: () => Promise<void>;
   reconfigure: () => Promise<void>;
 };
@@ -15,6 +16,7 @@ const ConfigContext = React.createContext<ConfigContextType>(null!);
 
 export const ConfigProvider = ({children}: {children: ReactNode}) => {
   const [remoteConfig, setRemoteConfig] = useState<PendingConfig | null>(null);
+  const [isValid, setIsValid] = useState(false);
   useEffect(() => {
     (async () => {
       let configShareId = null;
@@ -26,8 +28,9 @@ export const ConfigProvider = ({children}: {children: ReactNode}) => {
         configShareId = params.get('configShareId');
       }
 
-      const data = await createConfig({configShareId});
-      setRemoteConfig(data);
+      const {isValid, config: newConfig} = await createConfig({configShareId});
+      setRemoteConfig(newConfig);
+      setIsValid(isValid);
     })();
   }, []);
 
@@ -37,7 +40,9 @@ export const ConfigProvider = ({children}: {children: ReactNode}) => {
 
   const updateConfig = async (config: PendingConfig): Promise<void> => {
     config.id = remoteConfig!.id;
-    setRemoteConfig(await apiUpdateConfig(config));
+    const {isValid, config: newConfig} = await apiUpdateConfig(config);
+    setRemoteConfig(newConfig);
+    setIsValid(isValid);
   };
 
   const launch = async (): Promise<void> => {
@@ -51,6 +56,7 @@ export const ConfigProvider = ({children}: {children: ReactNode}) => {
   const value = {
     config: remoteConfig!,
     updateConfig,
+    isValid,
     launch,
     reconfigure
   };

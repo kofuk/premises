@@ -15,7 +15,7 @@ import {create as worldMenu} from './menus/world';
 const LaunchPage = () => {
   const [t] = useTranslation();
 
-  const {reconfigure} = useLaunchConfig();
+  const {reconfigure, isValid} = useLaunchConfig();
 
   const handleStart = () => {
     (async () => {
@@ -33,7 +33,7 @@ const LaunchPage = () => {
         items={[gameConfigMenu(), extraGameConfigMenu(), worldMenu(), newWorldSettingsMenu()]}
         menuFooter={
           <Box sx={{my: 1, textAlign: 'end'}}>
-            <Button onClick={handleStart} startIcon={<StartIcon />} sx={{mx: 1}} type="button" variant="contained">
+            <Button disabled={!isValid} onClick={handleStart} startIcon={<StartIcon />} sx={{mx: 1}} type="button" variant="contained">
               {t('relaunch_server')}
             </Button>
           </Box>

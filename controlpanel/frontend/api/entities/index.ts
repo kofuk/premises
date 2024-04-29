@@ -69,6 +69,11 @@ export type PendingConfig = {
   serverPropOverride?: {[key: string]: string};
 };
 
+export type ConfigAndValidity = {
+  isValid: boolean;
+  config: PendingConfig;
+};
+
 export type LaunchReq = {
   id: string;
 };

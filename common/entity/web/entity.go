@@ -67,6 +67,10 @@ func StringP(s string) *string {
 	return &s
 }
 
+func BoolP(b bool) *bool {
+	return &b
+}
+
 type PendingConfig struct {
 	ID                 string             `json:"id"`
 	MachineType        *string            `json:"machineType,omitempty"`
@@ -78,6 +82,11 @@ type PendingConfig struct {
 	LevelType          *string            `json:"levelType,omitempty"`
 	Seed               *string            `json:"seed,omitempty"`
 	ServerPropOverride *map[string]string `json:"serverPropOverride,omitempty"`
+}
+
+type ConfigAndValidity struct {
+	IsValid bool          `json:"isValid"`
+	Config  PendingConfig `json:"config"`
 }
 
 type LaunchReq struct {
