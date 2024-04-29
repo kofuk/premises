@@ -53,7 +53,7 @@
   "stop_server": "Stop",
   "config_choose_backup": "World",
   "config_configure_world": "Configure World",
-  "config_server_settings": "Server Settings",
+  "config_server_settings": "Server Version",
   "server_version": "Server Settings",
   "advanced_server_settings": "Advanced Settings",
   "additional_server_properties": "Add to server.properties",
