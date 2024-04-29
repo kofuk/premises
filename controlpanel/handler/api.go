@@ -694,7 +694,9 @@ func (h *Handler) handleApiCreateConfig(c echo.Context) error {
 		})
 	}
 
-	var config web.PendingConfig
+	config := web.PendingConfig{
+		MachineType: web.StringP("4g"),
+	}
 
 	if req.ConfigShareId != nil {
 		if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("pending-config:%s", *req.ConfigShareId), &config); err != nil {

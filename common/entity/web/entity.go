@@ -63,6 +63,10 @@ type WorldInfo struct {
 	Seed      string `json:"seed"`
 }
 
+func StringP(s string) *string {
+	return &s
+}
+
 type PendingConfig struct {
 	ID                 string             `json:"id"`
 	MachineType        *string            `json:"machineType,omitempty"`
