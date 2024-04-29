@@ -35,7 +35,7 @@ export const create = (): MenuItem => {
     {levelType: LevelType.Amplified, label: t('world_type_amplified')}
   ];
 
-  const label = config.seed ? t('world_settings_label', {seed: config.seed, levelType: config.levelType}) : t('default_settings');
+  const levelTypeName = levelTypes.find((e) => e.levelType === (config.levelType || 'default'))?.label;
 
   return {
     title: t('config_configure_world'),
@@ -64,7 +64,7 @@ export const create = (): MenuItem => {
         </FormControl>
       </Stack>
     ),
-    detail: label,
+    detail: t('world_settings_label', {seed: config.seed || '<empty>', levelType: levelTypeName}),
     variant: 'dialog',
     cancellable: true,
     disabled: config.worldSource !== WorldLocation.NewWorld,

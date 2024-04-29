@@ -136,8 +136,7 @@
   "share_config": "Share configuration",
   "value_not_set": "Value not set",
   "save": "Save",
-  "default_settings": "Default settings",
-  "world_settings_label": "Seed: <{{seed}}>, world type: {{levelType}}",
+  "world_settings_label": "Seed: {{seed}}, world type: {{levelType}}",
   "value_count_label_one": "{{count}} value",
   "value_count_label_other": "{{count}} values"
 }

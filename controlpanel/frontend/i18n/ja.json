@@ -136,7 +136,6 @@
   "share_config": "設定を共有",
   "value_not_set": "設定されていません",
   "save": "保存",
-  "default_settings": "デフォルト設定",
-  "world_settings_label": "シード値: <{{seed}}>, ワールドのタイプ: {{levelType}}",
+  "world_settings_label": "シード値: {{seed}}、 ワールドのタイプ: {{levelType}}",
   "value_count_label": "{{count}} 個の値"
 }
