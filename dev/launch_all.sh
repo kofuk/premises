@@ -13,5 +13,5 @@ exec tmux new-session -s "${name}" -n 'Middleware' "cd ./dev; docker compose up;
      new-window -n 'PostgreSQL Console' "cd ./dev; while true; do sleep 3; docker compose exec postgres psql -Upremises; done" \; \
      new-window -n 'ConoHa Emulator' "cd ./ostack-fake; go run .; bash" \; \
      new-window -n 'Frontend' "cd ./controlpanel; npm start; bash" \; \
-     new-window -n 'Backend' "cd ./controlpanel; sleep 3; go run . web; bash" \; \
-     new-window -n 'Proxy' "cd ./controlpanel; sleep 3; go run . proxy; bash" \;
+     new-window -n 'Backend' "export PREMISES_MODE=web; cd ./controlpanel; sleep 3; go run .; bash" \; \
+     new-window -n 'Proxy' "export PREMISES_MODE=proxy; cd ./controlpanel; sleep 3; go run .; bash" \;

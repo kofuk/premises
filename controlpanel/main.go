@@ -50,18 +50,13 @@ func main() {
 		Level:     logLevel,
 	})))
 
-	if len(os.Args) < 2 {
-		slog.Error("Mode not speficied")
-		os.Exit(1)
-	}
-
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		slog.Error("Failed to load config", slog.Any("error", err))
 		os.Exit(1)
 	}
 
-	mode := os.Args[1]
+	mode := os.Getenv("PREMISES_MODE")
 	switch mode {
 	case "web":
 		startWeb(cfg)
