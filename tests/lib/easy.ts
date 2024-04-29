@@ -35,7 +35,7 @@ export const createBaseConfig = async (
   cookie: string,
   worldName: string,
 ): Promise<string> => {
-  const { id } = await api("POST /api/config", cookie);
+  const { config: { id } } = await api("POST /api/config", cookie);
 
   await api("PUT /api/config", cookie, {
     id,
