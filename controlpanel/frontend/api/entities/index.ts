@@ -77,7 +77,3 @@ export type ConfigAndValidity = {
 export type LaunchReq = {
   id: string;
 };
-
-export type CreateConfigReq = {
-  configShareId: string | null;
-};

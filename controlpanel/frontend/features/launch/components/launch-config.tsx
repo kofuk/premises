@@ -19,16 +19,7 @@ export const ConfigProvider = ({children}: {children: ReactNode}) => {
   const [isValid, setIsValid] = useState(false);
   useEffect(() => {
     (async () => {
-      let configShareId = null;
-
-      const hash = location.hash;
-
-      if (hash && hash.length > 1) {
-        const params = new URLSearchParams(hash.substr(1));
-        configShareId = params.get('configShareId');
-      }
-
-      const {isValid, config: newConfig} = await createConfig({configShareId});
+      const {isValid, config: newConfig} = await createConfig();
       setRemoteConfig(newConfig);
       setIsValid(isValid);
     })();
