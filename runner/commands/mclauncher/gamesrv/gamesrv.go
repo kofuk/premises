@@ -95,6 +95,15 @@ func (srv *ServerInstance) Wait() {
 }
 
 func (srv *ServerInstance) Stop() {
+	if err := exterior.DispatchMessage("serverStatus", runner.Event{
+		Type: runner.EventStatus,
+		Status: &runner.StatusExtra{
+			EventCode: entity.EventStopping,
+		},
+	}); err != nil {
+		slog.Error("Unable to write send message", slog.Any("error", err))
+	}
+
 	if _, err := srv.Rcon.Execute("stop"); err != nil {
 		slog.Error("Failed to send stop command to server", slog.Any("error", err))
 	}
@@ -147,6 +156,15 @@ func (srv *ServerInstance) GetSeed() (string, error) {
 }
 
 func (srv *ServerInstance) QuickUndo(slot int) error {
+	if err := exterior.DispatchMessage("serverStatus", runner.Event{
+		Type: runner.EventStatus,
+		Status: &runner.StatusExtra{
+			EventCode: entity.EventStopping,
+		},
+	}); err != nil {
+		slog.Error("Unable to write send message", slog.Any("error", err))
+	}
+
 	srv.quickUndoBeforeRestart = true
 	srv.quickUndoSlot = slot
 
