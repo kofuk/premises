@@ -87,13 +87,13 @@ func downloadServerJarIfNeeded(config *runner.Config) error {
 	return nil
 }
 
-func Run(args []string) {
+func Run(args []string) int {
 	slog.Info("Starting Premises Runner", slog.String("revision", metadata.Revision))
 
 	config, err := config.Load()
 	if err != nil {
 		slog.Error("Failed to load config", slog.Any("error", err))
-		os.Exit(1)
+		return 1
 	}
 
 	srv := gamesrv.New()
@@ -240,7 +240,7 @@ out:
 	if srv.RestartRequested {
 		slog.Info("Restart...")
 
-		os.Exit(100)
+		return 100
 	} else if srv.Crashed && !srv.ShouldStop {
 		if err := exterior.SendMessage("serverStatus", runner.Event{
 			Type: runner.EventStatus,
@@ -259,4 +259,6 @@ out:
 			}
 		}
 	}
+
+	return 0
 }

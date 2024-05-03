@@ -180,7 +180,7 @@ func (srv *ServerInstance) QuickUndo(slot int) error {
 	return nil
 }
 
-func LaunchInteractiveRcon(args []string) {
+func LaunchInteractiveRcon(args []string) int {
 	rcon := NewRcon("127.0.0.1:25575", "x")
 
 	scanner := bufio.NewScanner(os.Stdin)
@@ -198,6 +198,8 @@ func LaunchInteractiveRcon(args []string) {
 	if err := scanner.Err(); err != nil {
 		slog.Info("Failed to scan stdin", slog.Any("error", err))
 	}
+
+	return 0
 }
 
 var (

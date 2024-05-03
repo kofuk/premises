@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -17,11 +18,13 @@ import (
 	"github.com/kofuk/premises/runner/commands/serversetup"
 	"github.com/kofuk/premises/runner/commands/systemstat"
 	"github.com/kofuk/premises/runner/metadata"
+	"github.com/kofuk/premises/runner/rpc"
+	"golang.org/x/sync/errgroup"
 )
 
 type Command struct {
 	Description  string
-	Run          func(args []string)
+	Run          func(args []string) int
 	RequiresRoot bool
 }
 
@@ -42,7 +45,7 @@ func (self App) printUsage() {
 	}
 }
 
-func (self App) Run(args []string) {
+func (self App) Run(args []string) int {
 	if len(args) < 2 {
 		self.printUsage()
 		os.Exit(1)
@@ -63,6 +66,15 @@ func (self App) Run(args []string) {
 	slog.SetDefault(slog.Default().With(slog.String("runner_command", cmdName)))
 	os.Setenv("PREMISES_RUNNER_COMMAND", cmdName)
 
+	rpc.InitializeDefaultServer("/opt/premises/rpc@" + cmdName)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	var eg errgroup.Group
+	eg.Go(func() error {
+		return rpc.DefaultServer.Start(ctx)
+	})
+
 	if cmd.RequiresRoot {
 		if syscall.Getuid() != 0 {
 			slog.Error("This command requires root")
@@ -70,7 +82,13 @@ func (self App) Run(args []string) {
 		}
 	}
 
-	cmd.Run(args[2:])
+	status := cmd.Run(args[2:])
+
+	// Stop background jobs and wait for them to finish
+	cancel()
+	eg.Wait()
+
+	return status
 }
 
 func main() {
@@ -112,9 +130,10 @@ func main() {
 			},
 			"setup": {
 				Description: "Setup server",
-				Run: func(args []string) {
+				Run: func(args []string) int {
 					serverSetup := serversetup.ServerSetup{}
 					serverSetup.Run()
+					return 0
 				},
 				RequiresRoot: true,
 			},
@@ -135,13 +154,14 @@ func main() {
 			},
 			"version": {
 				Description: "Print version (in machine-readable way) and exit",
-				Run: func(args []string) {
+				Run: func(args []string) int {
 					fmt.Println(metadata.Revision)
+					return 0
 				},
 				RequiresRoot: false,
 			},
 		},
 	}
 
-	app.Run(os.Args)
+	os.Exit(app.Run(os.Args))
 }

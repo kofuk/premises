@@ -3,9 +3,12 @@ package rpc
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"log/slog"
 	"net"
+	"os"
+	"sync"
 )
 
 type HandlerFunc func(req *AbstractRequest) (any, error)
@@ -13,6 +16,7 @@ type HandlerFunc func(req *AbstractRequest) (any, error)
 type Server struct {
 	path    string
 	methods map[string]HandlerFunc
+	m       sync.Mutex
 }
 
 func NewServer(path string) *Server {
@@ -22,7 +26,15 @@ func NewServer(path string) *Server {
 	}
 }
 
+var DefaultServer *Server
+
+func InitializeDefaultServer(path string) {
+	DefaultServer = NewServer(path)
+}
+
 func (s *Server) RegisterMethod(name string, fn HandlerFunc) {
+	s.m.Lock()
+	defer s.m.Unlock()
 	s.methods[name] = fn
 }
 
@@ -48,6 +60,13 @@ func writeResponse[T any](w io.Writer, data *Response[T]) error {
 	return nil
 }
 
+func (s *Server) getMethod(name string) (HandlerFunc, bool) {
+	s.m.Lock()
+	defer s.m.Unlock()
+	fn, ok := s.methods[name]
+	return fn, ok
+}
+
 func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 	if req.Version != "2.0" {
 		return &Response[any]{
@@ -60,7 +79,7 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 		}
 	}
 
-	method, ok := s.methods[req.Method]
+	method, ok := s.getMethod(req.Method)
 	if !ok {
 		return &Response[any]{
 			Version: "2.0",
@@ -110,10 +129,15 @@ func (s *Server) handleConnection(conn io.ReadWriteCloser) error {
 }
 
 func (s *Server) Start(ctx context.Context) error {
+	os.Remove(s.path)
+
 	l, err := net.Listen("unix", s.path)
 	if err != nil {
 		return err
 	}
+	defer os.Remove(s.path)
+
+	os.Chmod(s.path, 0666)
 
 	go func() {
 		<-ctx.Done()
@@ -123,6 +147,10 @@ func (s *Server) Start(ctx context.Context) error {
 	for {
 		conn, err := l.Accept()
 		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return nil
+			}
+
 			slog.Error(err.Error())
 			continue
 		}

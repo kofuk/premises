@@ -107,7 +107,7 @@ func copyLogData() {
 	}
 }
 
-func CleanUp(args []string) {
+func CleanUp(args []string) int {
 	notifyStatus(entity.EventClean)
 
 	slog.Info("Removing snaphots...")
@@ -130,4 +130,6 @@ func CleanUp(args []string) {
 	copyLogData()
 
 	notifyStatus(entity.EventShutdown)
+
+	return 0
 }

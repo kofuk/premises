@@ -7,7 +7,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -91,7 +90,7 @@ func sendMessage(w http.ResponseWriter, msg interface{}) error {
 	return nil
 }
 
-func Run(args []string) {
+func Run(args []string) int {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		slog.Info("Request received")
 
@@ -181,6 +180,8 @@ func Run(args []string) {
 
 	if err := http.ListenAndServe("localhost:8522", nil); err != nil {
 		slog.Error("Unable to listen :8522", slog.Any("error", err))
-		os.Exit(1)
+		return 1
 	}
+
+	return 0
 }

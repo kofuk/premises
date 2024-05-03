@@ -59,7 +59,7 @@ func toServerVersionName(name string) string {
 	return name
 }
 
-func Run(args []string) {
+func Run(args []string) int {
 	levelDatFile, err := os.Open(fs.LocateWorldData("world/level.dat"))
 	if err != nil {
 		slog.Error("Failed to open level.dat", slog.Any("error", err))
@@ -96,4 +96,6 @@ func Run(args []string) {
 	}
 
 	fmt.Println(string(json))
+
+	return 0
 }
