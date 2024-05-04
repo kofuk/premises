@@ -381,7 +381,7 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 			return err
 		}
 		for _, ent := range ents {
-			if ent.Name() == "server.properties" || ent.Name() == "world" {
+			if ent.Name() == "server.properties" || ent.Name() == "world" || strings.HasPrefix(ent.Name(), "ss@") {
 				continue
 			}
 			if err := os.RemoveAll(fs.DataPath(filepath.Join("gamedata", ent.Name()))); err != nil {

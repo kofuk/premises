@@ -150,14 +150,12 @@ func (self *Client) GetObject(ctx context.Context, bucket, key string) (*Object,
 	}, nil
 }
 
-func (self *Client) PutObject(ctx context.Context, bucket, key string, body io.Reader, size int64) error {
+func (self *Client) PutObject(ctx context.Context, bucket, key string, body io.ReadSeeker, size int64) error {
 	if _, err := self.s3Client.PutObject(context.Background(), &s3.PutObjectInput{
-		Bucket:        &bucket,
-		Key:           &key,
-		Body:          body,
-		ContentLength: &size,
-	}, s3.WithAPIOptions(v4Signer.SwapComputePayloadSHA256ForUnsignedPayloadMiddleware),
-	); err != nil {
+		Bucket: &bucket,
+		Key:    &key,
+		Body:   body,
+	}); err != nil {
 		return err
 	}
 

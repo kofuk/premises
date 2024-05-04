@@ -20,7 +20,6 @@ import (
 	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/common/s3wrap"
-	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/util"
 	"github.com/ulikunitz/xz"
@@ -62,44 +61,6 @@ func (self *BackupService) DownloadWorldData(config *runner.Config) error {
 	}
 	defer resp.Body.Close()
 
-	size := resp.Size
-	if size < 1 {
-		size = 1
-	}
-
-	progress := make(chan int)
-	defer close(progress)
-	go func() {
-		ticker := time.NewTicker(time.Second)
-		showNext := true
-		var total int64
-		for {
-			select {
-			case <-ticker.C:
-				showNext = true
-			case chunkSize, ok := <-progress:
-				if !ok {
-					return
-				}
-
-				total += int64(chunkSize)
-
-				if showNext {
-					percentage := total * 100 / size
-					exterior.SendMessage("serverStatus", runner.Event{
-						Type: runner.EventStatus,
-						Status: &runner.StatusExtra{
-							EventCode: entity.EventWorldDownload,
-							Progress:  int(percentage),
-						},
-					})
-
-					showNext = false
-				}
-			}
-		}
-	}()
-
 	ext := getFileExtension(config.World.GenerationId)
 	file, err := os.Create(fs.DataPath("world" + ext))
 	if err != nil {
@@ -107,7 +68,8 @@ func (self *BackupService) DownloadWorldData(config *runner.Config) error {
 	}
 	defer file.Close()
 
-	if _, err := io.Copy(&util.ProgressWriter{W: file, Ch: progress}, resp.Body); err != nil {
+	writer := util.NewProgressWriter(file, entity.EventWorldDownload, int(resp.Size))
+	if _, err := io.Copy(writer, resp.Body); err != nil {
 		return err
 	}
 	slog.Info("Downloading world archive...Done")
@@ -158,50 +120,9 @@ func (self *BackupService) doUploadWorldData(config *runner.Config) error {
 		return err
 	}
 
-	size := fileInfo.Size()
-	if size < 1 {
-		size = 1
-	}
-	progress := make(chan int)
-	defer close(progress)
-
-	go func() {
-		ticker := time.NewTicker(time.Second)
-		showNext := true
-		var prevPercentage int64
-		var totalUploaded int64
-		for {
-			select {
-			case <-ticker.C:
-				showNext = true
-			case chunkSize, ok := <-progress:
-				if !ok {
-					return
-				}
-
-				totalUploaded += int64(chunkSize)
-
-				if showNext {
-					percentage := totalUploaded * 100 / size
-					if percentage != prevPercentage {
-						exterior.SendMessage("serverStatus", runner.Event{
-							Type: runner.EventStatus,
-							Status: &runner.StatusExtra{
-								EventCode: entity.EventWorldUpload,
-								Progress:  int(percentage),
-							},
-						})
-					}
-					prevPercentage = percentage
-
-					showNext = false
-				}
-			}
-		}
-	}()
-
 	key := fmt.Sprintf("%s/%s", config.World.Name, makeBackupName())
-	if err := self.s3.PutObject(context.Background(), self.bucket, key, &util.ProgressReader{R: file, Ch: progress}, fileInfo.Size()); err != nil {
+	reader := util.NewProgressReader(file, entity.EventWorldUpload, int(fileInfo.Size())).ToSeekable()
+	if err := self.s3.PutObject(context.Background(), self.bucket, key, reader, fileInfo.Size()); err != nil {
 		return fmt.Errorf("Unable to upload %s: %w", key, err)
 	}
 	slog.Info("Uploading world archive...Done")

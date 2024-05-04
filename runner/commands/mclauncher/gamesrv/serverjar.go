@@ -11,13 +11,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"time"
 
 	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
 	lm "github.com/kofuk/premises/common/mc/launchermeta"
 	"github.com/kofuk/premises/runner/commands/levelinspect"
-	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/util"
 )
@@ -120,47 +118,7 @@ func downloadServerJar(url, savePath string) error {
 	}
 	defer outFile.Close()
 
-	size := resp.ContentLength
-	progress := make(chan int)
-	reader := &util.ProgressReader{
-		R:  resp.Body,
-		Ch: progress,
-	}
-
-	go func() {
-		ticker := time.NewTicker(time.Second)
-		showNext := true
-		var prevPercentage int64
-		var totalUploaded int64
-		for {
-			select {
-			case <-ticker.C:
-				showNext = true
-			case chunkSize, ok := <-progress:
-				if !ok {
-					return
-				}
-
-				totalUploaded += int64(chunkSize)
-
-				if showNext && size > 0 {
-					percentage := totalUploaded * 100 / size
-					if percentage != prevPercentage {
-						exterior.SendMessage("serverStatus", runner.Event{
-							Type: runner.EventStatus,
-							Status: &runner.StatusExtra{
-								EventCode: entity.EventGameDownload,
-								Progress:  int(percentage),
-							},
-						})
-					}
-					prevPercentage = percentage
-
-					showNext = false
-				}
-			}
-		}
-	}()
+	reader := util.NewProgressReader(resp.Body, entity.EventGameDownload, int(resp.ContentLength))
 
 	if _, err := io.Copy(outFile, reader); err != nil {
 		return err
