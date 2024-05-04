@@ -135,40 +135,6 @@ func (self *BackupService) UploadWorldData(config *runner.Config) error {
 	return self.doUploadWorldData(config)
 }
 
-func SaveLastWorldHash(config *runner.Config, hash string) error {
-	file, err := os.Create(fs.LocateDataFile("last_world"))
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	if _, err := file.WriteString(hash); err != nil {
-		return err
-	}
-	return nil
-}
-
-func RemoveLastWorldHash(config *runner.Config) error {
-	if err := os.Remove(fs.LocateDataFile("last_world")); err != nil {
-		return err
-	}
-	return nil
-}
-
-func GetLastWorldHash(config *runner.Config) (string, bool, error) {
-	file, err := os.Open(fs.LocateDataFile("last_world"))
-	if err != nil && os.IsNotExist(err) {
-		return "", false, nil
-	} else if err != nil {
-		return "", false, err
-	}
-	defer file.Close()
-	data, err := io.ReadAll(file)
-	if err != nil {
-		return "", false, err
-	}
-	return string(data), true, nil
-}
-
 func getFileExtension(name string) string {
 	index := strings.IndexRune(name, '.')
 	if index < 0 {
@@ -242,10 +208,6 @@ func (self *BackupService) doUploadWorldData(config *runner.Config) error {
 
 	if err := os.Remove(archivePath); err != nil {
 		return err
-	}
-
-	if err := SaveLastWorldHash(config, key); err != nil {
-		slog.Warn("Error saving last world hash", slog.Any("error", err))
 	}
 
 	return nil

@@ -19,6 +19,8 @@ import (
 	"github.com/kofuk/premises/runner/commands/mclauncher/serverprop"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/rpc"
+	"github.com/kofuk/premises/runner/rpc/types"
 	"github.com/kofuk/premises/runner/systemutil"
 )
 
@@ -366,11 +368,11 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 		return err
 	}
 
-	ver, exists, err := GetLastServerVersion()
+	ver, err := GetLastServerVersion()
 	if err != nil {
 		return err
 	}
-	if !exists || ver != config.Server.Version {
+	if ver != config.Server.Version {
 		slog.Info("Different version of server selected. cleaning up...", slog.String("old", ver), slog.String("new", config.Server.Version))
 
 		ents, err := os.ReadDir(fs.LocateWorldData(""))
@@ -378,7 +380,7 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 			return err
 		}
 		for _, ent := range ents {
-			if ent.Name() == "server.properties" || ent.Name() == "world" || ent.Name() == "world_nether" || ent.Name() == "world_the_end" {
+			if ent.Name() == "server.properties" || ent.Name() == "world" {
 				continue
 			}
 			if err := os.RemoveAll(fs.LocateWorldData(ent.Name())); err != nil {
@@ -474,35 +476,25 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 }
 
 func SaveLastServerVersion(config *runner.Config) error {
-	file, err := os.Create(fs.LocateDataFile("last_version"))
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	if _, err := file.WriteString(config.Server.Version); err != nil {
-		return err
-	}
-	return nil
+	return rpc.ToExteriord.Call("state/save", types.StateSetInput{
+		Key:   "lastVersion",
+		Value: config.Server.Version,
+	}, nil)
 }
 
 func RemoveLastServerVersion() error {
-	if err := os.Remove(fs.LocateDataFile("last_version")); err != nil {
-		return err
-	}
-	return nil
+	return rpc.ToExteriord.Call("state/remove", types.StateRemoveInput{
+		Key: "lastVersion",
+	}, nil)
 }
 
-func GetLastServerVersion() (string, bool, error) {
-	file, err := os.Open(fs.LocateDataFile("last_version"))
-	if err != nil && os.IsNotExist(err) {
-		return "", false, nil
-	} else if err != nil {
-		return "", false, err
+func GetLastServerVersion() (string, error) {
+	var version string
+	if err := rpc.ToExteriord.Call("state/get", types.StateGetInput{
+		Key: "lastVersion",
+	}, &version); err != nil {
+		return "", err
 	}
-	defer file.Close()
-	data, err := io.ReadAll(file)
-	if err != nil {
-		return "", false, err
-	}
-	return string(data), true, nil
+
+	return version, nil
 }

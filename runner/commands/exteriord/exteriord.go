@@ -28,7 +28,9 @@ func Run(args []string) int {
 	ob := outbound.NewServer(config.ControlPanel, config.AuthKey, msgRouter)
 	go ob.Start()
 
-	rpcHandler := NewRPCHandler(rpc.DefaultServer, msgRouter)
+	stateStore := NewStateStore(NewLocalStorageStateBackend("/opt/premises/states.json"))
+
+	rpcHandler := NewRPCHandler(rpc.DefaultServer, msgRouter, stateStore)
 	rpcHandler.Bind()
 
 	e := exterior.New()

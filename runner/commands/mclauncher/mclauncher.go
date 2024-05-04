@@ -15,7 +15,40 @@ import (
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/metadata"
 	"github.com/kofuk/premises/runner/rpc"
+	"github.com/kofuk/premises/runner/rpc/types"
 )
+
+func getLastWorld() (string, error) {
+	var value string
+	if err := rpc.ToExteriord.Call("state/get", types.StateGetInput{
+		Key: "lastWorld",
+	}, &value); err != nil {
+		return "", err
+	}
+
+	return value, nil
+}
+
+func clearLastWorld() error {
+	if err := rpc.ToExteriord.Call("state/remove", types.StateRemoveInput{
+		Key: "lastWorld",
+	}, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func storeLastWorld(lastWorld string) error {
+	if err := rpc.ToExteriord.Call("state/save", types.StateSetInput{
+		Key:   "lastWorld",
+		Value: lastWorld,
+	}, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func downloadWorldIfNeeded(config *runner.Config) error {
 	if config.World.ShouldGenerate {
@@ -36,13 +69,13 @@ func downloadWorldIfNeeded(config *runner.Config) error {
 		config.World.GenerationId = genId
 	}
 
-	lastWorldHash, exists, err := backup.GetLastWorldHash(config)
+	lastWorld, err := getLastWorld()
 	if err != nil {
 		return err
 	}
 
-	if !exists || config.World.GenerationId != lastWorldHash {
-		if err := backup.RemoveLastWorldHash(config); err != nil {
+	if lastWorld == "" || config.World.GenerationId != lastWorld {
+		if err := clearLastWorld(); err != nil {
 			slog.Error("Failed to remove last world hash", slog.Any("error", err))
 		}
 
@@ -212,6 +245,11 @@ func Run(args []string) int {
 		})
 		goto out
 	}
+
+	if err := storeLastWorld(config.World.GenerationId); err != nil {
+		slog.Error("Unable to store last world key", slog.Any("error", err))
+	}
+
 	if err := backup.New(config.AWS.AccessKey, config.AWS.SecretKey, config.S3.Endpoint, config.S3.Bucket).RemoveOldBackups(config); err != nil {
 		slog.Error("Unable to delete outdated backups", slog.Any("error", err))
 	}
