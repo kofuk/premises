@@ -163,7 +163,9 @@ func (self ServerSetup) Run() {
 	self.notifyStatus()
 
 	slog.Info("Creating required directories (if not exists)")
-	os.MkdirAll(fs.DataPath("servers.d/../gamedata/../tmp"), 0755)
+	for _, dir := range []string{"servers.d", "gamedata", "tmp"} {
+		os.MkdirAll(fs.DataPath(dir), 0755)
+	}
 
 	slog.Info("Updating package indices")
 	systemutil.AptGet("update", "-y")
