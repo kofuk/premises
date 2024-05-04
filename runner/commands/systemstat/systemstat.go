@@ -33,9 +33,7 @@ func Run(args []string) int {
 				Time:     time.Now().UnixMilli(),
 			},
 		}
-		if err := exterior.SendMessage("systemStat", data); err != nil {
-			slog.Error("Unable to write system stat", slog.Any("error", err))
-		}
+		exterior.SendMessage("systemStat", data)
 	}
 
 	return 1

@@ -73,30 +73,26 @@ func (h *RPCHandler) HandleSnapshotCreate(req *rpc.AbstractRequest) (any, error)
 	}, nil); err != nil {
 		slog.Error("Failed to create snapshot", slog.Any("error", err))
 
-		if err := exterior.DispatchMessage("serverStatus", runner.Event{
+		exterior.DispatchMessage("serverStatus", runner.Event{
 			Type: runner.EventInfo,
 			Info: &runner.InfoExtra{
 				InfoCode: entity.InfoSnapshotError,
 				Actor:    input.Actor,
 				IsError:  true,
 			},
-		}); err != nil {
-			slog.Error("Unable to write send message", slog.Any("error", err))
-		}
+		})
 
 		return nil, err
 	}
 
-	if err := exterior.DispatchMessage("serverStatus", runner.Event{
+	exterior.DispatchMessage("serverStatus", runner.Event{
 		Type: runner.EventInfo,
 		Info: &runner.InfoExtra{
 			InfoCode: entity.InfoSnapshotDone,
 			Actor:    input.Actor,
 			IsError:  false,
 		},
-	}); err != nil {
-		slog.Error("Unable to write send message", slog.Any("error", err))
-	}
+	})
 
 	return "ok", nil
 }
@@ -109,16 +105,14 @@ func (h *RPCHandler) HandleSnapshotUndo(req *rpc.AbstractRequest) (any, error) {
 
 	go func() {
 		if _, err := os.Stat(filepath.Join(fs.LocateWorldData(fmt.Sprintf("ss@quick%d/world", input.Slot)))); err != nil {
-			if err := exterior.DispatchMessage("serverStatus", runner.Event{
+			exterior.DispatchMessage("serverStatus", runner.Event{
 				Type: runner.EventInfo,
 				Info: &runner.InfoExtra{
 					InfoCode: entity.InfoNoSnapshot,
 					Actor:    input.Actor,
 					IsError:  true,
 				},
-			}); err != nil {
-				slog.Error("Unable to write send message", slog.Any("error", err))
-			}
+			})
 			return
 		}
 

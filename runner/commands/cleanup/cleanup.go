@@ -68,14 +68,12 @@ func unmountData() {
 }
 
 func notifyStatus(eventCode entity.EventCode) {
-	if err := exterior.SendMessage("serverStatus", runner.Event{
+	exterior.SendMessage("serverStatus", runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: eventCode,
 		},
-	}); err != nil {
-		slog.Error("Unable to write send message", slog.Any("error", err))
-	}
+	})
 }
 
 func copyLogData() {

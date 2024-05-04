@@ -95,14 +95,12 @@ func (srv *ServerInstance) Wait() {
 }
 
 func (srv *ServerInstance) Stop() {
-	if err := exterior.DispatchMessage("serverStatus", runner.Event{
+	exterior.DispatchMessage("serverStatus", runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventStopping,
 		},
-	}); err != nil {
-		slog.Error("Unable to write send message", slog.Any("error", err))
-	}
+	})
 
 	if _, err := srv.Rcon.Execute("stop"); err != nil {
 		slog.Error("Failed to send stop command to server", slog.Any("error", err))
@@ -156,14 +154,12 @@ func (srv *ServerInstance) GetSeed() (string, error) {
 }
 
 func (srv *ServerInstance) QuickUndo(slot int) error {
-	if err := exterior.DispatchMessage("serverStatus", runner.Event{
+	exterior.DispatchMessage("serverStatus", runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventStopping,
 		},
-	}); err != nil {
-		slog.Error("Unable to write send message", slog.Any("error", err))
-	}
+	})
 
 	srv.quickUndoBeforeRestart = true
 	srv.quickUndoSlot = slot
@@ -222,12 +218,10 @@ func SendStartedEvent(config *runner.Config, srv *ServerInstance) {
 	}
 	data.World.Seed = seed
 
-	if err := exterior.SendMessage("serverStatus", runner.Event{
+	exterior.SendMessage("serverStatus", runner.Event{
 		Type:    runner.EventStarted,
 		Started: data,
-	}); err != nil {
-		slog.Error("Unable to write send message", slog.Any("error", err))
-	}
+	})
 }
 
 func MonitorServer(config *runner.Config, srv *ServerInstance, stdout io.ReadCloser) error {
@@ -244,14 +238,12 @@ func MonitorServer(config *runner.Config, srv *ServerInstance, stdout io.ReadClo
 		}
 		slog.Info("Log from Minecraft", slog.String("content", string(line)))
 		if serverLoadingRegexp.Match(line) {
-			if err := exterior.SendMessage("serverStatus", runner.Event{
+			exterior.SendMessage("serverStatus", runner.Event{
 				Type: runner.EventStatus,
 				Status: &runner.StatusExtra{
 					EventCode: entity.EventLoading,
 				},
-			}); err != nil {
-				slog.Error("Unable to write send message", slog.Any("error", err))
-			}
+			})
 		} else if serverLoadingProgressRegexp.Match(line) {
 			matches := serverLoadingProgressRegexp.FindSubmatch(line)
 			if matches == nil {
@@ -259,24 +251,20 @@ func MonitorServer(config *runner.Config, srv *ServerInstance, stdout io.ReadClo
 			}
 			progress, _ := strconv.Atoi(string(matches[1]))
 			progress %= 101
-			if err := exterior.SendMessage("serverStatus", runner.Event{
+			exterior.SendMessage("serverStatus", runner.Event{
 				Type: runner.EventStatus,
 				Status: &runner.StatusExtra{
 					EventCode: entity.EventLoading,
 					Progress:  progress,
 				},
-			}); err != nil {
-				slog.Error("Unable to write send message", slog.Any("error", err))
-			}
+			})
 		} else if serverLoadedRegexp.Match(line) {
-			if err := exterior.SendMessage("serverStatus", runner.Event{
+			exterior.SendMessage("serverStatus", runner.Event{
 				Type: runner.EventStatus,
 				Status: &runner.StatusExtra{
 					EventCode: entity.EventRunning,
 				},
-			}); err != nil {
-				slog.Error("Unable to write send message", slog.Any("error", err))
-			}
+			})
 
 			go SendStartedEvent(config, srv)
 
@@ -284,14 +272,12 @@ func MonitorServer(config *runner.Config, srv *ServerInstance, stdout io.ReadClo
 				slog.Error("Error saving last server versoin", slog.Any("error", err))
 			}
 		} else if serverStoppingRegexp.Match(line) {
-			if err := exterior.SendMessage("serverStatus", runner.Event{
+			exterior.SendMessage("serverStatus", runner.Event{
 				Type: runner.EventStatus,
 				Status: &runner.StatusExtra{
 					EventCode: entity.EventStopping,
 				},
-			}); err != nil {
-				slog.Error("Unable to write send message", slog.Any("error", err))
-			}
+			})
 		}
 	}
 }

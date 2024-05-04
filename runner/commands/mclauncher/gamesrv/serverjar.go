@@ -146,15 +146,13 @@ func downloadServerJar(url, savePath string) error {
 				if showNext && size > 0 {
 					percentage := totalUploaded * 100 / size
 					if percentage != prevPercentage {
-						if err := exterior.SendMessage("serverStatus", runner.Event{
+						exterior.SendMessage("serverStatus", runner.Event{
 							Type: runner.EventStatus,
 							Status: &runner.StatusExtra{
 								EventCode: entity.EventGameDownload,
 								Progress:  int(percentage),
 							},
-						}); err != nil {
-							slog.Error("Unable to write server status", slog.Any("error", err))
-						}
+						})
 					}
 					prevPercentage = percentage
 

@@ -86,15 +86,13 @@ func (self *BackupService) DownloadWorldData(config *runner.Config) error {
 
 				if showNext {
 					percentage := total * 100 / size
-					if err := exterior.SendMessage("serverStatus", runner.Event{
+					exterior.SendMessage("serverStatus", runner.Event{
 						Type: runner.EventStatus,
 						Status: &runner.StatusExtra{
 							EventCode: entity.EventWorldDownload,
 							Progress:  int(percentage),
 						},
-					}); err != nil {
-						slog.Error("Unable to write server status", slog.Any("error", err))
-					}
+					})
 
 					showNext = false
 				}
@@ -220,15 +218,13 @@ func (self *BackupService) doUploadWorldData(config *runner.Config) error {
 				if showNext {
 					percentage := totalUploaded * 100 / size
 					if percentage != prevPercentage {
-						if err := exterior.SendMessage("serverStatus", runner.Event{
+						exterior.SendMessage("serverStatus", runner.Event{
 							Type: runner.EventStatus,
 							Status: &runner.StatusExtra{
 								EventCode: entity.EventWorldUpload,
 								Progress:  int(percentage),
 							},
-						}); err != nil {
-							slog.Error("Unable to write server status", slog.Any("error", err))
-						}
+						})
 					}
 					prevPercentage = percentage
 

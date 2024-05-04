@@ -27,11 +27,15 @@ func sendMessage(msgType string, userData any, dispatch bool) error {
 }
 
 // Send status message
-func SendMessage(msgType string, userData any) error {
-	return sendMessage(msgType, userData, false)
+func SendMessage(msgType string, userData any) {
+	if err := sendMessage(msgType, userData, false); err != nil {
+		slog.Error("Unable to send message", slog.Any("error", err))
+	}
 }
 
 // Same as `SendMessage`, but flushes buffer immediately.
-func DispatchMessage(msgType string, userData any) error {
-	return sendMessage(msgType, userData, true)
+func DispatchMessage(msgType string, userData any) {
+	if err := sendMessage(msgType, userData, true); err != nil {
+		slog.Error("Unable to send message", slog.Any("error", err))
+	}
 }

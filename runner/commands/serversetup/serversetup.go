@@ -94,20 +94,16 @@ func (self *ServerSetup) sendServerHello() {
 		slog.Error("Failed to get IP addresses for network interface", slog.Any("error", err))
 	}
 
-	if err := exterior.DispatchMessage("serverStatus", eventData); err != nil {
-		slog.Error("Unable to write server hello", slog.Any("error", err))
-	}
+	exterior.DispatchMessage("serverStatus", eventData)
 }
 
 func (self *ServerSetup) notifyStatus() {
-	if err := exterior.SendMessage("serverStatus", runner.Event{
+	exterior.SendMessage("serverStatus", runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventSysInit,
 		},
-	}); err != nil {
-		slog.Error("Unable to write server status", slog.Any("error", err))
-	}
+	})
 }
 
 func (self *ServerSetup) initializeServer() {
