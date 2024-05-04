@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/rpc/types"
 	"github.com/kofuk/premises/runner/systemutil"
@@ -19,21 +19,13 @@ type SnapshotInfo struct {
 }
 
 func takeFsSnapshot(snapshotId string) (*SnapshotInfo, error) {
-	if snapshotId == "" {
-		id, err := uuid.NewUUID()
-		if err != nil {
-			return nil, err
-		}
-		snapshotId = id.String()
-	}
-
 	gameDir := "/opt/premises/gamedata"
 
 	var snapshotInfo SnapshotInfo
 	snapshotInfo.ID = snapshotId
 	snapshotInfo.Path = filepath.Join(gameDir, "ss@"+snapshotId)
 
-	if snapshotId != "" {
+	if _, err := os.Stat(snapshotInfo.Path); err != nil {
 		if err := deleteFsSnapshot(snapshotId); err != nil {
 			slog.Error("Failed to remove old snapshot (doesn't the snapshot exist?)", slog.Any("error", err))
 		}
