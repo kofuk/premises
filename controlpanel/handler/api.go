@@ -541,8 +541,18 @@ func (h *Handler) handleApiReconfigure(c echo.Context) error {
 		})
 	}
 
+	session, err := session.Get("session", c)
+	if err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	userID := session.Values["user_id"].(uint)
+
 	var config web.PendingConfig
-	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("pending-config:%s", req.ID), &config); err != nil {
+	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("pending-config:%d", userID), &config); err != nil {
 		slog.Error("Failed to get pending config", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
