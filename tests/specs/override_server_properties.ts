@@ -1,11 +1,7 @@
 import { assertEquals } from "https://deno.land/std@0.83.0/testing/asserts.ts";
 
 import api, { login } from "../lib/api.ts";
-import {
-  createBaseConfig,
-  stopServer,
-  waitServerLaunched,
-} from "../lib/easy.ts";
+import { initConfig, stopServer, waitServerLaunched } from "../lib/easy.ts";
 import { usingFakeMinecraftServer } from "../lib/env.ts";
 import { getState } from "../lib/mcproto.ts";
 
@@ -15,15 +11,14 @@ const cookie = await login("user1", "password1");
 const worldName = `test-${Date.now()}`;
 
 console.log("Launch server");
-const id = await createBaseConfig(cookie, worldName);
+await initConfig(cookie, worldName);
 
 await api("PUT /api/config", cookie, {
-  id,
   serverPropOverride: {
-    "initial-enabled-packs": "vanilla,update_1_21,bundle",
+    "initial-enabled-packs": "vanilla,update_1_21",
   },
 });
-await api("POST /api/launch", cookie, { id });
+await api("POST /api/launch", cookie);
 
 await waitServerLaunched(cookie);
 
@@ -35,7 +30,7 @@ if (usingFakeMinecraftServer()) {
   const state = await getState();
   assertEquals(
     state.serverState!.serverProps["initial-enabled-packs"],
-    "vanilla,update_1_21,bundle",
+    "vanilla,update_1_21",
   );
 }
 
