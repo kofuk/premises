@@ -57,7 +57,6 @@ export type SnapshotConfiguration = {
 };
 
 export type PendingConfig = {
-  id?: string;
   machineType?: string;
   serverVersion?: string;
   guessServerVersion?: boolean;
@@ -72,8 +71,4 @@ export type PendingConfig = {
 export type ConfigAndValidity = {
   isValid: boolean;
   config: PendingConfig;
-};
-
-export type LaunchReq = {
-  id: string;
 };

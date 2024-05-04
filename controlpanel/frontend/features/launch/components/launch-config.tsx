@@ -30,18 +30,17 @@ export const ConfigProvider = ({children}: {children: ReactNode}) => {
   }
 
   const updateConfig = async (config: PendingConfig): Promise<void> => {
-    config.id = remoteConfig!.id;
     const {isValid, config: newConfig} = await apiUpdateConfig(config);
     setRemoteConfig(newConfig);
     setIsValid(isValid);
   };
 
   const launch = async (): Promise<void> => {
-    await apiLaunch({id: remoteConfig!.id!});
+    await apiLaunch();
   };
 
   const reconfigure = async (): Promise<void> => {
-    await apiReconfigure({id: remoteConfig!.id!});
+    await apiReconfigure();
   };
 
   const value = {

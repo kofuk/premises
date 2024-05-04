@@ -4,7 +4,6 @@ import useSWRImmutable from 'swr/immutable';
 
 import {
   ConfigAndValidity,
-  LaunchReq,
   MCVersion,
   PasswordCredential,
   PendingConfig,
@@ -58,8 +57,8 @@ export const takeQuickSnapshot = declareApi<SnapshotConfiguration, null>('/api/q
 export const undoQuickSnapshot = declareApi<SnapshotConfiguration, null>('/api/quickundo/undo', 'post');
 export const createConfig = declareApi<null, ConfigAndValidity>('/api/config', 'post');
 export const updateConfig = declareApi<PendingConfig, ConfigAndValidity>('/api/config', 'put');
-export const launch = declareApi<LaunchReq, null>('/api/launch', 'post');
-export const reconfigure = declareApi<LaunchReq, null>('/api/reconfigure', 'post');
+export const launch = declareApi<null, null>('/api/launch', 'post');
+export const reconfigure = declareApi<null, null>('/api/reconfigure', 'post');
 
 export type ImmutableUseResponse<T> = {
   data: T | undefined;

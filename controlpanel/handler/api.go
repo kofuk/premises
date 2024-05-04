@@ -18,7 +18,6 @@ import (
 
 	"dario.cat/mergo"
 	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
 	"github.com/gorilla/securecookie"
 	"github.com/kofuk/premises/common/db/model"
 	"github.com/kofuk/premises/common/entity"
@@ -455,15 +454,6 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 }
 
 func (h *Handler) handleApiLaunch(c echo.Context) error {
-	var req web.LaunchReq
-	if err := c.Bind(&req); err != nil {
-		slog.Error("Failed to parse request", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrBadRequest,
-		})
-	}
-
 	session, err := session.Get("session", c)
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -532,15 +522,6 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 }
 
 func (h *Handler) handleApiReconfigure(c echo.Context) error {
-	var req web.LaunchReq
-	if err := c.Bind(&req); err != nil {
-		slog.Error("Failed to parse request", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrBadRequest,
-		})
-	}
-
 	session, err := session.Get("session", c)
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -768,7 +749,6 @@ func (h *Handler) handleApiCreateConfig(c echo.Context) error {
 
 	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("pending-config:%d", userID), &config); err != nil {
 		config = web.PendingConfig{
-			ID:          uuid.NewString(),
 			MachineType: web.StringP("4g"),
 		}
 	}

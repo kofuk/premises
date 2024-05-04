@@ -31,14 +31,12 @@ export const waitServerLaunched = async (cookie: string) => {
   }
 };
 
-export const createBaseConfig = async (
+export const initConfig = async (
   cookie: string,
   worldName: string,
-): Promise<string> => {
-  const { config: { id } } = await api("POST /api/config", cookie);
-
+): Promise<void> => {
+  await api("POST /api/config", cookie);
   await api("PUT /api/config", cookie, {
-    id,
     machineType: "2g",
     serverVersion: "1.20.1",
     guessServerVersion: true,
@@ -46,16 +44,14 @@ export const createBaseConfig = async (
     worldName,
     levelType: "default",
   });
-
-  return id;
 };
 
 export const launchNewWorld = async (
   cookie: string,
   worldName: string,
 ): Promise<void> => {
-  const id = await createBaseConfig(cookie, worldName);
-  await api("POST /api/launch", cookie, { id });
+  await initConfig(cookie, worldName);
+  await api("POST /api/launch", cookie);
 
   await waitServerLaunched(cookie);
 };
@@ -64,14 +60,13 @@ export const launchExistingWorld = async (
   cookie: string,
   worldName: string,
 ): Promise<void> => {
-  const id = await createBaseConfig(cookie, worldName);
+  await initConfig(cookie, worldName);
   await api("PUT /api/config", cookie, {
-    id,
     worldSource: "backups",
     worldName,
     backupGen: "@/latest",
   });
-  await api("POST /api/launch", cookie, { id });
+  await api("POST /api/launch", cookie);
 
   await waitServerLaunched(cookie);
 };

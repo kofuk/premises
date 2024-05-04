@@ -72,7 +72,6 @@ func BoolP(b bool) *bool {
 }
 
 type PendingConfig struct {
-	ID                 string             `json:"id"`
 	MachineType        *string            `json:"machineType,omitempty"`
 	ServerVersion      *string            `json:"serverVersion,omitempty"`
 	GuessVersion       *bool              `json:"guessServerVersion,omitempty"`
@@ -87,10 +86,6 @@ type PendingConfig struct {
 type ConfigAndValidity struct {
 	IsValid bool          `json:"isValid"`
 	Config  PendingConfig `json:"config"`
-}
-
-type LaunchReq struct {
-	ID string `json:"id"`
 }
 
 type CreateConfigReq struct {
