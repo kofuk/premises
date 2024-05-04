@@ -39,7 +39,7 @@ func isServerInitialized() bool {
 		}
 	}
 
-	if _, err := os.Stat("/opt/premises/gamedata.img"); os.IsNotExist(err) {
+	if _, err := os.Stat(fs.DataPath("gamedata.img")); os.IsNotExist(err) {
 		return false
 	}
 
@@ -121,19 +121,19 @@ func (self *ServerSetup) initializeServer() {
 		systemutil.Cmd("ufw", []string{"enable"})
 	}
 
-	if _, err := os.Stat("/opt/premises/gamedata.img"); os.IsNotExist(err) {
+	if _, err := os.Stat(fs.DataPath("gamedata.img")); os.IsNotExist(err) {
 		slog.Info("Creating image file to save game data")
 		size := 8 * 1024 * 1024 * 1024 // 8 GiB
 		if isDevEnv() {
 			size = 1 * 1024 * 1024 * 1024 // 1 GiB
 		}
-		if err := fs.Fallocate("/opt/premises/gamedata.img", int64(size)); err != nil {
+		if err := fs.Fallocate(fs.DataPath("gamedata.img"), int64(size)); err != nil {
 			slog.Error("Unable to create gamedata.img", slog.Any("error", err))
 			return
 		}
 
 		slog.Info("Creating filesystem for gamedata.img")
-		systemutil.Cmd("mkfs.btrfs", []string{"/opt/premises/gamedata.img"})
+		systemutil.Cmd("mkfs.btrfs", []string{fs.DataPath("gamedata.img")})
 	}
 }
 
@@ -163,7 +163,7 @@ func (self ServerSetup) Run() {
 	self.notifyStatus()
 
 	slog.Info("Creating required directories (if not exists)")
-	os.MkdirAll("/opt/premises/servers.d/../gamedata/../tmp", 0755)
+	os.MkdirAll(fs.DataPath("servers.d/../gamedata/../tmp"), 0755)
 
 	slog.Info("Updating package indices")
 	systemutil.AptGet("update", "-y")
@@ -180,10 +180,10 @@ func (self ServerSetup) Run() {
 	self.installRequiredJavaVersion()
 
 	slog.Info("Mounting gamedata.img")
-	systemutil.Cmd("mount", []string{"/opt/premises/gamedata.img", "/opt/premises/gamedata"})
+	systemutil.Cmd("mount", []string{fs.DataPath("gamedata.img"), fs.DataPath("gamedata")})
 
 	slog.Info("Ensure data directory owned by execution user")
-	if err := fs.ChownRecursive("/opt/premises", 1000, 1000); err != nil {
+	if err := fs.ChownRecursive(fs.DataPath(), 1000, 1000); err != nil {
 		slog.Error("Error changing ownership", slog.Any("error", err))
 	}
 }

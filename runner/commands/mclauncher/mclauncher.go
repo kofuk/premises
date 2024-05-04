@@ -52,7 +52,7 @@ func storeLastWorld(lastWorld string) error {
 
 func downloadWorldIfNeeded(config *runner.Config) error {
 	if config.World.ShouldGenerate {
-		if err := fs.RemoveIfExists(fs.LocateWorldData("world")); err != nil {
+		if err := fs.RemoveIfExists(fs.DataPath("gamedata/world")); err != nil {
 			slog.Error("Unable to remove world directory", slog.Any("error", err))
 		}
 

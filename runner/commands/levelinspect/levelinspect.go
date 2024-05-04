@@ -60,7 +60,7 @@ func toServerVersionName(name string) string {
 }
 
 func Run(args []string) int {
-	levelDatFile, err := os.Open(fs.LocateWorldData("world/level.dat"))
+	levelDatFile, err := os.Open(fs.DataPath("gamedata/world/level.dat"))
 	if err != nil {
 		slog.Error("Failed to open level.dat", slog.Any("error", err))
 		os.Exit(1)

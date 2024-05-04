@@ -12,6 +12,7 @@ import (
 	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/systemutil"
 )
 
@@ -24,7 +25,7 @@ func removeFilesIgnoreError(paths ...string) {
 }
 
 func removeTempFiles() {
-	dirent, err := os.ReadDir("/opt/premises/tmp")
+	dirent, err := os.ReadDir(fs.DataPath("tmp"))
 	if err != nil {
 		slog.Error("Error reading temp dir", slog.Any("error", err))
 		return
@@ -32,14 +33,14 @@ func removeTempFiles() {
 
 	var paths []string
 	for _, e := range dirent {
-		paths = append(paths, filepath.Join("/opt/premises/tmp", e.Name()))
+		paths = append(paths, filepath.Join(fs.DataPath("tmp"), e.Name()))
 	}
 
 	removeFilesIgnoreError(paths...)
 }
 
 func removeSnapshots() {
-	dirent, err := os.ReadDir("/opt/premises/gamedata")
+	dirent, err := os.ReadDir(fs.DataPath("gamedata"))
 	if err != nil {
 		slog.Error("Error reading data dir", slog.Any("error", err))
 		return
@@ -50,7 +51,7 @@ func removeSnapshots() {
 	for _, ent := range dirent {
 		if len(ent.Name()) > 3 && ent.Name()[:3] == "ss@" {
 			needsClean = true
-			args = append(args, filepath.Join("/opt/premises/gamedata", ent.Name()))
+			args = append(args, fs.DataPath("gamedata", ent.Name()))
 		}
 	}
 
@@ -62,7 +63,7 @@ func removeSnapshots() {
 }
 
 func unmountData() {
-	if err := syscall.Unmount("/opt/premises/gamedata", 0); err != nil {
+	if err := syscall.Unmount(fs.DataPath("gamedata"), 0); err != nil {
 		slog.Error("Error unmounting data dir", slog.Any("error", err))
 	}
 }
@@ -119,7 +120,7 @@ func CleanUp(args []string) int {
 
 	slog.Info("Removing config files...")
 	removeFilesIgnoreError(
-		"/opt/premises/config.json",
+		fs.DataPath("config.json"),
 		"/userdata",
 		"/userdata_decoded.sh",
 	)

@@ -101,7 +101,7 @@ func (self *BackupService) DownloadWorldData(config *runner.Config) error {
 	}()
 
 	ext := getFileExtension(config.World.GenerationId)
-	file, err := os.Create(fs.LocateDataFile("world" + ext))
+	file, err := os.Create(fs.DataPath("world" + ext))
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func getFileExtension(name string) string {
 func (self *BackupService) doUploadWorldData(config *runner.Config) error {
 	slog.Info("Uploading world archive...")
 
-	archivePath := fs.LocateDataFile("world.tar.zst")
+	archivePath := fs.DataPath("world.tar.zst")
 
 	file, err := os.Open(archivePath)
 	if err != nil {
@@ -374,7 +374,7 @@ func worldArchiveExists() bool {
 	}
 
 	for _, name := range candidates {
-		if _, err := os.Stat(fs.LocateDataFile(name)); err == nil {
+		if _, err := os.Stat(fs.DataPath(name)); err == nil {
 			return true
 		}
 	}
@@ -388,7 +388,7 @@ func ExtractWorldArchiveIfNeeded() error {
 		return nil
 	}
 
-	if err := fs.RemoveIfExists(fs.LocateWorldData("world")); err != nil {
+	if err := fs.RemoveIfExists(fs.DataPath("gamedata/world")); err != nil {
 		return err
 	}
 
@@ -407,17 +407,17 @@ func ExtractWorldArchiveIfNeeded() error {
 		{
 			name:     "zip",
 			fn:       extractZipWorldArchive,
-			fileName: fs.LocateDataFile("world.zip"),
+			fileName: fs.DataPath("world.zip"),
 		},
 		{
 			name:     "xz",
 			fn:       extractXzWorldArchive,
-			fileName: fs.LocateDataFile("world.tar.xz"),
+			fileName: fs.DataPath("world.tar.xz"),
 		},
 		{
 			name:     "zstd",
 			fn:       extractZstWorldArchive,
-			fileName: fs.LocateDataFile("world.tar.zst"),
+			fileName: fs.DataPath("world.tar.zst"),
 		},
 	}
 
@@ -523,7 +523,7 @@ func writeTar(to io.Writer, baseDir string, dirs ...string) error {
 func createArchive() error {
 	slog.Info("Creating world archive...")
 
-	outFile, err := os.Create(fs.LocateDataFile("world.tar.zst"))
+	outFile, err := os.Create(fs.DataPath("world.tar.zst"))
 	if err != nil {
 		return err
 	}
@@ -535,7 +535,7 @@ func createArchive() error {
 	}
 	defer zstWriter.Close()
 
-	if err := writeTar(zstWriter, fs.LocateWorldData(""), "world"); err != nil {
+	if err := writeTar(zstWriter, fs.DataPath("gamedata"), "world"); err != nil {
 		return err
 	}
 

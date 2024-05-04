@@ -6,19 +6,15 @@ import (
 )
 
 const (
-	baseDir = "/opt/premises"
+	BaseDir = "/opt/premises"
 )
 
-func LocateWorldData(path string) string {
-	return LocateDataFile(filepath.Join("gamedata", path))
+func DataPath(path ...string) string {
+	return filepath.Join(BaseDir, filepath.Join(path...))
 }
 
 func LocateServer(serverName string) string {
-	return LocateDataFile(filepath.Join("servers.d", serverName+".jar"))
-}
-
-func LocateDataFile(path string) string {
-	return filepath.Join(baseDir, path)
+	return DataPath(filepath.Join("servers.d", serverName+".jar"))
 }
 
 func RemoveIfExists(path string) error {
@@ -37,7 +33,7 @@ func RemoveIfExists(path string) error {
 }
 
 func GetTempDir() string {
-	return filepath.Join(baseDir, "tmp")
+	return DataPath("tmp")
 }
 
 func MkdirTemp() (string, error) {

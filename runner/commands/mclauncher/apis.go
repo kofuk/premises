@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 
 	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
@@ -46,7 +45,7 @@ func (h *RPCHandler) HandleGameReconfigure(req *rpc.AbstractRequest) (any, error
 		return nil, err
 	}
 
-	if err := os.WriteFile(fs.LocateDataFile("config.json"), data, 0644); err != nil {
+	if err := os.WriteFile(fs.DataPath("config.json"), data, 0644); err != nil {
 		slog.Error("Failed to write server config", slog.Any("error", err))
 		return nil, err
 	}
@@ -104,7 +103,7 @@ func (h *RPCHandler) HandleSnapshotUndo(req *rpc.AbstractRequest) (any, error) {
 	}
 
 	go func() {
-		if _, err := os.Stat(filepath.Join(fs.LocateWorldData(fmt.Sprintf("ss@quick%d/world", input.Slot)))); err != nil {
+		if _, err := os.Stat(fs.DataPath(fmt.Sprintf("gamedata/ss@quick%d/world", input.Slot))); err != nil {
 			exterior.DispatchMessage("serverStatus", runner.Event{
 				Type: runner.EventInfo,
 				Info: &runner.InfoExtra{

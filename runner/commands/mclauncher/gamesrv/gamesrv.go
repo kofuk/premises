@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -291,7 +292,7 @@ func generateServerProps(config *runner.Config) error {
 	serverProps.SetLevelType(config.World.LevelType)
 	serverProps.SetSeed(config.World.Seed)
 	serverProps.OverrideProperties(config.Server.ServerPropOverride)
-	serverPropsFile, err := os.Create(fs.LocateWorldData("server.properties"))
+	serverPropsFile, err := os.Create(fs.DataPath("gamedata/server.properties"))
 	if err != nil {
 		return err
 	}
@@ -303,7 +304,7 @@ func generateServerProps(config *runner.Config) error {
 }
 
 func signEulaForServer() error {
-	eulaFile, err := os.Create(fs.LocateWorldData("eula.txt"))
+	eulaFile, err := os.Create(fs.DataPath("gamedata/eula.txt"))
 	if err != nil {
 		return err
 	}
@@ -313,12 +314,12 @@ func signEulaForServer() error {
 }
 
 func processQuickUndo(slot int) error {
-	if err := os.RemoveAll(fs.LocateWorldData("world")); err != nil {
+	if err := os.RemoveAll(fs.DataPath("gamedata/world")); err != nil {
 		return err
 	}
 
 	cmd := exec.Command("cp", "-R", "--", fmt.Sprintf("ss@quick%d/world", slot), ".")
-	cmd.Dir = fs.LocateWorldData("")
+	cmd.Dir = fs.DataPath("gamedata")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -375,7 +376,7 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 	if ver != config.Server.Version {
 		slog.Info("Different version of server selected. cleaning up...", slog.String("old", ver), slog.String("new", config.Server.Version))
 
-		ents, err := os.ReadDir(fs.LocateWorldData(""))
+		ents, err := os.ReadDir(fs.DataPath("gamedata"))
 		if err != nil {
 			return err
 		}
@@ -383,7 +384,7 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 			if ent.Name() == "server.properties" || ent.Name() == "world" {
 				continue
 			}
-			if err := os.RemoveAll(fs.LocateWorldData(ent.Name())); err != nil {
+			if err := os.RemoveAll(fs.DataPath(filepath.Join("gamedata", ent.Name()))); err != nil {
 				return err
 			}
 		}
@@ -454,7 +455,7 @@ func LaunchServer(config *runner.Config, srv *ServerInstance) error {
 				}
 			}
 			cmd := exec.Command(launchCommand[0], launchCommand[1:]...)
-			cmd.Dir = fs.LocateWorldData("")
+			cmd.Dir = fs.DataPath("gamedata")
 			cmdStdout, _ := cmd.StdoutPipe()
 			cmd.Stderr = os.Stderr
 			cmd.Start()

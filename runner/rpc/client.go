@@ -5,6 +5,8 @@ import (
 	"errors"
 	"io"
 	"net"
+
+	"github.com/kofuk/premises/runner/fs"
 )
 
 type Client struct {
@@ -12,9 +14,9 @@ type Client struct {
 }
 
 var (
-	ToExteriord      = NewClient("/opt/premises/rpc@exteriord")
-	ToSnapshotHelper = NewClient("/opt/premises/rpc@snapshot-helper")
-	ToLauncher       = NewClient("/opt/premises/rpc@launcher")
+	ToExteriord      = NewClient(fs.DataPath("rpc@exteriord"))
+	ToSnapshotHelper = NewClient(fs.DataPath("rpc@snapshot-helper"))
+	ToLauncher       = NewClient(fs.DataPath("rpc@launcher"))
 )
 
 func NewClient(path string) *Client {

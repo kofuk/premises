@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 	"strings"
 
+	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/rpc/types"
 	"github.com/kofuk/premises/runner/systemutil"
@@ -19,11 +19,9 @@ type SnapshotInfo struct {
 }
 
 func takeFsSnapshot(snapshotId string) (*SnapshotInfo, error) {
-	gameDir := "/opt/premises/gamedata"
-
 	var snapshotInfo SnapshotInfo
 	snapshotInfo.ID = snapshotId
-	snapshotInfo.Path = filepath.Join(gameDir, "ss@"+snapshotId)
+	snapshotInfo.Path = fs.DataPath("gamedata/ss@" + snapshotId)
 
 	if _, err := os.Stat(snapshotInfo.Path); err == nil {
 		if err := deleteFsSnapshot(snapshotId); err != nil {
@@ -32,7 +30,7 @@ func takeFsSnapshot(snapshotId string) (*SnapshotInfo, error) {
 	}
 
 	// Create read-only snapshot
-	if err := systemutil.Cmd("btrfs", []string{"subvolume", "snapshot", "-r", ".", snapshotInfo.Path}, systemutil.WithWorkingDir(gameDir)); err != nil {
+	if err := systemutil.Cmd("btrfs", []string{"subvolume", "snapshot", "-r", ".", snapshotInfo.Path}, systemutil.WithWorkingDir(fs.DataPath("gamedata"))); err != nil {
 		return nil, err
 	}
 
@@ -44,12 +42,10 @@ func deleteFsSnapshot(id string) error {
 		return errors.New("Invalid snapshot ID")
 	}
 
-	gameDir := "/opt/premises/gamedata"
-
-	if err := systemutil.Cmd("btrfs", []string{"subvolume", "delete", "ss@" + id}, systemutil.WithWorkingDir(gameDir)); err != nil {
+	if err := systemutil.Cmd("btrfs", []string{"subvolume", "delete", "ss@" + id}, systemutil.WithWorkingDir(fs.DataPath("gamedata"))); err != nil {
 		return err
 	}
-	if err := systemutil.Cmd("btrfs", []string{"balance", "."}, systemutil.WithWorkingDir(gameDir)); err != nil {
+	if err := systemutil.Cmd("btrfs", []string{"balance", "."}, systemutil.WithWorkingDir(fs.DataPath("gamedata"))); err != nil {
 		return err
 	}
 

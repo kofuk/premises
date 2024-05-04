@@ -25,7 +25,7 @@ import (
 func detectServerVersion() (string, error) {
 	output := bytes.NewBuffer(nil)
 
-	cmd := exec.Command("/opt/premises/bin/premises-runner", "--level-inspect")
+	cmd := exec.Command(fs.DataPath("bin/premises-runner"), "--level-inspect")
 	cmd.Stdout = output
 	if err := cmd.Run(); err != nil {
 		return "", err
@@ -170,7 +170,7 @@ func downloadServerJar(url, savePath string) error {
 }
 
 func DownloadServerJar(url, savePath string) error {
-	if err := os.MkdirAll(fs.LocateDataFile("servers.d"), 0755); err != nil {
+	if err := os.MkdirAll(fs.DataPath("servers.d"), 0755); err != nil {
 		return err
 	}
 

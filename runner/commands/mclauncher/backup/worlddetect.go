@@ -90,21 +90,9 @@ func moveWorldDataToGameDir(tmpDir string) error {
 		return err
 	}
 
-	worldDir := fs.LocateWorldData("world")
+	worldDir := fs.DataPath("gamedata/world")
 	if _, err := os.Stat(worldDir); err != nil {
 		if err := os.RemoveAll(worldDir); err != nil {
-			return err
-		}
-	}
-	netherDir := fs.LocateWorldData("world_nether")
-	if _, err := os.Stat(netherDir); err != nil {
-		if err := os.RemoveAll(netherDir); err != nil {
-			return err
-		}
-	}
-	endDir := fs.LocateWorldData("world_the_end")
-	if _, err := os.Stat(endDir); err != nil {
-		if err := os.RemoveAll(endDir); err != nil {
 			return err
 		}
 	}
