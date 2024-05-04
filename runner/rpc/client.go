@@ -11,6 +11,10 @@ type Client struct {
 	path string
 }
 
+var (
+	ToExteriord = NewClient("/opt/premises/rpc@exteriord")
+)
+
 func NewClient(path string) *Client {
 	return &Client{
 		path: path,

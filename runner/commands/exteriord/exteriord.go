@@ -7,11 +7,11 @@ import (
 	"syscall"
 
 	"github.com/kofuk/premises/runner/commands/exteriord/exterior"
-	"github.com/kofuk/premises/runner/commands/exteriord/interior"
 	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
 	"github.com/kofuk/premises/runner/commands/exteriord/outbound"
 	"github.com/kofuk/premises/runner/commands/exteriord/proc"
 	"github.com/kofuk/premises/runner/config"
+	"github.com/kofuk/premises/runner/rpc"
 )
 
 func Run(args []string) int {
@@ -28,12 +28,8 @@ func Run(args []string) int {
 	ob := outbound.NewServer(config.ControlPanel, config.AuthKey, msgRouter)
 	go ob.Start()
 
-	interior := interior.NewServer("127.0.0.1:2000", msgRouter)
-	go func() {
-		if err := interior.Start(); err != nil {
-			slog.Error("Unable to start interior server", slog.Any("error", err))
-		}
-	}()
+	rpcHandler := NewRPCHandler(rpc.DefaultServer, msgRouter)
+	rpcHandler.Bind()
 
 	e := exterior.New()
 

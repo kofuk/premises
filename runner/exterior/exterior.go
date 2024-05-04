@@ -1,14 +1,11 @@
 package exterior
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
-	"io"
 	"log/slog"
-	"net/http"
 
 	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
+	"github.com/kofuk/premises/runner/rpc"
 )
 
 func sendMessage(msgType string, userData any, dispatch bool) error {
@@ -25,26 +22,8 @@ func sendMessage(msgType string, userData any, dispatch bool) error {
 		UserData: string(serializedUserData),
 	}
 
-	data, _ := json.Marshal(msg)
-
-	resp, err := http.Post("http://127.0.0.1:2000/pushstatus", "application/json", bytes.NewBuffer(data))
-	if err != nil {
-		return err
-	}
-	defer io.Copy(io.Discard, resp.Body)
-
-	if resp.StatusCode == http.StatusOK {
-		return nil
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	slog.Debug("Sending message...Done")
-
-	return fmt.Errorf("Unable to send message to exteriord: %s", string(body))
+	var result string
+	return rpc.ToExteriord.Call("status/push", msg, &result)
 }
 
 // Send status message
