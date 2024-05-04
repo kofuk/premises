@@ -14,6 +14,7 @@ import (
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/systemutil"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -107,21 +108,23 @@ func (self *ServerSetup) notifyStatus() {
 }
 
 func (self *ServerSetup) initializeServer() {
-	slog.Info("Installing packages")
-	systemutil.AptGet("install", "-y", "btrfs-progs", latestAvailableJre, "ufw")
+	var eg errgroup.Group
 
-	if _, err := user.LookupId("1000"); err != nil {
-		slog.Info("Adding user")
-		systemutil.Cmd("useradd", []string{"-U", "-s", "/bin/bash", "-u", "1000", "premises"})
-	}
+	eg.Go(func() error {
+		slog.Info("Installing packages")
+		systemutil.AptGet("install", "-y", "btrfs-progs", latestAvailableJre, "ufw")
+		if !isDevEnv() {
+			slog.Info("Enabling ufw")
+			systemutil.Cmd("systemctl", []string{"enable", "--now", "ufw.service"})
+			systemutil.Cmd("ufw", []string{"enable"})
+		}
+		return nil
+	})
+	eg.Go(func() error {
+		if _, err := os.Stat(fs.DataPath("gamedata.img")); !os.IsNotExist(err) {
+			return nil
+		}
 
-	if !isDevEnv() {
-		slog.Info("Enabling ufw")
-		systemutil.Cmd("systemctl", []string{"enable", "--now", "ufw.service"})
-		systemutil.Cmd("ufw", []string{"enable"})
-	}
-
-	if _, err := os.Stat(fs.DataPath("gamedata.img")); os.IsNotExist(err) {
 		slog.Info("Creating image file to save game data")
 		size := 8 * 1024 * 1024 * 1024 // 8 GiB
 		if isDevEnv() {
@@ -129,12 +132,24 @@ func (self *ServerSetup) initializeServer() {
 		}
 		if err := fs.Fallocate(fs.DataPath("gamedata.img"), int64(size)); err != nil {
 			slog.Error("Unable to create gamedata.img", slog.Any("error", err))
-			return
+			return err
 		}
+		return nil
+	})
+	eg.Go(func() error {
+		if _, err := user.Lookup("premises"); err != nil {
+			slog.Info("Adding user")
+			// Create a system user named "premises"
+			return systemutil.Cmd("useradd", []string{"--user-group", "--system", "--shell", "/usr/sbin/nologin", "premises"})
+		}
+		return nil
+	})
 
-		slog.Info("Creating filesystem for gamedata.img")
-		systemutil.Cmd("mkfs.btrfs", []string{fs.DataPath("gamedata.img")})
-	}
+	eg.Wait()
+
+	// This command should be executed after `apt-get install` finished
+	slog.Info("Creating filesystem for gamedata.img")
+	systemutil.Cmd("mkfs.btrfs", []string{fs.DataPath("gamedata.img")})
 }
 
 func (self *ServerSetup) updateFirewallRules() {
@@ -185,7 +200,11 @@ func (self ServerSetup) Run() {
 	systemutil.Cmd("mount", []string{fs.DataPath("gamedata.img"), fs.DataPath("gamedata")})
 
 	slog.Info("Ensure data directory owned by execution user")
-	if err := fs.ChownRecursive(fs.DataPath(), 1000, 1000); err != nil {
-		slog.Error("Error changing ownership", slog.Any("error", err))
+	if uid, gid, err := systemutil.GetAppUserID(); err != nil {
+		slog.Error("Error retrieving user ID for premises", slog.Any("error", err))
+	} else {
+		if err := fs.ChownRecursive(fs.DataPath(), uid, gid); err != nil {
+			slog.Error("Error changing ownership", slog.Any("error", err))
+		}
 	}
 }

@@ -48,7 +48,7 @@ func Run(args []string) int {
 			proc.Restart(proc.RestartOnFailure),
 			proc.RestartRandomDelay(),
 			proc.UserType(proc.UserRestricted),
-		))
+		), setupTask) // We can't use restricted user before setup task finished
 	monitoring := e.RegisterTask("Game Monitoring Service",
 		proc.NewProc(fs.DataPath("bin/premises-runner"),
 			proc.Args("--launcher"),

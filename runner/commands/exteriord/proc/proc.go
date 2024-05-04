@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"syscall"
 	"time"
+
+	"github.com/kofuk/premises/runner/systemutil"
 )
 
 type RestartPolicy int
@@ -95,10 +97,15 @@ L:
 		if p.userType == UserPrivileged {
 			// Do nothing
 		} else if p.userType == UserRestricted {
+			uid, gid, err := systemutil.GetAppUserID()
+			if err != nil {
+				slog.Error("Error retrieving uid and gid for premises user. Process will be executed with root user")
+			}
+
 			cmd.SysProcAttr = &syscall.SysProcAttr{
 				Credential: &syscall.Credential{
-					Uid: 1000,
-					Gid: 1000,
+					Uid: uint32(uid),
+					Gid: uint32(gid),
 				},
 			}
 		}
