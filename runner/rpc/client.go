@@ -14,6 +14,7 @@ type Client struct {
 var (
 	ToExteriord      = NewClient("/opt/premises/rpc@exteriord")
 	ToSnapshotHelper = NewClient("/opt/premises/rpc@snapshot-helper")
+	ToLauncher       = NewClient("/opt/premises/rpc@launcher")
 )
 
 func NewClient(path string) *Client {

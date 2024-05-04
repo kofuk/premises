@@ -2,31 +2,82 @@ package outbound
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"time"
 
+	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
+	"github.com/kofuk/premises/runner/rpc"
+	"github.com/kofuk/premises/runner/rpc/types"
 )
 
+type ActionMapper func(action runner.Action) error
+
 type Server struct {
-	addr      string
-	authKey   string
-	msgRouter *msgrouter.MsgRouter
+	addr          string
+	authKey       string
+	msgRouter     *msgrouter.MsgRouter
+	actionMappers map[runner.ActionType]ActionMapper
+}
+
+func (s *Server) HandleActionStop(action runner.Action) error {
+	return rpc.ToLauncher.Call("game/stop", nil, nil)
+}
+
+func (s *Server) HandleActionSnapshot(action runner.Action) error {
+	if action.Snapshot == nil {
+		return errors.New("Missing snapshot config")
+	}
+
+	return rpc.ToLauncher.Call("snapshot/create", types.SnapshotInput{
+		Slot:  action.Snapshot.Slot,
+		Actor: action.Actor,
+	}, nil)
+}
+
+func (s *Server) HandleActionUndo(action runner.Action) error {
+	if action.Snapshot == nil {
+		return errors.New("Missing snapshot config")
+	}
+
+	return rpc.ToLauncher.Call("snapshot/undo", types.SnapshotInput{
+		Slot:  action.Snapshot.Slot,
+		Actor: action.Actor,
+	}, nil)
+}
+
+func (s *Server) HandleActionReconfigure(action runner.Action) error {
+	if action.Config == nil {
+		return errors.New("Missing config")
+	}
+
+	return rpc.ToLauncher.Call("game/reconfigure", action.Config, nil)
 }
 
 func NewServer(addr string, authKey string, msgRouter *msgrouter.MsgRouter) *Server {
-	return &Server{
-		addr:      addr,
-		authKey:   authKey,
-		msgRouter: msgRouter,
+	s := &Server{
+		addr:          addr,
+		authKey:       authKey,
+		msgRouter:     msgRouter,
+		actionMappers: make(map[runner.ActionType]ActionMapper),
 	}
+
+	s.actionMappers[runner.ActionStop] = s.HandleActionStop
+	s.actionMappers[runner.ActionSnapshot] = s.HandleActionSnapshot
+	s.actionMappers[runner.ActionUndo] = s.HandleActionUndo
+	s.actionMappers[runner.ActionReconfigure] = s.HandleActionReconfigure
+
+	return s
 }
 
-func (self *Server) HandleMonitor() {
-	client := self.msgRouter.Subscribe(msgrouter.NotifyLatest("serverStatus"))
-	defer self.msgRouter.Unsubscribe(client)
+func (s *Server) HandleMonitor() {
+	client := s.msgRouter.Subscribe(msgrouter.NotifyLatest("serverStatus"))
+	defer s.msgRouter.Unsubscribe(client)
 
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -34,12 +85,12 @@ func (self *Server) HandleMonitor() {
 	buf := bytes.NewBuffer(nil)
 
 	sendStatus := func() {
-		req, err := http.NewRequest(http.MethodPost, self.addr+"/_runner/push-status", buf)
+		req, err := http.NewRequest(http.MethodPost, s.addr+"/_runner/push-status", buf)
 		if err != nil {
 			slog.Error("Error creating request", slog.Any("error", err))
 			return
 		}
-		req.Header.Set("Authorization", self.authKey)
+		req.Header.Set("Authorization", s.authKey)
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			slog.Error("Error writing status", slog.Any("error", err))
@@ -77,14 +128,14 @@ out:
 	slog.Error("BUG: client channel has been closed")
 }
 
-func (self *Server) PollAction() {
+func (s *Server) PollAction() {
 	for {
-		req, err := http.NewRequest(http.MethodGet, self.addr+"/_runner/poll-action", nil)
+		req, err := http.NewRequest(http.MethodGet, s.addr+"/_runner/poll-action", nil)
 		if err != nil {
 			slog.Error("Error creating request", slog.Any("error", err))
 			continue
 		}
-		req.Header.Set("Authorization", self.authKey)
+		req.Header.Set("Authorization", s.authKey)
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
@@ -94,22 +145,31 @@ func (self *Server) PollAction() {
 			continue
 		}
 
-		data, err := io.ReadAll(resp.Body)
-		if err != nil {
-			slog.Error("Error reading body", slog.Any("error", err))
+		defer io.Copy(io.Discard, req.Body)
+
+		var action runner.Action
+		dec := json.NewDecoder(resp.Body)
+		if err := dec.Decode(&action); err != nil {
+			slog.Error("Error decoding request", slog.Any("error", err))
 			continue
 		}
 
-		resp, err = http.Post("http://127.0.0.1:9000/", "application/json", bytes.NewBuffer(data))
-		if err != nil {
-			slog.Error("Error forwarding action", slog.Any("error", err))
+		mapper, ok := s.actionMappers[action.Type]
+		if !ok {
+			slog.Error(fmt.Sprintf("Unknown action: %s", action.Type), slog.Any("error", err))
 			continue
 		}
-		io.Copy(io.Discard, resp.Body)
+
+		go func() {
+			// Handle action asynchronously
+			if err := mapper(action); err != nil {
+				slog.Error(fmt.Sprintf("Error occurred in action mapper: %s", action.Type), slog.Any("error", err))
+			}
+		}()
 	}
 }
 
-func (self *Server) Start() {
-	go self.PollAction()
-	self.HandleMonitor()
+func (s *Server) Start() {
+	go s.PollAction()
+	s.HandleMonitor()
 }

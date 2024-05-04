@@ -25,7 +25,7 @@ func takeFsSnapshot(snapshotId string) (*SnapshotInfo, error) {
 	snapshotInfo.ID = snapshotId
 	snapshotInfo.Path = filepath.Join(gameDir, "ss@"+snapshotId)
 
-	if _, err := os.Stat(snapshotInfo.Path); err != nil {
+	if _, err := os.Stat(snapshotInfo.Path); err == nil {
 		if err := deleteFsSnapshot(snapshotId); err != nil {
 			slog.Error("Failed to remove old snapshot (doesn't the snapshot exist?)", slog.Any("error", err))
 		}
@@ -58,7 +58,7 @@ func deleteFsSnapshot(id string) error {
 
 func Run(args []string) int {
 	rpc.DefaultServer.RegisterMethod("snapshot/create", func(req *rpc.AbstractRequest) (any, error) {
-		var ss types.SnapshotInput
+		var ss types.SnapshotHelperInput
 		if err := req.Bind(&ss); err != nil {
 			return nil, err
 		}
@@ -68,7 +68,7 @@ func Run(args []string) int {
 			return nil, err
 		}
 
-		return types.SnapshotOutput{
+		return types.SnapshotHelperOutput{
 			ID:   info.ID,
 			Path: info.Path,
 		}, nil

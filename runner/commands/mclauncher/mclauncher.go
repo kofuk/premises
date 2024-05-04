@@ -10,11 +10,11 @@ import (
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/backup"
 	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
-	"github.com/kofuk/premises/runner/commands/mclauncher/statusapi"
 	"github.com/kofuk/premises/runner/config"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/metadata"
+	"github.com/kofuk/premises/runner/rpc"
 )
 
 func downloadWorldIfNeeded(config *runner.Config) error {
@@ -97,7 +97,9 @@ func Run(args []string) int {
 	}
 
 	srv := gamesrv.New()
-	go statusapi.LaunchStatusServer(config, srv)
+
+	rpcHandler := NewRPCHandler(rpc.DefaultServer, srv)
+	rpcHandler.Bind()
 
 	if err := downloadWorldIfNeeded(config); err != nil {
 		slog.Error("Failed to download world data", slog.Any("error", err))
