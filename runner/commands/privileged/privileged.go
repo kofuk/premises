@@ -1,31 +1,17 @@
 package privileged
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
-	"net/http"
 	"path/filepath"
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/kofuk/premises/runner/rpc"
+	"github.com/kofuk/premises/runner/rpc/types"
 	"github.com/kofuk/premises/runner/systemutil"
 )
-
-type RequestMsg struct {
-	Version int      `json:"version"`
-	Func    string   `json:"func"`
-	Args    []string `json:"args"`
-}
-
-type ResponseMsg struct {
-	Version int         `json:"version"`
-	Success bool        `json:"success"`
-	Message string      `json:"message,omitempty"`
-	Result  interface{} `json:"result,omitempty"`
-}
 
 type SnapshotInfo struct {
 	ID   string `json:"id"`
@@ -78,110 +64,25 @@ func deleteFsSnapshot(id string) error {
 	return nil
 }
 
-func sendMessage(w http.ResponseWriter, msg interface{}) error {
-	data, err := json.Marshal(msg)
-	if err != nil {
-		return err
-	}
-	w.Header().Add("Content-Type", "application/json")
-	if _, err := w.Write(data); err != nil {
-		return err
-	}
-	return nil
-}
-
 func Run(args []string) int {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		slog.Info("Request received")
+	rpc.DefaultServer.RegisterMethod("snapshot/create", func(req *rpc.AbstractRequest) (any, error) {
+		var ss types.SnapshotInput
+		if err := req.Bind(&ss); err != nil {
+			return nil, err
+		}
 
-		body, err := io.ReadAll(r.Body)
+		info, err := takeFsSnapshot(fmt.Sprintf("quick%d", ss.Slot))
 		if err != nil {
-			slog.Error("Failed to read body", slog.Any("error", err))
-			err := sendMessage(w, &ResponseMsg{
-				Version: 1,
-				Success: false,
-				Message: "Failed to read body",
-			})
-			if err != nil {
-				slog.Error("Failed to write body", slog.Any("error", err))
-			}
-			return
+			return nil, err
 		}
 
-		var req RequestMsg
-		if err := json.Unmarshal(body, &req); err != nil {
-			slog.Error("Failed to parse body", slog.Any("error", err))
-			err := sendMessage(w, &ResponseMsg{
-				Version: 1,
-				Success: false,
-				Message: "failed to parse body",
-			})
-			if err != nil {
-				slog.Error("Failed to write body", slog.Any("error", err))
-			}
-			return
-		}
-
-		if req.Version != 1 {
-			slog.Error("Unsupported version", slog.Any("version", req.Version))
-			err := sendMessage(w, &ResponseMsg{
-				Version: 1,
-				Success: false,
-				Message: "Unsupported version",
-			})
-			if err != nil {
-				slog.Error("Failed to write body", slog.Any("error", err))
-			}
-			return
-		}
-
-		if req.Func == "quicksnapshots/create" {
-			if len(req.Args) == 0 {
-				req.Args = append(req.Args, "0")
-			}
-
-			ssi, err := takeFsSnapshot(fmt.Sprintf("quick%s", req.Args[0]))
-			if err != nil {
-				slog.Error("Failed to take snapshot", slog.Any("error", err))
-
-				err := sendMessage(w, &ResponseMsg{
-					Version: 1,
-					Success: false,
-					Message: "Failed to take snapshot",
-				})
-				if err != nil {
-					slog.Error("Failed to write body", slog.Any("error", err))
-					return
-				}
-				return
-			}
-
-			err = sendMessage(w, &ResponseMsg{
-				Version: 1,
-				Success: true,
-				Result:  ssi,
-			})
-			if err != nil {
-				slog.Error("Failed to write body", slog.Any("error", err))
-				return
-			}
-		} else {
-			slog.Error("Unknown method")
-			err := sendMessage(w, &ResponseMsg{
-				Version: 1,
-				Success: false,
-				Message: "Unknown method",
-			})
-			if err != nil {
-				slog.Error("Failed to write body", slog.Any("error", err))
-			}
-		}
+		return types.SnapshotOutput{
+			ID:   info.ID,
+			Path: info.Path,
+		}, nil
 	})
 
-	if err := http.ListenAndServe("localhost:8522", nil); err != nil {
-		slog.Error("Unable to listen :8522", slog.Any("error", err))
-		return 1
-	}
+	<-make(chan struct{})
 
 	return 0
 }

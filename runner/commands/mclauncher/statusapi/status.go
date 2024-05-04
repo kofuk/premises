@@ -1,16 +1,13 @@
 package statusapi
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
@@ -18,6 +15,8 @@ import (
 	"github.com/kofuk/premises/runner/commands/privileged"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/rpc"
+	"github.com/kofuk/premises/runner/rpc/types"
 )
 
 type createSnapshotResp struct {
@@ -27,46 +26,10 @@ type createSnapshotResp struct {
 	Result  privileged.SnapshotInfo `json:"result"`
 }
 
-func requestQuickSnapshot(slot int) (*privileged.SnapshotInfo, error) {
-	reqMsg := &privileged.RequestMsg{
-		Version: 1,
-		Func:    "quicksnapshots/create",
-		Args: []string{
-			strconv.Itoa(slot),
-		},
-	}
-	reqData, err := json.Marshal(reqMsg)
-	if err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest(http.MethodPost, "http://localhost:8522", bytes.NewBuffer(reqData))
-	if err != nil {
-		return nil, err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	respData, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var respMsg createSnapshotResp
-	if err := json.Unmarshal(respData, &respMsg); err != nil {
-		return nil, err
-	}
-
-	if respMsg.Version != 1 {
-		return nil, errors.New("Unsupported version")
-	}
-
-	if !respMsg.Success {
-		return nil, errors.New(respMsg.Message)
-	}
-
-	return &respMsg.Result, nil
+func requestQuickSnapshot(slot int) error {
+	return rpc.ToSnapshotHelper.Call("snapshot/create", types.SnapshotInput{
+		Slot: slot,
+	}, nil)
 }
 
 func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
@@ -80,8 +43,7 @@ func LaunchStatusServer(config *runner.Config, srv *gamesrv.ServerInstance) {
 			return
 		}
 
-		_, err := requestQuickSnapshot(config.Slot)
-		if err != nil {
+		if err := requestQuickSnapshot(config.Slot); err != nil {
 			slog.Error("Failed to create snapshot", slog.Any("error", err))
 
 			if err := exterior.DispatchMessage("serverStatus", runner.Event{

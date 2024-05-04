@@ -12,7 +12,8 @@ type Client struct {
 }
 
 var (
-	ToExteriord = NewClient("/opt/premises/rpc@exteriord")
+	ToExteriord      = NewClient("/opt/premises/rpc@exteriord")
+	ToSnapshotHelper = NewClient("/opt/premises/rpc@snapshot-helper")
 )
 
 func NewClient(path string) *Client {
@@ -55,6 +56,10 @@ func handleCall(conn io.ReadWriter, method string, params, result any) error {
 	}
 	if resp.Error != nil {
 		return resp.Error
+	}
+
+	if result == nil {
+		return nil
 	}
 
 	if err := json.Unmarshal(resp.Result, result); err != nil {

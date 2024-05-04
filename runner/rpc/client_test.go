@@ -55,3 +55,14 @@ func Test_handleCall(t *testing.T) {
 		})
 	}
 }
+
+func Test_handleCall_ignoreResult(t *testing.T) {
+	respJSON := `{"jsonrpc":"2.0","id":1,"result":"foo"}`
+	conn := &buffer{
+		rb: bytes.NewBufferString(fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len([]byte(respJSON)), respJSON)),
+		wb: &bytes.Buffer{},
+	}
+
+	err := handleCall(conn, "test", struct{}{}, nil)
+	assert.NoError(t, err)
+}
