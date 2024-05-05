@@ -5,15 +5,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
+	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/kofuk/premises/common/entity"
@@ -26,20 +23,21 @@ import (
 	"github.com/kofuk/premises/runner/systemutil"
 )
 
+type OnHealthyFunc func(l *Launcher)
+type BeforeLaunchFunc func(l *Launcher)
+
 type Launcher struct {
-	config                 *runner.Config
-	world                  *backup.BackupService
-	ctx                    context.Context
-	cancel                 context.CancelFunc
-	shouldRestart          bool
-	shouldStop             bool
-	FinishWG               sync.WaitGroup
-	lastActive             time.Time
-	quickUndoBeforeRestart bool
-	quickUndoSlot          int
-	serverPid              int
-	Rcon                   *Rcon
-	OnHealthy              func()
+	config            *runner.Config
+	world             *backup.BackupService
+	ctx               context.Context
+	cancel            context.CancelFunc
+	shouldRestart     bool
+	restoringSnapshot bool
+	lastActive        time.Time
+	quickUndoSlot     int
+	Rcon              *Rcon
+	onHealthy         OnHealthyFunc
+	beforeLaunch      BeforeLaunchFunc
 }
 
 var (
@@ -53,13 +51,47 @@ var (
 func NewLauncher(config *runner.Config, backup *backup.BackupService) *Launcher {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	return &Launcher{
+	l := &Launcher{
 		config: config,
 		world:  backup,
 		ctx:    ctx,
 		cancel: cancel,
 		Rcon:   NewRcon("127.0.0.1:25575", "x"),
 	}
+
+	l.RegisterBeforeLaunchHook(func(l *Launcher) {
+		if l.restoringSnapshot {
+			if err := processQuickUndo(l.quickUndoSlot); err != nil {
+				slog.Error("Error processing quick undo", slog.Any("error", err))
+			}
+
+			l.restoringSnapshot = false
+		}
+	})
+
+	l.RegisterOnHealthyHook(func(l *Launcher) {
+		go SendStartedEvent(config, l)
+
+		l.AddToWhiteList(l.config.Whitelist)
+		l.AddToOp(l.config.Operators)
+
+		exterior.SendMessage("serverStatus", runner.Event{
+			Type: runner.EventStatus,
+			Status: &runner.StatusExtra{
+				EventCode: entity.EventRunning,
+			},
+		})
+	})
+
+	return l
+}
+
+func (l *Launcher) RegisterBeforeLaunchHook(fn BeforeLaunchFunc) {
+	l.beforeLaunch = fn
+}
+
+func (l *Launcher) RegisterOnHealthyHook(fn OnHealthyFunc) {
+	l.onHealthy = fn
 }
 
 func getLastWorld() (string, error) {
@@ -247,8 +279,57 @@ func getAllocSizeMiB() int {
 	return totalMem/1024/1024 - 1024
 }
 
+func waitServerHealthy(ctx context.Context) error {
+	for {
+		var d net.Dialer
+		conn, err := d.DialContext(ctx, "tcp", "0.0.0.0:25565")
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				return err
+			}
+			slog.Debug("waitServerHealthy failed", slog.Any("error", err))
+
+			time.Sleep(time.Second)
+			continue
+		}
+		conn.Close()
+		return nil
+	}
+}
+
+func (l *Launcher) executeServer(cmdline []string) error {
+	slog.Info("Launching Minecraft server", slog.String("server_name", l.config.Server.Version), slog.Any("commandline", cmdline))
+
+	exterior.SendMessage("serverStatus", runner.Event{
+		Type: runner.EventStatus,
+		Status: &runner.StatusExtra{
+			EventCode: entity.EventLoading,
+		},
+	})
+
+	if l.beforeLaunch != nil {
+		l.beforeLaunch(l)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		if err := waitServerHealthy(ctx); err != nil {
+			// We'll write the error to log, but don't want to treat this as an error.
+			slog.Error("Failed to wait for the server to be healthy", slog.Any("error", err))
+			return
+		}
+		l.onHealthy(l)
+	}()
+
+	err := systemutil.Cmd(cmdline[0], cmdline[1:], systemutil.WithWorkingDir(fs.DataPath("gamedata")))
+
+	cancel()
+
+	return err
+}
+
 func (l *Launcher) startServer() error {
-	l.FinishWG.Add(1)
 	allocSize := getAllocSizeMiB()
 
 	var launchCommand []string
@@ -270,51 +351,28 @@ func (l *Launcher) startServer() error {
 		}
 	}
 
-	go func() {
-		slog.Info("Launching Minecraft server", slog.String("server_name", l.config.Server.Version), slog.Any("commandline", launchCommand))
-		launchCount := 0
-		prevLaunch := time.Now()
-		for !l.shouldStop {
-			select {
-			case <-l.ctx.Done():
-				break
-			default:
-			}
-
-			if l.quickUndoBeforeRestart {
-				if err := processQuickUndo(l.quickUndoSlot); err != nil {
-					slog.Error("Error processing quick undo", slog.Any("error", err))
-				}
-
-				launchCount = 0
-				l.quickUndoBeforeRestart = false
-			}
-
-			if launchCount == 5 {
-				if time.Now().Sub(prevLaunch) < 3*time.Minute {
-					break
-				}
-			}
-			cmd := exec.Command(launchCommand[0], launchCommand[1:]...)
-			cmd.Dir = fs.DataPath("gamedata")
-			cmdStdout, _ := cmd.StdoutPipe()
-			cmd.Stderr = os.Stderr
-			cmd.Start()
-			l.serverPid = cmd.Process.Pid
-			MonitorServer(l.config, l, cmdStdout)
-			cmd.Wait()
-			cmdStdout.Close()
-			exitCode := cmd.ProcessState.ExitCode()
-			slog.Info("Server exited", slog.Int("exit_code", exitCode))
-			if exitCode == 0 {
-				break
-			}
-			launchCount++
+	var prevLaunch time.Time
+	for {
+		select {
+		case <-l.ctx.Done():
+			break
+		default:
 		}
-		l.FinishWG.Done()
-	}()
 
-	return nil
+		if err := l.executeServer(launchCommand); err == nil {
+			if !l.restoringSnapshot {
+				return nil
+			}
+		} else {
+			slog.Error("Minecraft server failed", slog.Any("error", err))
+		}
+
+		if time.Since(prevLaunch) < 3*time.Minute {
+			return errors.New("Game crashes repeatedly")
+		}
+
+		prevLaunch = time.Now()
+	}
 }
 
 func (l *Launcher) StopToRestart() {
@@ -438,10 +496,9 @@ func (l *Launcher) Launch() error {
 		return err
 	}
 
-	l.AddToWhiteList(l.config.Whitelist)
-	l.AddToOp(l.config.Operators)
-
-	l.Wait()
+	if err := storeLastServerVersion(l.config); err != nil {
+		slog.Error("Error saving last server versoin", slog.Any("error", err))
+	}
 
 	if err := l.uploadWorld(); err != nil {
 		return err
@@ -474,35 +531,34 @@ func (l *Launcher) isServerActive() bool {
 	return true
 }
 
-func (l *Launcher) Wait() {
-	done := make(chan interface{})
+// func (l *Launcher) Wait() {
+// 	done := make(chan interface{})
 
-	l.lastActive = time.Now()
-	go func() {
-		ticker := time.NewTicker(time.Minute)
+// 	l.lastActive = time.Now()
+// 	go func() {
+// 		ticker := time.NewTicker(time.Minute)
 
-		for {
-			select {
-			case <-ticker.C:
-				if l.isServerActive() {
-					l.lastActive = time.Now()
-				} else {
-					if l.lastActive.Add(30 * time.Minute).Before(time.Now()) {
-						l.Stop()
-					}
-				}
-			case <-done:
-				goto end
-			}
-		}
+// 		for {
+// 			select {
+// 			case <-ticker.C:
+// 				if l.isServerActive() {
+// 					l.lastActive = time.Now()
+// 				} else {
+// 					if l.lastActive.Add(30 * time.Minute).Before(time.Now()) {
+// 						l.Stop()
+// 					}
+// 				}
+// 			case <-done:
+// 				goto end
+// 			}
+// 		}
 
-	end:
-		ticker.Stop()
-	}()
+// 	end:
+// 		ticker.Stop()
+// 	}()
 
-	l.FinishWG.Wait()
-	close(done)
-}
+// 	close(done)
+// }
 
 func (l *Launcher) Stop() {
 	exterior.DispatchMessage("serverStatus", runner.Event{
@@ -511,8 +567,6 @@ func (l *Launcher) Stop() {
 			EventCode: entity.EventStopping,
 		},
 	})
-
-	l.shouldStop = true
 
 	if _, err := l.Rcon.Execute("stop"); err != nil {
 		slog.Error("Failed to send stop command to server", slog.Any("error", err))
@@ -573,17 +627,10 @@ func (l *Launcher) QuickUndo(slot int) error {
 		},
 	})
 
-	l.quickUndoBeforeRestart = true
+	l.restoringSnapshot = true
 	l.quickUndoSlot = slot
 
-	proc, err := os.FindProcess(l.serverPid)
-	if err != nil {
-		return err
-	}
-	// go go go!!!
-	if err := proc.Kill(); err != nil {
-		return err
-	}
+	l.Stop()
 
 	return nil
 }
@@ -610,13 +657,6 @@ func LaunchInteractiveRcon(args []string) int {
 	return 0
 }
 
-var (
-	serverLoadingRegexp         = regexp.MustCompile("^Starting ([a-z]+\\.)+Main$")
-	serverLoadingProgressRegexp = regexp.MustCompile("\\]: Preparing spawn area: ([0-9]+)%")
-	serverLoadedRegexp          = regexp.MustCompile("\\]: Done \\([0-9]*\\.[0-9]*s\\)! For help, type \"help\"")
-	serverStoppingRegexp        = regexp.MustCompile("\\]: Stopping the server")
-)
-
 func SendStartedEvent(config *runner.Config, srv *Launcher) {
 	slog.Debug("Send Started event...")
 
@@ -634,64 +674,6 @@ func SendStartedEvent(config *runner.Config, srv *Launcher) {
 		Type:    runner.EventStarted,
 		Started: data,
 	})
-}
-
-func MonitorServer(config *runner.Config, srv *Launcher, stdout io.ReadCloser) error {
-	reader := bufio.NewReader(stdout)
-	for {
-		line, isPrefix, err := reader.ReadLine()
-		if err != nil && err == io.EOF {
-			return nil
-		} else if err != nil {
-			return err
-		}
-		if isPrefix {
-			continue
-		}
-		slog.Info("Log from Minecraft", slog.String("content", string(line)))
-		if serverLoadingRegexp.Match(line) {
-			exterior.SendMessage("serverStatus", runner.Event{
-				Type: runner.EventStatus,
-				Status: &runner.StatusExtra{
-					EventCode: entity.EventLoading,
-				},
-			})
-		} else if serverLoadingProgressRegexp.Match(line) {
-			matches := serverLoadingProgressRegexp.FindSubmatch(line)
-			if matches == nil {
-				continue
-			}
-			progress, _ := strconv.Atoi(string(matches[1]))
-			progress %= 101
-			exterior.SendMessage("serverStatus", runner.Event{
-				Type: runner.EventStatus,
-				Status: &runner.StatusExtra{
-					EventCode: entity.EventLoading,
-					Progress:  progress,
-				},
-			})
-		} else if serverLoadedRegexp.Match(line) {
-			exterior.SendMessage("serverStatus", runner.Event{
-				Type: runner.EventStatus,
-				Status: &runner.StatusExtra{
-					EventCode: entity.EventRunning,
-				},
-			})
-
-			go SendStartedEvent(config, srv)
-
-			if err := storeLastServerVersion(config); err != nil {
-				slog.Error("Error saving last server versoin", slog.Any("error", err))
-			}
-		} else if serverStoppingRegexp.Match(line) {
-			exterior.SendMessage("serverStatus", runner.Event{
-				Type: runner.EventStatus,
-				Status: &runner.StatusExtra{
-					EventCode: entity.EventStopping,
-				},
-			})
-		}
-	}
 }
 
 func generateServerProps(config *runner.Config) error {
@@ -727,11 +709,11 @@ func processQuickUndo(slot int) error {
 		return err
 	}
 
-	cmd := exec.Command("cp", "-R", "--", fmt.Sprintf("ss@quick%d/world", slot), ".")
-	cmd.Dir = fs.DataPath("gamedata")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+	if err := systemutil.Cmd(
+		"cp",
+		[]string{"-R", "--", fmt.Sprintf("ss@quick%d/world", slot), "."},
+		systemutil.WithWorkingDir(fs.DataPath("gamedata")),
+	); err != nil {
 		slog.Info("cp command returned an error", slog.Any("error", err))
 	}
 
