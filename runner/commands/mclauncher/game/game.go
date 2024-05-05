@@ -642,19 +642,18 @@ func (l *Launcher) sendStartedEvent(config *runner.Config) {
 
 func generateServerProps(config *runner.Config) error {
 	serverProps := NewServerProperties()
-	serverProps.SetMotd(config.Motd)
-	serverProps.SetDifficulty(config.World.Difficulty)
-	serverProps.SetLevelType(config.World.LevelType)
-	serverProps.SetSeed(config.World.Seed)
-	serverProps.OverrideProperties(config.Server.ServerPropOverride)
-	serverPropsFile, err := os.Create(fs.DataPath("gamedata/server.properties"))
+	serverProps.LoadConfig(config)
+
+	out, err := os.Create(fs.DataPath("gamedata/server.properties"))
 	if err != nil {
 		return err
 	}
-	defer serverPropsFile.Close()
-	if err := serverProps.Write(serverPropsFile); err != nil {
+	defer out.Close()
+
+	if err := serverProps.Write(out); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -682,39 +681,4 @@ func processQuickUndo(slot int) error {
 	}
 
 	return nil
-}
-
-func getJavaPathFromInstalledVersion(version int) (string, error) {
-	output, err := systemutil.CmdOutput("update-alternatives", []string{"--list", "java"})
-	if err != nil {
-		return "", err
-	}
-
-	candidates := strings.Split(strings.TrimRight(output, "\r\n"), "\n")
-	slog.Debug("Installed java versions", slog.Any("versions", candidates))
-
-	for _, path := range candidates {
-		if strings.Index(path, fmt.Sprintf("-%d-", version)) >= 0 {
-			return path, nil
-		}
-	}
-
-	return "", errors.New("Not found")
-}
-
-func findJavaPath(version int) string {
-	if version == 0 {
-		slog.Info("Version not specified. Using the system default")
-		return "java"
-	}
-
-	path, err := getJavaPathFromInstalledVersion(version)
-	if err != nil {
-		slog.Warn("Error finding java installation. Using the system default", slog.Any("error", err))
-		return "java"
-	}
-
-	slog.Info("Found java installation matching requested version", slog.String("path", path), slog.Int("requested_version", version))
-
-	return path
 }

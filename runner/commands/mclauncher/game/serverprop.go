@@ -4,8 +4,12 @@ import (
 	"bufio"
 	"errors"
 	"io"
+	"os"
 	"slices"
 	"strings"
+
+	"github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/runner/fs"
 )
 
 var serverProperties = map[string]string{
@@ -82,6 +86,16 @@ func NewServerProperties() *ServerProperties {
 	return &ServerProperties{
 		props: serverProperties,
 	}
+}
+
+func (p *ServerProperties) LoadConfig(config *runner.Config) error {
+	serverProps := NewServerProperties()
+	serverProps.SetMotd(config.Motd)
+	serverProps.SetDifficulty(config.World.Difficulty)
+	serverProps.SetLevelType(config.World.LevelType)
+	serverProps.SetSeed(config.World.Seed)
+	serverProps.OverrideProperties(config.Server.ServerPropOverride)
+	return nil
 }
 
 func (p *ServerProperties) SetMotd(motd string) {
