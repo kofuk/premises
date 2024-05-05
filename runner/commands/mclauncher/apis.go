@@ -28,7 +28,6 @@ func NewRPCHandler(s *rpc.Server, game *game.Launcher) *RPCHandler {
 }
 
 func (h *RPCHandler) HandleGameStop(req *rpc.AbstractRequest) (any, error) {
-	h.game.ShouldStop = true
 	h.game.Stop()
 	return "ok", nil
 }
