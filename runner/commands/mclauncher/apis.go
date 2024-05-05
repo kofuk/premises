@@ -70,7 +70,7 @@ func (h *RPCHandler) HandleSnapshotCreate(req *rpc.AbstractRequest) (any, error)
 	}, nil); err != nil {
 		slog.Error("Failed to create snapshot", slog.Any("error", err))
 
-		exterior.DispatchMessage("serverStatus", runner.Event{
+		exterior.DispatchEvent(runner.Event{
 			Type: runner.EventInfo,
 			Info: &runner.InfoExtra{
 				InfoCode: entity.InfoSnapshotError,
@@ -82,7 +82,7 @@ func (h *RPCHandler) HandleSnapshotCreate(req *rpc.AbstractRequest) (any, error)
 		return nil, err
 	}
 
-	exterior.DispatchMessage("serverStatus", runner.Event{
+	exterior.DispatchEvent(runner.Event{
 		Type: runner.EventInfo,
 		Info: &runner.InfoExtra{
 			InfoCode: entity.InfoSnapshotDone,
@@ -102,7 +102,7 @@ func (h *RPCHandler) HandleSnapshotUndo(req *rpc.AbstractRequest) (any, error) {
 
 	go func() {
 		if _, err := os.Stat(fs.DataPath(fmt.Sprintf("gamedata/ss@quick%d/world", input.Slot))); err != nil {
-			exterior.DispatchMessage("serverStatus", runner.Event{
+			exterior.DispatchEvent(runner.Event{
 				Type: runner.EventInfo,
 				Info: &runner.InfoExtra{
 					InfoCode: entity.InfoNoSnapshot,

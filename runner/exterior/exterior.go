@@ -1,41 +1,31 @@
 package exterior
 
 import (
-	"encoding/json"
 	"log/slog"
 
-	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
+	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/rpc"
+	"github.com/kofuk/premises/runner/rpc/types"
 )
 
-func sendMessage(msgType string, userData any, dispatch bool) error {
-	slog.Debug("Sending message...", slog.String("type", msgType), slog.Any("data", userData))
-
-	serializedUserData, err := json.Marshal(userData)
-	if err != nil {
-		return err
-	}
-
-	msg := msgrouter.Message{
-		Type:     msgType,
+func sendEvent(event runner.Event, dispatch bool) error {
+	slog.Debug("Sending message...", slog.Any("data", event))
+	return rpc.ToExteriord.Call("status/push", types.EventInput{
 		Dispatch: dispatch,
-		UserData: string(serializedUserData),
-	}
-
-	var result string
-	return rpc.ToExteriord.Call("status/push", msg, &result)
+		Event:    event,
+	}, nil)
 }
 
 // Send status message
-func SendMessage(msgType string, userData any) {
-	if err := sendMessage(msgType, userData, false); err != nil {
+func SendEvent(event runner.Event) {
+	if err := sendEvent(event, false); err != nil {
 		slog.Error("Unable to send message", slog.Any("error", err))
 	}
 }
 
 // Same as `SendMessage`, but flushes buffer immediately.
-func DispatchMessage(msgType string, userData any) {
-	if err := sendMessage(msgType, userData, true); err != nil {
+func DispatchEvent(event runner.Event) {
+	if err := sendEvent(event, true); err != nil {
 		slog.Error("Unable to send message", slog.Any("error", err))
 	}
 }

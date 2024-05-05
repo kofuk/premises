@@ -95,11 +95,11 @@ func (self *ServerSetup) sendServerHello() {
 		slog.Error("Failed to get IP addresses for network interface", slog.Any("error", err))
 	}
 
-	exterior.DispatchMessage("serverStatus", eventData)
+	exterior.DispatchEvent(eventData)
 }
 
 func (self *ServerSetup) notifyStatus() {
-	exterior.SendMessage("serverStatus", runner.Event{
+	exterior.SendEvent(runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventSysInit,

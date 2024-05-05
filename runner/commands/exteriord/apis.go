@@ -1,32 +1,32 @@
 package exteriord
 
 import (
-	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
+	"github.com/kofuk/premises/runner/commands/exteriord/outbound"
 	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/rpc/types"
 )
 
 type RPCHandler struct {
-	s      *rpc.Server
-	mr     *msgrouter.MsgRouter
-	states *StateStore
+	s       *rpc.Server
+	msgChan chan outbound.OutboundMessage
+	states  *StateStore
 }
 
-func NewRPCHandler(s *rpc.Server, mr *msgrouter.MsgRouter, states *StateStore) *RPCHandler {
+func NewRPCHandler(s *rpc.Server, msgChan chan outbound.OutboundMessage, states *StateStore) *RPCHandler {
 	return &RPCHandler{
-		s:      s,
-		mr:     mr,
-		states: states,
+		s:       s,
+		msgChan: msgChan,
+		states:  states,
 	}
 }
 
 func (h *RPCHandler) HandleStatusPush(req *rpc.AbstractRequest) (any, error) {
-	var msg msgrouter.Message
+	var msg types.EventInput
 	if err := req.Bind(&msg); err != nil {
 		return nil, err
 	}
 
-	h.mr.DispatchMessage(msg)
+	h.msgChan <- outbound.OutboundMessage(msg)
 
 	return "ok", nil
 }

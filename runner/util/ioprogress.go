@@ -37,7 +37,7 @@ func (r *ProgressReader) Read(buf []byte) (int, error) {
 				percent = current * 100 / r.total
 			}
 
-			exterior.SendMessage("serverStatus", runner.Event{
+			exterior.SendEvent(runner.Event{
 				Type: runner.EventStatus,
 				Status: &runner.StatusExtra{
 					EventCode: r.event,
@@ -94,7 +94,7 @@ func (w *ProgressWriter) Write(buf []byte) (int, error) {
 				percent = current * 100 / w.total
 			}
 
-			exterior.SendMessage("serverStatus", runner.Event{
+			exterior.SendEvent(runner.Event{
 				Type: runner.EventStatus,
 				Status: &runner.StatusExtra{
 					EventCode: w.event,

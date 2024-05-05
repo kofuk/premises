@@ -7,7 +7,6 @@ import (
 	"syscall"
 
 	"github.com/kofuk/premises/runner/commands/exteriord/exterior"
-	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
 	"github.com/kofuk/premises/runner/commands/exteriord/outbound"
 	"github.com/kofuk/premises/runner/commands/exteriord/proc"
 	"github.com/kofuk/premises/runner/config"
@@ -24,14 +23,14 @@ func Run(args []string) int {
 		os.Exit(1)
 	}
 
-	msgRouter := msgrouter.NewMsgRouter()
+	msgChan := make(chan outbound.OutboundMessage, 8)
 
-	ob := outbound.NewServer(config.ControlPanel, config.AuthKey, msgRouter)
+	ob := outbound.NewServer(config.ControlPanel, config.AuthKey, msgChan)
 	go ob.Start()
 
 	stateStore := NewStateStore(NewLocalStorageStateBackend(fs.DataPath("states.json")))
 
-	rpcHandler := NewRPCHandler(rpc.DefaultServer, msgRouter, stateStore)
+	rpcHandler := NewRPCHandler(rpc.DefaultServer, msgChan, stateStore)
 	rpcHandler.Bind()
 
 	e := exterior.New()

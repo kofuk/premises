@@ -11,17 +11,21 @@ import (
 	"time"
 
 	"github.com/kofuk/premises/common/entity/runner"
-	"github.com/kofuk/premises/runner/commands/exteriord/msgrouter"
 	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/rpc/types"
 )
 
 type ActionMapper func(action runner.Action) error
 
+type OutboundMessage struct {
+	Dispatch bool         `json:"dispatch"`
+	Event    runner.Event `json:"event"`
+}
+
 type Server struct {
 	addr          string
 	authKey       string
-	msgRouter     *msgrouter.MsgRouter
+	msgChan       chan OutboundMessage
 	actionMappers map[runner.ActionType]ActionMapper
 }
 
@@ -59,11 +63,11 @@ func (s *Server) HandleActionReconfigure(action runner.Action) error {
 	return rpc.ToLauncher.Call("game/reconfigure", action.Config, nil)
 }
 
-func NewServer(addr string, authKey string, msgRouter *msgrouter.MsgRouter) *Server {
+func NewServer(addr string, authKey string, msgChan chan OutboundMessage) *Server {
 	s := &Server{
 		addr:          addr,
 		authKey:       authKey,
-		msgRouter:     msgRouter,
+		msgChan:       msgChan,
 		actionMappers: make(map[runner.ActionType]ActionMapper),
 	}
 
@@ -76,9 +80,6 @@ func NewServer(addr string, authKey string, msgRouter *msgrouter.MsgRouter) *Ser
 }
 
 func (s *Server) HandleMonitor() {
-	client := s.msgRouter.Subscribe(msgrouter.NotifyLatest("serverStatus"))
-	defer s.msgRouter.Unsubscribe(client)
-
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
@@ -112,11 +113,18 @@ out:
 
 			sendStatus()
 
-		case msg, ok := <-client.C:
+		case msg, ok := <-s.msgChan:
 			if !ok {
 				break out
 			}
-			buf.Write([]byte(msg.UserData))
+
+			json, err := json.Marshal(msg.Event)
+			if err != nil {
+				slog.Error("Unabel to marshal event data", slog.Any("error", err))
+				continue
+			}
+
+			buf.Write(json)
 			buf.WriteByte(0)
 
 			if msg.Dispatch {

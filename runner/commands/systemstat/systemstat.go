@@ -26,14 +26,13 @@ func Run(args []string) int {
 			continue
 		}
 
-		data := entity.Event{
+		exterior.SendEvent(entity.Event{
 			Type: entity.EventSysstat,
 			Sysstat: &entity.SysstatExtra{
 				CPUUsage: usage,
 				Time:     time.Now().UnixMilli(),
 			},
-		}
-		exterior.SendMessage("systemStat", data)
+		})
 	}
 
 	return 1

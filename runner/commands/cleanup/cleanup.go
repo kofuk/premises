@@ -69,7 +69,7 @@ func unmountData() {
 }
 
 func notifyStatus(eventCode entity.EventCode) {
-	exterior.SendMessage("serverStatus", runner.Event{
+	exterior.SendEvent(runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: eventCode,

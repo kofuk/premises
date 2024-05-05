@@ -1,5 +1,7 @@
 package types
 
+import "github.com/kofuk/premises/common/entity/runner"
+
 type SnapshotHelperInput struct {
 	Slot int `json:"slot"`
 }
@@ -25,4 +27,9 @@ type StateGetInput struct {
 
 type StateRemoveInput struct {
 	Key string `json:"key"`
+}
+
+type EventInput struct {
+	Dispatch bool         `json:"dispatch"`
+	Event    runner.Event `json:"event"`
 }

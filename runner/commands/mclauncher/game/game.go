@@ -70,7 +70,7 @@ func NewLauncher(config *runner.Config, backup *backup.BackupService) *Launcher 
 		l.AddToWhiteList(l.config.Whitelist)
 		l.AddToOp(l.config.Operators)
 
-		exterior.SendMessage("serverStatus", runner.Event{
+		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventRunning,
@@ -172,7 +172,7 @@ func (l *Launcher) downloadWorld() error {
 			slog.Error("Failed to remove last world hash", slog.Any("error", err))
 		}
 
-		exterior.SendMessage("serverStatus", runner.Event{
+		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventWorldDownload,
@@ -200,7 +200,7 @@ func (l *Launcher) downloadServerJar() error {
 		return err
 	}
 
-	exterior.SendMessage("serverStatus", runner.Event{
+	exterior.SendEvent(runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventGameDownload,
@@ -219,7 +219,7 @@ func (l *Launcher) downloadServerJar() error {
 }
 
 func (l *Launcher) uploadWorld() error {
-	exterior.SendMessage("serverStatus", runner.Event{
+	exterior.SendEvent(runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventWorldPrepare,
@@ -227,7 +227,7 @@ func (l *Launcher) uploadWorld() error {
 	})
 	if err := backup.PrepareUploadData(); err != nil {
 		slog.Error("Failed to create world archive", slog.Any("error", err))
-		exterior.SendMessage("serverStatus", runner.Event{
+		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventWorldErr,
@@ -236,7 +236,7 @@ func (l *Launcher) uploadWorld() error {
 		return err
 	}
 
-	exterior.SendMessage("serverStatus", runner.Event{
+	exterior.SendEvent(runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventWorldUpload,
@@ -245,7 +245,7 @@ func (l *Launcher) uploadWorld() error {
 	key, err := l.world.UploadWorldData(l.config)
 	if err != nil {
 		slog.Error("Failed to upload world data", slog.Any("error", err))
-		exterior.SendMessage("serverStatus", runner.Event{
+		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventWorldErr,
@@ -317,7 +317,7 @@ func (l *Launcher) stopAfterLongInactive(ctx context.Context) {
 func (l *Launcher) executeServer(cmdline []string) error {
 	slog.Info("Launching Minecraft server", slog.String("server_name", l.config.Server.Version), slog.Any("commandline", cmdline))
 
-	exterior.SendMessage("serverStatus", runner.Event{
+	exterior.SendEvent(runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventLoading,
@@ -439,7 +439,7 @@ func (l *Launcher) cleanGameDirIfVersionChanged() error {
 }
 
 func (l *Launcher) prepareEnvironment() error {
-	exterior.SendMessage("serverStatus", runner.Event{
+	exterior.SendEvent(runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventWorldPrepare,
@@ -467,7 +467,7 @@ func (l *Launcher) prepareEnvironment() error {
 
 func (l *Launcher) Launch() error {
 	if err := l.downloadWorld(); err != nil {
-		exterior.SendMessage("serverStatus", runner.Event{
+		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventWorldErr,
@@ -485,7 +485,7 @@ func (l *Launcher) Launch() error {
 
 	if err := l.downloadServerJar(); err != nil {
 		slog.Error("Couldn't download server.jar", slog.Any("error", err))
-		exterior.SendMessage("serverStatus", runner.Event{
+		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventGameErr,
@@ -496,7 +496,7 @@ func (l *Launcher) Launch() error {
 
 	if err := l.prepareEnvironment(); err != nil {
 		slog.Error("Failed to prepare environment", slog.Any("error", err))
-		exterior.SendMessage("serverStatus", runner.Event{
+		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventLaunchErr,
@@ -507,7 +507,7 @@ func (l *Launcher) Launch() error {
 
 	if err := l.startServer(); err != nil {
 		slog.Error("Failed to launch Minecraft server", slog.Any("error", err))
-		exterior.SendMessage("serverStatus", runner.Event{
+		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventLaunchErr,
@@ -546,7 +546,7 @@ func (l *Launcher) isServerActive() bool {
 }
 
 func (l *Launcher) Stop() {
-	exterior.DispatchMessage("serverStatus", runner.Event{
+	exterior.DispatchEvent(runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventStopping,
@@ -584,7 +584,7 @@ func (l *Launcher) AddToOp(players []string) {
 }
 
 func (l *Launcher) QuickUndo(slot int) error {
-	exterior.DispatchMessage("serverStatus", runner.Event{
+	exterior.DispatchEvent(runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventStopping,
@@ -634,7 +634,7 @@ func (l *Launcher) sendStartedEvent(config *runner.Config) {
 	}
 	data.World.Seed = seed
 
-	exterior.SendMessage("serverStatus", runner.Event{
+	exterior.SendEvent(runner.Event{
 		Type:    runner.EventStarted,
 		Started: data,
 	})
