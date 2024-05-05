@@ -3,6 +3,7 @@ package game
 import (
 	"bufio"
 	"errors"
+	"fmt"
 	"io"
 	"slices"
 	"strings"
@@ -118,6 +119,9 @@ func (p *ServerProperties) SetLevelType(levelType string) error {
 
 func (p *ServerProperties) OverrideProperties(props map[string]string) {
 	for k, v := range props {
+		if strings.Trim(k, "abcdefghijklmnopqrstuvwxyz0123456789.-") != "" {
+			continue
+		}
 		if _, ok := overrideBlockedProps[k]; ok {
 			continue
 		}
@@ -131,15 +135,12 @@ func (p *ServerProperties) SetSeed(seed string) {
 
 func (p *ServerProperties) Write(out io.Writer) error {
 	writer := bufio.NewWriter(out)
+	defer writer.Flush()
 
 	for k, v := range p.props {
-		writer.WriteString(k)
-		writer.WriteRune('=')
-		writer.WriteString(v)
-		writer.WriteRune('\n')
+		escapedValue := strings.ReplaceAll(v, "\\", "\\\\")
+		fmt.Fprintf(writer, "%s=%s\n", k, escapedValue)
 	}
-
-	defer writer.Flush()
 
 	return nil
 }
