@@ -214,7 +214,8 @@ func (l *Launcher) uploadWorld() error {
 			EventCode: entity.EventWorldUpload,
 		},
 	})
-	if err := l.world.UploadWorldData(l.config); err != nil {
+	key, err := l.world.UploadWorldData(l.config)
+	if err != nil {
 		slog.Error("Failed to upload world data", slog.Any("error", err))
 		exterior.SendMessage("serverStatus", runner.Event{
 			Type: runner.EventStatus,
@@ -223,6 +224,9 @@ func (l *Launcher) uploadWorld() error {
 			},
 		})
 		return err
+	}
+	if err := storeLastWorld(key); err != nil {
+		slog.Error("Unable to store last world key", slog.Any("error", err))
 	}
 
 	return nil
@@ -405,10 +409,6 @@ func (l *Launcher) Launch() error {
 
 	if err := l.uploadWorld(); err != nil {
 		return err
-	}
-
-	if err := storeLastWorld(l.config.World.GenerationId); err != nil {
-		slog.Error("Unable to store last world key", slog.Any("error", err))
 	}
 
 	if err := l.world.RemoveOldBackups(l.config); err != nil {
