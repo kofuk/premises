@@ -93,7 +93,7 @@ func (self *BackupService) GetLatestKey(world string) (string, error) {
 	return objs[0].Key, nil
 }
 
-func (self *BackupService) UploadWorldData(config *runner.Config) error {
+func (self *BackupService) UploadWorldData(config *runner.Config) (string, error) {
 	return self.doUploadWorldData(config)
 }
 
@@ -105,33 +105,33 @@ func getFileExtension(name string) string {
 	return name[index:]
 }
 
-func (self *BackupService) doUploadWorldData(config *runner.Config) error {
+func (self *BackupService) doUploadWorldData(config *runner.Config) (string, error) {
 	slog.Info("Uploading world archive...")
 
 	archivePath := fs.DataPath("world.tar.zst")
 
 	file, err := os.Open(archivePath)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	fileInfo, err := file.Stat()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	key := fmt.Sprintf("%s/%s", config.World.Name, makeBackupName())
 	reader := util.NewProgressReader(file, entity.EventWorldUpload, int(fileInfo.Size())).ToSeekable()
 	if err := self.s3.PutObject(context.Background(), self.bucket, key, reader, fileInfo.Size()); err != nil {
-		return fmt.Errorf("Unable to upload %s: %w", key, err)
+		return "", fmt.Errorf("Unable to upload %s: %w", key, err)
 	}
 	slog.Info("Uploading world archive...Done")
 
 	if err := os.Remove(archivePath); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return key, nil
 }
 
 func (self *BackupService) RemoveOldBackups(config *runner.Config) error {
