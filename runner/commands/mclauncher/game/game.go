@@ -9,7 +9,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -44,10 +43,6 @@ var (
 	RestartRequested = errors.New("Restart requested")
 )
 
-var (
-	activePlayerListRegexp = regexp.MustCompile("^There are ([0-9]+) of a max of [0-9]+ players online")
-)
-
 func NewLauncher(config *runner.Config, backup *backup.BackupService) *Launcher {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -70,7 +65,7 @@ func NewLauncher(config *runner.Config, backup *backup.BackupService) *Launcher 
 	})
 
 	l.RegisterOnHealthyHook(func(l *Launcher) {
-		go SendStartedEvent(config, l)
+		go l.sendStartedEvent(config)
 
 		l.AddToWhiteList(l.config.Whitelist)
 		l.AddToOp(l.config.Operators)
@@ -541,19 +536,13 @@ func (l *Launcher) Launch() error {
 }
 
 func (l *Launcher) isServerActive() bool {
-	resp, err := l.Rcon.Execute("list")
+	list, err := l.Rcon.List()
 	if err != nil {
-		slog.Error("Failed to send list command to server", slog.Any("error", err))
+		slog.Error("Failed to retrieve player list", slog.Any("error", err))
+		return true
 	}
 
-	if match := activePlayerListRegexp.FindStringSubmatch(resp); match != nil {
-		if match[1] == "0" {
-			slog.Info("Server is detected to be inactive")
-			return false
-		}
-	}
-
-	return true
+	return len(list) > 0
 }
 
 func (l *Launcher) Stop() {
@@ -564,13 +553,14 @@ func (l *Launcher) Stop() {
 		},
 	})
 
-	if _, err := l.Rcon.Execute("stop"); err != nil {
+	if err := l.Rcon.Stop(); err != nil {
 		slog.Error("Failed to send stop command to server", slog.Any("error", err))
+		return
 	}
 }
 
 func (l *Launcher) SaveAll() error {
-	if _, err := l.Rcon.Execute("save-all"); err != nil {
+	if err := l.Rcon.SaveAll(); err != nil {
 		return err
 	}
 	return nil
@@ -578,8 +568,7 @@ func (l *Launcher) SaveAll() error {
 
 func (l *Launcher) AddToWhiteList(players []string) {
 	for _, player := range players {
-		_, err := l.Rcon.Execute(fmt.Sprintf("whitelist add %s", player))
-		if err != nil {
+		if err := l.Rcon.AddToWhiteList(player); err != nil {
 			slog.Error("Failed to execute whitelist command", slog.Any("error", err))
 		}
 	}
@@ -587,32 +576,11 @@ func (l *Launcher) AddToWhiteList(players []string) {
 
 func (l *Launcher) AddToOp(players []string) {
 	for _, player := range players {
-		_, err := l.Rcon.Execute(fmt.Sprintf("op %s", player))
-		if err != nil {
+
+		if err := l.Rcon.AddToOp(player); err != nil {
 			slog.Error("Failed to execute op command", slog.Any("error", err))
 		}
 	}
-}
-
-func (l *Launcher) SendChat(message string) error {
-	if _, err := l.Rcon.Execute(fmt.Sprintf("tellraw @a \"%s\"", message)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (l *Launcher) GetSeed() (string, error) {
-	seed, err := l.Rcon.Execute("seed")
-	if err != nil {
-		return "", err
-	}
-
-	if len(seed) < 8 || seed[:7] != "Seed: [" || seed[len(seed)-1] != ']' {
-		return "", errors.New("Failed to retrieve seed")
-	}
-
-	return seed[7 : len(seed)-1], nil
 }
 
 func (l *Launcher) QuickUndo(slot int) error {
@@ -653,14 +621,14 @@ func LaunchInteractiveRcon(args []string) int {
 	return 0
 }
 
-func SendStartedEvent(config *runner.Config, srv *Launcher) {
+func (l *Launcher) sendStartedEvent(config *runner.Config) {
 	slog.Debug("Send Started event...")
 
 	data := new(runner.StartedExtra)
 
 	data.ServerVersion = config.Server.Version
 	data.World.Name = config.World.Name
-	seed, err := srv.GetSeed()
+	seed, err := l.Rcon.Seed()
 	if err != nil {
 		slog.Error("Failed to retrieve seed", slog.Any("error", err))
 	}
