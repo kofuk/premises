@@ -32,17 +32,12 @@ type Launcher struct {
 	ctx                    context.Context
 	cancel                 context.CancelFunc
 	shouldRestart          bool
-	Name                   string
+	shouldStop             bool
 	FinishWG               sync.WaitGroup
-	ShouldStop             bool
-	StartupFailed          bool
-	IsServerInitialized    bool
-	IsGameFinished         bool
-	Crashed                bool
 	lastActive             time.Time
 	quickUndoBeforeRestart bool
 	quickUndoSlot          int
-	ServerPid              int
+	serverPid              int
 	Rcon                   *Rcon
 }
 
@@ -278,7 +273,6 @@ func (l *Launcher) startServer() error {
 		return err
 	}
 
-	l.Name = l.config.Server.Version
 	l.FinishWG.Add(1)
 	allocSize := 1024
 	if _, err := os.Stat("/.dockerenv"); err != nil {
@@ -315,7 +309,7 @@ func (l *Launcher) startServer() error {
 		slog.Info("Launching Minecraft server", slog.String("server_name", l.config.Server.Version), slog.Any("commandline", launchCommand))
 		launchCount := 0
 		prevLaunch := time.Now()
-		for !l.ShouldStop {
+		for !l.shouldStop {
 			select {
 			case <-l.ctx.Done():
 				break
@@ -333,7 +327,6 @@ func (l *Launcher) startServer() error {
 
 			if launchCount == 5 {
 				if time.Now().Sub(prevLaunch) < 3*time.Minute {
-					l.Crashed = true
 					break
 				}
 			}
@@ -342,7 +335,7 @@ func (l *Launcher) startServer() error {
 			cmdStdout, _ := cmd.StdoutPipe()
 			cmd.Stderr = os.Stderr
 			cmd.Start()
-			l.ServerPid = cmd.Process.Pid
+			l.serverPid = cmd.Process.Pid
 			MonitorServer(l.config, l, cmdStdout)
 			cmd.Wait()
 			cmdStdout.Close()
@@ -483,6 +476,8 @@ func (l *Launcher) Stop() {
 		},
 	})
 
+	l.shouldStop = true
+
 	if _, err := l.Rcon.Execute("stop"); err != nil {
 		slog.Error("Failed to send stop command to server", slog.Any("error", err))
 	}
@@ -545,7 +540,7 @@ func (l *Launcher) QuickUndo(slot int) error {
 	l.quickUndoBeforeRestart = true
 	l.quickUndoSlot = slot
 
-	proc, err := os.FindProcess(l.ServerPid)
+	proc, err := os.FindProcess(l.serverPid)
 	if err != nil {
 		return err
 	}
