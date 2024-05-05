@@ -11,12 +11,14 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
 	lm "github.com/kofuk/premises/common/mc/launchermeta"
 	"github.com/kofuk/premises/runner/commands/levelinspect"
 	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/systemutil"
 	"github.com/kofuk/premises/runner/util"
 )
 
@@ -148,4 +150,39 @@ func DownloadServerJar(url, savePath string) error {
 	}
 
 	return nil
+}
+
+func getJavaPathFromInstalledVersion(version int) (string, error) {
+	output, err := systemutil.CmdOutput("update-alternatives", []string{"--list", "java"})
+	if err != nil {
+		return "", err
+	}
+
+	candidates := strings.Split(strings.TrimRight(output, "\r\n"), "\n")
+	slog.Debug("Installed java versions", slog.Any("versions", candidates))
+
+	for _, path := range candidates {
+		if strings.Index(path, fmt.Sprintf("-%d-", version)) >= 0 {
+			return path, nil
+		}
+	}
+
+	return "", errors.New("Not found")
+}
+
+func findJavaPath(version int) string {
+	if version == 0 {
+		slog.Info("Version not specified. Using the system default")
+		return "java"
+	}
+
+	path, err := getJavaPathFromInstalledVersion(version)
+	if err != nil {
+		slog.Warn("Error finding java installation. Using the system default", slog.Any("error", err))
+		return "java"
+	}
+
+	slog.Info("Found java installation matching requested version", slog.String("path", path), slog.Int("requested_version", version))
+
+	return path
 }
