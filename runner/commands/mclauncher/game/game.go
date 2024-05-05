@@ -39,6 +39,7 @@ type Launcher struct {
 	quickUndoSlot          int
 	serverPid              int
 	Rcon                   *Rcon
+	OnHealthy              func()
 }
 
 var (
@@ -232,63 +233,23 @@ func (l *Launcher) uploadWorld() error {
 	return nil
 }
 
-func (l *Launcher) startServer() error {
-	exterior.SendMessage("serverStatus", runner.Event{
-		Type: runner.EventStatus,
-		Status: &runner.StatusExtra{
-			EventCode: entity.EventWorldPrepare,
-		},
-	})
-
-	if _, err := os.Stat(fs.LocateServer(l.config.Server.Version)); err != nil {
-		return err
+func getAllocSizeMiB() int {
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		// Docker environment.
+		return 1024
 	}
 
-	ver, err := getLastServerVersion()
+	totalMem, err := systemutil.GetTotalMemory()
 	if err != nil {
-		return err
+		slog.Error("Error retrieving total memory", slog.Any("error", err))
+		return 1024
 	}
-	if ver != l.config.Server.Version {
-		slog.Info("Different version of server selected. cleaning up...", slog.String("old", ver), slog.String("new", l.config.Server.Version))
+	return totalMem/1024/1024 - 1024
+}
 
-		ents, err := os.ReadDir(fs.DataPath("gamedata"))
-		if err != nil {
-			return err
-		}
-		for _, ent := range ents {
-			if ent.Name() == "server.properties" || ent.Name() == "world" || strings.HasPrefix(ent.Name(), "ss@") {
-				continue
-			}
-			if err := os.RemoveAll(fs.DataPath(filepath.Join("gamedata", ent.Name()))); err != nil {
-				return err
-			}
-		}
-	}
-
-	if err := clearLastServerVersion(); err != nil && !os.IsNotExist(err) {
-		return err
-	}
-
-	if err := generateServerProps(l.config); err != nil {
-		return err
-	}
-
-	if err := signEulaForServer(); err != nil {
-		return err
-	}
-
+func (l *Launcher) startServer() error {
 	l.FinishWG.Add(1)
-	allocSize := 1024
-	if _, err := os.Stat("/.dockerenv"); err != nil {
-		// It is non-dev environment. Guess allocSize from total memory
-		totalMem, err := systemutil.GetTotalMemory()
-		if err != nil {
-			slog.Error("Error retrieving total memory", slog.Any("error", err))
-		} else {
-			totalMemMiB := totalMem / 1024 / 1024
-			allocSize = totalMemMiB - 1024
-		}
-	}
+	allocSize := getAllocSizeMiB()
 
 	var launchCommand []string
 	if len(l.config.Server.CustomCommand) > 0 {
@@ -362,6 +323,70 @@ func (l *Launcher) StopToRestart() {
 	l.cancel()
 }
 
+func cleanGameDir() error {
+	ents, err := os.ReadDir(fs.DataPath("gamedata"))
+	if err != nil {
+		return err
+	}
+
+	var errs []error
+	for _, ent := range ents {
+		if ent.Name() == "server.properties" || ent.Name() == "world" || strings.HasPrefix(ent.Name(), "ss@") {
+			continue
+		}
+		if err := os.RemoveAll(fs.DataPath(filepath.Join("gamedata", ent.Name()))); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+func (l *Launcher) cleanGameDirIfVersionChanged() error {
+	ver, err := getLastServerVersion()
+	if err != nil {
+		return err
+	}
+	if ver == l.config.Server.Version {
+		return nil
+	}
+
+	slog.Info("Different version of server selected. cleaning up...", slog.String("old", ver), slog.String("new", l.config.Server.Version))
+
+	if err := cleanGameDir(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (l *Launcher) prepareEnvironment() error {
+	exterior.SendMessage("serverStatus", runner.Event{
+		Type: runner.EventStatus,
+		Status: &runner.StatusExtra{
+			EventCode: entity.EventWorldPrepare,
+		},
+	})
+
+	if err := l.cleanGameDirIfVersionChanged(); err != nil {
+		slog.Error(err.Error())
+	}
+
+	if err := clearLastServerVersion(); err != nil {
+		slog.Error(err.Error())
+	}
+
+	if err := generateServerProps(l.config); err != nil {
+		return err
+	}
+
+	if err := generateEula(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (l *Launcher) Launch() error {
 	if err := l.downloadWorld(); err != nil {
 		exterior.SendMessage("serverStatus", runner.Event{
@@ -386,6 +411,17 @@ func (l *Launcher) Launch() error {
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventGameErr,
+			},
+		})
+		return err
+	}
+
+	if err := l.prepareEnvironment(); err != nil {
+		slog.Error("Failed to prepare environment", slog.Any("error", err))
+		exterior.SendMessage("serverStatus", runner.Event{
+			Type: runner.EventStatus,
+			Status: &runner.StatusExtra{
+				EventCode: entity.EventLaunchErr,
 			},
 		})
 		return err
@@ -676,7 +712,7 @@ func generateServerProps(config *runner.Config) error {
 	return nil
 }
 
-func signEulaForServer() error {
+func generateEula() error {
 	eulaFile, err := os.Create(fs.DataPath("gamedata/eula.txt"))
 	if err != nil {
 		return err
