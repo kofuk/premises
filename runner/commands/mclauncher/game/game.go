@@ -297,6 +297,28 @@ func waitServerHealthy(ctx context.Context) error {
 	}
 }
 
+func (l *Launcher) stopAfterLongInactive(ctx context.Context) {
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+
+	lastActive := time.Now()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if l.isServerActive() {
+				lastActive = time.Now()
+				continue
+			}
+
+			if time.Since(lastActive) > 30*time.Minute {
+				l.Stop()
+			}
+		}
+	}
+}
+
 func (l *Launcher) executeServer(cmdline []string) error {
 	slog.Info("Launching Minecraft server", slog.String("server_name", l.config.Server.Version), slog.Any("commandline", cmdline))
 
@@ -320,6 +342,9 @@ func (l *Launcher) executeServer(cmdline []string) error {
 			return
 		}
 		l.onHealthy(l)
+	}()
+	go func() {
+		l.stopAfterLongInactive(ctx)
 	}()
 
 	err := systemutil.Cmd(cmdline[0], cmdline[1:], systemutil.WithWorkingDir(fs.DataPath("gamedata")))
@@ -530,35 +555,6 @@ func (l *Launcher) isServerActive() bool {
 
 	return true
 }
-
-// func (l *Launcher) Wait() {
-// 	done := make(chan interface{})
-
-// 	l.lastActive = time.Now()
-// 	go func() {
-// 		ticker := time.NewTicker(time.Minute)
-
-// 		for {
-// 			select {
-// 			case <-ticker.C:
-// 				if l.isServerActive() {
-// 					l.lastActive = time.Now()
-// 				} else {
-// 					if l.lastActive.Add(30 * time.Minute).Before(time.Now()) {
-// 						l.Stop()
-// 					}
-// 				}
-// 			case <-done:
-// 				goto end
-// 			}
-// 		}
-
-// 	end:
-// 		ticker.Stop()
-// 	}()
-
-// 	close(done)
-// }
 
 func (l *Launcher) Stop() {
 	exterior.DispatchMessage("serverStatus", runner.Event{
