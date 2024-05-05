@@ -1,4 +1,4 @@
-package gamesrv
+package game
 
 import (
 	"bytes"

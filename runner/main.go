@@ -13,7 +13,7 @@ import (
 	"github.com/kofuk/premises/runner/commands/keepsystemutd"
 	"github.com/kofuk/premises/runner/commands/levelinspect"
 	"github.com/kofuk/premises/runner/commands/mclauncher"
-	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
+	"github.com/kofuk/premises/runner/commands/mclauncher/game"
 	"github.com/kofuk/premises/runner/commands/privileged"
 	"github.com/kofuk/premises/runner/commands/serversetup"
 	"github.com/kofuk/premises/runner/commands/systemstat"
@@ -126,7 +126,7 @@ func main() {
 			},
 			"rcon": {
 				Description:  "Interactive Rcon",
-				Run:          gamesrv.LaunchInteractiveRcon,
+				Run:          game.LaunchInteractiveRcon,
 				RequiresRoot: false,
 			},
 			"setup": {

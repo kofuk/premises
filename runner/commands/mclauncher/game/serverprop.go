@@ -1,9 +1,10 @@
-package serverprop
+package game
 
 import (
 	"bufio"
 	"errors"
 	"io"
+	"slices"
 	"strings"
 )
 
@@ -77,7 +78,7 @@ type ServerProperties struct {
 	props map[string]string
 }
 
-func New() *ServerProperties {
+func NewServerProperties() *ServerProperties {
 	return &ServerProperties{
 		props: serverProperties,
 	}
@@ -88,7 +89,7 @@ func (p *ServerProperties) SetMotd(motd string) {
 }
 
 func (p *ServerProperties) SetDifficulty(difficulty string) error {
-	if difficulty != "peaceful" && difficulty != "easy" && difficulty != "normal" && difficulty != "hard" {
+	if !slices.Contains([]string{"peaceful", "easy", "normal", "hard"}, difficulty) {
 		return errors.New("Unknown difficulty")
 	}
 	p.props["difficulty"] = difficulty
@@ -96,7 +97,7 @@ func (p *ServerProperties) SetDifficulty(difficulty string) error {
 }
 
 func (p *ServerProperties) SetLevelType(levelType string) error {
-	if levelType != "default" && levelType != "flat" && levelType != "largeBiomes" && levelType != "amplified" && levelType != "buffet" {
+	if !slices.Contains([]string{"default", "flat", "largeBiomes", "amplified", "buffet"}, levelType) {
 		return errors.New("Unknown world type")
 	}
 	p.props["level-type"] = levelType

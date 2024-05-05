@@ -8,7 +8,7 @@ import (
 
 	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
-	"github.com/kofuk/premises/runner/commands/mclauncher/gamesrv"
+	"github.com/kofuk/premises/runner/commands/mclauncher/game"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/rpc"
@@ -17,10 +17,10 @@ import (
 
 type RPCHandler struct {
 	s    *rpc.Server
-	game *gamesrv.ServerInstance
+	game *game.Launcher
 }
 
-func NewRPCHandler(s *rpc.Server, game *gamesrv.ServerInstance) *RPCHandler {
+func NewRPCHandler(s *rpc.Server, game *game.Launcher) *RPCHandler {
 	return &RPCHandler{
 		s:    s,
 		game: game,
@@ -50,8 +50,7 @@ func (h *RPCHandler) HandleGameReconfigure(req *rpc.AbstractRequest) (any, error
 		return nil, err
 	}
 
-	h.game.RestartRequested = true
-	h.game.Stop()
+	h.game.StopToRestart()
 
 	return "ok", nil
 }
