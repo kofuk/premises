@@ -14,7 +14,7 @@ import (
 
 	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
-	"github.com/kofuk/premises/runner/commands/mclauncher/backup"
+	"github.com/kofuk/premises/runner/commands/mclauncher/world"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/rpc"
@@ -27,7 +27,7 @@ type BeforeLaunchFunc func(l *Launcher)
 
 type Launcher struct {
 	config            *runner.Config
-	world             *backup.BackupService
+	world             *world.WorldService
 	ctx               context.Context
 	cancel            context.CancelFunc
 	shouldRestart     bool
@@ -43,12 +43,12 @@ var (
 	RestartRequested = errors.New("Restart requested")
 )
 
-func NewLauncher(config *runner.Config, backup *backup.BackupService) *Launcher {
+func NewLauncher(config *runner.Config, world *world.WorldService) *Launcher {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	l := &Launcher{
 		config: config,
-		world:  backup,
+		world:  world,
 		ctx:    ctx,
 		cancel: cancel,
 		Rcon:   NewRcon("127.0.0.1:25575", "x"),
@@ -182,10 +182,6 @@ func (l *Launcher) downloadWorld() error {
 		if err := l.world.DownloadWorldData(l.config); err != nil {
 			return err
 		}
-
-		if err := backup.ExtractWorldArchiveIfNeeded(); err != nil {
-			return err
-		}
 		return nil
 	}
 
@@ -225,7 +221,7 @@ func (l *Launcher) uploadWorld() error {
 			EventCode: entity.EventWorldPrepare,
 		},
 	})
-	if err := backup.PrepareUploadData(); err != nil {
+	if err := world.PrepareUploadData(); err != nil {
 		slog.Error("Failed to create world archive", slog.Any("error", err))
 		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
@@ -467,6 +463,8 @@ func (l *Launcher) prepareEnvironment() error {
 
 func (l *Launcher) Launch() error {
 	if err := l.downloadWorld(); err != nil {
+		slog.Error("Unable to donwload world data", slog.Any("error", err))
+
 		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{

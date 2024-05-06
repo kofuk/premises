@@ -4,8 +4,8 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/kofuk/premises/runner/commands/mclauncher/backup"
 	"github.com/kofuk/premises/runner/commands/mclauncher/game"
+	"github.com/kofuk/premises/runner/commands/mclauncher/world"
 	"github.com/kofuk/premises/runner/config"
 	"github.com/kofuk/premises/runner/metadata"
 	"github.com/kofuk/premises/runner/rpc"
@@ -20,9 +20,9 @@ func Run(args []string) int {
 		return 1
 	}
 
-	backupService := backup.New(config.AWS.AccessKey, config.AWS.SecretKey, config.S3.Endpoint, config.S3.Bucket)
+	worldService := world.New(config.AWS.AccessKey, config.AWS.SecretKey, config.S3.Endpoint, config.S3.Bucket)
 
-	launcher := game.NewLauncher(config, backupService)
+	launcher := game.NewLauncher(config, worldService)
 
 	rpcHandler := NewRPCHandler(rpc.DefaultServer, launcher)
 	rpcHandler.Bind()
