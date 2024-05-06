@@ -26,6 +26,10 @@ const (
 	TagLongArray
 )
 
+var (
+	ErrTypeMismatch = errors.New("Type mismatch")
+)
+
 type Decoder struct {
 	r     *bufio.Reader
 	limit int
@@ -65,6 +69,9 @@ func (dec *Decoder) readByte(v *reflect.Value, level int) error {
 		return err
 	}
 	if v != nil {
+		if !v.CanInt() {
+			return ErrTypeMismatch
+		}
 		v.SetInt(int64(int8(value)))
 	}
 	return nil
@@ -76,6 +83,9 @@ func (dec *Decoder) readShort(v *reflect.Value, level int) error {
 		return err
 	}
 	if v != nil {
+		if !v.CanInt() {
+			return ErrTypeMismatch
+		}
 		value := int64(int16(binary.BigEndian.Uint16(buf)))
 		v.SetInt(value)
 	}
@@ -88,6 +98,9 @@ func (dec *Decoder) readInt(v *reflect.Value, level int) error {
 		return err
 	}
 	if v != nil {
+		if !v.CanInt() {
+			return ErrTypeMismatch
+		}
 		value := int64(int32(binary.BigEndian.Uint32(buf)))
 		v.SetInt(value)
 	}
@@ -100,6 +113,9 @@ func (dec *Decoder) readLong(v *reflect.Value, level int) error {
 		return err
 	}
 	if v != nil {
+		if !v.CanInt() {
+			return ErrTypeMismatch
+		}
 		value := int64(binary.BigEndian.Uint64(buf))
 		v.SetInt(value)
 	}
@@ -112,6 +128,9 @@ func (dec *Decoder) readFloat(v *reflect.Value, level int) error {
 		return err
 	}
 	if v != nil {
+		if !v.CanFloat() {
+			return ErrTypeMismatch
+		}
 		tmp := binary.BigEndian.Uint32(buf)
 		binary.LittleEndian.PutUint32(buf, tmp)
 		v.SetFloat(float64(*(*float32)(unsafe.Pointer(&buf[0]))))
@@ -125,6 +144,9 @@ func (dec *Decoder) readDouble(v *reflect.Value, level int) error {
 		return err
 	}
 	if v != nil {
+		if !v.CanFloat() {
+			return ErrTypeMismatch
+		}
 		tmp := binary.BigEndian.Uint64(buf)
 		binary.LittleEndian.PutUint64(buf, tmp)
 		v.SetFloat(*(*float64)(unsafe.Pointer(&buf[0])))
@@ -148,6 +170,9 @@ func (dec *Decoder) readByteArray(v *reflect.Value, level int) error {
 		result = append(result, value)
 	}
 	if v != nil {
+		if v.Kind() != reflect.Slice {
+			return ErrTypeMismatch
+		}
 		v.Set(reflect.ValueOf(result))
 	}
 	return nil
@@ -165,6 +190,9 @@ func (dec *Decoder) readString(v *reflect.Value, level int) error {
 		return err
 	}
 	if v != nil {
+		if v.Kind() != reflect.String {
+			return ErrTypeMismatch
+		}
 		v.SetString(string(value))
 	}
 	return nil
@@ -198,6 +226,10 @@ func (dec *Decoder) readList(v *reflect.Value, level int) error {
 			typeReader(nil, level)
 		}
 	} else {
+		v.Type()
+		if v.Kind() != reflect.Slice {
+			return ErrTypeMismatch
+		}
 		elemType := v.Type().Elem()
 		slice := reflect.MakeSlice(reflect.SliceOf(elemType), listLen, listLen)
 		for i := 0; i < listLen; i++ {
@@ -274,6 +306,9 @@ func (dec *Decoder) readIntArray(v *reflect.Value, level int) error {
 		result = append(result, int32(binary.BigEndian.Uint32(buf)))
 	}
 	if v != nil {
+		if v.Kind() != reflect.Slice {
+			return ErrTypeMismatch
+		}
 		v.Set(reflect.ValueOf(result))
 	}
 	return nil
@@ -295,6 +330,9 @@ func (dec *Decoder) readLongArray(v *reflect.Value, level int) error {
 		result = append(result, int64(binary.BigEndian.Uint64(buf)))
 	}
 	if v != nil {
+		if v.Kind() != reflect.Slice {
+			return ErrTypeMismatch
+		}
 		v.Set(reflect.ValueOf(result))
 	}
 	return nil

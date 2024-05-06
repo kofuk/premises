@@ -385,3 +385,12 @@ func TestDecode_LevelDat(t *testing.T) {
 	assert.Equal(t, "1.20.4", a.Data.Version.Name)
 	assert.Equal(t, "sample world", a.Data.LevelName)
 }
+
+func Fuzz_Decode(f *testing.F) {
+	f.Fuzz(func(t *testing.T, data []byte) {
+		dec := NewDecoder(bytes.NewBuffer(data))
+		var a struct{}
+		_ = dec.Decode(&a)
+		// XXX  For now, We'll check that Decode don't panic.
+	})
+}
