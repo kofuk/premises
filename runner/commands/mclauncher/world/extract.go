@@ -43,6 +43,12 @@ func (c *FileCreator) CreateFile(path string, content io.Reader) error {
 	}
 
 	outPath := tmpFullPath
+	if c.worldFound {
+		if !strings.HasPrefix(path, c.worldRoot) {
+			return nil
+		}
+		outPath = filepath.Join(c.outDir, strings.TrimPrefix(path, c.worldRoot))
+	}
 
 	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
 		return err
