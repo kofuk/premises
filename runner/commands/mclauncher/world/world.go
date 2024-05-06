@@ -189,11 +189,63 @@ func writeTar(to io.Writer, baseDir string, dirs ...string) error {
 	creationTime := time.Now()
 
 	for _, dir := range dirs {
+		levelDatWritten := false
+		if f, err := os.Open(filepath.Join(baseDir, dir, "level.dat")); err == nil {
+			hdr := &tar.Header{
+				Typeflag:   tar.TypeDir,
+				Name:       dir,
+				Size:       0,
+				Mode:       0755,
+				Uid:        1000,
+				Gid:        1000,
+				ModTime:    creationTime,
+				AccessTime: creationTime,
+				ChangeTime: creationTime,
+				Format:     tar.FormatGNU,
+			}
+			if err := tw.WriteHeader(hdr); err != nil {
+				f.Close()
+				return err
+			}
+
+			stat, err := f.Stat()
+			if err != nil {
+				f.Close()
+				return err
+			}
+			hdr = &tar.Header{
+				Typeflag:   tar.TypeReg,
+				Name:       filepath.Join(dir, "level.dat"),
+				Size:       stat.Size(),
+				Mode:       0644,
+				Uid:        1000,
+				Gid:        1000,
+				ModTime:    creationTime,
+				AccessTime: creationTime,
+				ChangeTime: creationTime,
+				Format:     tar.FormatGNU,
+			}
+			if err := tw.WriteHeader(hdr); err != nil {
+				f.Close()
+				return err
+			}
+			if _, err := io.Copy(tw, f); err != nil {
+				f.Close()
+				return err
+			}
+			f.Close()
+
+			levelDatWritten = true
+		}
+
 		filesystem := os.DirFS(filepath.Join(baseDir, dir))
 
 		err := gofs.WalkDir(filesystem, ".", func(path string, d gofs.DirEntry, err error) error {
 			if err != nil {
 				return err
+			}
+			if levelDatWritten && (path == "." || path == "level.dat") {
+				return nil
 			}
 
 			hdr := &tar.Header{

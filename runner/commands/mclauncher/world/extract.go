@@ -71,6 +71,12 @@ func (c *FileCreator) Finalize() error {
 	if !c.worldFound {
 		return errors.New("world was not found")
 	}
+
+	if _, err := os.Stat(filepath.Join(c.tmpDir, c.worldRoot)); os.IsNotExist(err) {
+		// If all files could be extracted to the final output directory, the temporary directory may not exist.
+		// In this case, there is no need to move any files, so nothing is done.
+		return nil
+	}
 	return fs.MoveAll(filepath.Join(c.tmpDir, c.worldRoot), c.outDir)
 }
 
