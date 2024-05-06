@@ -170,7 +170,7 @@ func (dec *Decoder) readByteArray(v *reflect.Value, level int) error {
 		result = append(result, value)
 	}
 	if v != nil {
-		if v.Kind() != reflect.Slice {
+		if v.Type() != reflect.SliceOf(reflect.TypeOf(byte(0))) {
 			return ErrTypeMismatch
 		}
 		v.Set(reflect.ValueOf(result))
@@ -223,7 +223,9 @@ func (dec *Decoder) readList(v *reflect.Value, level int) error {
 
 	if v == nil {
 		for i := 0; i < listLen; i++ {
-			typeReader(nil, level)
+			if err := typeReader(nil, level); err != nil {
+				return err
+			}
 		}
 	} else {
 		v.Type()
@@ -234,7 +236,9 @@ func (dec *Decoder) readList(v *reflect.Value, level int) error {
 		slice := reflect.MakeSlice(reflect.SliceOf(elemType), listLen, listLen)
 		for i := 0; i < listLen; i++ {
 			tmp := slice.Index(i)
-			typeReader(&tmp, level)
+			if err := typeReader(&tmp, level); err != nil {
+				return err
+			}
 		}
 		v.Set(slice)
 	}
@@ -306,7 +310,7 @@ func (dec *Decoder) readIntArray(v *reflect.Value, level int) error {
 		result = append(result, int32(binary.BigEndian.Uint32(buf)))
 	}
 	if v != nil {
-		if v.Kind() != reflect.Slice {
+		if v.Type() != reflect.SliceOf(reflect.TypeOf(int32(0))) {
 			return ErrTypeMismatch
 		}
 		v.Set(reflect.ValueOf(result))
@@ -330,7 +334,7 @@ func (dec *Decoder) readLongArray(v *reflect.Value, level int) error {
 		result = append(result, int64(binary.BigEndian.Uint64(buf)))
 	}
 	if v != nil {
-		if v.Kind() != reflect.Slice {
+		if v.Type() != reflect.SliceOf(reflect.TypeOf(int64(0))) {
 			return ErrTypeMismatch
 		}
 		v.Set(reflect.ValueOf(result))
