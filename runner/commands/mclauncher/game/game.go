@@ -669,13 +669,12 @@ func processQuickUndo(slot int) error {
 	if err := os.RemoveAll(fs.DataPath("gamedata/world")); err != nil {
 		return err
 	}
+	if err := os.Mkdir(fs.DataPath("gamedata/world"), 0755); err != nil {
+		return err
+	}
 
-	if err := systemutil.Cmd(
-		"cp",
-		[]string{"-R", "--", fmt.Sprintf("ss@quick%d/world", slot), "."},
-		systemutil.WithWorkingDir(fs.DataPath("gamedata")),
-	); err != nil {
-		slog.Info("cp command returned an error", slog.Any("error", err))
+	if err := fs.CopyAll(fs.DataPath("gamedata", fmt.Sprintf("ss@quick%d/world", slot)), fs.DataPath("gamedata/world")); err != nil {
+		return err
 	}
 
 	return nil
