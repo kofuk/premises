@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -37,8 +36,6 @@ func NewFileCreator(outDir string) (*FileCreator, error) {
 
 func (c *FileCreator) CreateFile(path string, content io.Reader) error {
 	tmpFullPath := filepath.Join(c.tmpDir, path)
-
-	slog.Debug(tmpFullPath, slog.Bool("worldFound", c.worldFound), slog.Bool("hasSuffix", strings.HasSuffix(tmpFullPath, "/level.dat")))
 
 	if !c.worldFound && strings.HasSuffix(tmpFullPath, "/level.dat") {
 		c.worldRoot = strings.TrimSuffix(path, "level.dat")
