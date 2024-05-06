@@ -62,12 +62,12 @@ func (r *Rcon) Execute(cmd string) (string, error) {
 	}
 	defer conn.Close()
 
-	slog.Info("Executing rcon", slog.String("command", cmd))
+	slog.Debug("Executing rcon", slog.String("command", cmd))
 	resp, err := conn.Execute(cmd)
 	if err != nil {
 		return "", err
 	}
-	slog.Info("Rcon response received", slog.String("command", cmd), slog.String("response", resp))
+	slog.Debug("Rcon response received", slog.String("command", cmd), slog.String("response", resp))
 
 	return resp, nil
 }
@@ -120,7 +120,7 @@ func (r *Rcon) Seed() (string, error) {
 
 func (r *Rcon) Stop() error {
 	if _, err := r.Execute("stop"); err != nil {
-		slog.Error("Failed to send stop command to server", slog.Any("error", err))
+		return err
 	}
 	return nil
 }

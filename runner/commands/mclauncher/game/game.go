@@ -381,10 +381,9 @@ func (l *Launcher) startServer() error {
 			}
 		} else {
 			slog.Error("Minecraft server failed", slog.Any("error", err))
-		}
-
-		if time.Since(prevLaunch) < 3*time.Minute {
-			return errors.New("Game crashes repeatedly")
+			if time.Since(prevLaunch) < 10*time.Second {
+				return fmt.Errorf("Game seems to be crashed before the loading: %w", err)
+			}
 		}
 
 		prevLaunch = time.Now()
