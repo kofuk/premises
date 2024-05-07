@@ -26,6 +26,11 @@ func (r *reader) Read(buf []byte) (int, error) {
 		rdbuf := make([]byte, 512)
 		n, err := r.r.Read(rdbuf)
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				copy(buf, r.buf[r.pos:])
+				r.pos += len(r.buf[r.pos:])
+				return len(r.buf[r.pos:]), err
+			}
 			return 0, err
 		}
 		r.buf = append(r.buf, rdbuf[:n]...)
@@ -56,8 +61,7 @@ func readVarInt(r io.Reader) (int, error) {
 
 	for {
 		buf := make([]byte, 1)
-		_, err := r.Read(buf)
-		if err != nil {
+		if _, err := io.ReadFull(r, buf); err != nil {
 			return 0, err
 		}
 		b := buf[0]
@@ -95,8 +99,7 @@ func writeVarInt(w io.Writer, v int) error {
 
 func readShort(r io.Reader) (int, error) {
 	buf := make([]byte, 2)
-	_, err := r.Read(buf)
-	if err != nil {
+	if _, err := io.ReadFull(r, buf); err != nil {
 		return 0, err
 	}
 
@@ -105,8 +108,7 @@ func readShort(r io.Reader) (int, error) {
 
 func readLong(r io.Reader) (int, error) {
 	buf := make([]byte, 8)
-	_, err := r.Read(buf)
-	if err != nil {
+	if _, err := io.ReadFull(r, buf); err != nil {
 		return 0, err
 	}
 
