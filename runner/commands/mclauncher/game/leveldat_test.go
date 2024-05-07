@@ -1,4 +1,4 @@
-package levelinspect
+package game
 
 import (
 	"testing"

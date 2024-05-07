@@ -1,12 +1,9 @@
-package levelinspect
+package game
 
 import (
 	"compress/gzip"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
-	"log/slog"
 	"os"
 	"regexp"
 	"strings"
@@ -14,10 +11,6 @@ import (
 	"github.com/kofuk/premises/common/mc/nbt"
 	"github.com/kofuk/premises/runner/fs"
 )
-
-type Result struct {
-	ServerVersion string `json:"serverVersion"`
-}
 
 type limitedReader struct {
 	r       io.Reader
@@ -59,18 +52,16 @@ func toServerVersionName(name string) string {
 	return name
 }
 
-func Run(args []string) int {
+func DetectServerVersion() (string, error) {
 	levelDatFile, err := os.Open(fs.DataPath("gamedata/world/level.dat"))
 	if err != nil {
-		slog.Error("Failed to open level.dat", slog.Any("error", err))
-		os.Exit(1)
+		return "", err
 	}
 	defer levelDatFile.Close()
 
 	gzipReader, err := gzip.NewReader(levelDatFile)
 	if err != nil {
-		slog.Error("Failed to decompress level.dat", slog.Any("error", err))
-		os.Exit(1)
+		return "", err
 	}
 
 	reader := &limitedReader{
@@ -81,21 +72,8 @@ func Run(args []string) int {
 	decoder := nbt.NewDecoderWithDepthLimit(reader, 20)
 	var levelDat LevelDat
 	if err := decoder.Decode(&levelDat); err != nil {
-		slog.Error("Failed to parse level.dat", slog.Any("error", err))
-		os.Exit(1)
+		return "", err
 	}
 
-	result := Result{
-		ServerVersion: toServerVersionName(levelDat.Data.Version.Name),
-	}
-
-	json, err := json.Marshal(result)
-	if err != nil {
-		slog.Error("Failed to marshal result to JSON", slog.Any("error", err))
-		os.Exit(1)
-	}
-
-	fmt.Println(string(json))
-
-	return 0
+	return toServerVersionName(levelDat.Data.Version.Name), nil
 }

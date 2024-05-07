@@ -1,46 +1,25 @@
 package game
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/runner"
 	lm "github.com/kofuk/premises/common/mc/launchermeta"
-	"github.com/kofuk/premises/runner/commands/levelinspect"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/systemutil"
 	"github.com/kofuk/premises/runner/util"
 )
 
-func detectServerVersion() (string, error) {
-	output := bytes.NewBuffer(nil)
-
-	cmd := exec.Command(fs.DataPath("bin/premises-runner"), "--level-inspect")
-	cmd.Stdout = output
-	if err := cmd.Run(); err != nil {
-		return "", err
-	}
-
-	var result levelinspect.Result
-	if err := json.Unmarshal(output.Bytes(), &result); err != nil {
-		return "", err
-	}
-
-	return result.ServerVersion, nil
-}
-
 func DetectAndUpdateVersion(config *runner.Config) error {
-	version, err := detectServerVersion()
+	version, err := DetectServerVersion()
 	if err != nil {
 		return err
 	}
