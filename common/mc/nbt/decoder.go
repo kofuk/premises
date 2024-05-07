@@ -228,17 +228,17 @@ func (dec *Decoder) readList(v *reflect.Value, level int) error {
 			}
 		}
 	} else {
-		v.Type()
 		if v.Kind() != reflect.Slice {
 			return ErrTypeMismatch
 		}
 		elemType := v.Type().Elem()
-		slice := reflect.MakeSlice(reflect.SliceOf(elemType), listLen, listLen)
+		slice := reflect.MakeSlice(reflect.SliceOf(elemType), 0, 0)
 		for i := 0; i < listLen; i++ {
-			tmp := slice.Index(i)
-			if err := typeReader(&tmp, level); err != nil {
+			v := reflect.New(elemType).Elem()
+			if err := typeReader(&v, level); err != nil {
 				return err
 			}
+			slice = reflect.Append(slice, v)
 		}
 		v.Set(slice)
 	}

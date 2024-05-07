@@ -388,9 +388,25 @@ func TestDecode_LevelDat(t *testing.T) {
 
 func Fuzz_Decode(f *testing.F) {
 	f.Fuzz(func(t *testing.T, data []byte) {
-		dec := NewDecoder(bytes.NewBuffer(data))
 		var a struct{}
+		dec := NewDecoder(bytes.NewBuffer(data))
 		_ = dec.Decode(&a)
+
+		var b []int32
+		dec = NewDecoder(bytes.NewBuffer(data))
+		_ = dec.Decode(&b)
+
+		var c []int
+		dec = NewDecoder(bytes.NewBuffer(data))
+		_ = dec.Decode(&c)
+
+		var d string
+		dec = NewDecoder(bytes.NewBuffer(data))
+		_ = dec.Decode(&d)
+
+		var e int
+		dec = NewDecoder(bytes.NewBuffer(data))
+		_ = dec.Decode(&e)
 		// XXX  For now, We'll check that Decode don't panic.
 	})
 }
