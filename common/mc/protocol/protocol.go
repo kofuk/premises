@@ -84,10 +84,14 @@ func writeVarInt(w io.Writer, v int) error {
 	var bw bytes.Buffer
 	for {
 		if (v & ^0x7F) == 0 {
-			bw.WriteByte(byte(v))
+			if err := bw.WriteByte(byte(v)); err != nil {
+				return err
+			}
 			break
 		}
-		bw.WriteByte(byte((v & 0x7F) | 0x80))
+		if err := bw.WriteByte(byte((v & 0x7F) | 0x80)); err != nil {
+			return err
+		}
 		v >>= 7
 	}
 
