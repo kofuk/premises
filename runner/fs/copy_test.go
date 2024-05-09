@@ -92,17 +92,6 @@ func checkDir(t *testing.T, dir string) {
 	}
 }
 
-func checkMoved(t *testing.T, dir string) {
-	err := fs.WalkDir(os.DirFS(dir), ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		assert.True(t, d.IsDir())
-		return nil
-	})
-	assert.NoError(t, err)
-}
-
 func Test_moveDir_moveMode(t *testing.T) {
 	fromDir := prepareTestDir(t)
 
@@ -113,7 +102,8 @@ func Test_moveDir_moveMode(t *testing.T) {
 	assert.NoError(t, err)
 
 	checkDir(t, toDir)
-	checkMoved(t, fromDir)
+	_, err = os.Stat(fromDir)
+	assert.True(t, os.IsNotExist(err))
 }
 
 func Test_moveDir_copyMode(t *testing.T) {

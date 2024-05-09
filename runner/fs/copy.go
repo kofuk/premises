@@ -28,6 +28,13 @@ func copyFile(from, to string) error {
 }
 
 func moveDir(oldDir, newDir string, copy bool) error {
+	if !copy {
+		// First, attempt rename(2) for moving all directories.
+		if err := os.Rename(oldDir, newDir); err == nil {
+			return nil
+		}
+	}
+
 	return fs.WalkDir(os.DirFS(oldDir), ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -67,5 +74,14 @@ func CopyAll(oldDir, newDir string) error {
 }
 
 func MoveAll(oldDir, newDir string) error {
-	return moveDir(oldDir, newDir, false)
+	if err := moveDir(oldDir, newDir, false); err != nil {
+		return err
+	}
+	if _, err := os.Stat(oldDir); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	return os.RemoveAll(oldDir)
 }
