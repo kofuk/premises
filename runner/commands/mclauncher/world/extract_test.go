@@ -14,6 +14,7 @@ import (
 var (
 	fileList = []string{
 		"file",
+		"1/",
 		"a/",
 		"a/b/",
 		"a/b/file1",
@@ -27,6 +28,7 @@ var (
 		"file2",
 		"b/",
 		"b/file",
+		"d/",
 	}
 )
 
@@ -49,9 +51,11 @@ func Test_FileCreator(t *testing.T) {
 
 	for _, path := range fileList {
 		if strings.HasSuffix(path, "/") {
+			err := c.CreateFile(path, true, nil)
+			assert.NoError(t, err)
 			continue
 		}
-		err := c.CreateFile(path, bytes.NewBufferString("This is "+path))
+		err := c.CreateFile(path, false, bytes.NewBufferString("This is "+path))
 		assert.NoError(t, err)
 	}
 	err = c.Finalize()

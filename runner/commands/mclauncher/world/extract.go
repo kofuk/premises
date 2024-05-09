@@ -34,7 +34,25 @@ func NewFileCreator(outDir string) (*FileCreator, error) {
 	}, nil
 }
 
-func (c *FileCreator) CreateFile(path string, content io.Reader) error {
+func createFile(path string, content io.Reader) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
+
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if _, err := io.Copy(file, content); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *FileCreator) CreateFile(path string, isDir bool, content io.Reader) error {
 	tmpFullPath := filepath.Join(c.tmpDir, path)
 
 	if !c.worldFound && strings.HasSuffix(tmpFullPath, "/level.dat") {
@@ -50,21 +68,11 @@ func (c *FileCreator) CreateFile(path string, content io.Reader) error {
 		outPath = filepath.Join(c.outDir, strings.TrimPrefix(path, c.worldRoot))
 	}
 
-	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
-		return err
+	if isDir {
+		return os.MkdirAll(outPath, 0755)
+	} else {
+		return createFile(outPath, content)
 	}
-
-	outFile, err := os.Create(outPath)
-	if err != nil {
-		return err
-	}
-	defer outFile.Close()
-
-	if _, err := io.Copy(outFile, content); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (c *FileCreator) Finalize() error {
@@ -151,7 +159,9 @@ func (z *ZipUnarchiver) Unarchive(r io.Reader, c *FileCreator) error {
 
 	for _, f := range zr.File {
 		if strings.HasSuffix(f.Name, "/") {
-			// If the name ends with "/", it is a directory.
+			if err := c.CreateFile(f.Name, true, nil); err != nil {
+				return err
+			}
 			continue
 		}
 
@@ -159,7 +169,7 @@ func (z *ZipUnarchiver) Unarchive(r io.Reader, c *FileCreator) error {
 		if err != nil {
 			return err
 		}
-		if err := c.CreateFile(f.Name, rc); err != nil {
+		if err := c.CreateFile(f.Name, false, rc); err != nil {
 			rc.Close()
 			return err
 		}
@@ -184,10 +194,12 @@ func (*TarUnarchiver) Unarchive(r io.Reader, c *FileCreator) error {
 
 		switch th.Typeflag {
 		case tar.TypeDir:
-			// Skip direcotry
+			if err := c.CreateFile(th.Name, true, tr); err != nil {
+				return err
+			}
 
 		case tar.TypeReg:
-			if err := c.CreateFile(th.Name, tr); err != nil {
+			if err := c.CreateFile(th.Name, false, tr); err != nil {
 				return err
 			}
 
