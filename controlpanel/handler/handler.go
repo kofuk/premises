@@ -32,17 +32,12 @@ import (
 	"github.com/uptrace/bun/migrate"
 )
 
-type serverState struct {
-	selectedWorld string
-}
-
 type Handler struct {
 	cfg           *config.Config
 	bind          string
 	engine        *echo.Echo
 	db            *bun.DB
 	redis         *redis.Client
-	serverState   serverState
 	GameServer    *GameServer
 	serverMutex   sync.Mutex
 	serverRunning bool
