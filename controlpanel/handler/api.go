@@ -2,13 +2,11 @@ package handler
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -239,33 +237,6 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 	return &result.C, nil
 }
 
-func (h *Handler) notifyNonRecoverableFailure(cfg *config.Config, detail string) {
-	if cfg.ControlPanel.AlertWebhookUrl != "" {
-		payload := struct {
-			Text     string `json:"text"`
-			Markdown bool   `json:"mrkdwn"`
-		}{
-			Text:     "Unrecoverable error occurred: " + detail,
-			Markdown: false,
-		}
-		body, _ := json.Marshal(payload)
-
-		req, err := http.NewRequest(http.MethodPost, cfg.ControlPanel.AlertWebhookUrl, bytes.NewBuffer(body))
-		if err != nil {
-			slog.Error("Failed to create new request", slog.Any("error", err))
-			return
-		}
-		req.Header.Set("Content-Type", "application/json")
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			slog.Error("Failed to send request", slog.Any("error", err))
-			return
-		}
-		d, _ := io.ReadAll(resp.Body)
-		slog.Info("Webhook response", slog.String("body", string(d)))
-	}
-}
-
 func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, authKey string) {
 	defer func() {
 		h.serverMutex.Lock()
@@ -293,7 +264,6 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 		); err != nil {
 			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
-		h.notifyNonRecoverableFailure(h.cfg, "Runner ID is not set")
 		return
 	}
 
@@ -305,7 +275,6 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 		); err != nil {
 			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
-		h.notifyNonRecoverableFailure(h.cfg, "Failed to stop VM")
 		return
 	}
 
@@ -333,7 +302,6 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 		); err != nil {
 			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
-		h.notifyNonRecoverableFailure(h.cfg, "Failed to delete VM")
 		return
 	}
 
