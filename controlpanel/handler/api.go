@@ -689,7 +689,8 @@ func (h *Handler) handleApiGetConfig(c echo.Context) error {
 
 	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
 		config = web.PendingConfig{
-			MachineType: web.StringP("4g"),
+			MachineType:  web.StringP("4g"),
+			GuessVersion: web.BoolP(true),
 		}
 	}
 
