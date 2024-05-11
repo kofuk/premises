@@ -26,7 +26,6 @@ type Config struct {
 		SecretKey string `env:"secretKey"`
 	} `env:"aws"`
 	Game struct {
-		Motd      string   `env:"motd"`
 		Operators []string `env:"operators"`
 		Whitelist []string `env:"whitelist"`
 	} `env:"game"`

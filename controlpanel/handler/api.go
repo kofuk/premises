@@ -225,6 +225,9 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 	if config.ServerPropOverride != nil {
 		result.C.Server.ServerPropOverride = *config.ServerPropOverride
 	}
+	if config.Motd != nil {
+		result.SetMotd(*config.Motd)
+	}
 
 	result.SetOperators(cfg.Game.Operators)
 	result.SetWhitelist(cfg.Game.Whitelist)
@@ -232,7 +235,6 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 	result.C.AWS.SecretKey = cfg.AWS.SecretKey
 	result.C.S3.Endpoint = cfg.S3.Endpoint
 	result.C.S3.Bucket = cfg.S3.Bucket
-	result.SetMotd(cfg.Game.Motd)
 
 	return &result.C, nil
 }

@@ -45,7 +45,6 @@
   "login": "ログイン",
   "logging_in": "ログイン中…",
   "next": "次へ",
-  "back": "← 戻る",
   "refresh": "再読み込み",
   "copy": "クリップボードにコピー",
   "launch_server": "起動",
@@ -137,5 +136,6 @@
   "value_not_set": "設定されていません",
   "save": "保存",
   "world_settings_label": "シード値: {{seed}}、 ワールドのタイプ: {{levelType}}",
-  "value_count_label": "{{count}} 個の値"
+  "value_count_label": "{{count}} 個の値",
+  "server_description": "サーバーの説明"
 }

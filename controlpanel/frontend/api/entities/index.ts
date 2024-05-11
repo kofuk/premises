@@ -65,6 +65,7 @@ export type PendingConfig = {
   backupGen?: string;
   levelType?: string;
   seed?: string;
+  motd?: string;
   serverPropOverride?: {[key: string]: string};
 };
 

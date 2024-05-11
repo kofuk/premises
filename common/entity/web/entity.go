@@ -80,6 +80,7 @@ type PendingConfig struct {
 	BackupGen          *string            `json:"backupGen,omitempty"`
 	LevelType          *string            `json:"levelType,omitempty"`
 	Seed               *string            `json:"seed,omitempty"`
+	Motd               *string            `json:"motd,omitempty"`
 	ServerPropOverride *map[string]string `json:"serverPropOverride,omitempty"`
 }
 

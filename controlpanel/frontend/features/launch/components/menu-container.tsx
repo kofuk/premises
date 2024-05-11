@@ -1,8 +1,6 @@
 import React, {useState} from 'react';
 
-import {useTranslation} from 'react-i18next';
-
-import {Close as CloseIcon} from '@mui/icons-material';
+import {ArrowBack as BackIcon, Close as CloseIcon} from '@mui/icons-material';
 import {
   Box,
   Dialog,
@@ -10,12 +8,12 @@ import {
   DialogTitle,
   Divider,
   IconButton,
-  Link,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  Typography
 } from '@mui/material';
 
 export type MenuItem = {
@@ -40,8 +38,6 @@ export type Props = {
 };
 
 const MenuContainer = ({items, menuFooter}: Props) => {
-  const [t] = useTranslation();
-
   const [selectedItem, setSelectedItem] = useState(-1);
 
   const backToMenu = () => {
@@ -104,11 +100,12 @@ const MenuContainer = ({items, menuFooter}: Props) => {
 
   return (
     <Box>
-      <Box sx={{mb: 3}}>
-        <Link component="button" onClick={backToMenu}>
-          {t('back')}
-        </Link>
-      </Box>
+      <Typography sx={{mb: 3, textAlign: 'middle'}} variant="h5">
+        <IconButton onClick={backToMenu}>
+          <BackIcon />
+        </IconButton>
+        {items[selectedItem].title}
+      </Typography>
       {items[selectedItem].variant !== 'dialog' && items[selectedItem].ui}
     </Box>
   );

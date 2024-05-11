@@ -45,7 +45,6 @@
   "login": "Login",
   "logging_in": "Logging in…",
   "next": "Next",
-  "back": "← Back",
   "refresh": "Refresh",
   "copy": "Copy to clipboard",
   "launch_server": "Start",
@@ -138,5 +137,6 @@
   "save": "Save",
   "world_settings_label": "Seed: {{seed}}, world type: {{levelType}}",
   "value_count_label_one": "{{count}} value",
-  "value_count_label_other": "{{count}} values"
+  "value_count_label_other": "{{count}} values",
+  "server_description": "Server Description"
 }
