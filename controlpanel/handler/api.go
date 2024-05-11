@@ -422,18 +422,8 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 }
 
 func (h *Handler) handleApiLaunch(c echo.Context) error {
-	session, err := session.Get("session", c)
-	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInternal,
-		})
-	}
-
-	userID := session.Values["user_id"].(uint)
-
 	var config web.PendingConfig
-	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("pending-config:%d", userID), &config); err != nil {
+	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
 		slog.Error("Failed to get pending config", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
@@ -490,18 +480,8 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 }
 
 func (h *Handler) handleApiReconfigure(c echo.Context) error {
-	session, err := session.Get("session", c)
-	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInternal,
-		})
-	}
-
-	userID := session.Values["user_id"].(uint)
-
 	var config web.PendingConfig
-	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("pending-config:%d", userID), &config); err != nil {
+	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
 		slog.Error("Failed to get pending config", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
@@ -702,20 +682,10 @@ func (h *Handler) validateAndNormalizeConfig(config *web.PendingConfig) bool {
 	return true
 }
 
-func (h *Handler) handleApiCreateConfig(c echo.Context) error {
-	session, err := session.Get("session", c)
-	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInternal,
-		})
-	}
-
-	userID := session.Values["user_id"].(uint)
-
+func (h *Handler) handleApiGetConfig(c echo.Context) error {
 	var config web.PendingConfig
 
-	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("pending-config:%d", userID), &config); err != nil {
+	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
 		config = web.PendingConfig{
 			MachineType: web.StringP("4g"),
 		}
@@ -723,7 +693,7 @@ func (h *Handler) handleApiCreateConfig(c echo.Context) error {
 
 	isValid := h.validateAndNormalizeConfig(&config)
 
-	if err := h.KVS.Set(c.Request().Context(), fmt.Sprintf("pending-config:%d", userID), config, 30*24*time.Hour); err != nil {
+	if err := h.KVS.Set(c.Request().Context(), "pending-config", config, 30*24*time.Hour); err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -747,18 +717,8 @@ func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 		})
 	}
 
-	session, err := session.Get("session", c)
-	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInternal,
-		})
-	}
-
-	userID := session.Values["user_id"].(uint)
-
 	var config web.PendingConfig
-	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("pending-config:%d", userID), &config); err != nil {
+	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
@@ -775,7 +735,7 @@ func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 
 	isValid := h.validateAndNormalizeConfig(&config)
 
-	if err := h.KVS.Set(c.Request().Context(), fmt.Sprintf("pending-config:%d", userID), config, 30*24*time.Hour); err != nil {
+	if err := h.KVS.Set(c.Request().Context(), "pending-config", config, 30*24*time.Hour); err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -1073,7 +1033,7 @@ func (h *Handler) setupApiRoutes(group *echo.Group) {
 	needsAuth.GET("/mcversions", h.handleApiMcversions)
 	needsAuth.GET("/systeminfo", h.handleApiSystemInfo)
 	needsAuth.GET("/worldinfo", h.handleApiWorldInfo)
-	needsAuth.POST("/config", h.handleApiCreateConfig)
+	needsAuth.GET("/config", h.handleApiGetConfig)
 	needsAuth.PUT("/config", h.handleApiUpdateConfig)
 	setupApiQuickUndoRoutes(h, needsAuth.Group("/quickundo"))
 	setupApiUsersRoutes(h, needsAuth.Group("/users"))
