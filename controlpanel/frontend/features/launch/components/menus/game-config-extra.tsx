@@ -14,14 +14,30 @@ export const create = (): MenuItem => {
   const [t] = useTranslation();
   const {config, updateConfig} = useLaunchConfig();
 
-  const [serverProps, setServerProps] = useState<{key: string; value: string}[]>(
-    config.serverPropOverride ? Object.keys(config.serverPropOverride!).map((k) => ({key: k, value: config.serverPropOverride![k]})) : []
-  );
+  const serverProps = config.serverPropOverride
+    ? Object.keys(config.serverPropOverride!).map((k) => ({key: k, value: config.serverPropOverride![k]}))
+    : [];
 
   const [serverPropsDialogOpen, setServerPropsDialogOpen] = useState(false);
 
-  const handleAddServerProps = (key: string, value: string) => {
-    setServerProps((current) => [...current.filter((item) => item.key !== key), {key, value}]);
+  const addServerProps = (key: string, value: string) => {
+    const newProps = [...serverProps.filter((item) => item.key !== key), {key, value}];
+
+    (async () => {
+      updateConfig({
+        serverPropOverride: newProps.map(({key, value}) => ({[key]: value})).reduce((lhs, rhs) => Object.assign(lhs, rhs), {})
+      });
+    })();
+  };
+
+  const removeServerProps = (key: string) => {
+    const newProps = serverProps.filter((item) => item.key !== key);
+
+    (async () => {
+      updateConfig({
+        serverPropOverride: newProps.map(({key, value}) => ({[key]: value})).reduce((lhs, rhs) => Object.assign(lhs, rhs), {})
+      });
+    })();
   };
 
   return {
@@ -41,7 +57,7 @@ export const create = (): MenuItem => {
                     <IconButton
                       edge="end"
                       onClick={() => {
-                        setServerProps((prev) => prev.filter((item) => item.key !== key));
+                        removeServerProps(key);
                       }}
                     >
                       <DeleteIcon />
@@ -54,19 +70,11 @@ export const create = (): MenuItem => {
             ))}
           </TransitionGroup>
         </List>
-        <ServerPropsDialog add={handleAddServerProps} onClose={() => setServerPropsDialogOpen(false)} open={serverPropsDialogOpen} />
+        <ServerPropsDialog add={addServerProps} onClose={() => setServerPropsDialogOpen(false)} open={serverPropsDialogOpen} />
       </Stack>
     ),
     detail: t('value_count_label', {count: config.serverPropOverride ? Object.keys(config.serverPropOverride).length : 0}),
     variant: 'dialog',
-    cancellable: true,
-    action: {
-      label: t('save'),
-      callback: () => {
-        updateConfig({
-          serverPropOverride: serverProps.map(({key, value}) => ({[key]: value})).reduce((lhs, rhs) => Object.assign(lhs, rhs), {})
-        });
-      }
-    }
+    cancellable: true
   };
 };

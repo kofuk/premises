@@ -16,8 +16,20 @@ export const create = (): MenuItem => {
   const [t] = useTranslation();
   const {config, updateConfig} = useLaunchConfig();
 
-  const [serverVersion, setServerVersion] = useState(config.serverVersion || '');
-  const [guessServerVersion, setGuessServerVersion] = useState(config.guessServerVersion === undefined ? true : config.guessServerVersion);
+  const serverVersion = config.serverVersion || '';
+  const guessServerVersion = !!config.guessServerVersion;
+
+  const setGuessServerVersion = (enable: boolean) => {
+    updateConfig({
+      guessServerVersion: enable
+    });
+  };
+
+  const setServerVersion = (version: string) => {
+    updateConfig({
+      serverVersion: version
+    });
+  };
 
   const [showStable, setShowStable] = useState(true);
   const [showSnapshot, setShowSnapshot] = useState(false);
@@ -128,15 +140,6 @@ export const create = (): MenuItem => {
     ),
     detail: valueLabel(config.serverVersion),
     variant: 'dialog',
-    cancellable: true,
-    action: {
-      label: t('save'),
-      callback: () => {
-        updateConfig({
-          serverVersion,
-          guessServerVersion
-        });
-      }
-    }
+    cancellable: true
   };
 };

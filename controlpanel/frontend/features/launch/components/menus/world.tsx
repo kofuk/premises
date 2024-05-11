@@ -1,4 +1,4 @@
-import React, {ChangeEvent, useState} from 'react';
+import React, {ChangeEvent} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
@@ -106,15 +106,22 @@ export const create = (): MenuItem => {
   const [t] = useTranslation();
   const {config, updateConfig} = useLaunchConfig();
 
-  const [worldSource, setWorldSource] = useState(config.worldSource || WorldLocation.Backups);
-  const [name, setName] = useState(config.worldName || '');
-  const [gen, setGen] = useState(config.backupGen || '@/latest');
+  const worldSource = config.worldSource || WorldLocation.Backups;
+  const name = config.worldName || '';
+  const gen = config.backupGen || '@/latest';
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const source = (event.target as HTMLInputElement).value == WorldLocation.Backups ? WorldLocation.Backups : WorldLocation.NewWorld;
-    setWorldSource(source);
-    setName('');
-    setGen('@/latest');
+
+    updateConfig({worldSource: source, worldName: '', backupGen: '@/latest'});
+  };
+
+  const setName = (name: string) => {
+    updateConfig({worldName: name});
+  };
+
+  const setGen = (gen: string) => {
+    updateConfig({backupGen: gen});
   };
 
   const notSetLabel = valueLabel(null);
@@ -150,12 +157,6 @@ export const create = (): MenuItem => {
     ),
     detail: createLabel(),
     variant: 'dialog',
-    cancellable: true,
-    action: {
-      label: t('save'),
-      callback: () => {
-        updateConfig({worldSource, worldName: name, backupGen: gen});
-      }
-    }
+    cancellable: true
   };
 };

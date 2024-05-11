@@ -1,8 +1,8 @@
-import React, {useState} from 'react';
+import React from 'react';
 
 import {useTranslation} from 'react-i18next';
 
-import {Box, Slider, Stack, Typography} from '@mui/material';
+import {MenuItem as MUIMenuItem, Select, SelectChangeEvent, Stack, Typography} from '@mui/material';
 
 import {useLaunchConfig} from '../launch-config';
 import {MenuItem} from '../menu-container';
@@ -44,37 +44,32 @@ export const create = (): MenuItem => {
   const [t] = useTranslation();
   const {config, updateConfig} = useLaunchConfig();
 
-  const [machineType, setMachineType] = useState(config.machineType || '4g');
+  const machineType = config.machineType || '4g';
 
-  const handleChange = (event: Event, newValue: number | number[]) => {
-    setMachineType(machines[newValue as number].name);
+  const handleChange = (event: SelectChangeEvent<string>) => {
+    updateConfig({machineType: event.target.value});
   };
 
   return {
     title: t('config_machine_type'),
     ui: (
-      <Stack>
-        <Slider
-          marks={machines.map((e, i) => ({value: i, label: e.getMemSizeLabel()}))}
-          max={machines.length - 1}
-          min={0}
-          onChange={handleChange}
-          sx={{mt: 2}}
-          value={machines.findIndex((e) => e.name == machineType)}
-        />
-        <Box sx={{textAlign: 'center', mt: 2}}>
-          <Typography sx={{opacity: 0.8}}>{machines.find((e) => e.name == machineType)!.getLabel()}</Typography>
-        </Box>
+      <Stack sx={{mt: 0.5}}>
+        <Select onChange={handleChange} value={machineType}>
+          {machines.map((e, i) => (
+            <MUIMenuItem key={`${i}`} value={e.name}>
+              <Typography component="div" sx={{fontWeight: 400}} variant="body1">
+                {e.getMemSizeLabel()}
+              </Typography>
+              <Typography component="div" sx={{mt: '3px', ml: 1, opacity: 0.7}} variant="body2">
+                {e.getLabel()}
+              </Typography>
+            </MUIMenuItem>
+          ))}
+        </Select>
       </Stack>
     ),
     detail: valueLabel(config.machineType, (machineType) => machines.find((e) => e.name == machineType)!.getLabel()),
     variant: 'dialog',
-    cancellable: true,
-    action: {
-      label: t('save'),
-      callback: () => {
-        updateConfig({machineType});
-      }
-    }
+    cancellable: true
   };
 };

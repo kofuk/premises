@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React from 'react';
 
 import {useTranslation} from 'react-i18next';
 
@@ -25,8 +25,16 @@ export const create = (): MenuItem => {
   const [t] = useTranslation();
   const {config, updateConfig} = useLaunchConfig();
 
-  const [levelType, setLevelType] = useState(config.levelType || LevelType.Default);
-  const [seed, setSeed] = useState(config.seed || '');
+  const levelType = config.levelType || LevelType.Default;
+  const seed = config.seed || '';
+
+  const setLevelType = (levelType: string) => {
+    updateConfig({levelType});
+  };
+
+  const setSeed = (seed: string) => {
+    updateConfig({seed, levelType});
+  };
 
   const levelTypes: LevelTypeInfo[] = [
     {levelType: LevelType.Default, label: t('world_type_default')},
@@ -67,12 +75,6 @@ export const create = (): MenuItem => {
     detail: t('world_settings_label', {seed: config.seed || '<empty>', levelType: levelTypeName}),
     variant: 'dialog',
     cancellable: true,
-    disabled: config.worldSource !== WorldLocation.NewWorld,
-    action: {
-      label: t('save'),
-      callback: () => {
-        updateConfig({seed, levelType});
-      }
-    }
+    disabled: config.worldSource !== WorldLocation.NewWorld
   };
 };

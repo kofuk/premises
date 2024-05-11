@@ -2,14 +2,14 @@ import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
+import {Close as CloseIcon} from '@mui/icons-material';
 import {
   Box,
-  Button,
   Dialog,
-  DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
+  IconButton,
   Link,
   List,
   ListItem,
@@ -31,10 +31,6 @@ export type MenuItem = {
   | {
       variant: 'dialog';
       cancellable?: boolean;
-      action?: {
-        label: string;
-        callback: () => void;
-      };
     }
 );
 
@@ -82,22 +78,15 @@ const MenuContainer = ({items, menuFooter}: Props) => {
     return (
       <React.Fragment key={`${i}`}>
         <Dialog fullWidth open={i == selectedItem} scroll="paper" {...dialogProps}>
-          <DialogTitle>{e.title}</DialogTitle>
+          <DialogTitle>
+            {e.cancellable && (
+              <IconButton onClick={backToMenu}>
+                <CloseIcon />
+              </IconButton>
+            )}
+            {e.title}
+          </DialogTitle>
           <DialogContent>{e.ui}</DialogContent>
-          {e.action && (
-            <DialogActions>
-              {e.cancellable && <Button onClick={backToMenu}>{t('cancel')}</Button>}
-              <Button
-                autoFocus
-                onClick={() => {
-                  e.action!.callback();
-                  backToMenu();
-                }}
-              >
-                {e.action.label}
-              </Button>
-            </DialogActions>
-          )}
         </Dialog>
       </React.Fragment>
     );
