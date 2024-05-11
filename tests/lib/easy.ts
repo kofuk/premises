@@ -35,7 +35,7 @@ export const initConfig = async (
   cookie: string,
   worldName: string,
 ): Promise<void> => {
-  await api("POST /api/config", cookie);
+  await api("GET /api/config", cookie);
   await api("PUT /api/config", cookie, {
     machineType: "2g",
     serverVersion: "1.20.1",
