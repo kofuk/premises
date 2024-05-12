@@ -28,7 +28,7 @@ const (
 
 type Request[T any] struct {
 	Version string `json:"jsonrpc"`
-	ID      int    `json:"id"`
+	ID      *int   `json:"id,omitempty"`
 	Method  string `json:"method"`
 	Params  T      `json:"params"`
 }

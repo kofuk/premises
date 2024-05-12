@@ -85,9 +85,13 @@ func (s *Server) getNotifyMethod(name string) (NotifyHandlerFunc, bool) {
 
 func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 	if req.Version != "2.0" {
+		id := 0
+		if req.ID != nil {
+			id = *req.ID
+		}
 		return &Response[any]{
 			Version: "2.0",
-			ID:      req.ID,
+			ID:      id,
 			Error: &RPCError{
 				Code:    InvalidRequest,
 				Message: InvalidRequestMessage,
@@ -95,7 +99,7 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 		}
 	}
 
-	if req.ID == 0 {
+	if req.ID == nil {
 		// notify
 		method, ok := s.getNotifyMethod(req.Method)
 		if !ok {
@@ -114,7 +118,7 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 	if !ok {
 		return &Response[any]{
 			Version: "2.0",
-			ID:      req.ID,
+			ID:      *req.ID,
 			Error: &RPCError{
 				Code:    MethodNotFound,
 				Message: MethodNotFoundMessage,
@@ -126,7 +130,7 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 	if err != nil {
 		return &Response[any]{
 			Version: "2.0",
-			ID:      req.ID,
+			ID:      *req.ID,
 			Error: &RPCError{
 				Code:    CallerError,
 				Message: ServerErrorMessage,
@@ -137,7 +141,7 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 
 	return &Response[any]{
 		Version: "2.0",
-		ID:      req.ID,
+		ID:      *req.ID,
 		Result:  result,
 	}
 }

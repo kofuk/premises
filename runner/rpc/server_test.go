@@ -48,6 +48,8 @@ func Test_handleConnection(t *testing.T) {
 }
 
 func Test_handleRequest_call(t *testing.T) {
+	reqIDOne := 1
+
 	cases := []struct {
 		name string
 		req  *AbstractRequest
@@ -57,7 +59,7 @@ func Test_handleRequest_call(t *testing.T) {
 			name: "Normal",
 			req: &AbstractRequest{
 				Version: "2.0",
-				ID:      1,
+				ID:      &reqIDOne,
 				Method:  "normal",
 				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
 			},
@@ -71,7 +73,7 @@ func Test_handleRequest_call(t *testing.T) {
 			name: "Unsupported version",
 			req: &AbstractRequest{
 				Version: "1.0",
-				ID:      1,
+				ID:      &reqIDOne,
 				Method:  "foo",
 				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
 			},
@@ -88,7 +90,7 @@ func Test_handleRequest_call(t *testing.T) {
 			name: "Method missing",
 			req: &AbstractRequest{
 				Version: "2.0",
-				ID:      1,
+				ID:      &reqIDOne,
 				Method:  "noMethod",
 				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
 			},
@@ -105,7 +107,7 @@ func Test_handleRequest_call(t *testing.T) {
 			name: "Error in method",
 			req: &AbstractRequest{
 				Version: "2.0",
-				ID:      1,
+				ID:      &reqIDOne,
 				Method:  "error",
 				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
 			},

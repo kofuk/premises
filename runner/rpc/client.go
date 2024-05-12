@@ -40,9 +40,10 @@ func readResponse(conn io.ReadWriter) (*Response[json.RawMessage], error) {
 }
 
 func handleCall(conn io.ReadWriter, method string, params, result any) error {
+	reqID := 1
 	if err := writePacket(conn, &Request[any]{
 		Version: "2.0",
-		ID:      1,
+		ID:      &reqID,
 		Method:  method,
 		Params:  params,
 	}); err != nil {
@@ -54,7 +55,7 @@ func handleCall(conn io.ReadWriter, method string, params, result any) error {
 		return err
 	}
 
-	if resp.ID != 1 {
+	if resp.ID != reqID {
 		return errors.New("Invalid request id")
 	}
 	if resp.Error != nil {
@@ -75,7 +76,6 @@ func handleCall(conn io.ReadWriter, method string, params, result any) error {
 func handleNotify(conn io.ReadWriter, method string, params any) error {
 	return writePacket(conn, &Request[any]{
 		Version: "2.0",
-		ID:      0,
 		Method:  method,
 		Params:  params,
 	})
