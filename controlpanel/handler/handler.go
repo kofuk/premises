@@ -205,7 +205,7 @@ func syncRemoteVMState(ctx context.Context, gameServer *GameServer, h *Handler) 
 	slog.Info("Recovering system state...")
 
 	if !gameServer.DeleteVM(ctx, id) {
-		return errors.New("Failed to delete VM")
+		return errors.New("failed to delete VM")
 	}
 
 	slog.Info("Successfully recovered runner state")

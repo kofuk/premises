@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	EulaNotSigned = errors.New("Not signed to eula.txt")
+	ErrEulaNotSigned = errors.New("not signed to eula.txt")
 )
 
 func Log(topic, level, message string) {
@@ -84,7 +84,7 @@ func LoadServerProperties() (ServerProperties, error) {
 
 		field := strings.SplitN(line, "=", 2)
 		if len(field) != 2 {
-			return nil, errors.New("Invalid line in server.properties")
+			return nil, errors.New("invalid line in server.properties")
 		}
 
 		result[field[0]] = field[1]
@@ -224,12 +224,12 @@ type CommandHandler map[string]func(cmd []string) (string, error)
 
 func (h CommandHandler) Run(cmd []string) (string, error) {
 	if len(cmd) == 0 {
-		return "", errors.New("Invalid command")
+		return "", errors.New("invalid command")
 	}
 
 	handler, ok := h[cmd[0]]
 	if !ok {
-		return "", errors.New("Command not found")
+		return "", errors.New("command not found")
 	}
 
 	return handler(cmd)
@@ -245,14 +245,14 @@ func (s *Server) commandLoop(conn io.ReadWriter) error {
 		},
 		"whitelist": func(cmd []string) (string, error) {
 			if len(cmd) != 3 || cmd[1] != "add" {
-				return "", errors.New("Invalid argument")
+				return "", errors.New("invalid argument")
 			}
 			s.State.AddToWhitelist(cmd[2])
 			return fmt.Sprintf("Added %s to the whitelist", cmd[2]), nil
 		},
 		"op": func(cmd []string) (string, error) {
 			if len(cmd) != 2 {
-				return "", errors.New("Not enought argument")
+				return "", errors.New("not enought argument")
 			}
 			s.State.AddToOp(cmd[1])
 			return fmt.Sprintf("Made %s a server operator", cmd[1]), nil
@@ -298,7 +298,7 @@ func (s *Server) commandLoop(conn io.ReadWriter) error {
 		}
 
 		if packet.Type != 2 {
-			return errors.New("Invalid packet type")
+			return errors.New("invalid packet type")
 		}
 
 		command := strings.Split(packet.Payload, " ")
@@ -476,7 +476,7 @@ Preparing start region for dimension minecraft:overworld`
 		total += rand.Intn(256) % 20
 	}
 
-	elapsed := time.Now().Sub(start)
+	elapsed := time.Since(start)
 
 	Log("Server thread", "INFO", fmt.Sprintf("Time elapsed %d ms", int(elapsed.Milliseconds())))
 	Log("Server thread", "INFO", "Done (16.760s)! For help, type \"help\"")

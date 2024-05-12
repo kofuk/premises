@@ -27,7 +27,7 @@ func Fallocate(path string, size int64) error {
 
 	file := os.NewFile(uintptr(fd), path)
 	if file == nil {
-		return errors.New("Bad file descriptor")
+		return errors.New("bad file descriptor")
 	}
 	// We don't need to call Close for the file because close(2) for associated fd should be called later.
 

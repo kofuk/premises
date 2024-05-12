@@ -203,7 +203,7 @@ func (s *GameServer) StopVM(ctx context.Context, id string) bool {
 		}
 		slog.Info("Waiting for the VM to stop...", slog.String("status", detail.Status))
 		if detail.Status != "SHUTOFF" {
-			return errors.New("Not yet stopped")
+			return errors.New("not yet stopped")
 		}
 
 		return nil

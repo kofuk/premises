@@ -25,10 +25,10 @@ type noAcceptEncodingSigner struct {
 	signer s3.HTTPSignerV4
 }
 
-func (self *noAcceptEncodingSigner) SignHTTP(ctx context.Context, credentials aws.Credentials, r *http.Request, payloadHash string, service string, region string, signingTime time.Time, optFns ...func(*v4Signer.SignerOptions)) error {
+func (signer *noAcceptEncodingSigner) SignHTTP(ctx context.Context, credentials aws.Credentials, r *http.Request, payloadHash string, service string, region string, signingTime time.Time, optFns ...func(*v4Signer.SignerOptions)) error {
 	acceptEncoding := r.Header.Get("Accept-Encoding")
 	r.Header.Del("Accept-Encoding")
-	err := self.signer.SignHTTP(ctx, credentials, r, payloadHash, service, region, signingTime, optFns...)
+	err := signer.signer.SignHTTP(ctx, credentials, r, payloadHash, service, region, signingTime, optFns...)
 	if acceptEncoding != "" {
 		r.Header.Set("Accept-Encoding", acceptEncoding)
 	}
@@ -74,7 +74,7 @@ func WithPrefix(prefix string) ListObjectsOption {
 	}
 }
 
-func (self *Client) ListObjects(ctx context.Context, bucket string, opts ...ListObjectsOption) ([]ObjectMetaData, error) {
+func (client *Client) ListObjects(ctx context.Context, bucket string, opts ...ListObjectsOption) ([]ObjectMetaData, error) {
 	params := &s3.ListObjectsV2Input{
 		Bucket: &bucket,
 	}
@@ -89,7 +89,7 @@ func (self *Client) ListObjects(ctx context.Context, bucket string, opts ...List
 		first = false
 		params.ContinuationToken = continuationToken
 
-		resp, err := self.s3Client.ListObjectsV2(ctx, params)
+		resp, err := client.s3Client.ListObjectsV2(ctx, params)
 		if err != nil {
 			return nil, err
 		}
@@ -111,14 +111,14 @@ func (self *Client) ListObjects(ctx context.Context, bucket string, opts ...List
 	return result, nil
 }
 
-func (self *Client) DeleteObjects(ctx context.Context, bucket string, keys []string) error {
+func (client *Client) DeleteObjects(ctx context.Context, bucket string, keys []string) error {
 	var objectIds []types.ObjectIdentifier
 	for _, key := range keys {
 		objectIds = append(objectIds, types.ObjectIdentifier{
 			Key: &key,
 		})
 	}
-	if _, err := self.s3Client.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{
+	if _, err := client.s3Client.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{
 		Bucket: &bucket,
 		Delete: &types.Delete{
 			Objects: objectIds,
@@ -135,8 +135,8 @@ type Object struct {
 	Body io.ReadCloser
 }
 
-func (self *Client) GetObject(ctx context.Context, bucket, key string) (*Object, error) {
-	resp, err := self.s3Client.GetObject(context.Background(), &s3.GetObjectInput{
+func (client *Client) GetObject(ctx context.Context, bucket, key string) (*Object, error) {
+	resp, err := client.s3Client.GetObject(context.Background(), &s3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
 	})
@@ -150,8 +150,8 @@ func (self *Client) GetObject(ctx context.Context, bucket, key string) (*Object,
 	}, nil
 }
 
-func (self *Client) PutObject(ctx context.Context, bucket, key string, body io.ReadSeeker, size int64) error {
-	if _, err := self.s3Client.PutObject(context.Background(), &s3.PutObjectInput{
+func (client *Client) PutObject(ctx context.Context, bucket, key string, body io.ReadSeeker, size int64) error {
+	if _, err := client.s3Client.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
 		Body:   body,

@@ -57,15 +57,15 @@ func Token(token string) OstackOption {
 	}
 }
 
-func (self *Ostack) ServeGetHealth(c echo.Context) error {
-	ver, err := self.docker.ServerVersion(c.Request().Context())
+func (o *Ostack) ServeGetHealth(c echo.Context) error {
+	ver, err := o.docker.ServerVersion(c.Request().Context())
 	if err != nil {
 		return err
 	}
 	return c.JSON(http.StatusOK, ver)
 }
 
-func (self *Ostack) ServeGetToken(c echo.Context) error {
+func (o *Ostack) ServeGetToken(c echo.Context) error {
 	var req entity.GetTokenReq
 	if err := c.Bind(&req); err != nil {
 		slog.Error(err.Error())
@@ -81,20 +81,20 @@ func (self *Ostack) ServeGetToken(c echo.Context) error {
 	password := req.Auth.Identity.Password.User.Password
 	tenantId := req.Auth.Scope.Project.ID
 
-	if user != self.user || password != self.password || tenantId != self.tenantId {
+	if user != o.user || password != o.password || tenantId != o.tenantId {
 		return c.JSON(http.StatusUnauthorized, nil)
 	}
 
 	resp := entity.GetTokenResp{}
 	resp.Token.ExpiresAt = time.Now().Add(30 * time.Minute).Format(time.RFC3339)
 
-	c.Response().Header().Add("x-subject-token", self.token)
+	c.Response().Header().Add("x-subject-token", o.token)
 
 	return c.JSON(http.StatusCreated, resp)
 }
 
-func (self *Ostack) ServeListServerDetails(c echo.Context) error {
-	servers, err := dockerstack.ListServerDetails(c.Request().Context(), self.docker)
+func (o *Ostack) ServeListServerDetails(c echo.Context) error {
+	servers, err := dockerstack.ListServerDetails(c.Request().Context(), o.docker)
 	if err != nil {
 		slog.Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, nil)
@@ -103,8 +103,8 @@ func (self *Ostack) ServeListServerDetails(c echo.Context) error {
 	return c.JSON(http.StatusOK, servers)
 }
 
-func (self *Ostack) ServeGetServerDetail(c echo.Context) error {
-	servers, err := dockerstack.GetServerDetail(c.Request().Context(), self.docker, c.Param("id"))
+func (o *Ostack) ServeGetServerDetail(c echo.Context) error {
+	servers, err := dockerstack.GetServerDetail(c.Request().Context(), o.docker, c.Param("id"))
 	if err != nil {
 		slog.Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, nil)
@@ -113,9 +113,9 @@ func (self *Ostack) ServeGetServerDetail(c echo.Context) error {
 	return c.JSON(http.StatusOK, servers)
 }
 
-func (self *Ostack) ServeCreateServer(c echo.Context) error {
-	self.m.Lock()
-	defer self.m.Unlock()
+func (o *Ostack) ServeCreateServer(c echo.Context) error {
+	o.m.Lock()
+	defer o.m.Unlock()
 
 	var req entity.LaunchServerReq
 	if err := c.Bind(&req); err != nil {
@@ -125,7 +125,7 @@ func (self *Ostack) ServeCreateServer(c echo.Context) error {
 
 outer:
 	for _, rsg := range req.Server.SecurityGroups {
-		for _, sg := range self.secGroups {
+		for _, sg := range o.secGroups {
 			if rsg.Name == sg.Name {
 				continue outer
 			}
@@ -153,7 +153,7 @@ outer:
 		return c.JSON(http.StatusBadRequest, nil)
 	}
 
-	server, err := dockerstack.LaunchServer(c.Request().Context(), self.docker, req)
+	server, err := dockerstack.LaunchServer(c.Request().Context(), o.docker, req)
 	if err != nil {
 		slog.Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, nil)
@@ -162,17 +162,17 @@ outer:
 	return c.JSON(http.StatusAccepted, server)
 }
 
-func (self *Ostack) ServeServerAction(c echo.Context) error {
+func (o *Ostack) ServeServerAction(c echo.Context) error {
 	serverId := c.Param("server")
 
-	if err := dockerstack.StopServer(c.Request().Context(), self.docker, serverId); err != nil {
+	if err := dockerstack.StopServer(c.Request().Context(), o.docker, serverId); err != nil {
 		slog.Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
 
-	imageName, ok := self.volumeNames[serverId]
+	imageName, ok := o.volumeNames[serverId]
 	if !ok {
-		servers, err := dockerstack.ListServerDetails(c.Request().Context(), self.docker)
+		servers, err := dockerstack.ListServerDetails(c.Request().Context(), o.docker)
 		if err != nil {
 			slog.Error(err.Error())
 			return c.JSON(http.StatusInternalServerError, nil)
@@ -190,7 +190,7 @@ func (self *Ostack) ServeServerAction(c echo.Context) error {
 		slog.String("volume_id", serverId),
 	)
 
-	if err := dockerstack.CreateImage(c.Request().Context(), self.docker, serverId, imageName); err != nil {
+	if err := dockerstack.CreateImage(c.Request().Context(), o.docker, serverId, imageName); err != nil {
 		slog.Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
@@ -198,34 +198,34 @@ func (self *Ostack) ServeServerAction(c echo.Context) error {
 	return c.JSON(http.StatusAccepted, nil)
 }
 
-func (self *Ostack) ServeDeleteServer(c echo.Context) error {
+func (o *Ostack) ServeDeleteServer(c echo.Context) error {
 	serverId := c.Param("server")
 
-	if err := dockerstack.DeleteServer(c.Request().Context(), self.docker, serverId); err != nil {
+	if err := dockerstack.DeleteServer(c.Request().Context(), o.docker, serverId); err != nil {
 		slog.Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
 	return c.String(http.StatusNoContent, "")
 }
 
-func (self *Ostack) ServeListFlavors(c echo.Context) error {
+func (o *Ostack) ServeListFlavors(c echo.Context) error {
 	c.Response().Header().Add("Content-Type", "application/json")
 	c.Response().Writer.Write(flavorData)
 	return nil
 }
 
-func (self *Ostack) ServeListVolumes(c echo.Context) error {
-	self.m.Lock()
-	defer self.m.Unlock()
+func (o *Ostack) ServeListVolumes(c echo.Context) error {
+	o.m.Lock()
+	defer o.m.Unlock()
 
-	volumes, err := dockerstack.ListVolumes(c.Request().Context(), self.docker)
+	volumes, err := dockerstack.ListVolumes(c.Request().Context(), o.docker)
 	if err != nil {
 		slog.Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
 
 	for i := 0; i < len(volumes.Volumes); i++ {
-		if name, ok := self.volumeNames[volumes.Volumes[i].ID]; ok {
+		if name, ok := o.volumeNames[volumes.Volumes[i].ID]; ok {
 			volumes.Volumes[i].Name = name
 		}
 	}
@@ -235,9 +235,9 @@ func (self *Ostack) ServeListVolumes(c echo.Context) error {
 	return c.JSON(http.StatusOK, volumes)
 }
 
-func (self *Ostack) ServeUpdateVolume(c echo.Context) error {
-	self.m.Lock()
-	defer self.m.Unlock()
+func (o *Ostack) ServeUpdateVolume(c echo.Context) error {
+	o.m.Lock()
+	defer o.m.Unlock()
 
 	var req entity.UpdateVolumeReq
 	if err := c.Bind(&req); err != nil {
@@ -250,26 +250,26 @@ func (self *Ostack) ServeUpdateVolume(c echo.Context) error {
 
 	slog.Debug("Saving image names", slog.String("volume_id", volumeId), slog.String("name", req.Volume.Name))
 
-	self.volumeNames[volumeId] = req.Volume.Name
+	o.volumeNames[volumeId] = req.Volume.Name
 
 	return c.JSON(http.StatusOK, nil)
 }
 
-func (self *Ostack) ServeListSecurityGroups(c echo.Context) error {
-	self.m.Lock()
-	defer self.m.Unlock()
+func (o *Ostack) ServeListSecurityGroups(c echo.Context) error {
+	o.m.Lock()
+	defer o.m.Unlock()
 
 	var result entity.ListSecurityGroupsResp
 	result.SecurityGroups = make([]entity.SecurityGroup, 0)
-	for _, sg := range self.secGroups {
+	for _, sg := range o.secGroups {
 		result.SecurityGroups = append(result.SecurityGroups, sg)
 	}
 	return c.JSON(http.StatusOK, result)
 }
 
-func (self *Ostack) ServeCreateSecurityGroup(c echo.Context) error {
-	self.m.Lock()
-	defer self.m.Unlock()
+func (o *Ostack) ServeCreateSecurityGroup(c echo.Context) error {
+	o.m.Lock()
+	defer o.m.Unlock()
 
 	var req entity.CreateSecurityGroupReq
 	if err := c.Bind(&req); err != nil {
@@ -298,16 +298,16 @@ func (self *Ostack) ServeCreateSecurityGroup(c echo.Context) error {
 		Protocol:        nil,
 	})
 
-	self.secGroups[id] = sg
+	o.secGroups[id] = sg
 
 	return c.JSON(http.StatusCreated, entity.CreateSecurityGroupReq{
 		SecurityGroup: sg,
 	})
 }
 
-func (self *Ostack) ServeCreateSecurityGroupRule(c echo.Context) error {
-	self.m.Lock()
-	defer self.m.Unlock()
+func (o *Ostack) ServeCreateSecurityGroupRule(c echo.Context) error {
+	o.m.Lock()
+	defer o.m.Unlock()
 
 	var req entity.CreateSecurityGroupRuleReq
 	if err := c.Bind(&req); err != nil {
@@ -315,41 +315,41 @@ func (self *Ostack) ServeCreateSecurityGroupRule(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, nil)
 	}
 
-	sg, ok := self.secGroups[req.SecurityGroupRule.SecurityGroupID]
+	sg, ok := o.secGroups[req.SecurityGroupRule.SecurityGroupID]
 	if !ok {
 		slog.Error("Security group not found")
 		return c.JSON(http.StatusNotFound, nil)
 	}
 	sg.SecurityGroupRules = append(sg.SecurityGroupRules, req.SecurityGroupRule)
-	self.secGroups[req.SecurityGroupRule.SecurityGroupID] = sg
+	o.secGroups[req.SecurityGroupRule.SecurityGroupID] = sg
 
 	return c.JSON(http.StatusCreated, req)
 }
 
-func (self *Ostack) setupRoutes() {
-	self.r.POST("/identity/v3/auth/tokens", self.ServeGetToken)
-	self.r.GET("/health", self.ServeGetHealth)
+func (o *Ostack) setupRoutes() {
+	o.r.POST("/identity/v3/auth/tokens", o.ServeGetToken)
+	o.r.GET("/health", o.ServeGetHealth)
 
-	needsAuthEndpoint := self.r.Group("", func(next echo.HandlerFunc) echo.HandlerFunc {
+	needsAuthEndpoint := o.r.Group("", func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			if subtle.ConstantTimeCompare([]byte(c.Request().Header.Get("X-Auth-Token")), []byte(self.token)) != 1 {
+			if subtle.ConstantTimeCompare([]byte(c.Request().Header.Get("X-Auth-Token")), []byte(o.token)) != 1 {
 				return c.JSON(http.StatusUnauthorized, nil)
 			}
 			return next(c)
 		}
 	})
 
-	needsAuthEndpoint.POST("/compute/v2.1/servers", self.ServeCreateServer)
-	needsAuthEndpoint.GET("/compute/v2.1/servers/detail", self.ServeListServerDetails)
-	needsAuthEndpoint.GET("/compute/v2.1/servers/:id", self.ServeGetServerDetail)
-	needsAuthEndpoint.POST("/compute/v2.1/servers/:server/action", self.ServeServerAction)
-	needsAuthEndpoint.DELETE("/compute/v2.1/servers/:server", self.ServeDeleteServer)
-	needsAuthEndpoint.GET("/compute/v2.1/flavors/detail", self.ServeListFlavors)
-	needsAuthEndpoint.GET("/network/v2.0/security-groups", self.ServeListSecurityGroups)
-	needsAuthEndpoint.POST("/network/v2.0/security-groups", self.ServeCreateSecurityGroup)
-	needsAuthEndpoint.POST("/network/v2.0/security-group-rules", self.ServeCreateSecurityGroupRule)
-	needsAuthEndpoint.GET("/volume/v3/volumes", self.ServeListVolumes)
-	needsAuthEndpoint.PUT("/volume/v3/volumes/:volume", self.ServeUpdateVolume)
+	needsAuthEndpoint.POST("/compute/v2.1/servers", o.ServeCreateServer)
+	needsAuthEndpoint.GET("/compute/v2.1/servers/detail", o.ServeListServerDetails)
+	needsAuthEndpoint.GET("/compute/v2.1/servers/:id", o.ServeGetServerDetail)
+	needsAuthEndpoint.POST("/compute/v2.1/servers/:server/action", o.ServeServerAction)
+	needsAuthEndpoint.DELETE("/compute/v2.1/servers/:server", o.ServeDeleteServer)
+	needsAuthEndpoint.GET("/compute/v2.1/flavors/detail", o.ServeListFlavors)
+	needsAuthEndpoint.GET("/network/v2.0/security-groups", o.ServeListSecurityGroups)
+	needsAuthEndpoint.POST("/network/v2.0/security-groups", o.ServeCreateSecurityGroup)
+	needsAuthEndpoint.POST("/network/v2.0/security-group-rules", o.ServeCreateSecurityGroupRule)
+	needsAuthEndpoint.GET("/volume/v3/volumes", o.ServeListVolumes)
+	needsAuthEndpoint.PUT("/volume/v3/volumes/:volume", o.ServeUpdateVolume)
 }
 
 func NewOstack(options ...OstackOption) (*Ostack, error) {
@@ -378,6 +378,6 @@ func NewOstack(options ...OstackOption) (*Ostack, error) {
 	return ostack, nil
 }
 
-func (self *Ostack) Start() error {
-	return self.r.Start("0.0.0.0:8010")
+func (o *Ostack) Start() error {
+	return o.r.Start("0.0.0.0:8010")
 }

@@ -44,7 +44,7 @@ func FindDockerImageByOstackImageID(ctx context.Context, docker *docker.Client, 
 		return "", err
 	}
 	if len(image) == 0 {
-		return "", fmt.Errorf("Unknown image: %s", imageId)
+		return "", fmt.Errorf("unknown image: %s", imageId)
 	}
 	return image[0].ID, nil
 }
@@ -154,7 +154,7 @@ func getContainerIdByServerId(ctx context.Context, docker *docker.Client, server
 		return "", err
 	}
 	if len(containers) == 0 {
-		return "", fmt.Errorf("Unknown container: %s", serverId)
+		return "", fmt.Errorf("unknown container: %s", serverId)
 	}
 	return containers[0].ID, nil
 }
@@ -238,7 +238,7 @@ func removeOrUntagImage(ctx context.Context, docker *docker.Client, imageId stri
 	}
 
 	if _, err := docker.ImageRemove(ctx, imageId, image.RemoveOptions{}); err != nil {
-		return fmt.Errorf("Error removing image: %s: %w", imageId, err)
+		return fmt.Errorf("error removing image: %s: %w", imageId, err)
 	}
 	return nil
 }

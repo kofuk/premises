@@ -33,23 +33,23 @@ func New(awsAccessKey, awsSecretKey, s3Endpoint, bucket string) *BackupService {
 func extractBackupInfoFromKey(key string) (string, string, error) {
 	splitIndex := strings.IndexRune(key, '/')
 	if splitIndex < 0 {
-		return "", "", fmt.Errorf("Invalid backup key: %s", key)
+		return "", "", fmt.Errorf("invalid backup key: %s", key)
 	}
 	world := string(key[0:splitIndex])
 	name := string(key[splitIndex+1:])
 	if strings.HasSuffix(name, ".tar.zst") {
-		name = name[:len(name)-8]
+		name = strings.TrimSuffix(name, ".tar.zst")
 	} else if strings.HasSuffix(name, ".tar.xz") {
-		name = name[:len(name)-7]
-	} else if strings.HasSuffix(name, ".zip") {
-		name = name[:len(name)-4]
+		name = strings.TrimSuffix(name, ".tar.xz")
+	} else {
+		name = strings.TrimSuffix(name, ".zip")
 	}
 	return world, name, nil
 }
 
-func (self *BackupService) GetWorlds(ctx context.Context) ([]entity.WorldBackup, error) {
+func (backup *BackupService) GetWorlds(ctx context.Context) ([]entity.WorldBackup, error) {
 	worlds := make(map[string]entity.WorldBackup)
-	objects, err := self.s3.ListObjects(ctx, self.bucket)
+	objects, err := backup.s3.ListObjects(ctx, backup.bucket)
 	if err != nil {
 		return nil, err
 	}

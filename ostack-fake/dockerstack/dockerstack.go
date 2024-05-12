@@ -69,7 +69,7 @@ func GetServerDetail(ctx context.Context, docker *docker.Client, id string) (*en
 		}
 	}
 
-	return nil, errors.New("Not found")
+	return nil, errors.New("not found")
 }
 
 func ListVolumes(ctx context.Context, docker *docker.Client) (*entity.ListVolumesResp, error) {

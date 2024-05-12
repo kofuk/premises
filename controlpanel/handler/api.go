@@ -176,7 +176,7 @@ func isValidMemSize(memSize int) bool {
 
 func (h *Handler) createConfigFromPostData(ctx context.Context, config web.PendingConfig, cfg *config.Config) (*runner.Config, error) {
 	if config.ServerVersion == nil || *config.ServerVersion == "" {
-		return nil, errors.New("Server version is not set")
+		return nil, errors.New("server version is not set")
 	}
 	result := gameconfig.New()
 
@@ -199,7 +199,7 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 
 	if config.WorldSource != nil && *config.WorldSource == "backups" {
 		if config.WorldName == nil || config.BackupGen == nil {
-			return nil, errors.New("Both worldName and backupGen must be set if worldSource is backups")
+			return nil, errors.New("both worldName and backupGen must be set if worldSource is backups")
 		}
 
 		if err := result.SetWorld(*config.WorldName, *config.BackupGen); err != nil {
@@ -207,7 +207,7 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 		}
 	} else {
 		if config.WorldName == nil || *config.WorldName == "" {
-			return nil, errors.New("World name is not set")
+			return nil, errors.New("world name is not set")
 		}
 		seed := ""
 		if config.Seed != nil {

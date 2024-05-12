@@ -64,7 +64,7 @@ func (lm *LauncherMeta) GetVersionInfo(ctx context.Context) ([]VersionInfo, erro
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Failed to retrieve launchermeta")
+		return nil, fmt.Errorf("failed to retrieve launchermeta")
 	}
 
 	var meta launcherMetaData

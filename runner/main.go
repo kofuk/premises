@@ -32,22 +32,22 @@ type App struct {
 	Commands map[string]Command
 }
 
-func (self App) printUsage() {
+func (app App) printUsage() {
 	var keys []string
-	for k := range self.Commands {
+	for k := range app.Commands {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
 	fmt.Println("premises-runner\nCommands:")
 	for _, key := range keys {
-		fmt.Printf("  %s\t%s\n", key, self.Commands[key].Description)
+		fmt.Printf("  %s\t%s\n", key, app.Commands[key].Description)
 	}
 }
 
-func (self App) Run(args []string) int {
+func (app App) Run(args []string) int {
 	if len(args) < 2 {
-		self.printUsage()
+		app.printUsage()
 		os.Exit(1)
 	}
 
@@ -56,10 +56,10 @@ func (self App) Run(args []string) int {
 		cmdName = cmdName[2:]
 	}
 
-	cmd, ok := self.Commands[cmdName]
+	cmd, ok := app.Commands[cmdName]
 	if !ok {
 		slog.Error("Subcommand not found.", slog.String("cmd", cmdName))
-		self.printUsage()
+		app.printUsage()
 		os.Exit(1)
 	}
 

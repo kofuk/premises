@@ -93,10 +93,10 @@ func isAllowedPassword(password string) bool {
 	if len(password) < 8 {
 		return false
 	}
-	if strings.IndexAny(password, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz") < 0 {
+	if !strings.ContainsAny(password, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz") {
 		return false
 	}
-	if strings.IndexAny(password, "0123456789") < 0 {
+	if !strings.ContainsAny(password, "0123456789") {
 		return false
 	}
 	return true
