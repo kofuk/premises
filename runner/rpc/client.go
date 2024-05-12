@@ -72,6 +72,15 @@ func handleCall(conn io.ReadWriter, method string, params, result any) error {
 	return nil
 }
 
+func handleNotify(conn io.ReadWriter, method string, params any) error {
+	return writePacket(conn, &Request[any]{
+		Version: "2.0",
+		ID:      0,
+		Method:  method,
+		Params:  params,
+	})
+}
+
 func (c *Client) Call(method string, params, result any) error {
 	conn, err := net.Dial("unix", c.path)
 	if err != nil {
@@ -80,4 +89,14 @@ func (c *Client) Call(method string, params, result any) error {
 	defer conn.Close()
 
 	return handleCall(conn, method, params, result)
+}
+
+func (c *Client) Notify(method string, params any) error {
+	conn, err := net.Dial("unix", c.path)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	return handleNotify(conn, method, params)
 }

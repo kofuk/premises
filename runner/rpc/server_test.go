@@ -47,7 +47,7 @@ func Test_handleConnection(t *testing.T) {
 	assert.Equal(t, (*RPCError)(nil), resp.Error)
 }
 
-func Test_handleRequest(t *testing.T) {
+func Test_handleRequest_call(t *testing.T) {
 	cases := []struct {
 		name string
 		req  *AbstractRequest
@@ -127,12 +127,67 @@ func Test_handleRequest(t *testing.T) {
 			sut.RegisterMethod("normal", func(req *AbstractRequest) (any, error) {
 				return "foo", nil
 			})
+			sut.RegisterNotifyMethod("normal", func(req *AbstractRequest) error {
+				assert.Fail(t, "This should not be called")
+				return nil
+			})
 			sut.RegisterMethod("error", func(req *AbstractRequest) (any, error) {
 				return nil, errors.New("Error")
 			})
 
 			resp := sut.handleRequest(tt.req)
 			assert.Equal(t, tt.resp, resp)
+		})
+	}
+}
+
+func Test_handleRequest_notify(t *testing.T) {
+	cases := []struct {
+		name string
+		req  *AbstractRequest
+	}{
+		{
+			name: "Normal",
+			req: &AbstractRequest{
+				Version: "2.0",
+				Method:  "normal",
+				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
+			},
+		},
+		{
+			name: "Error",
+			req: &AbstractRequest{
+				Version: "2.0",
+				Method:  "error",
+				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
+			},
+		},
+		{
+			name: "Method missing",
+			req: &AbstractRequest{
+				Version: "2.0",
+				Method:  "missing",
+				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
+			},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			sut := NewServer("")
+			sut.RegisterMethod("normal", func(req *AbstractRequest) (any, error) {
+				assert.Fail(t, "This should not be called")
+				return "", nil
+			})
+			sut.RegisterNotifyMethod("normal", func(req *AbstractRequest) error {
+				return nil
+			})
+			sut.RegisterNotifyMethod("error", func(req *AbstractRequest) error {
+				return errors.New("error")
+			})
+
+			resp := sut.handleRequest(tt.req)
+			assert.Nil(t, resp)
 		})
 	}
 }

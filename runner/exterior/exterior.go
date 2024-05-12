@@ -10,10 +10,10 @@ import (
 
 func sendEvent(event runner.Event, dispatch bool) error {
 	slog.Debug("Sending message...", slog.Any("data", event))
-	return rpc.ToExteriord.Call("status/push", types.EventInput{
+	return rpc.ToExteriord.Notify("status/push", types.EventInput{
 		Dispatch: dispatch,
 		Event:    event,
-	}, nil)
+	})
 }
 
 // Send status message

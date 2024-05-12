@@ -12,17 +12,20 @@ import (
 )
 
 type HandlerFunc func(req *AbstractRequest) (any, error)
+type NotifyHandlerFunc func(req *AbstractRequest) error
 
 type Server struct {
-	path    string
-	methods map[string]HandlerFunc
-	m       sync.Mutex
+	path          string
+	methods       map[string]HandlerFunc
+	notifyMethods map[string]NotifyHandlerFunc
+	m             sync.Mutex
 }
 
 func NewServer(path string) *Server {
 	return &Server{
-		path:    path,
-		methods: make(map[string]HandlerFunc),
+		path:          path,
+		methods:       make(map[string]HandlerFunc),
+		notifyMethods: make(map[string]NotifyHandlerFunc),
 	}
 }
 
@@ -36,6 +39,12 @@ func (s *Server) RegisterMethod(name string, fn HandlerFunc) {
 	s.m.Lock()
 	defer s.m.Unlock()
 	s.methods[name] = fn
+}
+
+func (s *Server) RegisterNotifyMethod(name string, fn NotifyHandlerFunc) {
+	s.m.Lock()
+	defer s.m.Unlock()
+	s.notifyMethods[name] = fn
 }
 
 func readRequest[T any](r io.Reader) (*Request[T], error) {
@@ -67,6 +76,13 @@ func (s *Server) getMethod(name string) (HandlerFunc, bool) {
 	return fn, ok
 }
 
+func (s *Server) getNotifyMethod(name string) (NotifyHandlerFunc, bool) {
+	s.m.Lock()
+	defer s.m.Unlock()
+	fn, ok := s.notifyMethods[name]
+	return fn, ok
+}
+
 func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 	if req.Version != "2.0" {
 		return &Response[any]{
@@ -79,6 +95,21 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 		}
 	}
 
+	if req.ID == 0 {
+		// notify
+		method, ok := s.getNotifyMethod(req.Method)
+		if !ok {
+			slog.Error("Method for notify request not found", slog.String("method", req.Method))
+			return nil
+		}
+		if err := method(req); err != nil {
+			slog.Error("Error handling notification", slog.Any("error", err))
+			return nil
+		}
+		return nil
+	}
+
+	// method call
 	method, ok := s.getMethod(req.Method)
 	if !ok {
 		return &Response[any]{
@@ -121,8 +152,10 @@ func (s *Server) handleConnection(conn io.ReadWriteCloser) error {
 
 	resp := s.handleRequest((*AbstractRequest)(req))
 
-	if err := writeResponse(conn, resp); err != nil {
-		return err
+	if resp != nil {
+		if err := writeResponse(conn, resp); err != nil {
+			return err
+		}
 	}
 
 	return nil

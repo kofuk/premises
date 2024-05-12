@@ -27,77 +27,79 @@ func NewRPCHandler(s *rpc.Server, game *game.Launcher) *RPCHandler {
 	}
 }
 
-func (h *RPCHandler) HandleGameStop(req *rpc.AbstractRequest) (any, error) {
+func (h *RPCHandler) HandleGameStop(req *rpc.AbstractRequest) error {
 	h.game.Stop()
-	return "ok", nil
+	return nil
 }
 
-func (h *RPCHandler) HandleGameReconfigure(req *rpc.AbstractRequest) (any, error) {
+func (h *RPCHandler) HandleGameReconfigure(req *rpc.AbstractRequest) error {
 	var config runner.Config
 	if err := req.Bind(&config); err != nil {
-		return nil, err
+		return err
 	}
 
 	data, err := json.Marshal(&config)
 	if err != nil {
 		slog.Error("Failed to stringify request", slog.Any("error", err))
-		return nil, err
+		return err
 	}
 
 	if err := os.WriteFile(fs.DataPath("config.json"), data, 0644); err != nil {
 		slog.Error("Failed to write server config", slog.Any("error", err))
-		return nil, err
+		return err
 	}
 
 	h.game.StopToRestart()
 
-	return "ok", nil
+	return nil
 }
 
-func (h *RPCHandler) HandleSnapshotCreate(req *rpc.AbstractRequest) (any, error) {
+func (h *RPCHandler) HandleSnapshotCreate(req *rpc.AbstractRequest) error {
 	var input types.SnapshotInput
 	if err := req.Bind(&input); err != nil {
-		return nil, err
+		return err
 	}
 
-	if err := h.game.SaveAll(); err != nil {
-		slog.Error("Failed to run save-all", slog.Any("error", err))
-		return nil, err
-	}
+	go func() {
+		if err := h.game.SaveAll(); err != nil {
+			slog.Error("Failed to run save-all", slog.Any("error", err))
+			return
+		}
 
-	if err := rpc.ToSnapshotHelper.Call("snapshot/create", types.SnapshotHelperInput{
-		Slot: input.Slot,
-	}, nil); err != nil {
-		slog.Error("Failed to create snapshot", slog.Any("error", err))
+		if err := rpc.ToSnapshotHelper.Call("snapshot/create", types.SnapshotHelperInput{
+			Slot: input.Slot,
+		}, nil); err != nil {
+			slog.Error("Failed to create snapshot", slog.Any("error", err))
+
+			exterior.DispatchEvent(runner.Event{
+				Type: runner.EventInfo,
+				Info: &runner.InfoExtra{
+					InfoCode: entity.InfoSnapshotError,
+					Actor:    input.Actor,
+					IsError:  true,
+				},
+			})
+
+			return
+		}
 
 		exterior.DispatchEvent(runner.Event{
 			Type: runner.EventInfo,
 			Info: &runner.InfoExtra{
-				InfoCode: entity.InfoSnapshotError,
+				InfoCode: entity.InfoSnapshotDone,
 				Actor:    input.Actor,
-				IsError:  true,
+				IsError:  false,
 			},
 		})
+	}()
 
-		return nil, err
-	}
-
-	exterior.DispatchEvent(runner.Event{
-		Type: runner.EventInfo,
-		Info: &runner.InfoExtra{
-			InfoCode: entity.InfoSnapshotDone,
-			Actor:    input.Actor,
-			IsError:  false,
-		},
-	})
-
-	return "ok", nil
+	return nil
 }
 
-func (h *RPCHandler) HandleSnapshotUndo(req *rpc.AbstractRequest) (any, error) {
+func (h *RPCHandler) HandleSnapshotUndo(req *rpc.AbstractRequest) error {
 	var input types.SnapshotInput
 	if err := req.Bind(&input); err != nil {
-		return nil, err
+		return err
 	}
 
 	go func() {
@@ -118,12 +120,12 @@ func (h *RPCHandler) HandleSnapshotUndo(req *rpc.AbstractRequest) (any, error) {
 		}
 	}()
 
-	return "accepted", nil
+	return nil
 }
 
 func (h *RPCHandler) Bind() {
-	h.s.RegisterMethod("game/stop", h.HandleGameStop)
-	h.s.RegisterMethod("game/reconfigure", h.HandleGameReconfigure)
-	h.s.RegisterMethod("snapshot/create", h.HandleSnapshotCreate)
-	h.s.RegisterMethod("snapshot/undo", h.HandleSnapshotUndo)
+	h.s.RegisterNotifyMethod("game/stop", h.HandleGameStop)
+	h.s.RegisterNotifyMethod("game/reconfigure", h.HandleGameReconfigure)
+	h.s.RegisterNotifyMethod("snapshot/create", h.HandleSnapshotCreate)
+	h.s.RegisterNotifyMethod("snapshot/undo", h.HandleSnapshotUndo)
 }

@@ -56,6 +56,16 @@ func Test_handleCall(t *testing.T) {
 	}
 }
 
+func Test_handleNotify(t *testing.T) {
+	conn := &buffer{
+		rb: bytes.NewBufferString(""),
+		wb: &bytes.Buffer{},
+	}
+
+	err := handleNotify(conn, "test", struct{}{})
+	assert.NoError(t, err)
+}
+
 func Test_handleCall_ignoreResult(t *testing.T) {
 	respJSON := `{"jsonrpc":"2.0","id":1,"result":"foo"}`
 	conn := &buffer{

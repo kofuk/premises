@@ -30,7 +30,7 @@ type Server struct {
 }
 
 func (s *Server) HandleActionStop(action runner.Action) error {
-	return rpc.ToLauncher.Call("game/stop", nil, nil)
+	return rpc.ToLauncher.Notify("game/stop", nil)
 }
 
 func (s *Server) HandleActionSnapshot(action runner.Action) error {
@@ -38,10 +38,10 @@ func (s *Server) HandleActionSnapshot(action runner.Action) error {
 		return errors.New("Missing snapshot config")
 	}
 
-	return rpc.ToLauncher.Call("snapshot/create", types.SnapshotInput{
+	return rpc.ToLauncher.Notify("snapshot/create", types.SnapshotInput{
 		Slot:  action.Snapshot.Slot,
 		Actor: action.Actor,
-	}, nil)
+	})
 }
 
 func (s *Server) HandleActionUndo(action runner.Action) error {
@@ -49,10 +49,10 @@ func (s *Server) HandleActionUndo(action runner.Action) error {
 		return errors.New("Missing snapshot config")
 	}
 
-	return rpc.ToLauncher.Call("snapshot/undo", types.SnapshotInput{
+	return rpc.ToLauncher.Notify("snapshot/undo", types.SnapshotInput{
 		Slot:  action.Snapshot.Slot,
 		Actor: action.Actor,
-	}, nil)
+	})
 }
 
 func (s *Server) HandleActionReconfigure(action runner.Action) error {
@@ -60,7 +60,7 @@ func (s *Server) HandleActionReconfigure(action runner.Action) error {
 		return errors.New("Missing config")
 	}
 
-	return rpc.ToLauncher.Call("game/reconfigure", action.Config, nil)
+	return rpc.ToLauncher.Notify("game/reconfigure", action.Config)
 }
 
 func NewServer(addr string, authKey string, msgChan chan OutboundMessage) *Server {

@@ -20,15 +20,15 @@ func NewRPCHandler(s *rpc.Server, msgChan chan outbound.OutboundMessage, states 
 	}
 }
 
-func (h *RPCHandler) HandleStatusPush(req *rpc.AbstractRequest) (any, error) {
+func (h *RPCHandler) HandleStatusPush(req *rpc.AbstractRequest) error {
 	var msg types.EventInput
 	if err := req.Bind(&msg); err != nil {
-		return nil, err
+		return err
 	}
 
 	h.msgChan <- outbound.OutboundMessage(msg)
 
-	return "ok", nil
+	return nil
 }
 
 func (h *RPCHandler) HandleStateSet(req *rpc.AbstractRequest) (any, error) {
@@ -72,7 +72,7 @@ func (h *RPCHandler) HandleStateRemove(req *rpc.AbstractRequest) (any, error) {
 }
 
 func (h *RPCHandler) Bind() {
-	h.s.RegisterMethod("status/push", h.HandleStatusPush)
+	h.s.RegisterNotifyMethod("status/push", h.HandleStatusPush)
 	h.s.RegisterMethod("state/save", h.HandleStateSet)
 	h.s.RegisterMethod("state/get", h.HandleStateGet)
 	h.s.RegisterMethod("state/remove", h.HandleStateRemove)
