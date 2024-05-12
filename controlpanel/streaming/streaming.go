@@ -45,14 +45,14 @@ var (
 	}
 )
 
-func (self *StreamingService) GetStream(streamType StreamType) *Stream {
+func (s *StreamingService) GetStream(streamType StreamType) *Stream {
 	return &Stream{
 		streamType: streamType,
 	}
 }
 
-func (self Stream) GetChannelID() string {
-	return fmt.Sprintf("%d:%d", self.runnerID, self.streamType.id)
+func (s Stream) GetChannelID() string {
+	return fmt.Sprintf("%d:%d", s.runnerID, s.streamType.id)
 }
 
 type Message any
@@ -96,13 +96,13 @@ func NewSysstatMessage(cpuUsage float64, time int64) Message {
 	}
 }
 
-func (self *StreamingService) PublishEvent(ctx context.Context, stream *Stream, message Message) error {
+func (s *StreamingService) PublishEvent(ctx context.Context, stream *Stream, message Message) error {
 	data, err := json.Marshal(message)
 	if err != nil {
 		return err
 	}
 
-	if _, err := self.redis.Pipelined(ctx, func(p redis.Pipeliner) error {
+	if _, err := s.redis.Pipelined(ctx, func(p redis.Pipeliner) error {
 		channelID := stream.GetChannelID()
 		if stream.streamType.historyCount > 0 {
 			p.LPush(ctx, "status-history:"+channelID, data)
@@ -116,10 +116,10 @@ func (self *StreamingService) PublishEvent(ctx context.Context, stream *Stream, 
 	return nil
 }
 
-func (self *StreamingService) SubscribeEvent(ctx context.Context, stream *Stream) (*redis.PubSub, [][]byte, error) {
+func (s *StreamingService) SubscribeEvent(ctx context.Context, stream *Stream) (*redis.PubSub, [][]byte, error) {
 	channelID := stream.GetChannelID()
 
-	statusHistory, err := self.redis.LRange(ctx, "status-history:"+channelID, 0, -1).Result()
+	statusHistory, err := s.redis.LRange(ctx, "status-history:"+channelID, 0, -1).Result()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -129,14 +129,14 @@ func (self *StreamingService) SubscribeEvent(ctx context.Context, stream *Stream
 		historyBytes[len(historyBytes)-1-i] = []byte(entry)
 	}
 
-	subscription := self.redis.Subscribe(ctx, "status:"+channelID)
+	subscription := s.redis.Subscribe(ctx, "status:"+channelID)
 
 	return subscription, historyBytes, nil
 }
 
-func (self *StreamingService) ClearHistory(ctx context.Context, stream *Stream) error {
+func (s *StreamingService) ClearHistory(ctx context.Context, stream *Stream) error {
 	channelID := stream.GetChannelID()
-	if _, err := self.redis.Del(ctx, "status-history:"+channelID).Result(); err != nil {
+	if _, err := s.redis.Del(ctx, "status-history:"+channelID).Result(); err != nil {
 		return err
 	}
 	return nil

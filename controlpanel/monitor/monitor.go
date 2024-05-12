@@ -57,7 +57,7 @@ func AttachRunner(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueSt
 	}
 
 	if len(vm.Volumes) == 0 {
-		return errors.New("No volume attached to the VM")
+		return errors.New("no volume attached to the VM")
 	}
 
 	if err := conoha.RenameVolume(ctx, cfg, token, vm.Volumes[0].ID, cfg.Conoha.NameTag); err != nil {
@@ -75,7 +75,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 	switch event.Type {
 	case runner.EventHello:
 		if event.Hello == nil {
-			return errors.New("Invalid event message: has no Hello")
+			return errors.New("invalid event message: has no Hello")
 		}
 		if err := kvs.Set(ctx, fmt.Sprintf("runner-info:%s", runnerId), event.Hello, 30*24*time.Hour); err != nil {
 			return err
@@ -103,7 +103,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 
 	case runner.EventStatus:
 		if event.Status == nil {
-			return errors.New("Invalid event message: has no Status")
+			return errors.New("invalid event message: has no Status")
 		}
 
 		if err := strmProvider.PublishEvent(
@@ -116,7 +116,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 
 	case runner.EventSysstat:
 		if event.Sysstat == nil {
-			return errors.New("Invalid event message: has no Sysstat")
+			return errors.New("invalid event message: has no Sysstat")
 		}
 
 		if err := strmProvider.PublishEvent(
@@ -129,7 +129,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 
 	case runner.EventInfo:
 		if event.Info == nil {
-			return errors.New("Invalid event message: has no Info")
+			return errors.New("invalid event message: has no Info")
 		}
 
 		if err := strmProvider.PublishEvent(
@@ -142,7 +142,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 
 	case runner.EventStarted:
 		if event.Started == nil {
-			return errors.New("Invalid event message: has no Started")
+			return errors.New("invalid event message: has no Started")
 		}
 
 		if err := kvs.Set(ctx, fmt.Sprintf("world-info:%s", runnerId), event.Started, 30*24*time.Hour); err != nil {

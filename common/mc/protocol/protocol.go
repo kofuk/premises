@@ -73,7 +73,7 @@ func readVarInt(r io.Reader) (int, error) {
 		pos += 7
 
 		if pos >= 32 {
-			return 0, errors.New("Too long VarInt")
+			return 0, errors.New("too long VarInt")
 		}
 	}
 
@@ -165,7 +165,7 @@ func (h *Handler) ReadHandshake() (*Handshake, error) {
 		return nil, err
 	}
 	if addrLen > 255 {
-		return nil, errors.New("Address is too long")
+		return nil, errors.New("address is too long")
 	}
 
 	addrBuf := make([]byte, addrLen)
@@ -249,7 +249,7 @@ func (h *Handler) HandlePingPong() error {
 		return err
 	}
 	if hdr.PacketID != 1 {
-		return fmt.Errorf("Invalid ping packet: %d", hdr.PacketID)
+		return fmt.Errorf("invalid ping packet: %d", hdr.PacketID)
 	}
 
 	// Write pong

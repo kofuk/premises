@@ -35,7 +35,7 @@ func (s *Server) HandleActionStop(action runner.Action) error {
 
 func (s *Server) HandleActionSnapshot(action runner.Action) error {
 	if action.Snapshot == nil {
-		return errors.New("Missing snapshot config")
+		return errors.New("missing snapshot config")
 	}
 
 	return rpc.ToLauncher.Notify("snapshot/create", types.SnapshotInput{
@@ -46,7 +46,7 @@ func (s *Server) HandleActionSnapshot(action runner.Action) error {
 
 func (s *Server) HandleActionUndo(action runner.Action) error {
 	if action.Snapshot == nil {
-		return errors.New("Missing snapshot config")
+		return errors.New("missing snapshot config")
 	}
 
 	return rpc.ToLauncher.Notify("snapshot/undo", types.SnapshotInput{
@@ -57,7 +57,7 @@ func (s *Server) HandleActionUndo(action runner.Action) error {
 
 func (s *Server) HandleActionReconfigure(action runner.Action) error {
 	if action.Config == nil {
-		return errors.New("Missing config")
+		return errors.New("missing config")
 	}
 
 	return rpc.ToLauncher.Notify("game/reconfigure", action.Config)
@@ -152,8 +152,6 @@ func (s *Server) PollAction() {
 			time.Sleep(5 * time.Second)
 			continue
 		}
-
-		defer io.Copy(io.Discard, req.Body)
 
 		var action runner.Action
 		dec := json.NewDecoder(resp.Body)

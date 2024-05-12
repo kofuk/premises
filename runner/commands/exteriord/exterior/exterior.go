@@ -15,15 +15,15 @@ func New() *Exterior {
 	}
 }
 
-func (self *Exterior) RegisterTask(description string, proc proc.Proc, deps ...scheduler.TaskID) scheduler.TaskID {
+func (e *Exterior) RegisterTask(description string, proc proc.Proc, deps ...scheduler.TaskID) scheduler.TaskID {
 	task := scheduler.NewTask(func() {
 		proc.Start()
 	}, description, deps...)
-	self.scheduler.RegisterTasks(task)
+	e.scheduler.RegisterTasks(task)
 	return task.ID()
 }
 
-func (self *Exterior) Run() {
-	self.scheduler.Run()
+func (e *Exterior) Run() {
+	e.scheduler.Run()
 	<-make(chan struct{})
 }

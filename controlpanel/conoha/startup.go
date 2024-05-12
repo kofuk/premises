@@ -24,10 +24,8 @@ func GenerateStartupScript(gameConfig *runner.Config) ([]byte, error) {
 		switch line {
 		case "#__CONFIG_FILE__":
 			result.Write(gameConfigData)
-			break
 		default:
 			result.Write([]byte(line))
-			break
 		}
 		result.Write([]byte("\n"))
 	}

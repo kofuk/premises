@@ -21,9 +21,7 @@ type Rcon struct {
 }
 
 func (r *Rcon) execute(line string) (string, error) {
-	if strings.HasPrefix(line, "/") {
-		line = strings.TrimPrefix(line, "/")
-	}
+	line = strings.TrimPrefix(line, "/")
 
 	output, err := r.conn.Execute(line)
 	if err != nil {

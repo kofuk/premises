@@ -103,7 +103,7 @@ func (r *Rcon) Say(message string) error {
 
 func parseSeed(seedOutput string) (string, error) {
 	if len(seedOutput) < 8 || seedOutput[:7] != "Seed: [" || seedOutput[len(seedOutput)-1] != ']' {
-		return "", errors.New("Failed to retrieve seed")
+		return "", errors.New("failed to retrieve seed")
 	}
 
 	return seedOutput[7 : len(seedOutput)-1], nil
@@ -134,7 +134,7 @@ var (
 func parsePlayerList(listOutput string) (PlayerList, error) {
 	match := playerListRegexp.FindStringSubmatch(listOutput)
 	if match == nil {
-		return nil, errors.New("Invalid /list output")
+		return nil, errors.New("invalid /list output")
 	}
 
 	count, _ := strconv.Atoi(match[1]) // Error should not be occurred
@@ -147,7 +147,7 @@ func parsePlayerList(listOutput string) (PlayerList, error) {
 	}
 
 	if count != len(players) {
-		return nil, errors.New("Player count mismatch")
+		return nil, errors.New("player count mismatch")
 	}
 
 	return players, nil

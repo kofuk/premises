@@ -57,7 +57,7 @@ func Test_calculateMemSizeForGame(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			size, err := calculateMemSizeForGame(tt.size)
 			if tt.shouldBeError {
-				assert.ErrorIs(t, err, MemoryTooSmall)
+				assert.ErrorIs(t, err, ErrMemoryTooSmall)
 			} else {
 				assert.Equal(t, tt.expectedSize, size)
 			}

@@ -28,7 +28,7 @@ func NewProgressReader(base io.Reader, event entity.EventCode, total int) *Progr
 func (r *ProgressReader) Read(buf []byte) (int, error) {
 	n, err := r.r.Read(buf)
 	r.current += n
-	if err == nil && time.Now().Sub(r.prevUpdate) >= time.Second {
+	if err == nil && time.Since(r.prevUpdate) >= time.Second {
 		r.prevUpdate = time.Now()
 
 		go func(current int) {

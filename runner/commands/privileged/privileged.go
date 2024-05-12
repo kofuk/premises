@@ -39,7 +39,7 @@ func takeFsSnapshot(snapshotId string) (*SnapshotInfo, error) {
 
 func deleteFsSnapshot(id string) error {
 	if strings.Contains(id, "/") {
-		return errors.New("Invalid snapshot ID")
+		return errors.New("invalid snapshot ID")
 	}
 
 	if err := systemutil.Cmd("btrfs", []string{"subvolume", "delete", "ss@" + id}, systemutil.WithWorkingDir(fs.DataPath("gamedata"))); err != nil {

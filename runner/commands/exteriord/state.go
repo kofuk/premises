@@ -13,7 +13,6 @@ type StateBackend interface {
 
 type StateStore struct {
 	m       sync.Mutex
-	path    string
 	backend StateBackend
 }
 

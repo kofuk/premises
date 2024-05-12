@@ -79,7 +79,7 @@ func getIPAddr() (v4Addrs []string, v6Addrs []string, err error) {
 	return
 }
 
-func (self *ServerSetup) sendServerHello() {
+func (setup *ServerSetup) sendServerHello() {
 	systemVersion := systemutil.GetSystemVersion()
 
 	eventData := runner.Event{
@@ -99,7 +99,7 @@ func (self *ServerSetup) sendServerHello() {
 	exterior.DispatchEvent(eventData)
 }
 
-func (self *ServerSetup) notifyStatus() {
+func (setup *ServerSetup) notifyStatus() {
 	exterior.SendEvent(runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
@@ -108,7 +108,7 @@ func (self *ServerSetup) notifyStatus() {
 	})
 }
 
-func (self *ServerSetup) initializeServer() {
+func (setup *ServerSetup) initializeServer() {
 	var eg errgroup.Group
 
 	eg.Go(func() error {
@@ -153,13 +153,13 @@ func (self *ServerSetup) initializeServer() {
 	systemutil.Cmd("mkfs.btrfs", []string{fs.DataPath("gamedata.img")})
 }
 
-func (self *ServerSetup) updateFirewallRules() {
+func (setup *ServerSetup) updateFirewallRules() {
 	systemutil.Cmd("ufw", []string{"allow", "25565/tcp"})
 	// Old runner requires 8521 to be exposed. Now, it's not needed so we delete it here.
 	systemutil.Cmd("ufw", []string{"delete", "allow", "8521/tcp"})
 }
 
-func (self *ServerSetup) installRequiredJavaVersion() {
+func (setup *ServerSetup) installRequiredJavaVersion() {
 	config, err := config.Load()
 	if err != nil {
 		slog.Error("Unable to load config", slog.Any("error", err))
@@ -174,9 +174,9 @@ func (self *ServerSetup) installRequiredJavaVersion() {
 	systemutil.AptGet(installArgs...)
 }
 
-func (self ServerSetup) Run() {
-	self.sendServerHello()
-	self.notifyStatus()
+func (setup ServerSetup) Run() {
+	setup.sendServerHello()
+	setup.notifyStatus()
 
 	slog.Info("Creating required directories (if not exists)")
 	for _, dir := range []string{"servers.d", "gamedata", "tmp"} {
@@ -188,14 +188,14 @@ func (self ServerSetup) Run() {
 
 	if !isServerInitialized() {
 		slog.Info("Server seems not to be initialized. Will run full initialization")
-		self.initializeServer()
+		setup.initializeServer()
 	}
 
 	slog.Info("Updating ufw rules")
-	self.updateFirewallRules()
+	setup.updateFirewallRules()
 
 	slog.Info("Installing required Java version")
-	self.installRequiredJavaVersion()
+	setup.installRequiredJavaVersion()
 
 	slog.Info("Mounting gamedata.img")
 	systemutil.Cmd("mount", []string{fs.DataPath("gamedata.img"), fs.DataPath("gamedata")})

@@ -73,7 +73,7 @@ func readPacket(r io.Reader) (json.RawMessage, error) {
 		}
 		f := strings.SplitN(string(l), ": ", 2)
 		if len(f) != 2 {
-			return nil, errors.New("Invalid header")
+			return nil, errors.New("invalid header")
 		}
 		if strings.EqualFold(f[0], "content-length") {
 			length, err = strconv.Atoi(f[1])
@@ -84,7 +84,7 @@ func readPacket(r io.Reader) (json.RawMessage, error) {
 	}
 
 	if length < 0 {
-		return nil, errors.New("Invalid length")
+		return nil, errors.New("invalid length")
 	}
 
 	buf := make([]byte, length)

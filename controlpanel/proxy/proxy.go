@@ -138,7 +138,7 @@ func (p *ProxyHandler) handleConn(conn io.ReadWriteCloser) error {
 
 	hs, err := h.ReadHandshake()
 	if err != nil {
-		return fmt.Errorf("Handshake error: %w", err)
+		return fmt.Errorf("handshake error: %w", err)
 	}
 
 	p.m.Lock()
@@ -147,7 +147,7 @@ func (p *ProxyHandler) handleConn(conn io.ReadWriteCloser) error {
 
 	if !ok {
 		if hs.NextState != 1 {
-			return fmt.Errorf("Unknown server: %s", hs.ServerAddr)
+			return fmt.Errorf("unknown server: %s", hs.ServerAddr)
 		}
 
 		return p.handleDummyServer(h, hs)

@@ -18,16 +18,16 @@ type limitedReader struct {
 	current int
 }
 
-func (self *limitedReader) Read(p []byte) (int, error) {
-	if self.current >= self.limit {
+func (r *limitedReader) Read(p []byte) (int, error) {
+	if r.current >= r.limit {
 		return 0, errors.New("Read limit reached")
 	}
 
-	read, err := self.r.Read(p)
+	read, err := r.r.Read(p)
 	if err != nil {
 		return read, err
 	}
-	self.current += read
+	r.current += read
 	return read, nil
 }
 
@@ -40,7 +40,7 @@ type LevelDat struct {
 }
 
 func toServerVersionName(name string) string {
-	if strings.Index(name, "Pre-Release") >= 0 {
+	if strings.Contains(name, "Pre-Release") {
 		if match, _ := regexp.Match("^1\\.14(\\.[12])? Pre-Release [1-5]$", []byte(name)); !match {
 			// The pre-release version (except for the specific versions) of level.dat stores
 			// a different string than the downloadable version name.

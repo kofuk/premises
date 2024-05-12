@@ -27,7 +27,7 @@ func (h *Handler) handleRunnerPollAction(c echo.Context) error {
 
 	action, err := h.runnerAction.Wait(c.Request().Context(), runnerId)
 	if err != nil {
-		if err == pollable.Cancelled {
+		if err == pollable.ErrCancelled {
 			return nil
 		}
 		slog.Error("Error waiting action", slog.Any("error", err))

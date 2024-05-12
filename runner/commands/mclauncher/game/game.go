@@ -31,7 +31,6 @@ type Launcher struct {
 	cancel            context.CancelFunc
 	shouldRestart     bool
 	restoringSnapshot bool
-	lastActive        time.Time
 	quickUndoSlot     int
 	Rcon              *Rcon
 	onHealthy         OnHealthyFunc
@@ -39,7 +38,7 @@ type Launcher struct {
 }
 
 var (
-	RestartRequested = errors.New("Restart requested")
+	ErrRestartRequested = errors.New("restart requested")
 )
 
 func NewLauncher(config *runner.Config, world *world.WorldService) *Launcher {
@@ -370,7 +369,7 @@ func (l *Launcher) startServer() error {
 	for {
 		select {
 		case <-l.ctx.Done():
-			break
+			return nil
 		default:
 		}
 
@@ -381,7 +380,7 @@ func (l *Launcher) startServer() error {
 		} else {
 			slog.Error("Minecraft server failed", slog.Any("error", err))
 			if time.Since(prevLaunch) < 10*time.Second {
-				return fmt.Errorf("Game seems to be crashed before the loading: %w", err)
+				return fmt.Errorf("game seems to be crashed before the loading: %w", err)
 			}
 		}
 
@@ -525,7 +524,7 @@ func (l *Launcher) Launch() error {
 	}
 
 	if l.shouldRestart {
-		return RestartRequested
+		return ErrRestartRequested
 	}
 
 	return nil

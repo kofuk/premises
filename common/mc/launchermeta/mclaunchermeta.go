@@ -112,7 +112,7 @@ func (lm *LauncherMeta) GetServerInfo(ctx context.Context, version VersionInfo) 
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Failed to get version metadata")
+		return nil, fmt.Errorf("failed to get version metadata")
 	}
 
 	var versionMeta versionMetaResp

@@ -30,7 +30,7 @@ func (c *CPUUsage) Percent() (float64, error) {
 
 	diffTotal := total - c.prevTotal
 	if diffTotal <= 0 {
-		return 0, errors.New("Try again later")
+		return 0, errors.New("try again later")
 	}
 	percentIdle := float64(idle-c.prevIdle) / float64(total-c.prevTotal) * 100
 

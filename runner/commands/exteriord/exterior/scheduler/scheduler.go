@@ -21,8 +21,8 @@ type Scheduler struct {
 	competedTasks map[TaskID]struct{}
 }
 
-func (self *Task) ID() TaskID {
-	return self.taskID
+func (t *Task) ID() TaskID {
+	return t.taskID
 }
 
 func NewTask(fn func(), description string, deps ...TaskID) *Task {
@@ -33,9 +33,7 @@ func NewTask(fn func(), description string, deps ...TaskID) *Task {
 		fn:          fn,
 	}
 
-	for _, dep := range deps {
-		task.deps = append(task.deps, dep)
-	}
+	task.deps = append(task.deps, deps...)
 
 	return &task
 }
@@ -47,27 +45,27 @@ func NewScheduler() *Scheduler {
 	}
 }
 
-func (self *Task) runTask(notifyComplete chan TaskID) {
-	self.fn()
-	notifyComplete <- self.taskID
+func (t *Task) runTask(notifyComplete chan TaskID) {
+	t.fn()
+	notifyComplete <- t.taskID
 }
 
-func (self *Scheduler) RegisterTasks(tasks ...*Task) {
+func (s *Scheduler) RegisterTasks(tasks ...*Task) {
 	for _, task := range tasks {
-		self.tasks[task.taskID] = task
+		s.tasks[task.taskID] = task
 	}
 }
 
-func (self *Scheduler) Run() {
+func (s *Scheduler) Run() {
 	notifyComplete := make(chan TaskID)
 
 	completedTasks := 0
 
-	for completedTasks != len(self.tasks) {
-		for _, task := range self.tasks {
+	for completedTasks != len(s.tasks) {
+		for _, task := range s.tasks {
 			uncompletedDepsCount := 0
 			for _, depID := range task.deps {
-				if _, ok := self.competedTasks[depID]; !ok {
+				if _, ok := s.competedTasks[depID]; !ok {
 					uncompletedDepsCount++
 				}
 			}
@@ -82,6 +80,6 @@ func (self *Scheduler) Run() {
 		taskID := <-notifyComplete
 		completedTasks++
 
-		self.competedTasks[taskID] = struct{}{}
+		s.competedTasks[taskID] = struct{}{}
 	}
 }

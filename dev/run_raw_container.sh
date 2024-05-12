@@ -7,7 +7,7 @@ docker build -t premises.kofuk.org/dev-runner-raw -f Dockerfile.runner .
 name="premises-runner-${RANDOM}"
 
 docker container run \
-       -d -p 25565:25565 --privileged \
+       -d -p 127.0.0.2:25565:25565 --privileged \
        -v /dev/null:/userdata:ro \
        --name "${name}" \
        --cap-add MKNOD \

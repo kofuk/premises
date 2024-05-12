@@ -86,6 +86,9 @@ func StopVM(ctx context.Context, cfg *config.Config, token, vmID string) error {
 	}
 
 	respData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
 
 	if resp.StatusCode != http.StatusAccepted {
 		return ErrorFrom(resp.StatusCode, respData)
@@ -240,7 +243,7 @@ func GetVMDetail(ctx context.Context, cfg *config.Config, token, id string) (*VM
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, errors.New("No such VM")
+		return nil, errors.New("no such VM")
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, ErrorFrom(resp.StatusCode, respData)
@@ -301,7 +304,7 @@ func FindVM(ctx context.Context, cfg *config.Config, token string, condition Fin
 	}
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, errors.New("No such VM")
+		return nil, errors.New("no such VM")
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, ErrorFrom(resp.StatusCode, respData)
@@ -318,7 +321,7 @@ func FindVM(ctx context.Context, cfg *config.Config, token string, condition Fin
 		}
 	}
 
-	return nil, errors.New("No such VM")
+	return nil, errors.New("no such VM")
 }
 
 type VolumeResp struct {
@@ -364,7 +367,7 @@ func GetVolumeID(ctx context.Context, cfg *config.Config, token, tag string) (st
 		}
 	}
 
-	return "", errors.New("Volume not found")
+	return "", errors.New("volume not found")
 }
 
 type VolumeRenameReq struct {
@@ -476,7 +479,7 @@ func FindMatchingFlavor(flavors []Flavor, memSize int) (Flavor, error) {
 	}
 
 	if len(memMatch) == 0 {
-		return Flavor{}, errors.New("Matching flavor not found")
+		return Flavor{}, errors.New("matching flavor not found")
 	} else {
 		return memMatch[0], nil
 	}
@@ -550,7 +553,7 @@ func CreateSecurityGroup(ctx context.Context, cfg *config.Config, token, name st
 	}
 
 	if sg.SecurityGroup.ID == nil {
-		return "", errors.New("Security group ID shouldn't be nil")
+		return "", errors.New("security group ID shouldn't be nil")
 	}
 
 	return *sg.SecurityGroup.ID, nil

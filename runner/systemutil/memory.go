@@ -12,7 +12,7 @@ import (
 func parseMeminfoLine(line string) (string, int, error) {
 	pos := strings.Index(line, ":")
 	if pos < 0 {
-		return "", 0, errors.New("Invalid line")
+		return "", 0, errors.New("invalid line")
 	}
 
 	key := line[0:pos]
@@ -20,7 +20,7 @@ func parseMeminfoLine(line string) (string, int, error) {
 	fields := strings.Split(value, " ")
 	var intVal int
 	if len(fields) == 0 {
-		return key, 0, errors.New("Parse error")
+		return key, 0, errors.New("parse error")
 	}
 
 	var err error
@@ -33,7 +33,7 @@ func parseMeminfoLine(line string) (string, int, error) {
 		if fields[1] == "kB" {
 			intVal *= 1024
 		} else {
-			return key, 0, errors.New("Unsupported suffix")
+			return key, 0, errors.New("unsupported suffix")
 		}
 	}
 
@@ -46,7 +46,7 @@ func readTotalMemoryFromReader(meminfo io.Reader) (int, error) {
 		line, _, err := r.ReadLine()
 		if err != nil {
 			if err == io.EOF {
-				return 0, errors.New("EOF without reading MemTotal")
+				return 0, errors.New("reached to EOF without reading MemTotal")
 			}
 		}
 

@@ -23,10 +23,6 @@ import (
 	"github.com/kofuk/premises/runner/util"
 )
 
-const (
-	preserveHistoryCount = 5
-)
-
 type WorldService struct {
 	s3     *s3wrap.Client
 	bucket string
@@ -51,7 +47,7 @@ func makeArchiveName() string {
 	return fmt.Sprintf("%s.tar.zst", time.Now().Format(time.DateTime))
 }
 
-func (self *WorldService) getExtractionPipeline(name string) (*ExtractionPipeline, error) {
+func (w *WorldService) getExtractionPipeline(name string) (*ExtractionPipeline, error) {
 	c, err := NewFileCreator(fs.DataPath("gamedata/world"))
 	if err != nil {
 		return nil, err
@@ -76,23 +72,23 @@ func (self *WorldService) getExtractionPipeline(name string) (*ExtractionPipelin
 			C: c,
 		}, nil
 	}
-	return nil, errors.New("Unsupported archive type")
+	return nil, errors.New("unsupported archive type")
 }
 
-func (self *WorldService) DownloadWorldData(config *runner.Config) error {
+func (w *WorldService) DownloadWorldData(config *runner.Config) error {
 	slog.Info("Downloading world archive...")
 	if err := fs.RemoveIfExists(fs.DataPath("gamedata/world")); err != nil {
 		return err
 	}
 
-	pl, err := self.getExtractionPipeline(config.World.GenerationId)
+	pl, err := w.getExtractionPipeline(config.World.GenerationId)
 	if err != nil {
 		return err
 	}
 
-	resp, err := self.s3.GetObject(context.Background(), self.bucket, config.World.GenerationId)
+	resp, err := w.s3.GetObject(context.Background(), w.bucket, config.World.GenerationId)
 	if err != nil {
-		return fmt.Errorf("Unable to download %s: %w", config.World.GenerationId, err)
+		return fmt.Errorf("unable to download %s: %w", config.World.GenerationId, err)
 	}
 	defer resp.Body.Close()
 
@@ -107,13 +103,13 @@ func (self *WorldService) DownloadWorldData(config *runner.Config) error {
 	return nil
 }
 
-func (self *WorldService) GetLatestKey(world string) (string, error) {
-	objs, err := self.s3.ListObjects(context.Background(), self.bucket, s3wrap.WithPrefix(world+"/"))
+func (w *WorldService) GetLatestKey(world string) (string, error) {
+	objs, err := w.s3.ListObjects(context.Background(), w.bucket, s3wrap.WithPrefix(world+"/"))
 	if err != nil {
 		return "", err
 	}
 	if len(objs) == 0 {
-		return "", errors.New("No backup found for world")
+		return "", errors.New("no backup found for world")
 	}
 
 	sort.Slice(objs, func(i, j int) bool {
@@ -123,11 +119,11 @@ func (self *WorldService) GetLatestKey(world string) (string, error) {
 	return objs[0].Key, nil
 }
 
-func (self *WorldService) UploadWorldData(config *runner.Config) (string, error) {
-	return self.doUploadWorldData(config)
+func (w *WorldService) UploadWorldData(config *runner.Config) (string, error) {
+	return w.doUploadWorldData(config)
 }
 
-func (self *WorldService) doUploadWorldData(config *runner.Config) (string, error) {
+func (w *WorldService) doUploadWorldData(config *runner.Config) (string, error) {
 	slog.Info("Uploading world archive...")
 
 	archivePath := fs.DataPath("world.tar.zst")
@@ -144,8 +140,8 @@ func (self *WorldService) doUploadWorldData(config *runner.Config) (string, erro
 
 	key := fmt.Sprintf("%s/%s", config.World.Name, makeArchiveName())
 	reader := util.NewProgressReader(file, entity.EventWorldUpload, int(fileInfo.Size())).ToSeekable()
-	if err := self.s3.PutObject(context.Background(), self.bucket, key, reader, fileInfo.Size()); err != nil {
-		return "", fmt.Errorf("Unable to upload %s: %w", key, err)
+	if err := w.s3.PutObject(context.Background(), w.bucket, key, reader, fileInfo.Size()); err != nil {
+		return "", fmt.Errorf("unable to upload %s: %w", key, err)
 	}
 	slog.Info("Uploading world archive...Done")
 
@@ -156,8 +152,8 @@ func (self *WorldService) doUploadWorldData(config *runner.Config) (string, erro
 	return key, nil
 }
 
-func (self *WorldService) RemoveOldBackups(config *runner.Config) error {
-	objs, err := self.s3.ListObjects(context.Background(), self.bucket, s3wrap.WithPrefix(config.World.Name+"/"))
+func (w *WorldService) RemoveOldBackups(config *runner.Config) error {
+	objs, err := w.s3.ListObjects(context.Background(), w.bucket, s3wrap.WithPrefix(config.World.Name+"/"))
 	if err != nil {
 		return err
 	}
@@ -175,7 +171,7 @@ func (self *WorldService) RemoveOldBackups(config *runner.Config) error {
 	for _, obj := range objs[5:] {
 		keys = append(keys, obj.Key)
 	}
-	if err := self.s3.DeleteObjects(context.Background(), self.bucket, keys); err != nil {
+	if err := w.s3.DeleteObjects(context.Background(), w.bucket, keys); err != nil {
 		return err
 	}
 
@@ -295,7 +291,7 @@ func writeTar(to io.Writer, baseDir string, dirs ...string) error {
 				file.Close()
 
 			default:
-				return errors.New("Unsupported file type")
+				return errors.New("unsupported file type")
 			}
 
 			return nil

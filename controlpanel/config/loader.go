@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ErrUnsupportedType = errors.New("Unsupported field type")
+	ErrUnsupportedType = errors.New("unsupported field type")
 )
 
 var (
@@ -41,99 +41,86 @@ func loadField(name string, field reflect.Value) error {
 	switch field.Type().Kind() {
 	case reflect.String:
 		field.SetString(xGetenv(name))
-		break
 
 	case reflect.Int:
 		result, err := strconv.ParseInt(xGetenv(name), 0, 64)
 		if err != nil {
-			return fmt.Errorf("Failed to parse %s: %w", name, err)
+			return fmt.Errorf("failed to parse %s: %w", name, err)
 		}
 		field.SetInt(result)
-		break
 
 	case reflect.Uint:
 		result, err := strconv.ParseUint(xGetenv(name), 0, 64)
 		if err != nil {
-			return fmt.Errorf("Failed to parse %s: %w", name, err)
+			return fmt.Errorf("failed to parse %s: %w", name, err)
 		}
 		field.SetUint(result)
-		break
 
 	case reflect.Float32:
 		fallthrough
 	case reflect.Float64:
 		result, err := strconv.ParseFloat(xGetenv(name), 64)
 		if err != nil {
-			return fmt.Errorf("Failed to parse %s: %w", name, err)
+			return fmt.Errorf("failed to parse %s: %w", name, err)
 		}
 		field.SetFloat(result)
-		break
 
 	case reflect.Bool:
 		val := xGetenv(name)
 		field.SetBool(strings.EqualFold(val, "true") || strings.EqualFold(val, "yes") || strings.EqualFold(val, "on"))
-		break
 
 	case reflect.Slice:
 		sliceInterface := field.Interface()
 		switch field.Type().Elem().Kind() {
 		case reflect.String:
 			slice := sliceInterface.([]string)
-			for _, v := range strings.Split(xGetenv(name), ",") {
-				slice = append(slice, v)
-			}
+			slice = append(slice, strings.Split(xGetenv(name), ",")...)
 			field.Set(reflect.ValueOf(slice))
-			break
 
 		case reflect.Int:
 			slice := sliceInterface.([]int)
 			for i, v := range strings.Split(xGetenv(name), ",") {
 				val, err := strconv.ParseInt(v, 0, 64)
 				if err != nil {
-					return fmt.Errorf("Failed to parse %dth of %s: %w", i, name, err)
+					return fmt.Errorf("failed to parse %dth of %s: %w", i, name, err)
 				}
 				slice = append(slice, int(val))
 			}
 			field.Set(reflect.ValueOf(slice))
-			break
 
 		case reflect.Uint:
 			slice := sliceInterface.([]uint)
 			for i, v := range strings.Split(xGetenv(name), ",") {
 				val, err := strconv.ParseUint(v, 0, 64)
 				if err != nil {
-					return fmt.Errorf("Failed to parse %dth of %s: %w", i, name, err)
+					return fmt.Errorf("failed to parse %dth of %s: %w", i, name, err)
 				}
 				slice = append(slice, uint(val))
 			}
 			field.Set(reflect.ValueOf(slice))
-			break
 
 		case reflect.Float32:
 			slice := sliceInterface.([]float32)
 			for i, v := range strings.Split(xGetenv(name), ",") {
 				val, err := strconv.ParseFloat(v, 32)
 				if err != nil {
-					return fmt.Errorf("Failed to parse %dth of %s: %w", i, name, err)
+					return fmt.Errorf("failed to parse %dth of %s: %w", i, name, err)
 				}
 				slice = append(slice, float32(val))
 			}
 			field.Set(reflect.ValueOf(slice))
-			break
 
 		case reflect.Float64:
 			slice := sliceInterface.([]float64)
 			for i, v := range strings.Split(xGetenv(name), ",") {
 				val, err := strconv.ParseFloat(v, 64)
 				if err != nil {
-					return fmt.Errorf("Failed to parse %dth of %s: %w", i, name, err)
+					return fmt.Errorf("failed to parse %dth of %s: %w", i, name, err)
 				}
 				slice = append(slice, float64(val))
 			}
 			field.Set(reflect.ValueOf(slice))
-			break
 		}
-		break
 
 	default:
 		return ErrUnsupportedType

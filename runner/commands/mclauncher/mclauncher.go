@@ -32,7 +32,7 @@ func Run(args []string) int {
 		slog.Error("Unable to launch server", slog.Any("error", err))
 	}
 
-	if errors.Is(err, game.RestartRequested) {
+	if errors.Is(err, game.ErrRestartRequested) {
 		slog.Info("Restart...")
 
 		return 100

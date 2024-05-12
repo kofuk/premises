@@ -103,7 +103,7 @@ func (p *ServerProperties) SetMotd(motd string) {
 
 func (p *ServerProperties) SetDifficulty(difficulty string) error {
 	if !slices.Contains([]string{"peaceful", "easy", "normal", "hard"}, difficulty) {
-		return errors.New("Unknown difficulty")
+		return errors.New("unknown difficulty")
 	}
 	p.props["difficulty"] = difficulty
 	return nil
@@ -111,7 +111,7 @@ func (p *ServerProperties) SetDifficulty(difficulty string) error {
 
 func (p *ServerProperties) SetLevelType(levelType string) error {
 	if !slices.Contains([]string{"default", "flat", "largeBiomes", "amplified", "buffet"}, levelType) {
-		return errors.New("Unknown world type")
+		return errors.New("unknown world type")
 	}
 	p.props["level-type"] = levelType
 	return nil

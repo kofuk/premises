@@ -204,7 +204,7 @@ func (*TarUnarchiver) Unarchive(r io.Reader, c *FileCreator) error {
 			}
 
 		default:
-			return fmt.Errorf("Unsupported header type: %v", th.Typeflag)
+			return fmt.Errorf("unsupported header type: %v", th.Typeflag)
 		}
 	}
 

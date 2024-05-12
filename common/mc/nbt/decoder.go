@@ -27,7 +27,7 @@ const (
 )
 
 var (
-	ErrTypeMismatch = errors.New("Type mismatch")
+	ErrTypeMismatch = errors.New("type mismatch")
 )
 
 type Decoder struct {
@@ -248,7 +248,7 @@ func (dec *Decoder) readList(v *reflect.Value, level int) error {
 
 func (dec *Decoder) readCompound(v *reflect.Value, level int) error {
 	if dec.limit > 0 && level >= dec.limit {
-		return errors.New("Level limit exceeded")
+		return errors.New("level limit exceeded")
 	}
 
 	if v != nil && v.Kind() != reflect.Struct {
@@ -359,7 +359,7 @@ func (dec *Decoder) readName() (string, error) {
 func (dec *Decoder) getTypeReader(ty byte) (func(*reflect.Value, int) error, error) {
 	switch ty {
 	case TagEnd:
-		return nil, errors.New("Invalid TAG_End")
+		return nil, errors.New("invalid TAG_End")
 	case TagByte:
 		return dec.readByte, nil
 	case TagShort:
@@ -385,7 +385,7 @@ func (dec *Decoder) getTypeReader(ty byte) (func(*reflect.Value, int) error, err
 	case TagLongArray:
 		return dec.readLongArray, nil
 	default:
-		return nil, fmt.Errorf("Invalid tag type: %d", ty)
+		return nil, fmt.Errorf("invalid tag type: %d", ty)
 	}
 }
 

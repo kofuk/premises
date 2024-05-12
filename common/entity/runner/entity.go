@@ -60,9 +60,9 @@ type ActionType string
 
 const (
 	ActionStop        ActionType = "stop"
-	ActionSnapshot               = "snapshot"
-	ActionUndo                   = "undo"
-	ActionReconfigure            = "reconfigure"
+	ActionSnapshot    ActionType = "snapshot"
+	ActionUndo        ActionType = "undo"
+	ActionReconfigure ActionType = "reconfigure"
 )
 
 type SnapshotConfig struct {

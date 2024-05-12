@@ -34,30 +34,30 @@ func New(kvs kvs.KeyValueStore) MCVersionsService {
 	return service
 }
 
-func (self MCVersionsService) GetVersions(ctx context.Context) ([]lm.VersionInfo, error) {
+func (mcv MCVersionsService) GetVersions(ctx context.Context) ([]lm.VersionInfo, error) {
 	{
 		var result []lm.VersionInfo
-		if err := self.kvs.Get(ctx, "mcversions:versions", &result); err != nil {
+		if err := mcv.kvs.Get(ctx, "mcversions:versions", &result); err != nil {
 			slog.Error("Failed to get launchermeta from cache", slog.Any("error", err))
 		} else {
 			return result, nil
 		}
 	}
 
-	versions, err := self.lm.GetVersionInfo(ctx)
+	versions, err := mcv.lm.GetVersionInfo(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := self.kvs.Set(ctx, "mcversions:versions", versions, 24*time.Hour); err != nil {
+	if err := mcv.kvs.Set(ctx, "mcversions:versions", versions, 24*time.Hour); err != nil {
 		slog.Error("Failed to write version list cache", slog.Any("error", err))
 	}
 
 	return versions, nil
 }
 
-func (self MCVersionsService) GetServerInfo(ctx context.Context, version string) (*lm.ServerInfo, error) {
-	versions, err := self.GetVersions(ctx)
+func (mcv MCVersionsService) GetServerInfo(ctx context.Context, version string) (*lm.ServerInfo, error) {
+	versions, err := mcv.GetVersions(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -70,10 +70,10 @@ func (self MCVersionsService) GetServerInfo(ctx context.Context, version string)
 		}
 	}
 	if versionInfo.ID == "" {
-		return nil, errors.New("No matching version found")
+		return nil, errors.New("no matching version found")
 	}
 
-	serverInfo, err := self.lm.GetServerInfo(ctx, versionInfo)
+	serverInfo, err := mcv.lm.GetServerInfo(ctx, versionInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -81,6 +81,6 @@ func (self MCVersionsService) GetServerInfo(ctx context.Context, version string)
 	return serverInfo, nil
 }
 
-func (self MCVersionsService) GetOverridenManifestUrl() string {
-	return self.overridenUrl
+func (mcv MCVersionsService) GetOverridenManifestUrl() string {
+	return mcv.overridenUrl
 }

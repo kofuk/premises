@@ -28,12 +28,12 @@ func (c *Config) SetServer(version, downloadURL string) {
 }
 
 var (
-	MemoryTooSmall = errors.New("Memory too small")
+	ErrMemoryTooSmall = errors.New("memory too small")
 )
 
 func calculateMemSizeForGame(availableSizeMiB int) (int, error) {
 	if availableSizeMiB < 2048 {
-		return 0, MemoryTooSmall
+		return 0, ErrMemoryTooSmall
 	}
 	return availableSizeMiB - 1024, nil
 }
@@ -51,7 +51,7 @@ func (c *Config) GenerateAuthKey() string {
 
 func (c *Config) SetWorld(worldName string, generationId string) error {
 	if worldName == "" || generationId == "" {
-		return fmt.Errorf("Either worldName or generationId is empty")
+		return fmt.Errorf("either worldName or generationId is empty")
 	}
 	c.C.World.Name = worldName
 	c.C.World.GenerationId = generationId
@@ -74,7 +74,7 @@ func isValidLevelType(levelType string) bool {
 
 func (c *Config) SetLevelType(levelType string) error {
 	if !isValidLevelType(levelType) {
-		return errors.New("Unknown level type")
+		return errors.New("unknown level type")
 	}
 	c.C.World.LevelType = levelType
 	return nil
@@ -86,7 +86,7 @@ func isValidDifficulty(difficulty string) bool {
 
 func (c *Config) SetDifficulty(difficulty string) error {
 	if !isValidDifficulty(difficulty) {
-		return errors.New("Unknown difficulty")
+		return errors.New("unknown difficulty")
 	}
 	c.C.World.Difficulty = difficulty
 	return nil

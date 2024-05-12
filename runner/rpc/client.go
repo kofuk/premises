@@ -56,7 +56,7 @@ func handleCall(conn io.ReadWriter, method string, params, result any) error {
 	}
 
 	if resp.ID != reqID {
-		return errors.New("Invalid request id")
+		return errors.New("invalid request id")
 	}
 	if resp.Error != nil {
 		return resp.Error

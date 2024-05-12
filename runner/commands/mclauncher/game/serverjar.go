@@ -45,7 +45,7 @@ func DetectAndUpdateVersion(config *runner.Config) error {
 		}
 	}
 	if versionInfo.ID == "" {
-		return errors.New("No matching version found")
+		return errors.New("no matching version found")
 	}
 
 	serverInfo, err := fetcher.GetServerInfo(context.TODO(), versionInfo)
@@ -61,7 +61,7 @@ func DetectAndUpdateVersion(config *runner.Config) error {
 		return nil
 	}
 
-	return errors.New("Version found, but download URL was not found")
+	return errors.New("version found, but download URL was not found")
 }
 
 func isExecutableFile(path string) bool {
@@ -89,7 +89,7 @@ func downloadServerJar(url, savePath string) error {
 	}
 	if resp.StatusCode != http.StatusOK {
 		io.Copy(io.Discard, resp.Body)
-		return errors.New(fmt.Sprintf("Download failed with status: %d", resp.StatusCode))
+		return fmt.Errorf("download failed with status: %d", resp.StatusCode)
 	}
 
 	outFile, err := os.Create(savePath)
@@ -141,12 +141,12 @@ func getJavaPathFromInstalledVersion(version int) (string, error) {
 	slog.Debug("Installed java versions", slog.Any("versions", candidates))
 
 	for _, path := range candidates {
-		if strings.Index(path, fmt.Sprintf("-%d-", version)) >= 0 {
+		if strings.Contains(path, fmt.Sprintf("-%d-", version)) {
 			return path, nil
 		}
 	}
 
-	return "", errors.New("Not found")
+	return "", errors.New("not found")
 }
 
 func findJavaPath(version int) string {
