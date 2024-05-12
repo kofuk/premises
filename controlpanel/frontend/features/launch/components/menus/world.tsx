@@ -1,4 +1,4 @@
-import React, {ChangeEvent} from 'react';
+import React from 'react';
 
 import {useTranslation} from 'react-i18next';
 
@@ -13,8 +13,7 @@ import {
   RadioGroup,
   Select,
   SelectChangeEvent,
-  Switch,
-  TextField
+  Switch
 } from '@mui/material';
 
 import {useLaunchConfig} from '../launch-config';
@@ -23,7 +22,7 @@ import {MenuItem} from '../menu-container';
 import {valueLabel} from './common';
 
 import {useBackups} from '@/api';
-import {Loading} from '@/components';
+import {Loading, SaveInput} from '@/components';
 
 export enum WorldLocation {
   Backups = 'backups',
@@ -94,12 +93,7 @@ const SavedWorld = ({name, setName, gen, setGen}: {name: string; setName: (name:
 
 const NewWorld = ({name, setName}: {name: string; setName: (name: string) => void}) => {
   const [t] = useTranslation();
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setName(e.target.value);
-  };
-
-  return <TextField fullWidth inputProps={{'data-1p-ignore': ''}} label={t('world_name')} onChange={handleChange} type="text" value={name} />;
+  return <SaveInput fullWidth initValue={name} label={t('world_name')} onSave={setName} type="text" unsuitableForPasswordAutoFill />;
 };
 
 export const create = (): MenuItem => {

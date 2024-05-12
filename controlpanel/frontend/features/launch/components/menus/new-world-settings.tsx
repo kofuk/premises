@@ -2,12 +2,14 @@ import React from 'react';
 
 import {useTranslation} from 'react-i18next';
 
-import {FormControl, InputLabel, MenuItem as MUIMenuItem, Select, Stack, TextField} from '@mui/material';
+import {FormControl, InputLabel, MenuItem as MUIMenuItem, Select, Stack} from '@mui/material';
 
 import {useLaunchConfig} from '../launch-config';
 import {MenuItem} from '../menu-container';
 
 import {WorldLocation} from './world';
+
+import {SaveInput} from '@/components';
 
 export enum LevelType {
   Default = 'default',
@@ -49,16 +51,7 @@ export const create = (): MenuItem => {
     title: t('config_configure_world'),
     ui: (
       <Stack spacing={3} sx={{mt: 1}}>
-        <TextField
-          fullWidth
-          inputProps={{'data-1p-ignore': ''}}
-          label={t('seed')}
-          onChange={(e) => {
-            setSeed(e.target.value);
-          }}
-          type="text"
-          value={seed}
-        />
+        <SaveInput fullWidth initValue={seed} label={t('seed')} onSave={setSeed} type="text" />
 
         <FormControl fullWidth>
           <InputLabel id="level-type-label">{t('world_type')}</InputLabel>

@@ -9,3 +9,5 @@ export {default as LoadingButtonWithResult} from './loading-button-with-result';
 export {default as Loading} from './loading';
 
 export {default as StatusCollector} from './status-collector';
+
+export {default as SaveInput} from './save-input';

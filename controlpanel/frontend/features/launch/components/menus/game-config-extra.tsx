@@ -4,11 +4,13 @@ import {useTranslation} from 'react-i18next';
 import {TransitionGroup} from 'react-transition-group';
 
 import {Delete as DeleteIcon} from '@mui/icons-material';
-import {Button, Collapse, IconButton, List, ListItem, ListItemText, Stack, TextField, Typography} from '@mui/material';
+import {Button, Collapse, IconButton, List, ListItem, ListItemText, Stack, Typography} from '@mui/material';
 
 import {useLaunchConfig} from '../launch-config';
 import {MenuItem} from '../menu-container';
 import ServerPropsDialog from '../server-props-dialog';
+
+import {SaveInput} from '@/components';
 
 export const create = (): MenuItem => {
   const [t] = useTranslation();
@@ -47,7 +49,7 @@ export const create = (): MenuItem => {
     title: t('config_game_extra'),
     ui: (
       <Stack sx={{mt: 1}}>
-        <TextField label={t('server_description')} onChange={(e) => setDescription(e.target.value)} value={motd} variant="outlined" />
+        <SaveInput fullWidth initValue={motd} label={t('server_description')} onSave={setDescription} type="text" />
 
         <Typography sx={{mt: 1}} variant="subtitle1">
           {t('additional_server_properties')}
