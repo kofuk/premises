@@ -11,6 +11,7 @@ import (
 type Store interface {
 	Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
 	Get(ctx context.Context, key string) ([]byte, error)
+	GetSet(ctx context.Context, key string, value []byte, ttl time.Duration) ([]byte, error)
 	Del(ctx context.Context, key ...string) error
 }
 
@@ -42,6 +43,18 @@ func (self KeyValueStore) Get(ctx context.Context, key string, result any) error
 	return json.Unmarshal(data, result)
 }
 
+func (self KeyValueStore) GetSet(ctx context.Context, key string, value any, ttl time.Duration, oldValue any) error {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return err
+	}
+	oldData, err := self.c.GetSet(ctx, key, data, ttl)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(oldData, oldValue)
+}
+
 func (self KeyValueStore) Del(ctx context.Context, key ...string) error {
 	return self.c.Del(ctx, key...)
 }
@@ -65,6 +78,14 @@ func (self RedisStore) Set(ctx context.Context, key string, value []byte, ttl ti
 
 func (self RedisStore) Get(ctx context.Context, key string) ([]byte, error) {
 	val, err := self.redis.Get(ctx, key).Result()
+	if err != nil {
+		return nil, err
+	}
+	return []byte(val), nil
+}
+
+func (self RedisStore) GetSet(ctx context.Context, key string, value []byte, ttl time.Duration) ([]byte, error) {
+	val, err := self.redis.SetArgs(ctx, key, value, redis.SetArgs{Get: true, TTL: ttl}).Result()
 	if err != nil {
 		return nil, err
 	}

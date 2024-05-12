@@ -1,7 +1,6 @@
 package game
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -594,28 +593,6 @@ func (l *Launcher) QuickUndo(slot int) error {
 	l.Stop()
 
 	return nil
-}
-
-func LaunchInteractiveRcon(args []string) int {
-	rcon := NewRcon("127.0.0.1:25575", "x")
-
-	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Print("> ")
-	for scanner.Scan() {
-		resp, err := rcon.Execute(scanner.Text())
-		if err != nil {
-			slog.Error("Failed to execute command", slog.Any("error", err))
-			os.Exit(1)
-		}
-		fmt.Println(resp)
-		fmt.Print("> ")
-	}
-
-	if err := scanner.Err(); err != nil {
-		slog.Info("Failed to scan stdin", slog.Any("error", err))
-	}
-
-	return 0
 }
 
 func (l *Launcher) sendStartedEvent(config *runner.Config) {

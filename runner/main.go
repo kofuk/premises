@@ -9,10 +9,10 @@ import (
 	"syscall"
 
 	"github.com/kofuk/premises/runner/commands/cleanup"
+	"github.com/kofuk/premises/runner/commands/cli"
 	"github.com/kofuk/premises/runner/commands/exteriord"
 	"github.com/kofuk/premises/runner/commands/keepsystemutd"
 	"github.com/kofuk/premises/runner/commands/mclauncher"
-	"github.com/kofuk/premises/runner/commands/mclauncher/game"
 	"github.com/kofuk/premises/runner/commands/privileged"
 	"github.com/kofuk/premises/runner/commands/serversetup"
 	"github.com/kofuk/premises/runner/commands/systemstat"
@@ -118,10 +118,9 @@ func main() {
 				Run:          mclauncher.Run,
 				RequiresRoot: false,
 			},
-			"rcon": {
-				Description:  "Interactive Rcon",
-				Run:          game.LaunchInteractiveRcon,
-				RequiresRoot: false,
+			"cli": {
+				Description: "CLI tools (rcon)",
+				Run:         cli.Run,
 			},
 			"setup": {
 				Description: "Setup server",
