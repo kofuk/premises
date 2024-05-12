@@ -4,7 +4,7 @@ import useSWR from 'swr';
 
 import {launch as apiLaunch, reconfigure as apiReconfigure, updateConfig as apiUpdateConfig, getConfig} from '@/api';
 import {PendingConfig} from '@/api/entities';
-import {Loading} from '@/components';
+import Loading from '@/components/loading';
 
 type ConfigContextType = {
   config: PendingConfig;

@@ -9,7 +9,7 @@ import {Paper, Stack, TextField, Typography} from '@mui/material';
 import {Box} from '@mui/system';
 
 import {changePassword} from '@/api';
-import {LoadingButtonWithResult} from '@/components';
+import LoadingButtonWithResult from '@/components/loading-button-with-result';
 
 const ChangePassword = () => {
   const [t] = useTranslation();

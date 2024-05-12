@@ -7,7 +7,8 @@ import {Box, List} from '@mui/material';
 
 import {APIError, getSystemInfo} from '@/api';
 import {SystemInfo as SystemInfoEntity} from '@/api/entities';
-import {CopyableListItem, DelayedSkeleton} from '@/components';
+import CopyableListItem from '@/components/copyable-list-item';
+import DelayedSkeleton from '@/components/delayed-skeleton';
 
 const SystemInfo = () => {
   const [t] = useTranslation();

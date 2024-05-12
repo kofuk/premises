@@ -8,7 +8,7 @@ import {useTranslation} from 'react-i18next';
 import {Box, Paper, Stack, TextField, Typography} from '@mui/material';
 
 import {APIError, addUser} from '@/api';
-import {LoadingButtonWithResult} from '@/components';
+import LoadingButtonWithResult from '@/components/loading-button-with-result';
 
 const AddUser = () => {
   const [t] = useTranslation();

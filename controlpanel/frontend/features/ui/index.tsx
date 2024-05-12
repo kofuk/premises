@@ -3,7 +3,8 @@ import {Outlet, useNavigate} from 'react-router-dom';
 
 import Navbar from './components/navbar';
 
-import {Loading, StatusCollector} from '@/components';
+import Loading from '@/components/loading';
+import StatusCollector from '@/components/status-collector';
 import {useAuth} from '@/utils/auth';
 
 const UI = () => {

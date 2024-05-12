@@ -7,7 +7,7 @@ import {HelmetProvider} from 'react-helmet-async';
 import {Close as CloseIcon} from '@mui/icons-material';
 import {IconButton} from '@mui/material';
 
-import {Loading} from './components';
+import Loading from './components/loading';
 import AppRoutes from './routes';
 import {AuthProvider} from './utils/auth';
 import {RunnerStatusProvider} from './utils/runner-status';

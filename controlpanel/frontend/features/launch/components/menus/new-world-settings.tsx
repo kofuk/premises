@@ -9,7 +9,7 @@ import {MenuItem} from '../menu-container';
 
 import {WorldLocation} from './world';
 
-import {SaveInput} from '@/components';
+import SaveInput from '@/components/save-input';
 
 export enum LevelType {
   Default = 'default',

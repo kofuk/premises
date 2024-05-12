@@ -10,7 +10,7 @@ import {useLaunchConfig} from '../launch-config';
 import {MenuItem} from '../menu-container';
 import ServerPropsDialog from '../server-props-dialog';
 
-import {SaveInput} from '@/components';
+import SaveInput from '@/components/save-input';
 
 export const create = (): MenuItem => {
   const [t] = useTranslation();

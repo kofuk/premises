@@ -22,7 +22,8 @@ import {MenuItem} from '../menu-container';
 import {valueLabel} from './common';
 
 import {useBackups} from '@/api';
-import {Loading, SaveInput} from '@/components';
+import Loading from '@/components/loading';
+import SaveInput from '@/components/save-input';
 
 export enum WorldLocation {
   Backups = 'backups',

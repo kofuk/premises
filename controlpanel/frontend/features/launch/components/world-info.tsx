@@ -7,7 +7,8 @@ import {Box, List} from '@mui/material';
 
 import {APIError, getWorldInfo} from '@/api';
 import {WorldInfo as WorldInfoEntity} from '@/api/entities';
-import {CopyableListItem, DelayedSkeleton} from '@/components';
+import CopyableListItem from '@/components/copyable-list-item';
+import DelayedSkeleton from '@/components/delayed-skeleton';
 
 const WorldInfo = () => {
   const [t] = useTranslation();

@@ -1,7 +1,7 @@
 import React, {ReactNode, useContext} from 'react';
 
 import {login as apiLogin, useSessionData} from '@/api';
-import {Loading} from '@/components';
+import Loading from '@/components/loading';
 
 export enum LoginResult {
   LoggedIn,

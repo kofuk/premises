@@ -10,7 +10,7 @@ import {MenuItem} from '../menu-container';
 import {valueLabel} from './common';
 
 import {useMCVersions} from '@/api';
-import {Loading} from '@/components';
+import Loading from '@/components/loading';
 
 export const create = (): MenuItem => {
   const [t] = useTranslation();
