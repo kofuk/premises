@@ -71,6 +71,7 @@ func getIPAddr() (v4Addrs []string, v6Addrs []string, err error) {
 
 			if v4Addr := ipnet.IP.To4(); v4Addr != nil {
 				v4Addrs = append(v4Addrs, v4Addr.String())
+				continue
 			}
 			v6Addrs = append(v6Addrs, ipnet.IP.To16().String())
 		}
