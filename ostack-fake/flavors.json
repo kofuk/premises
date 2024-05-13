@@ -9,7 +9,7 @@
       "vcpus": 12,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "c676b8b5-e67e-4288-94d1-a325ff364a75",
@@ -20,7 +20,7 @@
       "vcpus": 2,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "312fe064-783d-43a5-9445-2ba19590d9a4",
@@ -31,7 +31,7 @@
       "vcpus": 1,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "76f716da-db7d-4b82-90c7-4634403acfa4",
@@ -42,7 +42,7 @@
       "vcpus": 20,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "01bfceda-ff64-4a4c-8765-183636563eb3",
@@ -53,7 +53,7 @@
       "vcpus": 6,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "b071071d-6bbf-4043-9fb7-5443ac36c563",
@@ -64,7 +64,7 @@
       "vcpus": 4,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "7bab131a-8ce3-461a-81d2-c36ed98a600e",
@@ -75,7 +75,7 @@
       "vcpus": 12,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "7207cd5c-ddde-4192-81ef-c174ea154aa9",
@@ -86,7 +86,7 @@
       "vcpus": 6,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "4104c6d4-691d-47b5-a793-afd49ea8f77b",
@@ -97,7 +97,7 @@
       "vcpus": 24,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "abf9bf2e-d668-4edf-859b-79f372e5f277",
@@ -108,7 +108,7 @@
       "vcpus": 1,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "daab9a7e-c251-4abb-a502-74c94f17fed5",
@@ -119,7 +119,7 @@
       "vcpus": 24,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "38ad9945-73ea-47a6-b185-e5f9f88f94b5",
@@ -130,7 +130,7 @@
       "vcpus": 1,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "2ad3c606-7e14-490a-b542-dee32277103d",
@@ -141,7 +141,7 @@
       "vcpus": 4,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "54e66c0e-a978-429d-9cf9-34a7fb23787f",
@@ -152,7 +152,7 @@
       "vcpus": 16,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "dbdeba8e-4135-4cc9-8154-6a4aa53fc4a8",
@@ -163,7 +163,7 @@
       "vcpus": 2,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "ff541a59-71a3-4424-8291-e089ca600a18",
@@ -174,7 +174,7 @@
       "vcpus": 2,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "3cb9828a-d5c9-4c49-90a2-6e6c9aeb84d4",
@@ -185,7 +185,7 @@
       "vcpus": 4,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "26bb6c03-d54e-48d6-938a-4de5462d058a",
@@ -196,7 +196,7 @@
       "vcpus": 3,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "055a26a7-62de-43b6-8311-4f32ef2212b3",
@@ -207,7 +207,7 @@
       "vcpus": 22,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "7d7c90b6-3206-430d-b85a-4d860c9c0280",
@@ -218,7 +218,7 @@
       "vcpus": 4,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "d4d14a32-a7a5-4663-bd47-3a47767eda9d",
@@ -229,7 +229,7 @@
       "vcpus": 6,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "dbfb3b37-942f-4945-b14c-7acdb1a8c91c",
@@ -240,7 +240,7 @@
       "vcpus": 8,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "ca6dda27-0616-485e-bfbc-e26dad27b4bf",
@@ -251,7 +251,7 @@
       "vcpus": 24,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "7f919ef0-fabf-4ac0-aa73-4b6a9a1b0a9f",
@@ -262,7 +262,7 @@
       "vcpus": 3,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "4de01cd7-e8b9-4db0-a5d6-6750c9a10e19",
@@ -273,7 +273,7 @@
       "vcpus": 8,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "d0ef22dd-5bb2-43c0-b113-40f81139bac1",
@@ -284,7 +284,7 @@
       "vcpus": 1,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "f086e0d3-d50b-4713-a75b-26d4b6852e3a",
@@ -295,7 +295,7 @@
       "vcpus": 8,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "671b0a2a-469f-4253-a921-ff49d3c1d26d",
@@ -306,7 +306,7 @@
       "vcpus": 24,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "c000a382-a567-4f65-b821-3ceb85598ff0",
@@ -317,7 +317,7 @@
       "vcpus": 22,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "d5949cdc-3906-4580-bcf1-5c71cbb8c0b6",
@@ -328,7 +328,7 @@
       "vcpus": 4,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "8ac057d2-8a13-4b01-b83c-1677de341473",
@@ -339,7 +339,7 @@
       "vcpus": 12,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "26fb8ec4-ea8b-4f46-affc-3eed6f117e27",
@@ -350,7 +350,7 @@
       "vcpus": 3,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "6743091c-b55c-4103-9274-77e4bd5bf5f5",
@@ -361,7 +361,7 @@
       "vcpus": 20,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "124fe1d3-f19d-4217-a07f-c0871bfb0573",
@@ -372,7 +372,7 @@
       "vcpus": 8,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "26ab433e-ee6a-4fff-adca-75af4facc6b8",
@@ -383,7 +383,7 @@
       "vcpus": 12,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "05e24d3c-2ca1-4ed6-934a-70e2120315d5",
@@ -394,7 +394,7 @@
       "vcpus": 2,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "5e4cdd49-5394-4102-809a-6c506e66f2b8",
@@ -405,7 +405,7 @@
       "vcpus": 6,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "0d75769c-74f3-4ce7-9007-ce98fcc204cf",
@@ -416,7 +416,7 @@
       "vcpus": 3,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "d9ccfb27-9e24-47e6-83dc-2172d99835fc",
@@ -427,7 +427,7 @@
       "vcpus": 8,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "4106c905-f3a9-4842-9e8b-d339ced08b58",
@@ -438,7 +438,7 @@
       "vcpus": 2,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     },
     {
       "id": "94cc64eb-ad10-4de5-9e21-a34f71df1677",
@@ -449,7 +449,7 @@
       "vcpus": 6,
       "rxtx_factor": 1,
       "OS-FLV-DISABLED:disabled": false,
-	  "os-flavor-access:is_public": true
+      "os-flavor-access:is_public": true
     }
   ]
 }
