@@ -18,7 +18,7 @@ import (
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/rpc/types"
-	"github.com/kofuk/premises/runner/systemutil"
+	"github.com/kofuk/premises/runner/system"
 )
 
 type OnHealthyFunc func(l *Launcher)
@@ -260,7 +260,7 @@ func getAllocSizeMiB() int {
 		return 1024
 	}
 
-	totalMem, err := systemutil.GetTotalMemory()
+	totalMem, err := system.GetTotalMemory()
 	if err != nil {
 		slog.Error("Error retrieving total memory", slog.Any("error", err))
 		return 1024
@@ -336,7 +336,7 @@ func (l *Launcher) executeServer(cmdline []string) error {
 		l.stopAfterLongInactive(ctx)
 	}()
 
-	err := systemutil.Cmd(cmdline[0], cmdline[1:], systemutil.WithWorkingDir(fs.DataPath("gamedata")))
+	err := system.Cmd(cmdline[0], cmdline[1:], system.WithWorkingDir(fs.DataPath("gamedata")))
 
 	cancel()
 

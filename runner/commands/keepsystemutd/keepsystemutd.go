@@ -1,11 +1,11 @@
 package keepsystemutd
 
 import (
-	"github.com/kofuk/premises/runner/systemutil"
+	"github.com/kofuk/premises/runner/system"
 )
 
 func KeepSystemUpToDate(args []string) int {
-	systemutil.AptGet("upgrade", "-y")
-	systemutil.AptGet("autoremove", "-y", "--purge")
+	system.AptGet("upgrade", "-y")
+	system.AptGet("autoremove", "-y", "--purge")
 	return 0
 }

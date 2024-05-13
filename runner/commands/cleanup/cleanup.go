@@ -13,7 +13,7 @@ import (
 	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
-	"github.com/kofuk/premises/runner/systemutil"
+	"github.com/kofuk/premises/runner/system"
 )
 
 func removeFilesIgnoreError(paths ...string) {
@@ -56,7 +56,7 @@ func removeSnapshots() {
 	}
 
 	if needsClean {
-		if err := systemutil.Cmd("btrfs", args); err != nil {
+		if err := system.Cmd("btrfs", args); err != nil {
 			slog.Error("Failed to remove snapshots", slog.Any("error", err))
 		}
 	}

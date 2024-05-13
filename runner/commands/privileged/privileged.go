@@ -10,7 +10,7 @@ import (
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/rpc/types"
-	"github.com/kofuk/premises/runner/systemutil"
+	"github.com/kofuk/premises/runner/system"
 )
 
 type SnapshotInfo struct {
@@ -30,7 +30,7 @@ func takeFsSnapshot(snapshotId string) (*SnapshotInfo, error) {
 	}
 
 	// Create read-only snapshot
-	if err := systemutil.Cmd("btrfs", []string{"subvolume", "snapshot", "-r", ".", snapshotInfo.Path}, systemutil.WithWorkingDir(fs.DataPath("gamedata"))); err != nil {
+	if err := system.Cmd("btrfs", []string{"subvolume", "snapshot", "-r", ".", snapshotInfo.Path}, system.WithWorkingDir(fs.DataPath("gamedata"))); err != nil {
 		return nil, err
 	}
 
@@ -42,10 +42,10 @@ func deleteFsSnapshot(id string) error {
 		return errors.New("invalid snapshot ID")
 	}
 
-	if err := systemutil.Cmd("btrfs", []string{"subvolume", "delete", "ss@" + id}, systemutil.WithWorkingDir(fs.DataPath("gamedata"))); err != nil {
+	if err := system.Cmd("btrfs", []string{"subvolume", "delete", "ss@" + id}, system.WithWorkingDir(fs.DataPath("gamedata"))); err != nil {
 		return err
 	}
-	if err := systemutil.Cmd("btrfs", []string{"balance", "."}, systemutil.WithWorkingDir(fs.DataPath("gamedata"))); err != nil {
+	if err := system.Cmd("btrfs", []string{"balance", "."}, system.WithWorkingDir(fs.DataPath("gamedata"))); err != nil {
 		return err
 	}
 

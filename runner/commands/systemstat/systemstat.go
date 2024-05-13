@@ -7,11 +7,11 @@ import (
 
 	entity "github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
-	"github.com/kofuk/premises/runner/systemutil"
+	"github.com/kofuk/premises/runner/system"
 )
 
 func Run(args []string) int {
-	cpuStat, err := systemutil.NewCPUUsage()
+	cpuStat, err := system.NewCPUUsage()
 	if err != nil {
 		slog.Error("Failed to initialize CPU usage", slog.Any("error", err))
 		os.Exit(1)

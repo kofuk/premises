@@ -13,7 +13,7 @@ import (
 	"github.com/kofuk/premises/runner/config"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
-	"github.com/kofuk/premises/runner/systemutil"
+	"github.com/kofuk/premises/runner/system"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -80,7 +80,7 @@ func getIPAddr() (v4Addrs []string, v6Addrs []string, err error) {
 }
 
 func (setup *ServerSetup) sendServerHello() {
-	systemVersion := systemutil.GetSystemVersion()
+	systemVersion := system.GetSystemVersion()
 
 	eventData := runner.Event{
 		Type: runner.EventHello,
@@ -113,11 +113,11 @@ func (setup *ServerSetup) initializeServer() {
 
 	eg.Go(func() error {
 		slog.Info("Installing packages")
-		systemutil.AptGet("install", "-y", "btrfs-progs", latestAvailableJre, "ufw")
+		system.AptGet("install", "-y", "btrfs-progs", latestAvailableJre, "ufw")
 		if !isDevEnv() {
 			slog.Info("Enabling ufw")
-			systemutil.Cmd("systemctl", []string{"enable", "--now", "ufw.service"})
-			systemutil.Cmd("ufw", []string{"enable"})
+			system.Cmd("systemctl", []string{"enable", "--now", "ufw.service"})
+			system.Cmd("ufw", []string{"enable"})
 		}
 		return nil
 	})
@@ -141,7 +141,7 @@ func (setup *ServerSetup) initializeServer() {
 		if _, err := user.Lookup("premises"); err != nil {
 			slog.Info("Adding user")
 			// Create a system user named "premises"
-			return systemutil.Cmd("useradd", []string{"--user-group", "--system", "--shell", "/usr/sbin/nologin", "premises"})
+			return system.Cmd("useradd", []string{"--user-group", "--system", "--shell", "/usr/sbin/nologin", "premises"})
 		}
 		return nil
 	})
@@ -150,13 +150,13 @@ func (setup *ServerSetup) initializeServer() {
 
 	// This command should be executed after `apt-get install` finished
 	slog.Info("Creating filesystem for gamedata.img")
-	systemutil.Cmd("mkfs.btrfs", []string{fs.DataPath("gamedata.img")})
+	system.Cmd("mkfs.btrfs", []string{fs.DataPath("gamedata.img")})
 }
 
 func (setup *ServerSetup) updateFirewallRules() {
-	systemutil.Cmd("ufw", []string{"allow", "25565/tcp"})
+	system.Cmd("ufw", []string{"allow", "25565/tcp"})
 	// Old runner requires 8521 to be exposed. Now, it's not needed so we delete it here.
-	systemutil.Cmd("ufw", []string{"delete", "allow", "8521/tcp"})
+	system.Cmd("ufw", []string{"delete", "allow", "8521/tcp"})
 }
 
 func (setup *ServerSetup) installRequiredJavaVersion() {
@@ -171,7 +171,7 @@ func (setup *ServerSetup) installRequiredJavaVersion() {
 		installArgs = append(installArgs, fmt.Sprintf("openjdk-%d-jre-headless", config.Server.JavaVersion))
 	}
 
-	systemutil.AptGet(installArgs...)
+	system.AptGet(installArgs...)
 }
 
 func (setup ServerSetup) Run() {
@@ -184,7 +184,7 @@ func (setup ServerSetup) Run() {
 	}
 
 	slog.Info("Updating package indices")
-	systemutil.AptGet("update", "-y")
+	system.AptGet("update", "-y")
 
 	if !isServerInitialized() {
 		slog.Info("Server seems not to be initialized. Will run full initialization")
@@ -198,10 +198,10 @@ func (setup ServerSetup) Run() {
 	setup.installRequiredJavaVersion()
 
 	slog.Info("Mounting gamedata.img")
-	systemutil.Cmd("mount", []string{fs.DataPath("gamedata.img"), fs.DataPath("gamedata")})
+	system.Cmd("mount", []string{fs.DataPath("gamedata.img"), fs.DataPath("gamedata")})
 
 	slog.Info("Ensure data directory owned by execution user")
-	if uid, gid, err := systemutil.GetAppUserID(); err != nil {
+	if uid, gid, err := system.GetAppUserID(); err != nil {
 		slog.Error("Error retrieving user ID for premises", slog.Any("error", err))
 	} else {
 		if err := fs.ChownRecursive(fs.DataPath(), uid, gid); err != nil {

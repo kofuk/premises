@@ -14,7 +14,7 @@ import (
 	"github.com/kofuk/premises/common/entity/runner"
 	lm "github.com/kofuk/premises/common/mc/launchermeta"
 	"github.com/kofuk/premises/runner/fs"
-	"github.com/kofuk/premises/runner/systemutil"
+	"github.com/kofuk/premises/runner/system"
 	"github.com/kofuk/premises/runner/util"
 )
 
@@ -132,7 +132,7 @@ func DownloadServerJar(url, savePath string) error {
 }
 
 func getJavaPathFromInstalledVersion(version int) (string, error) {
-	output, err := systemutil.CmdOutput("update-alternatives", []string{"--list", "java"})
+	output, err := system.CmdOutput("update-alternatives", []string{"--list", "java"})
 	if err != nil {
 		return "", err
 	}

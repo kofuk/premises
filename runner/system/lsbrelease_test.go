@@ -1,4 +1,4 @@
-package systemutil
+package system
 
 import (
 	"bytes"
