@@ -126,6 +126,11 @@ func createClient() *bun.DB {
 	password := getenvOr("DATABASE_PASSWORD", os.Getenv("premises_controlPanel_postgres_password"))
 	database := getenvOr("DATABASE_NAME", os.Getenv("premises_controlPanel_postgres_dbName"))
 
+	if addr == "" || user == "" || password == "" || database == "" {
+		fmt.Fprintln(os.Stderr, "Database configuration is missing")
+		os.Exit(1)
+	}
+
 	return db.NewClient(addr, user, password, database)
 }
 
