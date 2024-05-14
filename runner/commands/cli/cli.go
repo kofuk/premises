@@ -18,6 +18,9 @@ Available subcommands:
 	case "rcon":
 		rcon := new(Rcon)
 		return rcon.Run(args[1:])
+	case "rpc":
+		rpc := new(RPC)
+		return rpc.Run(args[1:])
 	}
 
 	fmt.Fprintln(os.Stderr, "Unknown subcommand")
