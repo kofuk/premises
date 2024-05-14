@@ -18,13 +18,7 @@ func parseMeminfoLine(line string) (string, int, error) {
 	key := line[0:pos]
 	value := strings.Trim(line[pos+1:], " \r\n")
 	fields := strings.Split(value, " ")
-	var intVal int
-	if len(fields) == 0 {
-		return key, 0, errors.New("parse error")
-	}
-
-	var err error
-	intVal, err = strconv.Atoi(fields[0])
+	intVal, err := strconv.Atoi(fields[0])
 	if err != nil {
 		return key, 0, err
 	}

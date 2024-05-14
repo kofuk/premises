@@ -70,6 +70,11 @@ func Test_readPacket(t *testing.T) {
 			input:        "Content-Length: 1\r\n\r\n{",
 			expectsError: true,
 		},
+		{
+			name:         "Empty request",
+			input:        "",
+			expectsError: true,
+		},
 	}
 
 	for _, tt := range cases {

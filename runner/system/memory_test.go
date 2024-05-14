@@ -56,6 +56,13 @@ func Test_parseMeminfoLine(t *testing.T) {
 			expectsError: true,
 		},
 		{
+			name:         "Empty value",
+			input:        "MemTotal:",
+			key:          "MemTotal",
+			value:        0,
+			expectsError: true,
+		},
+		{
 			name:  "Line with newline",
 			input: "MemTotal:   10 kB\n",
 			key:   "MemTotal",
