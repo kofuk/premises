@@ -10,6 +10,7 @@ type Config struct {
 		CustomCommand      []string          `json:"customCommand"`
 		ServerPropOverride map[string]string `json:"serverPropOverride"`
 		JavaVersion        int               `json:"javaVersion"`
+		InactiveTimeout    int               `json:"inactiveTimeout"`
 	} `json:"server"`
 	World struct {
 		ShouldGenerate bool   `json:"shouldGenerate"`

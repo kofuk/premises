@@ -287,6 +287,13 @@ func waitServerHealthy(ctx context.Context) error {
 }
 
 func (l *Launcher) stopAfterLongInactive(ctx context.Context) {
+	timeout := l.config.Server.InactiveTimeout
+	if timeout < 0 {
+		return
+	} else if timeout < 5 {
+		timeout = 5
+	}
+
 	ticker := time.NewTicker(time.Minute)
 	defer ticker.Stop()
 
@@ -301,8 +308,9 @@ func (l *Launcher) stopAfterLongInactive(ctx context.Context) {
 				continue
 			}
 
-			if time.Since(lastActive) > 30*time.Minute {
+			if time.Since(lastActive) > time.Duration(timeout)*time.Minute {
 				l.Stop()
+				return
 			}
 		}
 	}
