@@ -82,6 +82,7 @@ type PendingConfig struct {
 	Seed               *string            `json:"seed,omitempty"`
 	Motd               *string            `json:"motd,omitempty"`
 	ServerPropOverride *map[string]string `json:"serverPropOverride,omitempty"`
+	InactiveTimeout    *int               `json:"inactiveTimeout,omitempty"`
 }
 
 type ConfigAndValidity struct {

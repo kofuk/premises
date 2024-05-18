@@ -67,6 +67,7 @@ export type PendingConfig = {
   seed?: string;
   motd?: string;
   serverPropOverride?: {[key: string]: string};
+  inactiveTimeout?: number;
 };
 
 export type ConfigAndValidity = {

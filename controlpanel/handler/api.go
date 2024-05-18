@@ -194,6 +194,11 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 	result.C.Server.ManifestOverride = h.MCVersions.GetOverridenManifestUrl()
 	result.C.Server.CustomCommand = serverInfo.LaunchCommand
 	result.C.Server.JavaVersion = serverInfo.JavaVersion
+	if config.InactiveTimeout != nil {
+		result.C.Server.InactiveTimeout = *config.InactiveTimeout
+	} else {
+		result.C.Server.InactiveTimeout = -1
+	}
 
 	result.GenerateAuthKey()
 
