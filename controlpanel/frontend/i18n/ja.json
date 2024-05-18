@@ -55,8 +55,8 @@
   "config_server_settings": "サーバーのバージョン設定",
   "server_version": "サーバーのバージョン",
   "advanced_server_settings": "詳細設定",
-  "additional_server_properties": "server.properties に値を追加",
-  "additional_server_properties_add": "追加",
+  "additional_server_properties": "server.properties",
+  "additional_server_properties_add": "新しい値を追加",
   "server_props_key": "キー",
   "server_props_value": "値",
   "config_machine_type": "マシンタイプ",
@@ -137,5 +137,7 @@
   "save": "保存",
   "world_settings_label": "シード値: {{seed}}、 ワールドのタイプ: {{levelType}}",
   "value_count_label": "{{count}} 個の値",
-  "server_description": "サーバーの説明"
+  "server_description": "サーバーの説明",
+  "inactive_timeout": "非アクティブ時にサーバーを停止する（分）",
+  "server_properties_description": "server.properties に値を追加します。一部の値はシステムによって上書きされることがあります。"
 }

@@ -71,6 +71,10 @@ func BoolP(b bool) *bool {
 	return &b
 }
 
+func IntP(i int) *int {
+	return &i
+}
+
 type PendingConfig struct {
 	MachineType        *string            `json:"machineType,omitempty"`
 	ServerVersion      *string            `json:"serverVersion,omitempty"`

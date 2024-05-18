@@ -55,8 +55,8 @@
   "config_server_settings": "Server Version",
   "server_version": "Server Settings",
   "advanced_server_settings": "Advanced Settings",
-  "additional_server_properties": "Add to server.properties",
-  "additional_server_properties_add": "Add",
+  "additional_server_properties": "server.properties",
+  "additional_server_properties_add": "Add a new value",
   "server_props_key": "Key",
   "server_props_value": "Value",
   "config_machine_type": "Machine Type",
@@ -138,5 +138,7 @@
   "world_settings_label": "Seed: {{seed}}, world type: {{levelType}}",
   "value_count_label_one": "{{count}} value",
   "value_count_label_other": "{{count}} values",
-  "server_description": "Server Description"
+  "server_description": "Server Description",
+  "inactive_timeout": "Stop the server when inactive (minutes)",
+  "server_properties_description": "Values will be added to server.properties. Some values may be overwritten by the system."
 }

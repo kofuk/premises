@@ -685,6 +685,9 @@ func (h *Handler) validateAndNormalizeConfig(config *web.PendingConfig) bool {
 		config.LevelType = nil
 		config.Seed = nil
 	}
+	if config.InactiveTimeout == nil {
+		config.InactiveTimeout = web.IntP(30)
+	}
 
 	return true
 }
