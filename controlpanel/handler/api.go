@@ -685,9 +685,6 @@ func (h *Handler) validateAndNormalizeConfig(config *web.PendingConfig) bool {
 		config.LevelType = nil
 		config.Seed = nil
 	}
-	if config.InactiveTimeout == nil {
-		config.InactiveTimeout = web.IntP(30)
-	}
 
 	return true
 }
@@ -697,8 +694,9 @@ func (h *Handler) handleApiGetConfig(c echo.Context) error {
 
 	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
 		config = web.PendingConfig{
-			MachineType:  web.StringP("4g"),
-			GuessVersion: web.BoolP(true),
+			MachineType:     web.StringP("4g"),
+			GuessVersion:    web.BoolP(true),
+			InactiveTimeout: web.IntP(30),
 		}
 	}
 
