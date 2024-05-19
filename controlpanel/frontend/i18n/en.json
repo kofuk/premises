@@ -139,6 +139,10 @@
   "value_count_label_one": "{{count}} value",
   "value_count_label_other": "{{count}} values",
   "server_description": "Server Description",
-  "inactive_timeout": "Stop the server when inactive (minutes)",
-  "server_properties_description": "Values will be added to server.properties. Some values may be overwritten by the system."
+  "inactive_timeout": "Stop the server when inactive",
+  "inactive_timeout_input_label": "Time (in minutes) until the server automatically stops",
+  "server_properties_description": "Values will be added to server.properties. Some values may be overwritten by the system.",
+  "minutes_one": "{{ minutes }} minute",
+  "minutes_other": "{{ minutes }} minutes",
+  "disabled": "Disabled"
 }

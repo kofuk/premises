@@ -138,6 +138,9 @@
   "world_settings_label": "シード値: {{seed}}、 ワールドのタイプ: {{levelType}}",
   "value_count_label": "{{count}} 個の値",
   "server_description": "サーバーの説明",
-  "inactive_timeout": "非アクティブ時にサーバーを停止する（分）",
-  "server_properties_description": "server.properties に値を追加します。一部の値はシステムによって上書きされることがあります。"
+  "inactive_timeout": "非アクティブ時にサーバーを停止する",
+  "inactive_timeout_input_label": "サーバーを自動的に停止するまでの時間（分）",
+  "server_properties_description": "server.properties に値を追加します。一部の値はシステムによって上書きされることがあります。",
+  "minutes": "{{ minutes }} 分",
+  "disabled": "無効"
 }
