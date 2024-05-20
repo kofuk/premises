@@ -96,7 +96,7 @@ export const create = (): MenuItem => {
             </ListItemButton>
           </ListItem>
 
-          <ListSubheader>{t('additional_server_properties')}</ListSubheader>
+          <ListSubheader disableSticky>{t('additional_server_properties')}</ListSubheader>
           <TransitionGroup>
             {serverProps.map(({key, value}) => (
               <Collapse key={key}>
