@@ -13,7 +13,7 @@ const WarningText = ({children}: {children: string}) => (
 export const valueLabel = (value: string | undefined | null, formatter?: (value: string) => string | undefined): React.ReactNode => {
   const [t] = useTranslation();
   if (value == null) {
-    return <WarningText>{t('value_not_set')}</WarningText>;
+    return <WarningText>{t('launch.not_set')}</WarningText>;
   }
   if (formatter) {
     return formatter(value) || value;

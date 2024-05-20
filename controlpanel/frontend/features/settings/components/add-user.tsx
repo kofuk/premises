@@ -40,7 +40,7 @@ const AddUser = () => {
   return (
     <Paper variant="outlined">
       <Typography sx={{mt: 3}} variant="h4">
-        {t('add_user_header')}
+        {t('settings.add_user')}
       </Typography>
 
       <form onSubmit={handleSubmit(handleAddUser)}>
@@ -50,7 +50,7 @@ const AddUser = () => {
               <TextField
                 autoComplete="username"
                 fullWidth
-                label={t('username')}
+                label={t('settings.add_user.username')}
                 type="text"
                 variant="outlined"
                 {...register('userName', {
@@ -64,7 +64,7 @@ const AddUser = () => {
               <TextField
                 autoComplete="new-password"
                 fullWidth
-                label={t('password')}
+                label={t('settings.add_user.password')}
                 type="password"
                 variant="outlined"
                 {...register('password', {
@@ -74,7 +74,7 @@ const AddUser = () => {
               <TextField
                 autoComplete="new-password"
                 fullWidth
-                label={t('password_confirm')}
+                label={t('settings.add_user.password_confirm')}
                 type="password"
                 variant="outlined"
                 {...register('passwordConfirm', {
@@ -92,14 +92,14 @@ const AddUser = () => {
 
         <Box sx={{m: 2}}>
           <LoadingButtonWithResult disabled={!formState.isValid} loading={submitting} success={success} type="submit" variant="contained">
-            {t('add_user_submit')}
+            {t('settings.add_user.save')}
           </LoadingButtonWithResult>
         </Box>
       </form>
 
       <Helmet>
         <title>
-          {t('add_user_header')} - {t('app_name')}
+          {t('settings.title')} - {t('app_name')}
         </title>
       </Helmet>
     </Paper>

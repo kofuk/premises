@@ -2,7 +2,8 @@ import React, {useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
-import {Box, FormControl, FormControlLabel, FormGroup, InputLabel, MenuItem as MUIMenuItem, Select, Switch} from '@mui/material';
+import {InfoOutlined as InfoIcon} from '@mui/icons-material';
+import {Box, FormControl, FormControlLabel, FormGroup, InputLabel, MenuItem as MUIMenuItem, Select, Switch, Tooltip} from '@mui/material';
 
 import {useLaunchConfig} from '../launch-config';
 import {MenuItem} from '../menu-container';
@@ -51,7 +52,7 @@ export const create = (): MenuItem => {
       ));
 
   return {
-    title: t('config_server_settings'),
+    title: t('launch.server_version'),
     ui: isLoading ? (
       <Loading compact />
     ) : (
@@ -59,14 +60,21 @@ export const create = (): MenuItem => {
         <Box sx={{mb: 3}}>
           <FormControlLabel
             control={<Switch checked={guessServerVersion} onChange={(e) => setGuessServerVersion(e.target.checked)} />}
-            label={t('version_detect')}
+            label={
+              <>
+                {t('launch.server_version.guess_from_world')}
+                <Tooltip sx={{opacity: 0.6}} title={t('launch.server_version.notice')}>
+                  <InfoIcon />
+                </Tooltip>
+              </>
+            }
           />
         </Box>
 
         <FormControl fullWidth>
-          <InputLabel id="mc-version-select-label">{t('server_version')}</InputLabel>
+          <InputLabel id="mc-version-select-label">{t('launch.server_version.version')}</InputLabel>
           <Select
-            label={t('config_server_version')}
+            label={t('launch.server_version.version')}
             labelId="mc-version-select-label"
             onChange={(e) => setServerVersion(e.target.value)}
             value={serverVersion}
@@ -88,7 +96,7 @@ export const create = (): MenuItem => {
                 size="small"
               />
             }
-            label={t('version_show_stable')}
+            label={t('launch.server_version.stable')}
           />
           <FormControlLabel
             control={
@@ -103,7 +111,7 @@ export const create = (): MenuItem => {
                 size="small"
               />
             }
-            label={t('version_show_snapshot')}
+            label={t('launch.server_version.snapshot')}
           />
           <FormControlLabel
             control={
@@ -118,7 +126,7 @@ export const create = (): MenuItem => {
                 size="small"
               />
             }
-            label={t('version_show_beta')}
+            label={t('launch.server_version.beta')}
           />
           <FormControlLabel
             control={
@@ -133,7 +141,7 @@ export const create = (): MenuItem => {
                 size="small"
               />
             }
-            label={t('version_show_alpha')}
+            label={t('launch.server_version.alpha')}
           />
         </FormGroup>
       </>

@@ -13,6 +13,7 @@ import {
   RadioGroup,
   Select,
   SelectChangeEvent,
+  Stack,
   Switch
 } from '@mui/material';
 
@@ -39,7 +40,7 @@ const SavedWorld = ({name, setName, gen, setGen}: {name: string; setName: (name:
   }
 
   if (!backups || backups.length === 0) {
-    return <Alert severity="error">{t('no_backups')}</Alert>;
+    return <Alert severity="error">{t('launch.world.no_world')}</Alert>;
   }
 
   const handleChangeWorld = (event: SelectChangeEvent) => {
@@ -48,22 +49,24 @@ const SavedWorld = ({name, setName, gen, setGen}: {name: string; setName: (name:
     setGen('@/latest');
   };
 
-  const handleChangeGen = (event: SelectChangeEvent) => {
+  const handleChangeGen: (event: SelectChangeEvent) => void = (event: SelectChangeEvent) => {
     setGen(event.target.value);
   };
 
   const selectedWorld = backups!.find((e) => e.worldName === name);
 
   return (
-    <FormControl fullWidth>
-      <InputLabel id="backup-name-label">{t('select_world')}</InputLabel>
-      <Select label={t('select_world')} labelId="backup-name-label" onChange={handleChangeWorld} value={name}>
-        {backups?.map((e) => (
-          <MUIMenuItem key={e.worldName} value={e.worldName}>
-            {e.worldName.replace(/^[0-9]+-/, '')}
-          </MUIMenuItem>
-        ))}
-      </Select>
+    <Stack spacing={1}>
+      <FormControl fullWidth>
+        <InputLabel>{t('launch.world.select')}</InputLabel>
+        <Select label={t('launch.world.select')} onChange={handleChangeWorld} value={name}>
+          {backups?.map((e) => (
+            <MUIMenuItem key={e.worldName} value={e.worldName}>
+              {e.worldName.replace(/^[0-9]+-/, '')}
+            </MUIMenuItem>
+          ))}
+        </Select>
+      </FormControl>
       <FormControlLabel
         control={
           <Switch
@@ -71,30 +74,33 @@ const SavedWorld = ({name, setName, gen, setGen}: {name: string; setName: (name:
             onChange={(e) => setGen(!selectedWorld || e.target.checked ? '@/latest' : selectedWorld!.generations[0].id)}
           />
         }
-        label={t('use_latest_backup')}
+        label={t('launch.world.use_latest_world')}
       />
       {selectedWorld && gen !== '@/latest' && (
-        <Select label={t('backup_generation')} labelId="backup-generation-label" onChange={handleChangeGen} value={gen}>
-          {selectedWorld.generations.map((e) => {
-            const dateTime = new Date(e.timestamp);
-            const label = e.gen.match(/[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+/)
-              ? dateTime.toLocaleString()
-              : `${e.gen} (${dateTime.toLocaleString()})`;
-            return (
-              <MUIMenuItem key={e.gen} value={e.id}>
-                {label}
-              </MUIMenuItem>
-            );
-          })}
-        </Select>
+        <FormControl fullWidth>
+          <InputLabel>{t('launch.world.world_generation')}</InputLabel>
+          <Select label={t('launch.world.world_generation')} onChange={handleChangeGen} value={gen}>
+            {selectedWorld.generations.map((e) => {
+              const dateTime = new Date(e.timestamp);
+              const label = e.gen.match(/[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+/)
+                ? dateTime.toLocaleString()
+                : `${e.gen} (${dateTime.toLocaleString()})`;
+              return (
+                <MUIMenuItem key={e.gen} value={e.id}>
+                  {label}
+                </MUIMenuItem>
+              );
+            })}
+          </Select>
+        </FormControl>
       )}
-    </FormControl>
+    </Stack>
   );
 };
 
 const NewWorld = ({name, setName}: {name: string; setName: (name: string) => void}) => {
   const [t] = useTranslation();
-  return <SaveInput fullWidth initValue={name} label={t('world_name')} onSave={setName} type="text" unsuitableForPasswordAutoFill />;
+  return <SaveInput fullWidth initValue={name} label={t('launch.world.name')} onSave={setName} type="text" unsuitableForPasswordAutoFill />;
 };
 
 export const create = (): MenuItem => {
@@ -106,7 +112,7 @@ export const create = (): MenuItem => {
   const gen = config.backupGen || '@/latest';
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const source = (event.target as HTMLInputElement).value == WorldLocation.Backups ? WorldLocation.Backups : WorldLocation.NewWorld;
+    const source = (event.target as HTMLInputElement).value === WorldLocation.Backups ? WorldLocation.Backups : WorldLocation.NewWorld;
 
     updateConfig({worldSource: source, worldName: '', backupGen: '@/latest'});
   };
@@ -127,19 +133,19 @@ export const create = (): MenuItem => {
     }
 
     if (config.worldSource === WorldLocation.Backups) {
-      return `${t('use_backups')} (${config.worldName})`;
+      return t('launch.world.summary_existing', {name: config.worldName});
     } else {
-      return `${t('generate_world')} (${config.worldName})`;
+      return t('launch.world.summary_new', {name: config.worldName});
     }
   };
 
   return {
-    title: t('config_world_source'),
+    title: t('launch.world'),
     ui: (
       <Box>
         <RadioGroup onChange={handleChange} value={worldSource}>
-          <FormControlLabel control={<Radio />} label={t('use_backups')} value={WorldLocation.Backups} />
-          <FormControlLabel control={<Radio />} label={t('generate_world')} value={WorldLocation.NewWorld} />
+          <FormControlLabel control={<Radio />} label={t('launch.world.load_existing')} value={WorldLocation.Backups} />
+          <FormControlLabel control={<Radio />} label={t('launch.world.create_new')} value={WorldLocation.NewWorld} />
         </RadioGroup>
         <Box sx={{mt: 2}}>
           {worldSource === WorldLocation.Backups ? (

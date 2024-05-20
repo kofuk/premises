@@ -73,12 +73,12 @@ const NavBar = () => {
         </Typography>
 
         <StatusLabel message={message} progress={progress} />
-        <Tooltip title={t('settings')}>
+        <Tooltip title={t('navbar.settings')}>
           <IconButton color="inherit" onClick={() => navigate('/settings')} size="large">
             <SettingsIcon />
           </IconButton>
         </Tooltip>
-        <Tooltip title={t('logout')}>
+        <Tooltip title={t('navbar.logout')}>
           <IconButton color="inherit" onClick={handleLogout} size="large">
             <LogoutIcon />
           </IconButton>

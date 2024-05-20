@@ -27,7 +27,7 @@ const LoginPage = () => {
         <LoginForm />
       </Box>
       <Helmet>
-        <title>{t('title_login')}</title>
+        <title>{t('login.title')}</title>
       </Helmet>
     </>
   );

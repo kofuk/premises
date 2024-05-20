@@ -55,34 +55,41 @@ const LoginForm = () => {
       <Card sx={{minWidth: 350, p: 3, mt: 5}} variant="outlined">
         <CardContent>
           <Typography component="h1" sx={{mb: 3}} variant="h4">
-            {t('title_login')}
+            {t('login.title')}
           </Typography>
           <form onSubmit={loginForm.handleSubmit(handleLogin)}>
             <Stack spacing={2}>
-              <TextField autoComplete="username" fullWidth label={t('username')} type="text" variant="outlined" {...loginForm.register('username')} />
+              <TextField
+                autoComplete="username"
+                fullWidth
+                label={t('login.username')}
+                type="text"
+                variant="outlined"
+                {...loginForm.register('username')}
+              />
               <TextField
                 autoComplete="password"
                 fullWidth
-                label={t('password')}
+                label={t('login.password')}
                 type="password"
                 variant="outlined"
                 {...loginForm.register('password')}
               />
               <Stack direction="row" justifyContent="end" sx={{mt: 1}}>
                 <LoadingButton loading={loggingIn} type="submit" variant="contained">
-                  {t('login')}
+                  {t('login.login')}
                 </LoadingButton>
               </Stack>
             </Stack>
           </form>
           <Dialog open={openResetPasswordDialog}>
-            <DialogTitle>{t('set_password_title')}</DialogTitle>
+            <DialogTitle>{t('login.set_password')}</DialogTitle>
             <form onSubmit={resetPasswdForm.handleSubmit(handleChangePassword)}>
               <DialogContent>
                 <Stack spacing={2}>
                   <TextField
                     autoComplete="new-password"
-                    label={t('change_password_new')}
+                    label={t('login.change_password.password')}
                     type="password"
                     {...resetPasswdForm.register('password', {
                       required: true
@@ -91,7 +98,7 @@ const LoginForm = () => {
                   />
                   <TextField
                     autoComplete="new-password"
-                    label={t('change_password_confirm')}
+                    label={t('login.change_password.confirm')}
                     type="password"
                     {...resetPasswdForm.register('passwordConfirm', {
                       required: true,
@@ -107,7 +114,7 @@ const LoginForm = () => {
               </DialogContent>
               <DialogActions>
                 <Button disabled={!resetPasswdForm.formState.isValid} type="submit">
-                  {t('set_password_submit')}
+                  {t('login.change_password.save')}
                 </Button>
               </DialogActions>
             </form>

@@ -30,7 +30,7 @@ const StatusCollector = () => {
   useEffect(() => {
     const eventSource = new EventSource('/api/streaming/info');
     eventSource.addEventListener('error', () => {
-      enqueueSnackbar(t('reconnecting'), {variant: 'error'});
+      enqueueSnackbar(t('navbar.reconnecting'), {variant: 'error'});
     });
     eventSource.addEventListener('notify', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);

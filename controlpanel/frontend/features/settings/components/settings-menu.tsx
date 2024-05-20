@@ -18,14 +18,14 @@ const SettingsMenu = () => {
         <Grid item xs={6}>
           <Paper variant="outlined">
             <Typography sx={{m: 2}} variant="h5">
-              {t('settings_account_security')}
+              {t('settings.account_security')}
             </Typography>
             <List>
               <ListItemButton onClick={() => navigate('change-password')}>
                 <ListItemIcon>
                   <LockIcon />
                 </ListItemIcon>
-                <ListItemText primary={t('change_password_header')} />
+                <ListItemText primary={t('settings.change_password')} />
               </ListItemButton>
             </List>
           </Paper>
@@ -34,14 +34,14 @@ const SettingsMenu = () => {
         <Grid item xs={6}>
           <Paper variant="outlined">
             <Typography sx={{m: 2}} variant="h5">
-              {t('settings_server_management')}
+              {t('settings.server_manage')}
             </Typography>
             <List>
               <ListItemButton onClick={() => navigate('add-user')}>
                 <ListItemIcon>
                   <PersonAddIcon />
                 </ListItemIcon>
-                <ListItemText primary={t('add_user_header')} />
+                <ListItemText primary={t('settings.add_user')} />
               </ListItemButton>
             </List>
           </Paper>
@@ -50,7 +50,7 @@ const SettingsMenu = () => {
 
       <Helmet>
         <title>
-          {t('settings')} - {t('app_name')}
+          {t('settings.title')} - {t('app_name')}
         </title>
       </Helmet>
     </>

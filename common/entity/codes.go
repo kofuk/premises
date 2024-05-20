@@ -20,7 +20,6 @@ const (
 	InfoNoSnapshot       InfoCode = 3
 	InfoErrRunnerPrepare InfoCode = 100
 	InfoErrRunnerStop    InfoCode = 101
-	InfoErrDNS           InfoCode = 102
 )
 
 const (

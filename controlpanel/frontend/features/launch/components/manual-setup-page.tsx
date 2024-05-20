@@ -24,16 +24,16 @@ const ManualSetupPage = () => {
     <Card sx={{p: 6, mt: 12}} variant="outlined">
       <Stack spacing={3}>
         <Typography component="div" variant="body1">
-          {t('manual_setup_summary')}
+          {t('launch.manual_setup.summary')}
         </Typography>
 
         <Typography component="div" variant="body1">
-          {t('manual_setup_execute_command')}
+          {t('launch.manual_setup.execute_command')}
           <CodeBlock rootShell>{`curl -s '${getInstallScriptPath()}' | bash`}</CodeBlock>
         </Typography>
 
         <Typography component="div" variant="body1">
-          {t('manual_setup_auth_code')}
+          {t('launch.manual_setup.auth_code')}
           <CodeBlock>{authCode}</CodeBlock>
         </Typography>
       </Stack>

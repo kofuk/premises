@@ -51,7 +51,7 @@ export const create = (): MenuItem => {
   };
 
   return {
-    title: t('config_machine_type'),
+    title: t('launch.machine_type'),
     ui: (
       <Stack sx={{mt: 0.5}}>
         <Select onChange={handleChange} value={machineType}>

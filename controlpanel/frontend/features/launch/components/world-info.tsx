@@ -31,32 +31,14 @@ const WorldInfo = () => {
   return (
     <Box>
       <List disablePadding>
-        <CopyableListItem key="game_version" title={t('world_info_game_version')}>
-          {worldInfo ? (
-            worldInfo.version
-          ) : (
-            <DelayedSkeleton width="25%">
-              <Box sx={{opacity: 0}}>-</Box>
-            </DelayedSkeleton>
-          )}
+        <CopyableListItem key="game_version" title={t('launch.world_info.game_version')}>
+          {worldInfo ? worldInfo.version : <DelayedSkeleton width="25%" />}
         </CopyableListItem>
-        <CopyableListItem key="world_name" title={t('world_info_world_name')}>
-          {worldInfo ? (
-            worldInfo.worldName.replace(/^[0-9]+-/, '')
-          ) : (
-            <DelayedSkeleton width="25%">
-              <Box sx={{opacity: 0}}>-</Box>
-            </DelayedSkeleton>
-          )}
+        <CopyableListItem key="world_name" title={t('launch.world_info.world_name')}>
+          {worldInfo ? worldInfo.worldName.replace(/^[0-9]+-/, '') : <DelayedSkeleton width="25%" />}
         </CopyableListItem>
-        <CopyableListItem key="seed" title={t('world_info_seed')}>
-          {worldInfo ? (
-            worldInfo.seed
-          ) : (
-            <DelayedSkeleton width="25%">
-              <Box sx={{opacity: 0}}>-</Box>
-            </DelayedSkeleton>
-          )}
+        <CopyableListItem key="seed" title={t('launch.world_info.seed')}>
+          {worldInfo ? worldInfo.seed : <DelayedSkeleton width="25%" />}
         </CopyableListItem>
       </List>
     </Box>

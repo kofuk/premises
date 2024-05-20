@@ -17,9 +17,8 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
-  Stack,
   Switch,
-  Typography
+  Tooltip
 } from '@mui/material';
 
 import {useLaunchConfig} from '../launch-config';
@@ -74,13 +73,13 @@ export const create = (): MenuItem => {
   };
 
   return {
-    title: t('config_game_extra'),
+    title: t('launch.server_extra'),
     ui: (
       <Box>
         <List>
           <ListItem>
             <ListItemButton disableGutters onClick={() => setOpenedDialog(OpenedDialog.MOTD)}>
-              <ListItemText primary={t('server_description')} secondary={motd || <em>{t('value_not_set')}</em>} />
+              <ListItemText primary={t('launch.server_extra.motd')} secondary={motd || <em>{t('launch.server_extra.motd.not_set')}</em>} />
             </ListItemButton>
           </ListItem>
           <ListItem
@@ -95,13 +94,29 @@ export const create = (): MenuItem => {
           >
             <ListItemButton disableGutters onClick={() => inactiveTimeout >= 0 && setOpenedDialog(OpenedDialog.INACTIVE_TIMEOUT)}>
               <ListItemText
-                primary={t('inactive_timeout')}
-                secondary={inactiveTimeout < 0 ? t('disabled') : t('minutes', {minutes: inactiveTimeout})}
+                primary={
+                  <>
+                    {t('launch.server_extra.inactive_timeout')}
+                    <Tooltip title={t('launch.server_extra.inactive_timeout.notice')}>
+                      <InfoIcon sx={{opacity: 0.6}} />
+                    </Tooltip>
+                  </>
+                }
+                secondary={
+                  inactiveTimeout < 0
+                    ? t('launch.server_extra.inactive_timeout.disabled')
+                    : t('launch.server_extra.inactive_timeout.minutes', {minutes: inactiveTimeout})
+                }
               />
             </ListItemButton>
           </ListItem>
 
-          <ListSubheader disableSticky>{t('additional_server_properties')}</ListSubheader>
+          <ListSubheader disableSticky>
+            {t('launch.server_extra.server_properties')}
+            <Tooltip title={t('launch.server_extra.server_properties.notice')}>
+              <InfoIcon sx={{opacity: 0.6}} />
+            </Tooltip>
+          </ListSubheader>
           <TransitionGroup>
             {serverProps.map(({key, value}) => (
               <Collapse key={key}>
@@ -127,23 +142,19 @@ export const create = (): MenuItem => {
               <ListItemIcon>
                 <AddIcon />
               </ListItemIcon>
-              {t('additional_server_properties_add')}
+              {t('launch.server_extra.server_properties.add')}
             </ListItemButton>
           </ListItem>
-          <Stack component="li" direction="row" gap={1} sx={{ml: 5, mb: 2, opacity: 0.9}}>
-            <InfoIcon />
-            <Typography variant="body1">{t('server_properties_description')}</Typography>
-          </Stack>
         </List>
 
         <Dialog onClose={() => setOpenedDialog(OpenedDialog.NONE)} open={openedDialog === OpenedDialog.MOTD}>
-          <DialogTitle>{t('server_description')}</DialogTitle>
+          <DialogTitle>{t('launch.server_extra.motd')}</DialogTitle>
           <DialogContent sx={{mb: 1}}>
             <Box sx={{mt: 1}}>
               <SaveInput
                 fullWidth
                 initValue={motd}
-                label={t('server_description')}
+                label={t('launch.server_extra.motd')}
                 onSave={(value) => {
                   setDescription(value);
                   setOpenedDialog(OpenedDialog.NONE);
@@ -155,13 +166,13 @@ export const create = (): MenuItem => {
         </Dialog>
 
         <Dialog onClose={() => setOpenedDialog(OpenedDialog.NONE)} open={openedDialog === OpenedDialog.INACTIVE_TIMEOUT}>
-          <DialogTitle>{t('inactive_timeout')}</DialogTitle>
+          <DialogTitle>{t('launch.server_extra.inactive_timeout')}</DialogTitle>
           <DialogContent sx={{mb: 1}}>
             <Box sx={{mt: 1}}>
               <SaveInput
                 fullWidth
                 initValue={inactiveTimeout.toString()}
-                label={t('inactive_timeout_input_label')}
+                label={t('launch.server_extra.inactive_timeout.input_label')}
                 onSave={(value) => {
                   setTimeoutMinutes(value);
                   setOpenedDialog(OpenedDialog.NONE);
@@ -179,7 +190,6 @@ export const create = (): MenuItem => {
         />
       </Box>
     ),
-    detail: t('value_count_label', {count: config.serverPropOverride ? Object.keys(config.serverPropOverride).length : 0}),
     variant: 'page'
   };
 };

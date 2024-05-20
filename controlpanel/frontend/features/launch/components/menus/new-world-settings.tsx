@@ -39,23 +39,33 @@ export const create = (): MenuItem => {
   };
 
   const levelTypes: LevelTypeInfo[] = [
-    {levelType: LevelType.Default, label: t('world_type_default')},
-    {levelType: LevelType.Superflat, label: t('world_type_superflat')},
-    {levelType: LevelType.LargeBiomes, label: t('world_type_large_biomes')},
-    {levelType: LevelType.Amplified, label: t('world_type_amplified')}
+    {levelType: LevelType.Default, label: t('launch.new_world.level_default')},
+    {levelType: LevelType.Superflat, label: t('launch.new_world.level_superflat')},
+    {levelType: LevelType.LargeBiomes, label: t('launch.new_world.level_large_biomes')},
+    {levelType: LevelType.Amplified, label: t('launch.new_world.level_amplified')}
   ];
 
   const levelTypeName = levelTypes.find((e) => e.levelType === (config.levelType || 'default'))?.label;
 
+  const detail =
+    seed === ''
+      ? t('launch.new_world.summary', {levelType: levelTypeName})
+      : t('launch.new_world.summary_with_seed', {levelType: levelTypeName, seed: seed});
+
   return {
-    title: t('config_configure_world'),
+    title: t('launch.new_world'),
     ui: (
       <Stack spacing={3} sx={{mt: 1}}>
-        <SaveInput fullWidth initValue={seed} label={t('seed')} onSave={setSeed} type="text" />
+        <SaveInput fullWidth initValue={seed} label={t('launch.new_world.seed')} onSave={setSeed} type="text" />
 
         <FormControl fullWidth>
-          <InputLabel id="level-type-label">{t('world_type')}</InputLabel>
-          <Select label={t('world_type')} labelId="level-type-label" onChange={(e) => setLevelType(e.target.value as LevelType)} value={levelType}>
+          <InputLabel id="level-type-label">{t('launch.new_world.level_type')}</InputLabel>
+          <Select
+            label={t('launch.new_world.level_type')}
+            labelId="level-type-label"
+            onChange={(e) => setLevelType(e.target.value as LevelType)}
+            value={levelType}
+          >
             {levelTypes.map((e) => (
               <MUIMenuItem key={e.levelType} value={e.levelType}>
                 {e.label}
@@ -65,7 +75,7 @@ export const create = (): MenuItem => {
         </FormControl>
       </Stack>
     ),
-    detail: t('world_settings_label', {seed: config.seed || '<empty>', levelType: levelTypeName}),
+    detail,
     variant: 'dialog',
     cancellable: true,
     disabled: config.worldSource !== WorldLocation.NewWorld

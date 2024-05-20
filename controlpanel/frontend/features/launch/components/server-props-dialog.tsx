@@ -28,8 +28,8 @@ const ServerPropsDialog = ({add, open, onClose}: Props) => {
         <DialogTitle>{t('additional_server_properties_add')}</DialogTitle>
         <DialogContent>
           <Stack spacing={1} sx={{mt: 1, minWidth: 400}}>
-            <TextField fullWidth label={t('server_props_key')} variant="outlined" {...register('key', {required: true})} />
-            <TextField fullWidth label={t('server_props_value')} variant="outlined" {...register('value')} />
+            <TextField fullWidth label={t('launch.server_extra.server_properties.key')} variant="outlined" {...register('key', {required: true})} />
+            <TextField fullWidth label={t('launch.server_extra.server_properties.value')} variant="outlined" {...register('value')} />
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -37,7 +37,7 @@ const ServerPropsDialog = ({add, open, onClose}: Props) => {
             {t('cancel')}
           </Button>
           <Button autoFocus disabled={!formState.isValid} type="submit">
-            {t('add')}
+            {t('launch.server_extra.server_properties.save')}
           </Button>
         </DialogActions>
       </form>

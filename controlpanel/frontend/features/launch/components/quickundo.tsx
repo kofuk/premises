@@ -33,23 +33,23 @@ const QuickUndo = () => {
 
   const options = [
     {
-      textKey: 'take_snapshot',
+      label: t('launch.quick_undo.take_snapshot'),
       handler: takeQuickSnapshot
     },
     {
-      textKey: 'revert_snapshot',
+      label: t('launch.quick_undo.revert_snapshot'),
       handler: undoQuickSnapshot
     }
   ];
 
   return (
     <Box sx={{m: 2}}>
-      <Box sx={{m: 2}}>{t('snapshot_description')}</Box>
+      <Box sx={{m: 2}}>{t('launch.quick_snapshot.summary')}</Box>
       <Stack direction="row" justifyContent="center" spacing={1}>
         <FormControl size="small" sx={{minWidth: 120}}>
-          <InputLabel id="snapshot-slot-label">{t('snapshot_slot')}</InputLabel>
+          <InputLabel id="snapshot-slot-label">{t('launch.quick_undo.slot')}</InputLabel>
           <Select
-            label={t('snapshot_slot')}
+            label={t('launch.quick_undo.slot')}
             labelId="snapshot-label-id"
             onChange={(e) => setSelectedSlot(parseInt(e.target.value as string))}
             value={selectedSlot}
@@ -64,7 +64,7 @@ const QuickUndo = () => {
 
         <ButtonGroup ref={anchorRef} variant="contained">
           <Button onClick={handleClick} type="button">
-            {t(confirming ? 'snapshot_confirm' : options[menuIndex].textKey)}
+            {confirming ? t('launch.quick_undo.confirm') : options[menuIndex].label}
           </Button>
           <Button onClick={() => setMenuOpen(!menuOpen)} size="small">
             <ArrowDropDownIcon />
@@ -83,7 +83,7 @@ const QuickUndo = () => {
                   <MenuList autoFocusItem>
                     {options.map((option, index) => (
                       <MenuItem
-                        key={option.textKey}
+                        key={option.label}
                         onClick={() => {
                           setConfirming(false);
                           setMenuIndex(index);
@@ -91,7 +91,7 @@ const QuickUndo = () => {
                         }}
                         selected={index === menuIndex}
                       >
-                        {`${t(option.textKey)}`}
+                        {option.label}
                       </MenuItem>
                     ))}
                   </MenuList>

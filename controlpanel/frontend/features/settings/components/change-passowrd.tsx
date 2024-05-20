@@ -38,7 +38,7 @@ const ChangePassword = () => {
   return (
     <Paper variant="outlined">
       <Typography sx={{mt: 3}} variant="h4">
-        {t('change_password_header')}
+        {t('settings.change_password')}
       </Typography>
 
       <form onSubmit={handleSubmit(handleChangePassword)}>
@@ -48,7 +48,7 @@ const ChangePassword = () => {
               <TextField
                 autoComplete="current-password"
                 fullWidth
-                label={t('change_password_current')}
+                label={t('settings.change_password.current')}
                 type="password"
                 variant="outlined"
                 {...register('currentPassword', {
@@ -61,7 +61,7 @@ const ChangePassword = () => {
               <TextField
                 autoComplete="new-password"
                 fullWidth
-                label={t('change_password_new')}
+                label={t('settings.change_password.new')}
                 type="password"
                 variant="outlined"
                 {...register('newPassword', {
@@ -71,7 +71,7 @@ const ChangePassword = () => {
               <TextField
                 autoComplete="new-password"
                 fullWidth
-                label={t('change_password_confirm')}
+                label={t('settings.change_password.confirm')}
                 type="password"
                 variant="outlined"
                 {...register('newPasswordConfirm', {
@@ -89,14 +89,14 @@ const ChangePassword = () => {
 
         <Box sx={{m: 2}}>
           <LoadingButtonWithResult disabled={!formState.isValid} loading={submitting} success={success} type="submit" variant="contained">
-            {t('change_password_submit')}
+            {t('settings.change_password.save')}
           </LoadingButtonWithResult>
         </Box>
       </form>
 
       <Helmet>
         <title>
-          {t('change_password_header')} - {t('app_name')}
+          {t('settings.title')} - {t('app_name')}
         </title>
       </Helmet>
     </Paper>

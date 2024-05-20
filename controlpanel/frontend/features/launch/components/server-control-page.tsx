@@ -37,26 +37,26 @@ const ServerControlPane = () => {
       <MenuContainer
         items={[
           {
-            title: t('menu_world_info'),
+            title: t('launch.world_info'),
             icon: <WorldIcon />,
             ui: <WorldInfo />,
             variant: 'dialog',
             cancellable: true
           },
           {
-            title: t('menu_reconfigure'),
+            title: t('launch.reconfigure'),
             icon: <RestartIcon />,
             ui: <Reconfigure />
           },
           {
-            title: 'QuickUndo',
+            title: t('launch.quick_undo'),
             icon: <UndoIcon />,
             ui: <QuickUndo />,
             variant: 'dialog',
             cancellable: true
           },
           {
-            title: t('menu_system_info'),
+            title: t('launch.system_info'),
             icon: <InfoIcon />,
             ui: <SystemInfo />,
             variant: 'dialog',
@@ -73,7 +73,7 @@ const ServerControlPane = () => {
                 startIcon={<StopIcon />}
                 variant="contained"
               >
-                {t('stop_server')}
+                {t('launch.stop')}
               </Button>
             </Box>
             <ResponsiveContainer height={450} width={'100%'}>
@@ -86,7 +86,7 @@ const ServerControlPane = () => {
                 />
                 <YAxis domain={[0, 100]}></YAxis>
                 <Tooltip
-                  formatter={(value: number, _name, _props) => [`${Math.floor(value * 10) / 10}%`, t('cpu_usage')]}
+                  formatter={(value: number, _name, _props) => [`${Math.floor(value * 10) / 10}%`, t('launch.cpu_usage')]}
                   isAnimationActive={false}
                   labelFormatter={(time) => (time === 0 ? '' : new Date(time).toLocaleTimeString())}
                   wrapperStyle={{opacity: 0.8}}

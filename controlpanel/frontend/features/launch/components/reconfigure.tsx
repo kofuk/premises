@@ -34,7 +34,7 @@ const LaunchPage = () => {
         menuFooter={
           <Box sx={{my: 1, textAlign: 'end'}}>
             <Button disabled={!isValid} onClick={handleStart} startIcon={<StartIcon />} sx={{mx: 1}} type="button" variant="contained">
-              {t('relaunch_server')}
+              {t('launch.reconfigure.relaunch')}
             </Button>
           </Box>
         }
