@@ -28,6 +28,13 @@ import ServerPropsDialog from '../server-props-dialog';
 
 import SaveInput from '@/components/save-input';
 
+enum OpenedDialog {
+  NONE,
+  MOTD,
+  INACTIVE_TIMEOUT,
+  SERVER_PROPS
+}
+
 export const create = (): MenuItem => {
   const [t] = useTranslation();
   const {config, updateConfig} = useLaunchConfig();
@@ -38,9 +45,7 @@ export const create = (): MenuItem => {
   const motd = config.motd || '';
   const inactiveTimeout = config.inactiveTimeout || -1;
 
-  const [motdDialogOpen, setMotdDialogOpen] = useState(false);
-  const [inactiveTimeoutDialogOpen, setInactiveTimeoutDialogOpen] = useState(false);
-  const [serverPropsDialogOpen, setServerPropsDialogOpen] = useState(false);
+  const [openedDialog, setOpenedDialog] = useState(OpenedDialog.NONE);
 
   const addServerProps = (key: string, value: string) => {
     const newProps = [...serverProps.filter((item) => item.key !== key), {key, value}];
@@ -71,10 +76,10 @@ export const create = (): MenuItem => {
   return {
     title: t('config_game_extra'),
     ui: (
-      <Stack spacing={2} sx={{mt: 1}}>
+      <Box>
         <List>
           <ListItem>
-            <ListItemButton disableGutters onClick={() => setMotdDialogOpen(true)}>
+            <ListItemButton disableGutters onClick={() => setOpenedDialog(OpenedDialog.MOTD)}>
               <ListItemText primary={t('server_description')} secondary={motd || <em>{t('value_not_set')}</em>} />
             </ListItemButton>
           </ListItem>
@@ -88,7 +93,7 @@ export const create = (): MenuItem => {
               />
             }
           >
-            <ListItemButton disableGutters onClick={() => inactiveTimeout >= 0 && setInactiveTimeoutDialogOpen(true)}>
+            <ListItemButton disableGutters onClick={() => inactiveTimeout >= 0 && setOpenedDialog(OpenedDialog.INACTIVE_TIMEOUT)}>
               <ListItemText
                 primary={t('inactive_timeout')}
                 secondary={inactiveTimeout < 0 ? t('disabled') : t('minutes', {minutes: inactiveTimeout})}
@@ -118,7 +123,7 @@ export const create = (): MenuItem => {
             ))}
           </TransitionGroup>
           <ListItem>
-            <ListItemButton onClick={() => setServerPropsDialogOpen(true)}>
+            <ListItemButton onClick={() => setOpenedDialog(OpenedDialog.SERVER_PROPS)}>
               <ListItemIcon>
                 <AddIcon />
               </ListItemIcon>
@@ -131,7 +136,7 @@ export const create = (): MenuItem => {
           </Stack>
         </List>
 
-        <Dialog onClose={() => setMotdDialogOpen(false)} open={motdDialogOpen}>
+        <Dialog onClose={() => setOpenedDialog(OpenedDialog.NONE)} open={openedDialog === OpenedDialog.MOTD}>
           <DialogTitle>{t('server_description')}</DialogTitle>
           <DialogContent sx={{mb: 1}}>
             <Box sx={{mt: 1}}>
@@ -141,7 +146,7 @@ export const create = (): MenuItem => {
                 label={t('server_description')}
                 onSave={(value) => {
                   setDescription(value);
-                  setMotdDialogOpen(false);
+                  setOpenedDialog(OpenedDialog.NONE);
                 }}
                 type="text"
               />
@@ -149,7 +154,7 @@ export const create = (): MenuItem => {
           </DialogContent>
         </Dialog>
 
-        <Dialog onClose={() => setInactiveTimeoutDialogOpen(false)} open={inactiveTimeoutDialogOpen}>
+        <Dialog onClose={() => setOpenedDialog(OpenedDialog.NONE)} open={openedDialog === OpenedDialog.INACTIVE_TIMEOUT}>
           <DialogTitle>{t('inactive_timeout')}</DialogTitle>
           <DialogContent sx={{mb: 1}}>
             <Box sx={{mt: 1}}>
@@ -159,7 +164,7 @@ export const create = (): MenuItem => {
                 label={t('inactive_timeout_input_label')}
                 onSave={(value) => {
                   setTimeoutMinutes(value);
-                  setInactiveTimeoutDialogOpen(false);
+                  setOpenedDialog(OpenedDialog.NONE);
                 }}
                 type="number"
               />
@@ -167,8 +172,12 @@ export const create = (): MenuItem => {
           </DialogContent>
         </Dialog>
 
-        <ServerPropsDialog add={addServerProps} onClose={() => setServerPropsDialogOpen(false)} open={serverPropsDialogOpen} />
-      </Stack>
+        <ServerPropsDialog
+          add={addServerProps}
+          onClose={() => setOpenedDialog(OpenedDialog.NONE)}
+          open={openedDialog === OpenedDialog.SERVER_PROPS}
+        />
+      </Box>
     ),
     detail: t('value_count_label', {count: config.serverPropOverride ? Object.keys(config.serverPropOverride).length : 0}),
     variant: 'page'
