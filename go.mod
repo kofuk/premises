@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	dario.cat/mergo v1.0.0
-	github.com/aws/aws-sdk-go-v2 v1.26.1
+	github.com/aws/aws-sdk-go-v2 v1.27.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.13
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.53.2
 	github.com/aws/smithy-go v1.20.2
