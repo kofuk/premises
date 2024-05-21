@@ -1,0 +1,25 @@
+{
+	"name": "Premises",
+	"dockerComposeFile": "compose.yaml",
+	"service": "app",
+	"workspaceFolder": "/workspace/${localWorkspaceFolderBasename}",
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli": {},
+		"ghcr.io/devcontainers/features/docker-in-docker": {}
+	},
+	"forwardPorts": [8000, 9001],
+	"portsAttributes": {
+		"8000": {
+			"label": "Application",
+			"onAutoForward": "notify"
+		},
+        "9001": {
+            "label": "MinIO",
+            "onAutoForward": "notify"
+        }
+	},
+	"otherPortsAttributes": {
+		"onAutoForward": "ignore"
+	},
+	"postCreateCommand": ".devcontainer/post-create.sh"
+}
