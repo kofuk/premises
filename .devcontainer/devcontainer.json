@@ -7,7 +7,7 @@
 		"ghcr.io/devcontainers/features/github-cli": {},
 		"ghcr.io/devcontainers/features/docker-in-docker": {}
 	},
-	"forwardPorts": [8000, 9001],
+	"forwardPorts": [8000, 9001, 25565],
 	"portsAttributes": {
 		"8000": {
 			"label": "Application",
@@ -16,7 +16,11 @@
         "9001": {
             "label": "MinIO",
             "onAutoForward": "notify"
-        }
+        },
+		"25565": {
+			"label": "Minecraft",
+			"onAutoForward": "notify"
+		}
 	},
 	"otherPortsAttributes": {
 		"onAutoForward": "ignore"
