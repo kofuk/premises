@@ -7,14 +7,21 @@ services:
       - '8000:8000'
     volumes:
       - ../:/workspace/premises:cached
+    networks:
+      - external_network
+      - internal_network
   redis:
     image: redis:alpine
+    networks:
+      - internal_network
   postgres:
     image: postgres:alpine
     environment:
       - POSTGRES_USER=premises
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=premises
+    networks:
+      - internal_network
   minio:
     image: quay.io/minio/minio
     environment:
@@ -24,3 +31,10 @@ services:
     command:
       - '-c'
       - 'mkdir -p /data/premises && minio server /data --console-address :9001'
+    networks:
+      - internal_network
+
+networks:
+  external_network:
+  internal_network:
+    internal: true

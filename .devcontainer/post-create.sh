@@ -11,7 +11,7 @@
 # Create .env if not exists
 [ -e controlpanel/.env ] || cp .devcontainer/env controlpanel/.env
 
-./dev/build_base_image.sh
-./dev/launch_all.sh
+./.devcontainer/fake-runner/build_base_image.sh
+./.devcontainer/launch_all.sh
 
 # TODO: Create a user
