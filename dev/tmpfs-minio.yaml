@@ -1,4 +1,0 @@
-services:
-  minio:
-    volumes:
-      - /tmp/premises-world:/data

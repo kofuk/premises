@@ -2,7 +2,7 @@
 
 cd "$(dirname "${BASH_SOURCE:-0}")"
 
-docker build -t premises.kofuk.org/dev-runner-raw -f Dockerfile.runner .
+docker build -t premises.kofuk.org/dev-runner-raw .
 
 name="premises-runner-${RANDOM}"
 
