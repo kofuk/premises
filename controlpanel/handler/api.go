@@ -181,9 +181,6 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 	result := gameconfig.New()
 
 	result.C.ControlPanel = h.cfg.ControlPanel.Origin
-	if strings.HasPrefix(h.cfg.ControlPanel.Origin, "http://host.docker.internal:") {
-		result.C.ControlPanel = strings.Replace(h.cfg.ControlPanel.Origin, "http://host.docker.internal", "http://localhost", 1)
-	}
 
 	serverInfo, err := h.MCVersions.GetServerInfo(ctx, *config.ServerVersion)
 	if err != nil {
@@ -239,6 +236,9 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 	result.C.AWS.AccessKey = cfg.AWS.AccessKey
 	result.C.AWS.SecretKey = cfg.AWS.SecretKey
 	result.C.S3.Endpoint = cfg.S3.Endpoint
+	if strings.HasPrefix(h.cfg.S3.Endpoint, "http://host.docker.internal:") {
+		result.C.S3.Endpoint = strings.Replace(h.cfg.S3.Endpoint, "http://host.docker.internal", "http://localhost", 1)
+	}
 	result.C.S3.Bucket = cfg.S3.Bucket
 
 	return &result.C, nil
