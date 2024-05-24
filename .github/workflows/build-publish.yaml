@@ -209,7 +209,7 @@ jobs:
           echo '::endgroup::'
 
           echo '::group::Build base image for ostack-fake'
-          ./dev/build_base_image.sh
+          ./.devcontainer/fake-runner/build_base_image.sh
           echo '::endgroup::'
       - name: Run test
         run: |
