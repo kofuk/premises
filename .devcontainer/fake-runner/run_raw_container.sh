@@ -12,8 +12,8 @@ docker container run \
        --name "${name}" \
        --cap-add MKNOD \
        --add-host host.docker.internal:host-gateway \
-	   --label org.kofuk.premises.managed=true \
-	   --label org.kofuk.premises.id="$(uuidgen)" \
+       --label org.kofuk.premises.managed=true \
+       --label org.kofuk.premises.id="$(uuidgen)" \
        --label org.kofuk.premises.name="runner-${RANDOM}" \
        premises.kofuk.org/dev-runner-raw
 
