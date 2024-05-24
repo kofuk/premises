@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-22.04
 
 RUN apt-get update && \
-    apt-get install -y bash-completion postgresql-client redis-tools tmux util-linux
+    apt-get install -y bash-completion postgresql-client redis-tools tmux uuid-runtime
 
 # Install Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
