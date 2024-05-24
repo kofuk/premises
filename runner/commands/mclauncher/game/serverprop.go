@@ -133,6 +133,10 @@ func (p *ServerProperties) SetSeed(seed string) {
 	p.props["level-seed"] = seed
 }
 
+func (p *ServerProperties) DangerouslySetProperty(k, v string) {
+	p.props[k] = v
+}
+
 func (p *ServerProperties) Write(out io.Writer) error {
 	writer := bufio.NewWriter(out)
 	defer writer.Flush()

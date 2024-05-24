@@ -101,18 +101,19 @@ func (sp ServerProperties) GetOr(key, defaultValue string) string {
 	return val
 }
 
-func (sp ServerProperties) GetRconSettings() (bool, string, int) {
+func (sp ServerProperties) GetRconSettings() (bool, string, string, int) {
 	enabled := sp.GetOr("enable-rcon", "false")
 	if enabled != "true" {
-		return false, "", 0
+		return false, "", "", 0
 	}
+	addr := sp.GetOr("server-ip", "0.0.0.0")
 	passwd := sp.GetOr("rcon.password", "")
 	port := sp.GetOr("rcon.port", "25575")
 	portNum, err := strconv.ParseUint(port, 10, 16)
 	if err != nil {
-		return true, passwd, 25575
+		return true, passwd, addr, 25575
 	}
-	return true, passwd, int(portNum)
+	return true, passwd, addr, int(portNum)
 }
 
 func SignedToEulaTxt() (bool, error) {
@@ -143,6 +144,7 @@ func SignedToEulaTxt() (bool, error) {
 
 type Server struct {
 	RconPassword string
+	RconAddr     string
 	RconPort     int
 	State        *State
 }
@@ -326,13 +328,13 @@ func (s *Server) commandLoop(conn io.ReadWriter) error {
 }
 
 func (s *Server) startRcon() error {
-	l, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", s.RconPort))
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", s.RconAddr, s.RconPort))
 	if err != nil {
 		return err
 	}
 	defer l.Close()
 
-	Log("Server thread", "INFO", fmt.Sprintf("RCON running on 0.0.0.0:%d", s.RconPort))
+	Log("Server thread", "INFO", fmt.Sprintf("RCON running on %s:%d", s.RconAddr, s.RconPort))
 
 	for {
 		conn, err := l.Accept()
@@ -377,12 +379,12 @@ func (s *Server) createLevelDat() error {
 	return nil
 }
 
-func (s *Server) Run() {
+func (s *Server) Run(addr, port string) {
 	if err := s.createLevelDat(); err != nil {
 		log.Fatal(err)
 	}
 
-	l, err := net.Listen("tcp", ":25565")
+	l, err := net.Listen("tcp", addr+":"+port)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -518,10 +520,11 @@ func main() {
 
 	var s Server
 
-	if enabled, passwd, port := serverProperties.GetRconSettings(); !enabled {
+	if enabled, passwd, addr, port := serverProperties.GetRconSettings(); !enabled {
 		log.Fatal("You must enable rcon")
 	} else {
 		s.RconPassword = passwd
+		s.RconAddr = addr
 		s.RconPort = port
 	}
 
@@ -531,7 +534,7 @@ func main() {
 	}
 	s.State = state
 
-	s.Run()
+	s.Run(serverProperties.GetOr("server-ip", "0.0.0.0"), serverProperties.GetOr("server-port", "25565"))
 
 	if err := state.Save(); err != nil {
 		log.Fatal(err)

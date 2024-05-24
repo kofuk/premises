@@ -41,6 +41,9 @@ func (r *Rcon) connect(address, password string) error {
 
 func (r *Rcon) Run(args []string) int {
 	address := ":25575"
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		address = "127.0.0.2:25575"
+	}
 	password := "x"
 	if len(args) >= 2 {
 		address = args[0]

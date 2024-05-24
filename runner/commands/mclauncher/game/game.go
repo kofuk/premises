@@ -44,12 +44,17 @@ var (
 func NewLauncher(config *runner.Config, world *world.WorldService) *Launcher {
 	ctx, cancel := context.WithCancel(context.Background())
 
+	rconAddr := "127.0.0.1:25575"
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		rconAddr = "127.0.0.2:25575"
+	}
+
 	l := &Launcher{
 		config: config,
 		world:  world,
 		ctx:    ctx,
 		cancel: cancel,
-		Rcon:   NewRcon("127.0.0.1:25575", "x"),
+		Rcon:   NewRcon(rconAddr, "x"),
 	}
 
 	l.RegisterBeforeLaunchHook(func(l *Launcher) {
@@ -269,9 +274,13 @@ func getAllocSizeMiB() int {
 }
 
 func waitServerHealthy(ctx context.Context) error {
+	serverAddr := "0.0.0.0:25565"
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		serverAddr = "127.0.0.2:25565"
+	}
 	for {
 		var d net.Dialer
-		conn, err := d.DialContext(ctx, "tcp", "0.0.0.0:25565")
+		conn, err := d.DialContext(ctx, "tcp", serverAddr)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return err
@@ -624,6 +633,9 @@ func (l *Launcher) sendStartedEvent(config *runner.Config) {
 func generateServerProps(config *runner.Config) error {
 	serverProps := NewServerProperties()
 	serverProps.LoadConfig(config)
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		serverProps.DangerouslySetProperty("server-ip", "127.0.0.2")
+	}
 
 	out, err := os.Create(fs.DataPath("gamedata/server.properties"))
 	if err != nil {
