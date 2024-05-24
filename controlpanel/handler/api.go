@@ -181,6 +181,9 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 	result := gameconfig.New()
 
 	result.C.ControlPanel = h.cfg.ControlPanel.Origin
+	if strings.HasPrefix(h.cfg.ControlPanel.Origin, "http://host.docker.internal:") {
+		result.C.ControlPanel = strings.Replace(h.cfg.ControlPanel.Origin, "http://host.docker.internal", "http://localhost", 1)
+	}
 
 	serverInfo, err := h.MCVersions.GetServerInfo(ctx, *config.ServerVersion)
 	if err != nil {
