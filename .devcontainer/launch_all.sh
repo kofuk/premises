@@ -11,7 +11,7 @@ mkdir /tmp/premises-world
 make -C ./runner deploy-dev
 
 exec tmux new-session -s "${name}" \
-     new-window -n 'Redis Console' "redis-cli" \; \
+     new-window -n 'Redis Console' "redis-cli -h redis" \; \
      new-window -n 'PostgreSQL Console' "psql -U premises" \; \
      new-window -n 'ConoHa Emulator' "cd ./ostack-fake; go run .; bash" \; \
      new-window -n 'Frontend' "cd ./controlpanel; npm start; bash" \; \

@@ -16,7 +16,6 @@ import (
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/strslice"
 	docker "github.com/docker/docker/client"
-	"github.com/docker/go-connections/nat"
 	"github.com/google/uuid"
 )
 
@@ -58,9 +57,6 @@ func createContainer(ctx context.Context, docker *docker.Client, imageID, nameTa
 	serverId := uuid.New().String()
 
 	containerConfig := container.Config{
-		ExposedPorts: nat.PortSet{
-			"25565/tcp": struct{}{},
-		},
 		Image: image,
 		Labels: map[string]string{
 			"org.kofuk.premises.managed":           "true",
@@ -80,20 +76,10 @@ func createContainer(ctx context.Context, docker *docker.Client, imageID, nameTa
 	}
 
 	hostConfig := container.HostConfig{
-		Binds: binds,
-		PortBindings: nat.PortMap{
-			"25565/tcp": []nat.PortBinding{
-				{
-					HostIP:   "127.0.0.2",
-					HostPort: "25565",
-				},
-			},
-		},
-		CapAdd: strslice.StrSlice{"MKNOD"},
-		ExtraHosts: []string{
-			"host.docker.internal:host-gateway",
-		},
-		Privileged: true,
+		Binds:       binds,
+		CapAdd:      strslice.StrSlice{"MKNOD"},
+		NetworkMode: "host",
+		Privileged:  true,
 	}
 
 	resp, err := docker.ContainerCreate(ctx, &containerConfig, &hostConfig, nil, nil, "")
