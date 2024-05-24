@@ -21,16 +21,18 @@ for spec in "${specs[@]}"; do
     if ! deno run --check --allow-net --allow-env "${dir}/specs/${spec}"; then
         container_id="$(docker container ls --filter label=org.kofuk.premises.managed --format '{{ .ID }}' | head -1)"
         echo '::group::Runner Log'
-        if [ ! -z "${container_id}" ]; then
+        if [ -n "${container_id}" ]; then
             echo "Container ID: ${container_id}"
             docker exec "${container_id}" cat /exteriord.log
+        else
+            cat "$(ls /tmp/premises/exteriord-*.log | tail -1)"
         fi
         echo '::endgroup::'
 
         echo '::group::App Log'
         (
             cd "${dir}/.."
-            if [ ! -z "$(docker compose ps -q)" ]; then
+            if [ -n "$(docker compose ps -q)" ]; then
                 docker compose logs web
             fi
         )
