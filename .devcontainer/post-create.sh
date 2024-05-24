@@ -12,6 +12,5 @@
 [ -e controlpanel/.env ] || cp .devcontainer/env controlpanel/.env
 
 ./.devcontainer/fake-runner/build_base_image.sh
-./.devcontainer/launch_all.sh
 
 # TODO: Create a user

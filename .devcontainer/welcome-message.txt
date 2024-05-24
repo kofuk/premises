@@ -1,0 +1,6 @@
+Development Environment for "Premises" is Fully Setup!
+
+To run app, execute
+    ./.decontainer/launch_all.sh
+
+After that, Premises' Control Panel is accessible via https://localhost:8000 on your local browser!
