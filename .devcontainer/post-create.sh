@@ -19,9 +19,6 @@ p2=$!
 ) &
 p3=$!
 
-# Forward minio:9000 and minio:9001 in the background
-lighttpd -f .devcontainer/lighttpd.conf
-
 wait "${p1}"
 wait "${p2}"
 wait "${p3}"
