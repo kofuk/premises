@@ -37,7 +37,6 @@ services:
     restart: always
     ports:
       - '8000:8000'
-    command: [web]
   proxy:
     image: 'ghcr.io/kofuk/premises:latest'
     environment:
@@ -46,7 +45,6 @@ services:
       - 'premises_controlPanel_iconUrl'
     ports:
       - '25565:25565'
-    command: [proxy]
   redis:
     image: 'redis:7-alpine'
     healthcheck:
