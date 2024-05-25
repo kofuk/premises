@@ -2,13 +2,16 @@ package wrapper
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -48,6 +51,29 @@ func FindDockerImageByOstackImageID(ctx context.Context, docker *docker.Client, 
 	return image[0].ID, nil
 }
 
+func getHostNameserver() (string, error) {
+	f, err := os.Open("/etc/resolv.conf")
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		fields := strings.Split(line, " ")
+		if len(fields) != 2 {
+			continue
+		}
+
+		if fields[0] == "nameserver" {
+			return fields[1], nil
+		}
+	}
+
+	return "", errors.New("nameserver setting not found")
+}
+
 func createContainer(ctx context.Context, docker *docker.Client, imageID, nameTag string) (*container.CreateResponse, string, error) {
 	image, err := FindDockerImageByOstackImageID(ctx, docker, imageID)
 	if err != nil {
@@ -75,11 +101,19 @@ func createContainer(ctx context.Context, docker *docker.Client, imageID, nameTa
 		binds = append(binds, "/tmp/premises-data:/opt/premises")
 	}
 
+	// Forwarding host's nameserver setting is required because
+	// the container needs to resolve Dev Container's service container.
+	ns, err := getHostNameserver()
+	if err != nil {
+		return nil, "", err
+	}
+
 	hostConfig := container.HostConfig{
 		Binds:       binds,
 		CapAdd:      strslice.StrSlice{"MKNOD"},
 		NetworkMode: "host",
 		Privileged:  true,
+		DNS:         []string{ns},
 	}
 
 	resp, err := docker.ContainerCreate(ctx, &containerConfig, &hostConfig, nil, nil, "")
