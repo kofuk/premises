@@ -202,7 +202,7 @@ jobs:
             --network host \
             -e PREMISES_MODE=proxy \
             -e PREMISES_PROXY_BIND=127.0.0.1:25565 \
-             \
+            -d \
             ghcr.io/kofuk/premises:latest
           echo '::endgroup::'
 
