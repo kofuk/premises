@@ -15,5 +15,3 @@ ENV PATH="/usr/local/go/bin:${PATH}"
 RUN curl -fsSL https://deno.land/install.sh | DENO_INSTALL=/usr/local sh
 
 COPY welcome-message.txt /usr/local/etc/vscode-dev-containers/first-run-notice.txt
-
-CMD ["sleep", "infinity"]
