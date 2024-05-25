@@ -34,7 +34,14 @@
 	"otherPortsAttributes": {
 		"onAutoForward": "ignore"
 	},
-	"postCreateCommand": ["bash", ".devcontainer/post-create.sh"],
-	"postStartCommand": ["lighttpd", "-f", ".devcontainer/lighttpd.conf"],
+	"postCreateCommand": [
+		"bash",
+		".devcontainer/post-create.sh"
+	],
+	"postStartCommand": [
+		"lighttpd",
+		"-f",
+		".devcontainer/lighttpd.conf"
+	],
 	"init": true
 }
