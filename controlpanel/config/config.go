@@ -1,52 +1,35 @@
 package config
 
+import "github.com/kelseyhightower/envconfig"
+
 type Config struct {
-	Debug struct {
-		Web bool `env:"web"`
-	} `env:"debug"`
-	Conoha struct {
-		UserName string `env:"username"`
-		Password string `env:"password"`
-		TenantID string `env:"tenantId"`
-		Services struct {
-			Identity string `env:"identity"`
-			Image    string `env:"image"`
-			Compute  string `env:"compute"`
-			Network  string `env:"network"`
-			Volume   string `env:"volume"`
-		} `env:"services"`
-		NameTag string `env:"nameTag"`
-	} `env:"conoha"`
-	S3 struct {
-		Endpoint string `env:"endpoint"`
-		Bucket   string `env:"bucket"`
-	} `env:"s3"`
-	AWS struct {
-		AccessKey string `env:"accessKey"`
-		SecretKey string `env:"secretKey"`
-	} `env:"aws"`
-	Game struct {
-		Operators []string `env:"operators"`
-		Whitelist []string `env:"whitelist"`
-	} `env:"game"`
-	ControlPanel struct {
-		Secret   string `env:"secret"`
-		Origin   string `env:"origin"`
-		Postgres struct {
-			Address  string `env:"address"`
-			Port     int    `env:"port"`
-			User     string `env:"user"`
-			Password string `env:"password"`
-			DBName   string `env:"dbName"`
-		} `env:"postgres"`
-		Redis struct {
-			Address  string `env:"address"`
-			Password string `env:"password"`
-		} `env:"redis"`
-		ProxyAPI   string `env:"proxyApi"`
-		GameDomain string `env:"gameDomain"`
-		IconURL    string `env:"iconUrl"`
-	} `env:"controlPanel"`
+	DebugMode             bool     `envconfig:"PREMISES_DEBUG"`
+	Mode                  string   `envconfig:"PREMISES_MODE"`
+	ConohaUser            string   `envconfig:"PREMISES_CONOHA_USERNAME"`
+	ConohaPassword        string   `envconfig:"PREMISES_CONOHA_PASSWORD"`
+	ConohaTenantID        string   `envconfig:"PREMISES_CONOHA_TENANT_ID"`
+	ConohaIdentityService string   `envconfig:"PREMISES_CONOHA_IDENTITY_SERVICE"`
+	ConohaComputeService  string   `envconfig:"PREMISES_CONOHA_COMPUTE_SERVICE"`
+	ConohaNetworkService  string   `envconfig:"PREMISES_CONOHA_NETWORK_SERVICE"`
+	ConohaVolumeService   string   `envconfig:"PREMISES_CONOHA_VOLUME_SERVICE"`
+	ConohaNameTag         string   `envconfig:"PREMISES_CONOHA_NAME_TAG"`
+	S3Endpoint            string   `envconfig:"S3_ENDPOINT"`
+	S3Bucket              string   `envconfig:"S3_BUCKET"`
+	AWSAccessKey          string   `envconfig:"AWS_ACCESS_KEY_ID"`
+	AWSSecretKey          string   `envconfig:"AWS_SECRET_ACCESS_KEY"`
+	Operators             []string `envconfig:"PREMISES_GAME_OPERATORS"`
+	Whitelist             []string `envconfig:"PREMISES_GAME_WHITELIST"`
+	Secret                string   `envconfig:"PREMISES_SECRET"`
+	Origin                string   `envconfig:"PREMISES_ALLOWED_ORIGIN"`
+	PostgresAddress       string   `envconfig:"PREMISES_POSTGRES_ADDRESS"`
+	PostgresUser          string   `envconfig:"PREMISES_POSTGRES_USER"`
+	PostgresPassword      string   `envconfig:"PREMISES_POSTGRES_PASSWORD"`
+	PostgresDB            string   `envconfig:"PREMISES_POSTGRES_DB"`
+	RedisAddress          string   `envconfig:"PREMISES_REDIS_ADDRESS"`
+	RedisPassword         string   `envconfig:"PREMISES_REDIS_PASSWORD"`
+	ProxyAPIEndpoint      string   `envconfig:"PREMISES_PROXY_API_ENDPOINT"`
+	GameDomain            string   `envconfig:"PREMISES_GAME_DOMAIN"`
+	IconURL               string   `envconfig:"PREMISES_ICON_URL"`
 }
 
 type ServerConfig struct {
@@ -56,7 +39,7 @@ type ServerConfig struct {
 
 func LoadConfig() (*Config, error) {
 	var result Config
-	if err := loadToStruct("premises", &result); err != nil {
+	if err := envconfig.Process("", &result); err != nil {
 		return nil, err
 	}
 	return &result, nil

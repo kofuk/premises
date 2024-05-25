@@ -66,14 +66,14 @@ func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSi
 	}
 	hasSecGroup := false
 	for _, sg := range sgs {
-		if sg.Name == s.cfg.Conoha.NameTag {
+		if sg.Name == s.cfg.ConohaNameTag {
 			hasSecGroup = true
 			break
 		}
 	}
 	if !hasSecGroup {
 		slog.Info("Createing security group...")
-		sgId, err := conoha.CreateSecurityGroup(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
+		sgId, err := conoha.CreateSecurityGroup(ctx, s.cfg, token, s.cfg.ConohaNameTag)
 		if err != nil {
 			slog.Error("Failed to create security group", slog.Any("error", err))
 			return ""
@@ -110,7 +110,7 @@ func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSi
 	slog.Info("Retriving flavors...Done", slog.Any("selected_flavor", flavor))
 
 	slog.Info("Retriving volume ID...")
-	volumeId, err := conoha.GetVolumeID(ctx, s.cfg, token, s.cfg.Conoha.NameTag)
+	volumeId, err := conoha.GetVolumeID(ctx, s.cfg, token, s.cfg.ConohaNameTag)
 	if err != nil {
 		slog.Error("Failed to get image ID", slog.Any("error", err))
 		return ""
@@ -118,7 +118,7 @@ func (s *GameServer) SetUp(ctx context.Context, gameConfig *runner.Config, memSi
 	slog.Info("Retriving image ID...Done", slog.String("volume_id", volumeId))
 
 	slog.Info("Creating VM...")
-	id, err := conoha.CreateVM(ctx, s.cfg, s.cfg.Conoha.NameTag, token, volumeId, flavor, startupScript)
+	id, err := conoha.CreateVM(ctx, s.cfg, s.cfg.ConohaNameTag, token, volumeId, flavor, startupScript)
 	if err != nil {
 		slog.Error("Failed to create VM", slog.Any("error", err))
 		return ""
@@ -153,7 +153,7 @@ func (s *GameServer) FindVM(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	detail, err := conoha.FindVM(ctx, s.cfg, token, conoha.FindByName(s.cfg.Conoha.NameTag))
+	detail, err := conoha.FindVM(ctx, s.cfg, token, conoha.FindByName(s.cfg.ConohaNameTag))
 	if err != nil {
 		return "", err
 	}

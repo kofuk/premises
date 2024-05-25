@@ -68,7 +68,7 @@ func (err APIError) Error() string {
 }
 
 func StopVM(ctx context.Context, cfg *config.Config, token, vmID string) error {
-	url, err := url.Parse(cfg.Conoha.Services.Compute)
+	url, err := url.Parse(cfg.ConohaComputeService)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func StopVM(ctx context.Context, cfg *config.Config, token, vmID string) error {
 }
 
 func DeleteVM(ctx context.Context, cfg *config.Config, token, vmID string) error {
-	url, err := url.Parse(cfg.Conoha.Services.Compute)
+	url, err := url.Parse(cfg.ConohaComputeService)
 	if err != nil {
 		return err
 	}
@@ -169,7 +169,7 @@ func CreateVM(ctx context.Context, cfg *config.Config, nameTag, token, volumeId 
 	}{{nameTag}}
 	reqBody.Server.BlockDevices = append(reqBody.Server.BlockDevices, BlockDeviceMapping{UUID: volumeId})
 
-	url, err := url.Parse(cfg.Conoha.Services.Compute)
+	url, err := url.Parse(cfg.ConohaComputeService)
 	if err != nil {
 		return "", err
 	}
@@ -222,7 +222,7 @@ type VMDetailResp struct {
 }
 
 func GetVMDetail(ctx context.Context, cfg *config.Config, token, id string) (*VMDetail, error) {
-	url, err := url.Parse(cfg.Conoha.Services.Compute)
+	url, err := url.Parse(cfg.ConohaComputeService)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +283,7 @@ func FindByIPAddr(ipv4Addr string) FindVMFunc {
 }
 
 func FindVM(ctx context.Context, cfg *config.Config, token string, condition FindVMFunc) (*VMDetail, error) {
-	url, err := url.Parse(cfg.Conoha.Services.Compute)
+	url, err := url.Parse(cfg.ConohaComputeService)
 	if err != nil {
 		return nil, err
 	}
@@ -332,7 +332,7 @@ type VolumeResp struct {
 }
 
 func GetVolumeID(ctx context.Context, cfg *config.Config, token, tag string) (string, error) {
-	url, err := url.Parse(cfg.Conoha.Services.Volume)
+	url, err := url.Parse(cfg.ConohaVolumeService)
 	if err != nil {
 		return "", err
 	}
@@ -377,7 +377,7 @@ type VolumeRenameReq struct {
 }
 
 func RenameVolume(ctx context.Context, cfg *config.Config, token, volumeId, name string) error {
-	url, err := url.Parse(cfg.Conoha.Services.Volume)
+	url, err := url.Parse(cfg.ConohaVolumeService)
 	if err != nil {
 		return err
 	}
@@ -423,7 +423,7 @@ type FlavorsResp struct {
 }
 
 func GetFlavors(ctx context.Context, cfg *config.Config, token string) ([]Flavor, error) {
-	url, err := url.Parse(cfg.Conoha.Services.Compute)
+	url, err := url.Parse(cfg.ConohaComputeService)
 	if err != nil {
 		return nil, err
 	}
@@ -491,7 +491,7 @@ type SecurityGroup struct {
 }
 
 func GetSecurityGroups(ctx context.Context, cfg *config.Config, token string) ([]SecurityGroup, error) {
-	url, err := url.Parse(cfg.Conoha.Services.Network)
+	url, err := url.Parse(cfg.ConohaNetworkService)
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +520,7 @@ func GetSecurityGroups(ctx context.Context, cfg *config.Config, token string) ([
 }
 
 func CreateSecurityGroup(ctx context.Context, cfg *config.Config, token, name string) (string, error) {
-	url, err := url.Parse(cfg.Conoha.Services.Network)
+	url, err := url.Parse(cfg.ConohaNetworkService)
 	if err != nil {
 		return "", err
 	}
@@ -570,7 +570,7 @@ type SecurityGroupRule struct {
 }
 
 func CreateSecurityGroupRule(ctx context.Context, cfg *config.Config, token string, rule SecurityGroupRule) error {
-	url, err := url.Parse(cfg.Conoha.Services.Network)
+	url, err := url.Parse(cfg.ConohaNetworkService)
 	if err != nil {
 		return err
 	}
@@ -629,11 +629,11 @@ type GetTokenResp struct {
 func GetToken(ctx context.Context, cfg *config.Config) (string, string, error) {
 	var auth GetTokenReq
 	auth.Auth.Identity.Methods = append(auth.Auth.Identity.Methods, "password")
-	auth.Auth.Identity.Password.User.Name = cfg.Conoha.UserName
-	auth.Auth.Identity.Password.User.Password = cfg.Conoha.Password
-	auth.Auth.Scope.Project.ID = cfg.Conoha.TenantID
+	auth.Auth.Identity.Password.User.Name = cfg.ConohaUser
+	auth.Auth.Identity.Password.User.Password = cfg.ConohaPassword
+	auth.Auth.Scope.Project.ID = cfg.ConohaTenantID
 
-	url, err := url.Parse(cfg.Conoha.Services.Identity)
+	url, err := url.Parse(cfg.ConohaIdentityService)
 	if err != nil {
 		return "", "", err
 	}

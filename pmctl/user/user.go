@@ -15,14 +15,8 @@ import (
 
 func NewUserCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "user",
-		Long: `User-related functionality.
-
-For access database, you can use the following environment variables to configure it.
-  - DATABASE_ADDR (e.g. localhost:5432)
-  - DATABASE_USER
-  - DATABASE_PASSWORD
-  - DATABASE_NAME`,
+		Use:  "user",
+		Long: "User-related functionality.",
 	}
 	cmd.AddCommand(NewAddCommand())
 	cmd.AddCommand(NewResetPasswordCommand())
@@ -109,22 +103,11 @@ func NewRenameCommand() *cobra.Command {
 	return cmd
 }
 
-func getenvOr(key, def string) string {
-	v := os.Getenv(key)
-	if v == "" {
-		return def
-	}
-	return v
-}
-
 func createClient() *bun.DB {
-	addr := getenvOr("DATABASE_ADDR", fmt.Sprintf("%s:%s",
-		os.Getenv("premises_controlPanel_postgres_address"),
-		os.Getenv("premises_controlPanel_postgres_port"),
-	))
-	user := getenvOr("DATABASE_USER", os.Getenv("premises_controlPanel_postgres_user"))
-	password := getenvOr("DATABASE_PASSWORD", os.Getenv("premises_controlPanel_postgres_password"))
-	database := getenvOr("DATABASE_NAME", os.Getenv("premises_controlPanel_postgres_dbName"))
+	addr := os.Getenv("PREMISES_POSTGRES_ADDRESS")
+	user := os.Getenv("PREMISES_POSTGRES_USER")
+	password := os.Getenv("PREMISES_POSTGRES_PASSWORD")
+	database := os.Getenv("PREMISES_POSTGRES_DB")
 
 	if addr == "" || user == "" || password == "" || database == "" {
 		fmt.Fprintln(os.Stderr, "Database configuration is missing")

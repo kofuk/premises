@@ -44,7 +44,7 @@ type Handler struct {
 }
 
 func setupRoutes(h *Handler) {
-	if h.cfg.Debug.Web {
+	if h.cfg.DebugMode {
 		slog.Info("Proxying vite dev server")
 
 		remoteUrl, err := url.Parse("http://localhost:5173")
@@ -92,7 +92,7 @@ func setupRoutes(h *Handler) {
 }
 
 func setupSessions(h *Handler) {
-	store, err := redistore.NewRediStore(4, "tcp", h.cfg.ControlPanel.Redis.Address, h.cfg.ControlPanel.Redis.Password, []byte(h.cfg.ControlPanel.Secret))
+	store, err := redistore.NewRediStore(4, "tcp", h.cfg.RedisAddress, h.cfg.RedisPassword, []byte(h.cfg.Secret))
 	if err != nil {
 		slog.Error("Failed to initialize Redis session store", slog.Any("error", err))
 		os.Exit(1)
@@ -177,7 +177,7 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 		serverRunning: false,
 		KVS:           kvs.New(kvs.NewRedis(redis)),
 		Streaming:     streaming.New(redis),
-		backup:        backup.New(cfg.AWS.AccessKey, cfg.AWS.SecretKey, cfg.S3.Endpoint, cfg.S3.Bucket),
+		backup:        backup.New(cfg.AWSAccessKey, cfg.AWSSecretKey, cfg.S3Endpoint, cfg.S3Bucket),
 		runnerAction:  pollable.New(redis, "runner-action"),
 	}
 	h.GameServer = NewGameServer(cfg, h)
