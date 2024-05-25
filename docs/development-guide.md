@@ -11,6 +11,8 @@ $ devcontainer open
 $ ./.devcontainer/launch_all.sh
 ```
 
+Initial user's name and password is `user1/password1`.
+
 ## Run ControlPanel locally, runner on cloud
 
 There are many solution to expose our local ports on the web.
