@@ -9,18 +9,26 @@
 	},
 	"forwardPorts": [
 		8000,
+		9000,
 		9001,
 		25565
 	],
 	"portsAttributes": {
 		"8000": {
-			"label": "Application"
+			"label": "App",
+			"onAutoForward": "silent"
+		},
+		"9000": {
+			"label": "MinIO API",
+			"onAutoForward": "silent"
 		},
 		"9001": {
-			"label": "MinIO"
+			"label": "MinIO",
+			"onAutoForward": "silent"
 		},
 		"25565": {
-			"label": "Minecraft"
+			"label": "Minecraft",
+			"onAutoForward": "silent"
 		}
 	},
 	"otherPortsAttributes": {
