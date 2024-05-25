@@ -14,16 +14,13 @@
 	],
 	"portsAttributes": {
 		"8000": {
-			"label": "Application",
-			"onAutoForward": "notify"
+			"label": "Application"
 		},
 		"9001": {
-			"label": "MinIO",
-			"onAutoForward": "notify"
+			"label": "MinIO"
 		},
 		"25565": {
-			"label": "Minecraft",
-			"onAutoForward": "notify"
+			"label": "Minecraft"
 		}
 	},
 	"otherPortsAttributes": {
