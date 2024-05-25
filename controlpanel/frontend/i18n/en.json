@@ -39,7 +39,7 @@
   "info.code_101": "Error stoppign server",
   "navbar.logout": "Logout",
   "navbar.settings": "Settings",
-  "navbar.reconnectin": "Reconnecting…",
+  "navbar.reconnecting": "Reconnecting…",
   "login.title": "Login",
   "login.username": "User",
   "login.password": "Password",

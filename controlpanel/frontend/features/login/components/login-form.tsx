@@ -83,7 +83,7 @@ const LoginForm = () => {
             </Stack>
           </form>
           <Dialog open={openResetPasswordDialog}>
-            <DialogTitle>{t('login.set_password')}</DialogTitle>
+            <DialogTitle>{t('login.change_password')}</DialogTitle>
             <form onSubmit={resetPasswdForm.handleSubmit(handleChangePassword)}>
               <DialogContent>
                 <Stack spacing={2}>

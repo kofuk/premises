@@ -39,7 +39,7 @@
   "info.code_101": "サーバーの停止中にエラーが発生しました",
   "navbar.logout": "ログアウト",
   "navbar.settings": "設定",
-  "navbar.reconnectin": "再接続しています…",
+  "navbar.reconnecting": "再接続しています…",
   "login.title": "ログイン",
   "login.username": "ユーザー名",
   "login.password": "パスワード",
