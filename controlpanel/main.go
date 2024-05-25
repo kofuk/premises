@@ -8,11 +8,11 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
-	"github.com/kofuk/premises/common/db"
-	"github.com/kofuk/premises/common/db/model/migrations"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/handler"
 	"github.com/kofuk/premises/controlpanel/proxy"
+	"github.com/kofuk/premises/internal/db"
+	"github.com/kofuk/premises/internal/db/model/migrations"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/extra/bundebug"
 	"github.com/uptrace/bun/migrate"

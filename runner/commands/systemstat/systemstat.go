@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	entity "github.com/kofuk/premises/common/entity/runner"
+	entity "github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/system"
 )

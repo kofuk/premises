@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kofuk/premises/common/mc/protocol"
+	"github.com/kofuk/premises/internal/mc/protocol"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/sync/errgroup"
 )

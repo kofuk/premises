@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/kofuk/premises/common/entity"
-	"github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/internal/entity"
+	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/system"

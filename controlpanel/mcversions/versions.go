@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	lm "github.com/kofuk/premises/common/mc/launchermeta"
 	"github.com/kofuk/premises/controlpanel/kvs"
+	lm "github.com/kofuk/premises/internal/mc/launchermeta"
 )
 
 type MCVersionsService struct {

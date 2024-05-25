@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	entity "github.com/kofuk/premises/common/entity/web"
-	"github.com/kofuk/premises/common/s3wrap"
+	entity "github.com/kofuk/premises/internal/entity/web"
+	"github.com/kofuk/premises/internal/s3wrap"
 )
 
 type BackupService struct {

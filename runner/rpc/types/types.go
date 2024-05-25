@@ -1,6 +1,6 @@
 package types
 
-import "github.com/kofuk/premises/common/entity/runner"
+import "github.com/kofuk/premises/internal/entity/runner"
 
 type SnapshotHelperInput struct {
 	Slot int `json:"slot"`

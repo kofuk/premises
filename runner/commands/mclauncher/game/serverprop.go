@@ -8,7 +8,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/internal/entity/runner"
 )
 
 var serverProperties = map[string]string{

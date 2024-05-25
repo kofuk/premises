@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/kofuk/premises/common/db/model"
-	"github.com/kofuk/premises/common/entity"
-	"github.com/kofuk/premises/common/entity/web"
+	"github.com/kofuk/premises/internal/db/model"
+	"github.com/kofuk/premises/internal/entity"
+	"github.com/kofuk/premises/internal/entity/web"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"

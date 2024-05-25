@@ -10,9 +10,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/kofuk/premises/common/entity"
-	"github.com/kofuk/premises/common/entity/runner"
-	lm "github.com/kofuk/premises/common/mc/launchermeta"
+	"github.com/kofuk/premises/internal/entity"
+	"github.com/kofuk/premises/internal/entity/runner"
+	lm "github.com/kofuk/premises/internal/mc/launchermeta"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/system"
 	"github.com/kofuk/premises/runner/util"

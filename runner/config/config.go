@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/runner/fs"
 )
 

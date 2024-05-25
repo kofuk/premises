@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/gorcon/rcon"
-	"github.com/kofuk/premises/common/retry"
+	"github.com/kofuk/premises/internal/retry"
 )
 
 type Rcon struct {

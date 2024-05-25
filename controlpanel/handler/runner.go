@@ -11,10 +11,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/kofuk/premises/common/entity"
-	"github.com/kofuk/premises/common/entity/runner"
 	"github.com/kofuk/premises/controlpanel/monitor"
 	"github.com/kofuk/premises/controlpanel/pollable"
+	"github.com/kofuk/premises/internal/entity"
+	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/labstack/echo/v4"
 )
 

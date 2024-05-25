@@ -16,9 +16,9 @@ import (
 	"time"
 
 	"github.com/klauspost/compress/zstd"
-	"github.com/kofuk/premises/common/entity"
-	"github.com/kofuk/premises/common/entity/runner"
-	"github.com/kofuk/premises/common/s3wrap"
+	"github.com/kofuk/premises/internal/entity"
+	"github.com/kofuk/premises/internal/entity/runner"
+	"github.com/kofuk/premises/internal/s3wrap"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/util"
 )

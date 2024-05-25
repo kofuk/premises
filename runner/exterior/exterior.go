@@ -3,7 +3,7 @@ package exterior
 import (
 	"log/slog"
 
-	"github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/rpc/types"
 )

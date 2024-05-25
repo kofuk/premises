@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kofuk/premises/common/retry"
 	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/internal/retry"
 )
 
 const (

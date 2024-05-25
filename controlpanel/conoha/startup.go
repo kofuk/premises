@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/internal/entity/runner"
 )
 
 //go:embed startup.sh

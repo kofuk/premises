@@ -10,13 +10,13 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/kofuk/premises/common/entity"
-	"github.com/kofuk/premises/common/entity/runner"
-	"github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
 	"github.com/kofuk/premises/controlpanel/kvs"
 	"github.com/kofuk/premises/controlpanel/streaming"
+	"github.com/kofuk/premises/internal/entity"
+	"github.com/kofuk/premises/internal/entity/runner"
+	"github.com/kofuk/premises/internal/entity/web"
 )
 
 type StatusData struct {

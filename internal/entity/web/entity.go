@@ -1,7 +1,7 @@
 package web
 
 import (
-	"github.com/kofuk/premises/common/entity"
+	"github.com/kofuk/premises/internal/entity"
 )
 
 type ErrorResponse struct {

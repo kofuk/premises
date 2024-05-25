@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/kofuk/premises/common/mc/nbt"
+	"github.com/kofuk/premises/internal/mc/nbt"
 	"github.com/kofuk/premises/runner/fs"
 )
 

@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/kofuk/premises/common/entity/runner"
-	"github.com/kofuk/premises/common/retry"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/conoha"
+	"github.com/kofuk/premises/internal/entity/runner"
+	"github.com/kofuk/premises/internal/retry"
 )
 
 type GameServer struct {

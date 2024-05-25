@@ -3,7 +3,7 @@ package migrations
 import (
 	"context"
 
-	"github.com/kofuk/premises/common/db/model"
+	"github.com/kofuk/premises/internal/db/model"
 	"github.com/uptrace/bun"
 )
 

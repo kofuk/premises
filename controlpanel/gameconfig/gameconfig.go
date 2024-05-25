@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/gorilla/securecookie"
-	"github.com/kofuk/premises/common/entity/runner"
+	"github.com/kofuk/premises/internal/entity/runner"
 	"golang.org/x/exp/slices"
 )
 

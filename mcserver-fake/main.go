@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kofuk/premises/common/mc/protocol"
+	"github.com/kofuk/premises/internal/mc/protocol"
 )
 
 var (

@@ -1,7 +1,7 @@
 FROM golang:1.22 AS go_build
 WORKDIR /build
 COPY ./pmctl ./pmctl
-COPY ./common ./common
+COPY ./internal ./internal
 COPY ./go.* .
 RUN cd /build/pmctl && CGO_ENABLED=0 go build .
 COPY ./controlpanel ./controlpanel
