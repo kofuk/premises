@@ -38,26 +38,6 @@ func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
 		db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
 	}
 
-	migrator := migrate.NewMigrator(db, migrations.Migrations)
-
-	slog.Info("Initializing bun migration")
-	if err := migrator.Init(context.Background()); err != nil {
-		return nil, err
-	}
-
-	migrator.Lock(context.Background())
-	defer migrator.Unlock(context.Background())
-
-	group, err := migrator.Migrate(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	if group.IsZero() {
-		slog.Info("No new migrations")
-	} else {
-		slog.Info("Migration completed", slog.String("to", group.String()))
-	}
-
 	return db, nil
 }
 
@@ -70,7 +50,10 @@ func startWeb(cfg *config.Config) {
 
 	if len(os.Args) > 1 && os.Args[1] == "migrate" {
 		migrator := migrate.NewMigrator(db, migrations.Migrations)
-		migrations.Migrate(migrator)
+		if err := migrations.Migrate(migrator); err != nil {
+			slog.Error("Failed to migrate database", slog.Any("error", err))
+			os.Exit(1)
+		}
 		return
 	}
 
