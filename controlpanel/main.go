@@ -8,24 +8,15 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
-	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/extra/bundebug"
-	"github.com/uptrace/bun/migrate"
-
 	"github.com/kofuk/premises/common/db"
 	"github.com/kofuk/premises/common/db/model/migrations"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/handler"
 	"github.com/kofuk/premises/controlpanel/proxy"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/extra/bundebug"
+	"github.com/uptrace/bun/migrate"
 )
-
-func createRedisClient(cfg *config.Config) *redis.Client {
-	redis := redis.NewClient(&redis.Options{
-		Addr:     cfg.ControlPanel.Redis.Address,
-		Password: cfg.ControlPanel.Redis.Password,
-	})
-	return redis
-}
 
 func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
 	db := db.NewClient(
@@ -50,14 +41,17 @@ func startWeb(cfg *config.Config) {
 
 	if len(os.Args) > 1 && os.Args[1] == "migrate" {
 		migrator := migrate.NewMigrator(db, migrations.Migrations)
-		if err := migrations.Migrate(migrator); err != nil {
+		if err := migrations.Migrate(context.TODO(), migrator); err != nil {
 			slog.Error("Failed to migrate database", slog.Any("error", err))
 			os.Exit(1)
 		}
 		return
 	}
 
-	redis := createRedisClient(cfg)
+	redis := redis.NewClient(&redis.Options{
+		Addr:     cfg.ControlPanel.Redis.Address,
+		Password: cfg.ControlPanel.Redis.Password,
+	})
 
 	handler, err := handler.NewHandler(cfg, ":8000", db, redis)
 	if err != nil {

@@ -43,14 +43,6 @@ type Handler struct {
 	runnerAction  *pollable.PollableActionService
 }
 
-func prepareDependencies(cfg *config.Config, h *Handler) error {
-	h.GameServer = NewGameServer(h.cfg, h)
-
-	h.backup = backup.New(h.cfg.AWS.AccessKey, h.cfg.AWS.SecretKey, h.cfg.S3.Endpoint, h.cfg.S3.Bucket)
-
-	return nil
-}
-
 func setupRoutes(h *Handler) {
 	if h.cfg.Debug.Web {
 		slog.Info("Proxying vite dev server")

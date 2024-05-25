@@ -8,15 +8,15 @@ import (
 
 var Migrations = migrate.NewMigrations()
 
-func Migrate(migrator *migrate.Migrator) error {
-	if err := migrator.Init(context.Background()); err != nil {
+func Migrate(ctx context.Context, migrator *migrate.Migrator) error {
+	if err := migrator.Init(ctx); err != nil {
 		return err
 	}
 
-	migrator.Lock(context.Background())
-	defer migrator.Unlock(context.Background())
+	migrator.Lock(ctx)
+	defer migrator.Unlock(ctx)
 
-	if _, err := migrator.Migrate(context.Background()); err != nil {
+	if _, err := migrator.Migrate(ctx); err != nil {
 		return err
 	}
 
