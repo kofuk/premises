@@ -1,34 +1,36 @@
+x-common-settings: &settings
+  PREMISES_CONOHA_USERNAME:
+  PREMISES_CONOHA_PASSWORD:
+  PREMISES_CONOHA_TENANT_ID:
+  PREMISES_CONOHA_IDENTITY_SERVICE:
+  PREMISES_CONOHA_COMPUTE_SERVICE:
+  PREMISES_CONOHA_NETWORK_SERVICE:
+  PREMISES_CONOHA_VOLUME_SERVICE:
+  PREMISES_CONOHA_NAME_TAG:
+  S3_ENDPOINT:
+  S3_BUCKET:
+  AWS_ACCESS_KEY_ID:
+  AWS_SECRET_ACCESS_KEY:
+  PREMISES_GAME_OPERATORS:
+  PREMISES_GAME_WHITELIST:
+  PREMISES_SECRET:
+  PREMISES_ALLOWED_ORIGIN:
+  PREMISES_REDIS_ADDRESS: redis:6379
+  PREMISES_REDIS_PASSWORD: ''
+  PREMISES_POSTGRES_ADDRESS: postgres:5432
+  PREMISES_POSTGRES_USER: premises
+  PREMISES_POSTGRES_PASSWORD: password
+  PREMISES_POSTGRES_DB: premises
+  PREMISES_PROXY_API_ENDPOINT: http://proxy:8001
+  PREMISES_GAME_DOMAIN:
+  PREMISES_ICON_URL:
+
 services:
   web:
     image: 'ghcr.io/kofuk/premises:latest'
     environment:
-      - 'PREMISES_MODE=web'
-      - 'premises_debug_web'
-      - 'premises_conoha_username'
-      - 'premises_conoha_password'
-      - 'premises_conoha_tenantId'
-      - 'premises_conoha_services_identity'
-      - 'premises_conoha_services_compute'
-      - 'premises_conoha_services_network'
-      - 'premises_conoha_services_volume'
-      - 'premises_conoha_nameTag'
-      - 'premises_s3_endpoint'
-      - 'premises_s3_bucket'
-      - 'premises_aws_accessKey'
-      - 'premises_aws_secretKey'
-      - 'premises_game_operators'
-      - 'premises_game_whitelist'
-      - 'premises_controlPanel_secret'
-      - 'premises_controlPanel_origin'
-      - 'premises_controlPanel_redis_address=redis:6379'
-      - 'premises_controlPanel_redis_password='
-      - 'premises_controlPanel_postgres_address=postgres'
-      - 'premises_controlPanel_postgres_port=5432'
-      - 'premises_controlPanel_postgres_user=premises'
-      - 'premises_controlPanel_postgres_password=password'
-      - 'premises_controlPanel_postgres_dbName=premises'
-      - 'premises_controlPanel_proxyApi=http://proxy:8001'
-      - 'premises_controlPanel_gameDomain'
+      <<: *settings
+      PREMISES_MODE: web
     depends_on:
       redis:
         condition: service_healthy
@@ -40,9 +42,8 @@ services:
   proxy:
     image: 'ghcr.io/kofuk/premises:latest'
     environment:
-      - 'PREMISES_MODE=proxy'
-      - 'premises_controlPanel_postgres_port=5432' # TODO: We should remove this after #406 fixed.
-      - 'premises_controlPanel_iconUrl'
+      <<: *settings
+      PREMISES_MODE: proxy
     ports:
       - '25565:25565'
   redis:

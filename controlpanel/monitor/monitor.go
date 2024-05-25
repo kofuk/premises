@@ -60,7 +60,7 @@ func AttachRunner(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueSt
 		return errors.New("no volume attached to the VM")
 	}
 
-	if err := conoha.RenameVolume(ctx, cfg, token, vm.Volumes[0].ID, cfg.Conoha.NameTag); err != nil {
+	if err := conoha.RenameVolume(ctx, cfg, token, vm.Volumes[0].ID, cfg.ConohaNameTag); err != nil {
 		return err
 	}
 
@@ -86,10 +86,10 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 				slog.Error("Error updating runner ID", slog.Any("error", err))
 			}
 
-			url, _ := url.Parse(cfg.ControlPanel.ProxyAPI)
+			url, _ := url.Parse(cfg.ProxyAPIEndpoint)
 			url.Path = "/set"
 			q := url.Query()
-			q.Add("name", cfg.ControlPanel.GameDomain)
+			q.Add("name", cfg.GameDomain)
 			q.Add("addr", event.Hello.Addr.IPv4[0]+":25565")
 			url.RawQuery = q.Encode()
 

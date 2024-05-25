@@ -14,7 +14,7 @@ import (
 )
 
 func (h *Handler) handleLogin(c echo.Context) error {
-	if c.Request().Header.Get("Origin") != h.cfg.ControlPanel.Origin {
+	if c.Request().Header.Get("Origin") != h.cfg.Origin {
 		return c.String(http.StatusBadGateway, "")
 	}
 
@@ -103,7 +103,7 @@ func isAllowedPassword(password string) bool {
 }
 
 func (h *Handler) handleLoginResetPassword(c echo.Context) error {
-	if c.Request().Header.Get("Origin") != h.cfg.ControlPanel.Origin {
+	if c.Request().Header.Get("Origin") != h.cfg.Origin {
 		return c.String(http.StatusBadGateway, "")
 	}
 

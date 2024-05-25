@@ -180,7 +180,7 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 	}
 	result := gameconfig.New()
 
-	result.C.ControlPanel = h.cfg.ControlPanel.Origin
+	result.C.ControlPanel = h.cfg.Origin
 
 	serverInfo, err := h.MCVersions.GetServerInfo(ctx, *config.ServerVersion)
 	if err != nil {
@@ -231,15 +231,15 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 		result.SetMotd(*config.Motd)
 	}
 
-	result.SetOperators(cfg.Game.Operators)
-	result.SetWhitelist(cfg.Game.Whitelist)
-	result.C.AWS.AccessKey = cfg.AWS.AccessKey
-	result.C.AWS.SecretKey = cfg.AWS.SecretKey
-	result.C.S3.Endpoint = cfg.S3.Endpoint
-	if strings.HasPrefix(h.cfg.S3.Endpoint, "http://host.docker.internal:") {
-		result.C.S3.Endpoint = strings.Replace(h.cfg.S3.Endpoint, "http://host.docker.internal", "http://localhost", 1)
+	result.SetOperators(cfg.Operators)
+	result.SetWhitelist(cfg.Whitelist)
+	result.C.AWS.AccessKey = cfg.AWSAccessKey
+	result.C.AWS.SecretKey = cfg.AWSSecretKey
+	result.C.S3.Endpoint = cfg.S3Endpoint
+	if strings.HasPrefix(h.cfg.S3Endpoint, "http://host.docker.internal:") {
+		result.C.S3.Endpoint = strings.Replace(h.cfg.S3Endpoint, "http://host.docker.internal", "http://localhost", 1)
 	}
-	result.C.S3.Bucket = cfg.S3.Bucket
+	result.C.S3.Bucket = cfg.S3Bucket
 
 	return &result.C, nil
 }
@@ -1000,7 +1000,7 @@ func (h *Handler) middlewareSessionCheck(next echo.HandlerFunc) echo.HandlerFunc
 	return func(c echo.Context) error {
 		// 1. Verify that the request is sent from allowed origin (if needed).
 		if c.Request().Method == http.MethodPost || (c.Request().Method == http.MethodGet && c.Request().Header.Get("Upgrade") == "WebSocket") {
-			if c.Request().Header.Get("Origin") != h.cfg.ControlPanel.Origin {
+			if c.Request().Header.Get("Origin") != h.cfg.Origin {
 				slog.Error("origin not allowed", slog.String("origin", c.Request().Header.Get("Origin")))
 				return c.JSON(http.StatusOK, web.ErrorResponse{
 					Success:   false,

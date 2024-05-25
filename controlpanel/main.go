@@ -20,12 +20,12 @@ import (
 
 func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
 	db := db.NewClient(
-		fmt.Sprintf("%s:%d", cfg.ControlPanel.Postgres.Address, cfg.ControlPanel.Postgres.Port),
-		cfg.ControlPanel.Postgres.User,
-		cfg.ControlPanel.Postgres.Password,
-		cfg.ControlPanel.Postgres.DBName,
+		cfg.PostgresAddress,
+		cfg.PostgresUser,
+		cfg.PostgresPassword,
+		cfg.PostgresDB,
 	)
-	if cfg.Debug.Web {
+	if cfg.DebugMode {
 		db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
 	}
 
@@ -49,8 +49,8 @@ func startWeb(cfg *config.Config) {
 	}
 
 	redis := redis.NewClient(&redis.Options{
-		Addr:     cfg.ControlPanel.Redis.Address,
-		Password: cfg.ControlPanel.Redis.Password,
+		Addr:     cfg.RedisAddress,
+		Password: cfg.RedisPassword,
 	})
 
 	handler, err := handler.NewHandler(cfg, ":8000", db, redis)
@@ -65,7 +65,7 @@ func startWeb(cfg *config.Config) {
 }
 
 func startProxy(cfg *config.Config) {
-	proxy := proxy.NewProxyHandler(cfg.ControlPanel.IconURL)
+	proxy := proxy.NewProxyHandler(cfg.IconURL)
 	if err := proxy.Start(context.Background()); err != nil {
 		slog.Error("Error in proxy handler", slog.Any("error", err))
 		os.Exit(1)
