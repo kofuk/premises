@@ -66,7 +66,7 @@ func startWeb(cfg *config.Config) {
 
 func startProxy(cfg *config.Config) {
 	proxy := proxy.NewProxyHandler(cfg.IconURL)
-	if err := proxy.Start(context.Background()); err != nil {
+	if err := proxy.Start(context.TODO()); err != nil {
 		slog.Error("Error in proxy handler", slog.Any("error", err))
 		os.Exit(1)
 	}
@@ -80,8 +80,14 @@ func main() {
 		})).Info("Failed to load .env file. If you want to use real envvars, you can ignore this safely.", slog.Any("error", err))
 	}
 
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		slog.Error("Failed to load config", slog.Any("error", err))
+		os.Exit(1)
+	}
+
 	logLevel := slog.LevelInfo
-	if os.Getenv("premises_debug_web") == "true" {
+	if cfg.DebugMode {
 		logLevel = slog.LevelDebug
 	}
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
@@ -89,20 +95,13 @@ func main() {
 		Level:     logLevel,
 	})))
 
-	cfg, err := config.LoadConfig()
-	if err != nil {
-		slog.Error("Failed to load config", slog.Any("error", err))
-		os.Exit(1)
-	}
-
-	mode := os.Getenv("PREMISES_MODE")
-	switch mode {
+	switch cfg.Mode {
 	case "web":
 		startWeb(cfg)
 	case "proxy":
 		startProxy(cfg)
 	default:
-		slog.Error(fmt.Sprintf("Unknown mode: %s", mode))
+		slog.Error(fmt.Sprintf("Unknown mode: %s", cfg.Mode))
 		os.Exit(1)
 	}
 }
