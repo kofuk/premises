@@ -8,7 +8,7 @@ $ devcontainer open
 ```
 2. Run all services in the container
 ```shell
-$ ./.devcontainer/launch_all.sh
+$ ./launch_all.sh
 ```
 
 Initial user's name and password is `user1/password1`.

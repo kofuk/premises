@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 name="premises"
-cd "$(dirname "${BASH_SOURCE:-0}")/.."
+cd "$(dirname "${BASH_SOURCE:-0}")"
 
 export DOCKER_API_VERSION="$(docker version --format '{{ .Server.APIVersion }}')"
 export PREMISES_PROXY_BIND='127.0.0.1:25565'
