@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
@@ -14,8 +13,6 @@ import (
 	"github.com/boj/redistore"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/sessions"
-	"github.com/kofuk/premises/common/db"
-	"github.com/kofuk/premises/common/db/model/migrations"
 	"github.com/kofuk/premises/common/entity"
 	"github.com/kofuk/premises/common/entity/web"
 	"github.com/kofuk/premises/controlpanel/backup"
@@ -28,8 +25,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/extra/bundebug"
-	"github.com/uptrace/bun/migrate"
 )
 
 type Handler struct {
@@ -48,57 +43,7 @@ type Handler struct {
 	runnerAction  *pollable.PollableActionService
 }
 
-func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
-	db := db.NewClient(
-		fmt.Sprintf("%s:%d", cfg.ControlPanel.Postgres.Address, cfg.ControlPanel.Postgres.Port),
-		cfg.ControlPanel.Postgres.User,
-		cfg.ControlPanel.Postgres.Password,
-		cfg.ControlPanel.Postgres.DBName,
-	)
-	if cfg.Debug.Web {
-		db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
-	}
-
-	migrator := migrate.NewMigrator(db, migrations.Migrations)
-
-	slog.Info("Initializing bun migration")
-	if err := migrator.Init(context.Background()); err != nil {
-		return nil, err
-	}
-
-	migrator.Lock(context.Background())
-	defer migrator.Unlock(context.Background())
-
-	group, err := migrator.Migrate(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	if group.IsZero() {
-		slog.Info("No new migrations")
-	} else {
-		slog.Info("Migration completed", slog.String("to", group.String()))
-	}
-
-	return db, nil
-}
-
-func createRedisClient(cfg *config.Config) *redis.Client {
-	redis := redis.NewClient(&redis.Options{
-		Addr:     cfg.ControlPanel.Redis.Address,
-		Password: cfg.ControlPanel.Redis.Password,
-	})
-	return redis
-}
-
 func prepareDependencies(cfg *config.Config, h *Handler) error {
-	db, err := createDatabaseClient(cfg)
-	if err != nil {
-		return err
-	}
-	h.db = db
-
-	h.redis = createRedisClient(cfg)
-
 	h.GameServer = NewGameServer(h.cfg, h)
 
 	h.backup = backup.New(h.cfg.AWS.AccessKey, h.cfg.AWS.SecretKey, h.cfg.S3.Endpoint, h.cfg.S3.Bucket)
@@ -213,7 +158,7 @@ func syncRemoteVMState(ctx context.Context, gameServer *GameServer, h *Handler) 
 	return nil
 }
 
-func NewHandler(cfg *config.Config, bindAddr string) (*Handler, error) {
+func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Client) (*Handler, error) {
 	engine := echo.New()
 	engine.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
@@ -234,19 +179,18 @@ func NewHandler(cfg *config.Config, bindAddr string) (*Handler, error) {
 	h := &Handler{
 		cfg:           cfg,
 		engine:        engine,
+		db:            db,
+		redis:         redis,
 		bind:          bindAddr,
 		serverRunning: false,
+		KVS:           kvs.New(kvs.NewRedis(redis)),
+		Streaming:     streaming.New(redis),
+		backup:        backup.New(cfg.AWS.AccessKey, cfg.AWS.SecretKey, cfg.S3.Endpoint, cfg.S3.Bucket),
+		runnerAction:  pollable.New(redis, "runner-action"),
 	}
+	h.GameServer = NewGameServer(cfg, h)
 
-	if err := prepareDependencies(cfg, h); err != nil {
-		return nil, err
-	}
-
-	kvs := kvs.New(kvs.NewRedis(h.redis))
-	h.KVS = kvs
-	h.MCVersions = mcversions.New(kvs)
-	h.Streaming = streaming.New(h.redis)
-	h.runnerAction = pollable.New(h.redis, "runner-action")
+	h.MCVersions = mcversions.New(h.KVS)
 
 	setupSessions(h)
 

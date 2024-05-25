@@ -27,4 +27,4 @@ COPY --from=frontend_build /build/gen /gen
 # Hack to merge all layers without --squash.
 FROM scratch
 COPY --from=prod_base / /
-ENTRYPOINT ["/premises"]
+CMD ["/premises"]

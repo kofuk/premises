@@ -6,15 +6,77 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/extra/bundebug"
+	"github.com/uptrace/bun/migrate"
 
+	"github.com/kofuk/premises/common/db"
+	"github.com/kofuk/premises/common/db/model/migrations"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/handler"
 	"github.com/kofuk/premises/controlpanel/proxy"
 )
 
+func createRedisClient(cfg *config.Config) *redis.Client {
+	redis := redis.NewClient(&redis.Options{
+		Addr:     cfg.ControlPanel.Redis.Address,
+		Password: cfg.ControlPanel.Redis.Password,
+	})
+	return redis
+}
+
+func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
+	db := db.NewClient(
+		fmt.Sprintf("%s:%d", cfg.ControlPanel.Postgres.Address, cfg.ControlPanel.Postgres.Port),
+		cfg.ControlPanel.Postgres.User,
+		cfg.ControlPanel.Postgres.Password,
+		cfg.ControlPanel.Postgres.DBName,
+	)
+	if cfg.Debug.Web {
+		db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
+	}
+
+	migrator := migrate.NewMigrator(db, migrations.Migrations)
+
+	slog.Info("Initializing bun migration")
+	if err := migrator.Init(context.Background()); err != nil {
+		return nil, err
+	}
+
+	migrator.Lock(context.Background())
+	defer migrator.Unlock(context.Background())
+
+	group, err := migrator.Migrate(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	if group.IsZero() {
+		slog.Info("No new migrations")
+	} else {
+		slog.Info("Migration completed", slog.String("to", group.String()))
+	}
+
+	return db, nil
+}
+
 func startWeb(cfg *config.Config) {
-	handler, err := handler.NewHandler(cfg, ":8000")
+	db, err := createDatabaseClient(cfg)
+	if err != nil {
+		slog.Error("Failed to create database client", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		migrator := migrate.NewMigrator(db, migrations.Migrations)
+		migrations.Migrate(migrator)
+		return
+	}
+
+	redis := createRedisClient(cfg)
+
+	handler, err := handler.NewHandler(cfg, ":8000", db, redis)
 	if err != nil {
 		slog.Error("Failed to initialize handler", slog.Any("error", err))
 		os.Exit(1)
