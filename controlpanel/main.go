@@ -65,7 +65,7 @@ func startWeb(cfg *config.Config) {
 }
 
 func startProxy(cfg *config.Config) {
-	proxy := proxy.NewProxyHandler(cfg.IconURL)
+	proxy := proxy.NewProxyHandler(cfg)
 	if err := proxy.Start(context.TODO()); err != nil {
 		slog.Error("Error in proxy handler", slog.Any("error", err))
 		os.Exit(1)

@@ -10,32 +10,34 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
+	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/internal/mc/protocol"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/sync/errgroup"
 )
 
 type ProxyHandler struct {
-	m        sync.Mutex
-	bindAddr string
-	servers  map[string]string
-	iconURL  string
+	m          sync.Mutex
+	bindAddr   string
+	servers    map[string]string
+	iconURL    string
+	gameDomain string
 }
 
-func NewProxyHandler(iconURL string) *ProxyHandler {
-	bindAddr := os.Getenv("PREMISES_PROXY_BIND")
+func NewProxyHandler(cfg *config.Config) *ProxyHandler {
+	bindAddr := cfg.ProxyBind
 	if bindAddr == "" {
 		bindAddr = "0.0.0.0:25565"
 	}
 
 	return &ProxyHandler{
-		bindAddr: bindAddr,
-		servers:  make(map[string]string),
-		iconURL:  iconURL,
+		bindAddr:   bindAddr,
+		servers:    make(map[string]string),
+		iconURL:    cfg.IconURL,
+		gameDomain: cfg.GameDomain,
 	}
 }
 
@@ -104,7 +106,7 @@ func (p *ProxyHandler) handleDummyServer(h *protocol.Handler, hs *protocol.Hands
 	status.Description.Text = fmt.Sprintf("§%[1]cServer §o\"%s\"§r§%[1]c is offline", color, hs.ServerAddr)
 	status.EnforcesSecureChat = true
 
-	if p.iconURL != "" {
+	if hs.ServerAddr == p.gameDomain && p.iconURL != "" {
 		if favicon, err := retrieveFavicon(p.iconURL); err != nil {
 			slog.Error("Error retrieving favicon", slog.Any("error", err))
 		} else {
