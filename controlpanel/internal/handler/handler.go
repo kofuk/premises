@@ -1,14 +1,11 @@
 package handler
 
 import (
-	"context"
-	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"sync"
 
 	"github.com/boj/redistore"
 	"github.com/go-redis/redis/v8"
@@ -28,19 +25,17 @@ import (
 )
 
 type Handler struct {
-	cfg           *config.Config
-	bind          string
-	engine        *echo.Echo
-	db            *bun.DB
-	redis         *redis.Client
-	GameServer    *GameServer
-	serverMutex   sync.Mutex
-	serverRunning bool
-	KVS           kvs.KeyValueStore
-	MCVersions    mcversions.MCVersionsService
-	Streaming     *streaming.StreamingService
-	backup        *backup.BackupService
-	runnerAction  *longpoll.PollableActionService
+	cfg          *config.Config
+	bind         string
+	engine       *echo.Echo
+	db           *bun.DB
+	redis        *redis.Client
+	GameServer   *GameServer
+	KVS          kvs.KeyValueStore
+	MCVersions   mcversions.MCVersionsService
+	Streaming    *streaming.StreamingService
+	backup       *backup.BackupService
+	runnerAction *longpoll.PollableActionService
 }
 
 func setupRoutes(h *Handler) {
@@ -107,49 +102,6 @@ func setupSessions(h *Handler) {
 	h.engine.Use(session.Middleware(store))
 }
 
-func syncRemoteVMState(ctx context.Context, gameServer *GameServer, h *Handler) error {
-	stdStream := h.Streaming.GetStream(streaming.StandardStream)
-
-	var id string
-	if err := h.KVS.Get(ctx, "runner-id:default", &id); err != nil {
-		slog.Info("ID for previous runner is not set. Searching for one...", slog.Any("error", err))
-
-		var err error
-		id, err = gameServer.FindVM(ctx)
-		if err != nil {
-			slog.Info("No running VM", slog.Any("error", err))
-
-			if err := h.Streaming.PublishEvent(
-				ctx,
-				stdStream,
-				streaming.NewStandardMessage(entity.EventStopped, web.PageLaunch),
-			); err != nil {
-				slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-			}
-
-			return nil
-		}
-	}
-
-	if gameServer.VMRunning(ctx, id) {
-		h.serverRunning = true
-
-		slog.Info("Successfully synced runner state")
-
-		return nil
-	}
-
-	slog.Info("Recovering system state...")
-
-	if !gameServer.DeleteVM(ctx, id) {
-		return errors.New("failed to delete VM")
-	}
-
-	slog.Info("Successfully recovered runner state")
-
-	return nil
-}
-
 func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Client) (*Handler, error) {
 	engine := echo.New()
 	engine.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
@@ -169,24 +121,21 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 	engine.HidePort = true
 
 	h := &Handler{
-		cfg:           cfg,
-		engine:        engine,
-		db:            db,
-		redis:         redis,
-		bind:          bindAddr,
-		serverRunning: false,
-		KVS:           kvs.New(kvs.NewRedis(redis)),
-		Streaming:     streaming.New(redis),
-		backup:        backup.New(cfg.AWSAccessKey, cfg.AWSSecretKey, cfg.S3Endpoint, cfg.S3Bucket),
-		runnerAction:  longpoll.New(redis, "runner-action"),
+		cfg:          cfg,
+		engine:       engine,
+		db:           db,
+		redis:        redis,
+		bind:         bindAddr,
+		KVS:          kvs.New(kvs.NewRedis(redis)),
+		Streaming:    streaming.New(redis),
+		backup:       backup.New(cfg.AWSAccessKey, cfg.AWSSecretKey, cfg.S3Endpoint, cfg.S3Bucket),
+		runnerAction: longpoll.New(redis, "runner-action"),
 	}
 	h.GameServer = NewGameServer(cfg, h)
 
 	h.MCVersions = mcversions.New(h.KVS)
 
 	setupSessions(h)
-
-	syncRemoteVMState(context.Background(), h.GameServer, h)
 
 	setupRoutes(h)
 

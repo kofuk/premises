@@ -245,11 +245,7 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 }
 
 func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, authKey string) {
-	defer func() {
-		h.serverMutex.Lock()
-		defer h.serverMutex.Unlock()
-		h.serverRunning = false
-	}()
+	defer h.releaseServerLock(context.TODO())
 
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
 	infoStream := h.Streaming.GetStream(streaming.InfoStream)
@@ -345,7 +341,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
 
-		h.serverRunning = false
+		h.releaseServerLock(context.TODO())
 		return
 	}
 
@@ -378,7 +374,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
 
-		h.serverRunning = false
+		h.releaseServerLock(context.TODO())
 		return
 	}
 	slog.Info("Generating startup script...Done")
@@ -428,6 +424,21 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 	}
 }
 
+func (h *Handler) aquireServerLock(ctx context.Context) (bool, error) {
+	var running bool
+	if err := h.KVS.GetSet(ctx, "running", true, -1, &running); err != nil {
+		if errors.Is(err, redis.Nil) {
+			return true, nil
+		}
+		return false, err
+	}
+	return !running, nil
+}
+
+func (h *Handler) releaseServerLock(ctx context.Context) error {
+	return h.KVS.Del(ctx, "running")
+}
+
 func (h *Handler) handleApiLaunch(c echo.Context) error {
 	var config web.PendingConfig
 	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
@@ -438,16 +449,6 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 		})
 	}
 
-	h.serverMutex.Lock()
-	defer h.serverMutex.Unlock()
-
-	if h.serverRunning {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrServerRunning,
-		})
-	}
-
 	gameConfig, err := h.createConfigFromPostData(c.Request().Context(), config, h.cfg)
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -455,8 +456,6 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 			ErrorCode: entity.ErrInvalidConfig,
 		})
 	}
-
-	h.serverRunning = true
 
 	if config.MachineType == nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -476,6 +475,22 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	canLaunch, err := h.aquireServerLock(c.Request().Context())
+	if err != nil {
+		slog.Error("Failed to aquire server lock", slog.Any("error", err))
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	if !canLaunch {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrServerRunning,
 		})
 	}
 
