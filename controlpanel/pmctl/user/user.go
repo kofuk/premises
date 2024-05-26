@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kofuk/premises/internal/db"
-	"github.com/kofuk/premises/internal/db/model"
+	"github.com/kofuk/premises/controlpanel/internal/db"
+	"github.com/kofuk/premises/controlpanel/internal/db/model"
 	"github.com/spf13/cobra"
 	"github.com/uptrace/bun"
 	"golang.org/x/crypto/bcrypt"

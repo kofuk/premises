@@ -15,7 +15,7 @@ p2=$!
     eval $(sed 's/^/export /' controlpanel/.env)
 
     ( cd controlpanel; PREMISES_MODE=web go run . migrate )
-    ( cd pmctl; go run . user add -u user1 -p password1 --initialized )
+    ( cd controlpanel/pmctl; go run . user add -u user1 -p password1 --initialized )
 ) &
 p3=$!
 

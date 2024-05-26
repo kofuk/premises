@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/kofuk/premises/controlpanel/config"
-	"github.com/kofuk/premises/controlpanel/conoha"
+	"github.com/kofuk/premises/controlpanel/internal/config"
+	"github.com/kofuk/premises/controlpanel/internal/conoha"
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/internal/retry"
 )

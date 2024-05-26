@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/internal/retry"
 )
 

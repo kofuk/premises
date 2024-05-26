@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/kofuk/premises/controlpanel/kvs"
+	"github.com/kofuk/premises/controlpanel/internal/kvs"
 	lm "github.com/kofuk/premises/internal/mc/launchermeta"
 )
 

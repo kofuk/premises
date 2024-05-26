@@ -1,10 +1,9 @@
 FROM golang:1.22 AS go_build
 WORKDIR /build
-COPY ./pmctl ./pmctl
 COPY ./internal ./internal
 COPY ./go.* .
-RUN cd /build/pmctl && CGO_ENABLED=0 go build .
 COPY ./controlpanel ./controlpanel
+RUN cd /build/controlpanel/pmctl && CGO_ENABLED=0 go build .
 RUN cd /build/controlpanel && make
 
 FROM node:21 AS frontend_build
@@ -20,7 +19,7 @@ RUN npm run build
 
 FROM scratch AS prod_base
 COPY --from=go_build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=go_build /build/pmctl/pmctl /bin/pmctl
+COPY --from=go_build /build/controlpanel/pmctl/pmctl /bin/pmctl
 COPY --from=go_build /build/controlpanel/premises /premises
 COPY --from=frontend_build /build/gen /gen
 

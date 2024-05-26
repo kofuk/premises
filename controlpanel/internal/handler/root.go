@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/kofuk/premises/internal/db/model"
+	"github.com/kofuk/premises/controlpanel/internal/db/model"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/web"
 	"github.com/labstack/echo-contrib/session"

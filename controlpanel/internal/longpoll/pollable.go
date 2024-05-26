@@ -1,4 +1,4 @@
-package pollable
+package longpoll
 
 import (
 	"context"

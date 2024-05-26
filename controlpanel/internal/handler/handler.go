@@ -13,12 +13,12 @@ import (
 	"github.com/boj/redistore"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/sessions"
-	"github.com/kofuk/premises/controlpanel/backup"
-	"github.com/kofuk/premises/controlpanel/config"
-	"github.com/kofuk/premises/controlpanel/kvs"
-	"github.com/kofuk/premises/controlpanel/mcversions"
-	"github.com/kofuk/premises/controlpanel/pollable"
-	"github.com/kofuk/premises/controlpanel/streaming"
+	"github.com/kofuk/premises/controlpanel/internal/backup"
+	"github.com/kofuk/premises/controlpanel/internal/config"
+	"github.com/kofuk/premises/controlpanel/internal/kvs"
+	"github.com/kofuk/premises/controlpanel/internal/longpoll"
+	"github.com/kofuk/premises/controlpanel/internal/mcversions"
+	"github.com/kofuk/premises/controlpanel/internal/streaming"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/web"
 	"github.com/labstack/echo-contrib/session"
@@ -40,7 +40,7 @@ type Handler struct {
 	MCVersions    mcversions.MCVersionsService
 	Streaming     *streaming.StreamingService
 	backup        *backup.BackupService
-	runnerAction  *pollable.PollableActionService
+	runnerAction  *longpoll.PollableActionService
 }
 
 func setupRoutes(h *Handler) {
@@ -178,7 +178,7 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 		KVS:           kvs.New(kvs.NewRedis(redis)),
 		Streaming:     streaming.New(redis),
 		backup:        backup.New(cfg.AWSAccessKey, cfg.AWSSecretKey, cfg.S3Endpoint, cfg.S3Bucket),
-		runnerAction:  pollable.New(redis, "runner-action"),
+		runnerAction:  longpoll.New(redis, "runner-action"),
 	}
 	h.GameServer = NewGameServer(cfg, h)
 

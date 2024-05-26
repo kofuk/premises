@@ -11,8 +11,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/kofuk/premises/controlpanel/monitor"
-	"github.com/kofuk/premises/controlpanel/pollable"
+	"github.com/kofuk/premises/controlpanel/internal/longpoll"
+	"github.com/kofuk/premises/controlpanel/internal/monitor"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/labstack/echo/v4"
@@ -27,7 +27,7 @@ func (h *Handler) handleRunnerPollAction(c echo.Context) error {
 
 	action, err := h.runnerAction.Wait(c.Request().Context(), runnerId)
 	if err != nil {
-		if err == pollable.ErrCancelled {
+		if err == longpoll.ErrCancelled {
 			return nil
 		}
 		slog.Error("Error waiting action", slog.Any("error", err))

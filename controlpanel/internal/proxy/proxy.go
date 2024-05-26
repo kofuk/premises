@@ -12,8 +12,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kofuk/premises/controlpanel/config"
-	"github.com/kofuk/premises/controlpanel/kvs"
+	"github.com/kofuk/premises/controlpanel/internal/config"
+	"github.com/kofuk/premises/controlpanel/internal/kvs"
 	"github.com/kofuk/premises/internal/mc/protocol"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/sync/errgroup"
