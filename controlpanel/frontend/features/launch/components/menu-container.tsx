@@ -100,7 +100,7 @@ const MenuContainer = ({items, menuFooter}: Props) => {
 
   return (
     <Box>
-      <Typography sx={{mb: 3, textAlign: 'middle'}} variant="h5">
+      <Typography sx={{textAlign: 'middle'}} variant="h5">
         <IconButton onClick={backToMenu}>
           <BackIcon />
         </IconButton>
