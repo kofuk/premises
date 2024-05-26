@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/kofuk/premises/controlpanel/config"
 	"github.com/kofuk/premises/controlpanel/handler"
+	"github.com/kofuk/premises/controlpanel/kvs"
 	"github.com/kofuk/premises/controlpanel/proxy"
 	"github.com/kofuk/premises/internal/db"
 	"github.com/kofuk/premises/internal/db/model/migrations"
@@ -32,6 +33,13 @@ func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
 	return db, nil
 }
 
+func createRedisClient(cfg *config.Config) *redis.Client {
+	return redis.NewClient(&redis.Options{
+		Addr:     cfg.RedisAddress,
+		Password: cfg.RedisPassword,
+	})
+}
+
 func startWeb(cfg *config.Config) {
 	db, err := createDatabaseClient(cfg)
 	if err != nil {
@@ -48,10 +56,7 @@ func startWeb(cfg *config.Config) {
 		return
 	}
 
-	redis := redis.NewClient(&redis.Options{
-		Addr:     cfg.RedisAddress,
-		Password: cfg.RedisPassword,
-	})
+	redis := createRedisClient(cfg)
 
 	handler, err := handler.NewHandler(cfg, ":8000", db, redis)
 	if err != nil {
@@ -65,7 +70,7 @@ func startWeb(cfg *config.Config) {
 }
 
 func startProxy(cfg *config.Config) {
-	proxy := proxy.NewProxyHandler(cfg)
+	proxy := proxy.NewProxyHandler(cfg, kvs.New(kvs.NewRedis(createRedisClient(cfg))))
 	if err := proxy.Start(context.TODO()); err != nil {
 		slog.Error("Error in proxy handler", slog.Any("error", err))
 		os.Exit(1)

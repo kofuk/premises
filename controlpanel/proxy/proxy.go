@@ -10,24 +10,23 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/kofuk/premises/controlpanel/config"
+	"github.com/kofuk/premises/controlpanel/kvs"
 	"github.com/kofuk/premises/internal/mc/protocol"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/sync/errgroup"
 )
 
 type ProxyHandler struct {
-	m          sync.Mutex
+	kvs        kvs.KeyValueStore
 	bindAddr   string
-	servers    map[string]string
 	iconURL    string
 	gameDomain string
 }
 
-func NewProxyHandler(cfg *config.Config) *ProxyHandler {
+func NewProxyHandler(cfg *config.Config, kvs kvs.KeyValueStore) *ProxyHandler {
 	bindAddr := cfg.ProxyBind
 	if bindAddr == "" {
 		bindAddr = "0.0.0.0:25565"
@@ -35,7 +34,7 @@ func NewProxyHandler(cfg *config.Config) *ProxyHandler {
 
 	return &ProxyHandler{
 		bindAddr:   bindAddr,
-		servers:    make(map[string]string),
+		kvs:        kvs,
 		iconURL:    cfg.IconURL,
 		gameDomain: cfg.GameDomain,
 	}
@@ -47,28 +46,26 @@ func (p *ProxyHandler) startInternalApi(ctx context.Context) error {
 	e.HidePort = true
 
 	e.POST("/set", func(c echo.Context) error {
-		p.m.Lock()
-		defer p.m.Unlock()
-
 		name := c.QueryParam("name")
 		addr := c.QueryParam("addr")
 
 		slog.Info("Setting proxy host", slog.String("name", name), slog.String("addr", addr))
 
-		p.servers[name] = addr
+		if err := p.kvs.Set(ctx, "proxy:"+name, addr, -1); err != nil {
+			slog.Error("Error setting proxy host", slog.Any("error", err))
+		}
 
 		return c.String(http.StatusOK, "success")
 	})
 
 	e.POST("/clear", func(c echo.Context) error {
-		p.m.Lock()
-		defer p.m.Unlock()
-
 		name := c.QueryParam("name")
 
 		slog.Info("Removing proxy host", slog.String("name", name))
 
-		delete(p.servers, name)
+		if err := p.kvs.Del(ctx, "proxy:"+name); err != nil {
+			slog.Error("Error removing proxy host", slog.Any("error", err))
+		}
 
 		return c.String(http.StatusNoContent, "success")
 	})
@@ -143,11 +140,12 @@ func (p *ProxyHandler) handleConn(conn io.ReadWriteCloser) error {
 		return fmt.Errorf("handshake error: %w", err)
 	}
 
-	p.m.Lock()
-	addr, ok := p.servers[hs.ServerAddr]
-	p.m.Unlock()
+	var addr string
+	if err := p.kvs.Get(context.TODO(), "proxy:"+hs.ServerAddr, &addr); err != nil {
+		slog.Debug("Error getting proxy host", slog.Any("error", err))
+	}
 
-	if !ok {
+	if addr == "" {
 		if hs.NextState != 1 {
 			return fmt.Errorf("unknown server: %s", hs.ServerAddr)
 		}
