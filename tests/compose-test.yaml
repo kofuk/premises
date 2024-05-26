@@ -9,3 +9,6 @@ services:
   proxy:
     profiles:
       - disable
+  redis:
+    ports:
+      - '6379:6379'
