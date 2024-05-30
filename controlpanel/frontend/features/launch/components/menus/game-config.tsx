@@ -41,10 +41,14 @@ export const create = (): MenuItem => {
   const versions =
     mcVersions &&
     mcVersions
-      .filter((e) => showStable || e.channel !== 'stable')
-      .filter((e) => showSnapshot || e.channel !== 'snapshot')
-      .filter((e) => showBeta || e.channel !== 'beta')
-      .filter((e) => showAlpha || e.channel !== 'alpha')
+      .filter(
+        (e) =>
+          e.name === serverVersion ||
+          ((showStable || e.channel !== 'stable') &&
+            (showSnapshot || e.channel !== 'snapshot') &&
+            (showBeta || e.channel !== 'beta') &&
+            (showAlpha || e.channel !== 'alpha'))
+      )
       .map((e) => (
         <MUIMenuItem key={e.name} value={e.name}>
           {e.name}
