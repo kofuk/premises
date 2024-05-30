@@ -88,63 +88,19 @@ export const create = (): MenuItem => {
         </FormControl>
         <FormGroup row>
           <FormControlLabel
-            control={
-              <Switch
-                checked={showStable}
-                onChange={() => {
-                  setShowStable(!showStable);
-                  if (showStable) {
-                    setServerVersion('');
-                  }
-                }}
-                size="small"
-              />
-            }
+            control={<Switch checked={showStable} onChange={() => setShowStable(!showStable)} size="small" />}
             label={t('launch.server_version.stable')}
           />
           <FormControlLabel
-            control={
-              <Switch
-                checked={showSnapshot}
-                onChange={() => {
-                  setShowSnapshot(!showSnapshot);
-                  if (showSnapshot) {
-                    setServerVersion('');
-                  }
-                }}
-                size="small"
-              />
-            }
+            control={<Switch checked={showSnapshot} onChange={() => setShowSnapshot(!showSnapshot)} size="small" />}
             label={t('launch.server_version.snapshot')}
           />
           <FormControlLabel
-            control={
-              <Switch
-                checked={showBeta}
-                onChange={() => {
-                  setShowBeta(!showBeta);
-                  if (showBeta) {
-                    setServerVersion('');
-                  }
-                }}
-                size="small"
-              />
-            }
+            control={<Switch checked={showBeta} onChange={() => setShowBeta(!showBeta)} size="small" />}
             label={t('launch.server_version.beta')}
           />
           <FormControlLabel
-            control={
-              <Switch
-                checked={showAlpha}
-                onChange={() => {
-                  setShowAlpha(!showAlpha);
-                  if (showAlpha) {
-                    setServerVersion('');
-                  }
-                }}
-                size="small"
-              />
-            }
+            control={<Switch checked={showAlpha} onChange={() => setShowAlpha(!showAlpha)} size="small" />}
             label={t('launch.server_version.alpha')}
           />
         </FormGroup>
