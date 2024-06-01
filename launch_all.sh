@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
 name="premises"
+
+if tmux has-session -t "${name}" 2>/dev/null; then
+  tmux attach-session -t "${name}"
+  exit
+fi
+
 cd "$(dirname "${BASH_SOURCE:-0}")"
 
 export DOCKER_API_VERSION="$(docker version --format '{{ .Server.APIVersion }}')"
