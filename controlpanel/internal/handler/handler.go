@@ -109,7 +109,7 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 		LogMethod: true,
 		LogStatus: true,
 		LogValuesFunc: func(c echo.Context, values middleware.RequestLoggerValues) error {
-			slog.Info("Incoming request",
+			slog.Debug("Incoming request",
 				slog.String("uri", values.URI),
 				slog.String("method", values.Method),
 				slog.Int("status", values.Status),
