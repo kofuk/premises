@@ -6,7 +6,7 @@ COPY ./controlpanel ./controlpanel
 RUN cd /build/controlpanel/pmctl && CGO_ENABLED=0 go build .
 RUN cd /build/controlpanel && make
 
-FROM node:21 AS frontend_build
+FROM node:22 AS frontend_build
 WORKDIR /build
 COPY ./controlpanel/public ./public
 COPY ./controlpanel/*.js .
