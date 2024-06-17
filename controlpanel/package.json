@@ -29,7 +29,7 @@
     "@fontsource/roboto": "^5.0.13",
     "@mui/icons-material": "^5.15.19",
     "@mui/lab": "^5.0.0-alpha.170",
-    "@mui/material": "^5.15.18",
+    "@mui/material": "^5.15.20",
     "i18next": "^23.11.5",
     "i18next-browser-languagedetector": "^7.2.1",
     "notistack": "^3.0.1",
