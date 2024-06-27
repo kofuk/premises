@@ -106,7 +106,7 @@ const MenuContainer = ({items, menuFooter}: Props) => {
         </IconButton>
         {items[selectedItem].title}
       </Typography>
-      {items[selectedItem].variant !== 'dialog' && items[selectedItem].ui}
+      {items[selectedItem].ui}
     </Box>
   );
 };
