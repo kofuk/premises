@@ -4,10 +4,10 @@ go 1.22
 
 require (
 	dario.cat/mergo v1.0.0
-	github.com/aws/aws-sdk-go-v2 v1.30.0
+	github.com/aws/aws-sdk-go-v2 v1.30.1
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.21
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.57.0
-	github.com/aws/smithy-go v1.20.2
+	github.com/aws/smithy-go v1.20.3
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff
 	github.com/docker/docker v27.0.0+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
