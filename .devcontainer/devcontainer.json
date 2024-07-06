@@ -43,5 +43,23 @@
 		"-f",
 		".devcontainer/lighttpd.conf"
 	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"denoland.vscode-deno",
+				"esbenp.prettier-vscode",
+				"golang.go"
+			],
+			"settings": {
+				"deno.enablePaths": ["./tests"],
+				"[typescript]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode"
+				},
+				"[typescriptreact]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode"
+				}
+			}
+		}
+	},
 	"init": true
 }
