@@ -394,7 +394,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 		}
 
-		if err := h.KVS.Set(ctx, fmt.Sprintf("startup:%s", authCode), string(startupScript), 30*time.Minute); err != nil {
+		if err := h.KVS.Set(ctx, fmt.Sprintf("startup:%s", authCode), string(startupScript), time.Hour); err != nil {
 			slog.Error("Failed to set startup script", slog.Any("error", err))
 			return
 		}
