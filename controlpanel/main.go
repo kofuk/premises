@@ -33,11 +33,15 @@ func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
 	return db, nil
 }
 
-func createRedisClient(cfg *config.Config) *redis.Client {
-	return redis.NewClient(&redis.Options{
+func createRedisClient(cfg *config.Config) (*redis.Client, error) {
+	redis := redis.NewClient(&redis.Options{
 		Addr:     cfg.RedisAddress,
 		Password: cfg.RedisPassword,
 	})
+	if _, err := redis.Ping(context.Background()).Result(); err != nil {
+		return nil, err
+	}
+	return redis, nil
 }
 
 func startWeb(cfg *config.Config) {
@@ -56,7 +60,11 @@ func startWeb(cfg *config.Config) {
 		return
 	}
 
-	redis := createRedisClient(cfg)
+	redis, err := createRedisClient(cfg)
+	if err != nil {
+		slog.Error("Failed to create redis client", slog.Any("error", err))
+		os.Exit(1)
+	}
 
 	handler, err := handler.NewHandler(cfg, ":8000", db, redis)
 	if err != nil {
@@ -70,7 +78,13 @@ func startWeb(cfg *config.Config) {
 }
 
 func startProxy(cfg *config.Config) {
-	proxy := proxy.NewProxyHandler(cfg, kvs.New(kvs.NewRedis(createRedisClient(cfg))))
+	redis, err := createRedisClient(cfg)
+	if err != nil {
+		slog.Error("Failed to create redis client", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	proxy := proxy.NewProxyHandler(cfg, kvs.New(kvs.NewRedis(redis)))
 	if err := proxy.Start(context.TODO()); err != nil {
 		slog.Error("Error in proxy handler", slog.Any("error", err))
 		os.Exit(1)
