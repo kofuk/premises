@@ -66,7 +66,7 @@ export type PendingConfig = {
   levelType?: string;
   seed?: string;
   motd?: string;
-  serverPropOverride?: {[key: string]: string};
+  serverPropOverride?: Record<string, string>;
   inactiveTimeout?: number;
 };
 

@@ -6,7 +6,7 @@ export type State = {
     worldVersion: string;
     whitelist: string[];
     op: string[];
-    serverProps: { [key: string]: string };
+    serverProps: Record<string, string>;
   };
 };
 

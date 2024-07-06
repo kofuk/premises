@@ -99,7 +99,7 @@ export const streamEvent = async (
   return response;
 };
 
-export const params = (params: { [key: string]: string }): URLSearchParams => {
+export const params = (params: Record<string, string>): URLSearchParams => {
   const result = new URLSearchParams();
   for (const key of Object.keys(params)) {
     result.set(key, params[key]);
