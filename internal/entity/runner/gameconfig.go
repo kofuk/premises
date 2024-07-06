@@ -24,8 +24,8 @@ type Config struct {
 	Operators []string `json:"operators"`
 	Whitelist []string `json:"whitelist"`
 	AWS       struct {
-		AccessKey string
-		SecretKey string
+		AccessKey string `json:"acceessKey"`
+		SecretKey string `json:"secretKey"`
 	} `json:"aws"`
 	S3 struct {
 		Endpoint string `json:"endpoint"`
