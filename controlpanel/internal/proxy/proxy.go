@@ -14,6 +14,7 @@ import (
 
 	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/controlpanel/internal/kvs"
+	"github.com/kofuk/premises/controlpanel/internal/longpoll"
 	"github.com/kofuk/premises/internal/mc/protocol"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/sync/errgroup"
@@ -21,12 +22,13 @@ import (
 
 type ProxyHandler struct {
 	kvs        kvs.KeyValueStore
+	action     *longpoll.PollableActionService
 	bindAddr   string
 	iconURL    string
 	gameDomain string
 }
 
-func NewProxyHandler(cfg *config.Config, kvs kvs.KeyValueStore) *ProxyHandler {
+func NewProxyHandler(cfg *config.Config, kvs kvs.KeyValueStore, action *longpoll.PollableActionService) *ProxyHandler {
 	bindAddr := cfg.ProxyBind
 	if bindAddr == "" {
 		bindAddr = "0.0.0.0:25565"
@@ -35,6 +37,7 @@ func NewProxyHandler(cfg *config.Config, kvs kvs.KeyValueStore) *ProxyHandler {
 	return &ProxyHandler{
 		bindAddr:   bindAddr,
 		kvs:        kvs,
+		action:     action,
 		iconURL:    cfg.IconURL,
 		gameDomain: cfg.GameDomain,
 	}

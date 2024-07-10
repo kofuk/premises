@@ -63,6 +63,7 @@ const (
 	ActionSnapshot    ActionType = "snapshot"
 	ActionUndo        ActionType = "undo"
 	ActionReconfigure ActionType = "reconfigure"
+	ActionConnReq     ActionType = "connectionRequest"
 )
 
 type SnapshotConfig struct {
