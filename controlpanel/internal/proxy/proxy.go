@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -10,15 +11,24 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/controlpanel/internal/kvs"
 	"github.com/kofuk/premises/controlpanel/internal/longpoll"
+	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/internal/mc/protocol"
-	"github.com/labstack/echo/v4"
 	"golang.org/x/sync/errgroup"
 )
+
+var ErrTimeout = errors.New("timeout")
+
+type Connection struct {
+	conn     io.ReadWriteCloser
+	acquired bool
+}
 
 type ProxyHandler struct {
 	kvs        kvs.KeyValueStore
@@ -27,6 +37,8 @@ type ProxyHandler struct {
 	iconURL    string
 	gameDomain string
 	cert       *Certificate
+	pool       map[string]chan *Connection
+	m          sync.Mutex
 }
 
 func NewProxyHandler(cfg *config.Config, kvs kvs.KeyValueStore, action *longpoll.PollableActionService) (*ProxyHandler, error) {
@@ -47,44 +59,68 @@ func NewProxyHandler(cfg *config.Config, kvs kvs.KeyValueStore, action *longpoll
 		iconURL:    cfg.IconURL,
 		gameDomain: cfg.GameDomain,
 		cert:       cert,
+		pool:       make(map[string]chan *Connection),
 	}, nil
 }
 
-func (p *ProxyHandler) startInternalApi(ctx context.Context) error {
-	e := echo.New()
-	e.HideBanner = true
-	e.HidePort = true
+func (p *ProxyHandler) startConnectorChannel(ctx context.Context) error {
+	tcpListener, err := net.Listen("tcp", "0.0.0.0:25530")
+	if err != nil {
+		return err
+	}
+	keyPair, err := tls.X509KeyPair([]byte(p.cert.Cert), []byte(p.cert.Key))
+	if err != nil {
+		return err
+	}
 
-	e.POST("/set", func(c echo.Context) error {
-		name := c.QueryParam("name")
-		addr := c.QueryParam("addr")
-
-		slog.Info("Setting proxy host", slog.String("name", name), slog.String("addr", addr))
-
-		if err := p.kvs.Set(ctx, "proxy:"+name, addr, -1); err != nil {
-			slog.Error("Error setting proxy host", slog.Any("error", err))
-		}
-
-		return c.String(http.StatusOK, "success")
+	listener := tls.NewListener(tcpListener, &tls.Config{
+		Certificates: []tls.Certificate{keyPair},
 	})
 
-	e.POST("/clear", func(c echo.Context) error {
-		name := c.QueryParam("name")
-
-		slog.Info("Removing proxy host", slog.String("name", name))
-
-		if err := p.kvs.Del(ctx, "proxy:"+name); err != nil {
-			slog.Error("Error removing proxy host", slog.Any("error", err))
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
 		}
 
-		return c.String(http.StatusNoContent, "success")
-	})
+		conn, err := listener.Accept()
+		if err != nil {
+			slog.Error("Error accepting connection", slog.Any("error", err))
+			continue
+		}
 
-	go func() {
-		<-ctx.Done()
-		e.Close()
-	}()
-	return e.Start(":8001")
+		go func() {
+			defer conn.Close()
+
+			buf := make([]byte, 36)
+			n, err := conn.Read(buf)
+			if err != nil {
+				slog.Error("Error reading header", slog.Any("error", err))
+				return
+			} else if n != 36 || uuid.Validate(string(buf)) != nil {
+				slog.Error("Invalid header")
+				return
+			}
+
+			c := Connection{
+				conn: conn,
+			}
+
+			p.m.Lock()
+			ch := p.pool[string(buf)]
+			if ch != nil {
+				ch <- &c
+			}
+			p.m.Unlock()
+
+			// If the connection is not handled within 30 seconds, close the it to avoid connection leak.
+			time.Sleep(30 * time.Second)
+			if !c.acquired {
+				conn.Close()
+			}
+		}()
+	}
 }
 
 func retrieveFavicon(url string) (string, error) {
@@ -150,12 +186,7 @@ func (p *ProxyHandler) handleConn(conn io.ReadWriteCloser) error {
 		return fmt.Errorf("handshake error: %w", err)
 	}
 
-	var addr string
-	if err := p.kvs.Get(context.TODO(), "proxy:"+hs.ServerAddr, &addr); err != nil {
-		slog.Debug("Error getting proxy host", slog.Any("error", err))
-	}
-
-	if addr == "" {
+	if hs.ServerAddr != p.gameDomain {
 		if hs.NextState != 1 {
 			return fmt.Errorf("unknown server: %s", hs.ServerAddr)
 		}
@@ -163,18 +194,46 @@ func (p *ProxyHandler) handleConn(conn io.ReadWriteCloser) error {
 		return p.handleDummyServer(h, hs)
 	}
 
-	upstrm, err := net.Dial("tcp", addr)
-	if err != nil {
-		// Connection error. We'll respond with dummy response (if possible).
+	// TODO: Check if server is running
+
+	connID := uuid.New()
+
+	ch := make(chan *Connection)
+	p.m.Lock()
+	p.pool[connID.String()] = ch
+	p.m.Unlock()
+
+	deleteFromPool := func() {
+		p.m.Lock()
+		delete(p.pool, connID.String())
+		p.m.Unlock()
+	}
+	defer deleteFromPool()
+
+	p.action.Push(context.TODO(), "default", runner.Action{
+		Type: runner.ActionConnReq,
+		ConnReq: &runner.ConnReqInfo{
+			ConnectionID: connID.String(),
+			ServerCert:   p.cert.Cert,
+		},
+	})
+
+	timer := time.NewTimer(5 * time.Second)
+	var upstrm io.ReadWriteCloser
+	defer timer.Stop()
+	select {
+	case c := <-ch:
+		upstrm = c.conn
+		c.acquired = true
+
+	case <-timer.C:
 		if hs.NextState != 1 {
-			return err
+			return fmt.Errorf("connector not responded within 5 seconds: %s", hs.ServerAddr)
 		}
 
-		if err2 := p.handleDummyServer(h, hs); err2 != nil {
-			return errors.Join(err, err2)
-		}
-		return err
+		return p.handleDummyServer(h, hs)
 	}
+	deleteFromPool()
 
 	if conn, ok := conn.(net.Conn); ok {
 		// Unset deadline, because the connection is handled by the upstream server.
@@ -242,7 +301,7 @@ func (p *ProxyHandler) startProxy(ctx context.Context, addr string) error {
 func (p *ProxyHandler) Start(ctx context.Context) error {
 	eg, ctx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
-		return p.startInternalApi(ctx)
+		return p.startConnectorChannel(ctx)
 	})
 	eg.Go(func() error {
 		return p.startProxy(ctx, p.bindAddr)

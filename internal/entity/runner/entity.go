@@ -70,9 +70,15 @@ type SnapshotConfig struct {
 	Slot int `json:"slot"`
 }
 
+type ConnReqInfo struct {
+	ConnectionID string `json:"connectionId"`
+	ServerCert   string `json:"serverCert"`
+}
+
 type Action struct {
 	Type     ActionType      `json:"type"`
 	Actor    int             `json:"actor"`
 	Config   *Config         `json:"config,omitempty"`
 	Snapshot *SnapshotConfig `json:"snapshot,omitempty"`
+	ConnReq  *ConnReqInfo    `json:"connectionRequestInfo,omitempty"`
 }
