@@ -89,7 +89,12 @@ func startProxy(cfg *config.Config) {
 		os.Exit(1)
 	}
 
-	proxy := proxy.NewProxyHandler(cfg, kvs.New(kvs.NewRedis(redis)), createLongPoll(redis))
+	proxy, err := proxy.NewProxyHandler(cfg, kvs.New(kvs.NewRedis(redis)), createLongPoll(redis))
+	if err != nil {
+		slog.Error("Error initializing proxy handler", slog.Any("error", err))
+		os.Exit(1)
+	}
+
 	if err := proxy.Start(context.TODO()); err != nil {
 		slog.Error("Error in proxy handler", slog.Any("error", err))
 		os.Exit(1)

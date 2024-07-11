@@ -26,12 +26,18 @@ type ProxyHandler struct {
 	bindAddr   string
 	iconURL    string
 	gameDomain string
+	cert       *Certificate
 }
 
-func NewProxyHandler(cfg *config.Config, kvs kvs.KeyValueStore, action *longpoll.PollableActionService) *ProxyHandler {
+func NewProxyHandler(cfg *config.Config, kvs kvs.KeyValueStore, action *longpoll.PollableActionService) (*ProxyHandler, error) {
 	bindAddr := cfg.ProxyBind
 	if bindAddr == "" {
 		bindAddr = "0.0.0.0:25565"
+	}
+
+	cert, err := generateCertificate()
+	if err != nil {
+		return nil, err
 	}
 
 	return &ProxyHandler{
@@ -40,7 +46,8 @@ func NewProxyHandler(cfg *config.Config, kvs kvs.KeyValueStore, action *longpoll
 		action:     action,
 		iconURL:    cfg.IconURL,
 		gameDomain: cfg.GameDomain,
-	}
+		cert:       cert,
+	}, nil
 }
 
 func (p *ProxyHandler) startInternalApi(ctx context.Context) error {
