@@ -226,7 +226,7 @@ jobs:
       id-token: write
       contents: read
     env:
-      RUNNER_SCHEMA: '3'
+      PROTOCOL_VERSION: '3'
     steps:
       - name: Install Required Packages
         run: |
@@ -241,23 +241,23 @@ jobs:
           chmod +x premises-runner
       - name: Create Archive
         run : |
-          tar -czf "premises-runner@v${RUNNER_SCHEMA}.tar.gz" premises-runner
+          tar -czf "premises-runner@${PROTOCOL_VERSION}.tar.gz" premises-runner
       - name: Generate metadata
         run: |
-          echo ${{ github.sha }} >"version@v${RUNNER_SCHEMA}.txt"
+          echo ${{ github.sha }} >"version@${PROTOCOL_VERSION}.txt"
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GOOGLE_SERVICE_ACCOUNT }}
       - uses: google-github-actions/upload-cloud-storage@v2
         with:
-          path: premises-runner@v${{ env.RUNNER_SCHEMA }}.tar.gz
+          path: premises-runner@${{ env.PROTOCOL_VERSION }}.tar.gz
           destination: premises
           parent: false
           process_gcloudignore: false
       - uses: google-github-actions/upload-cloud-storage@v2
         with:
-          path: version@v${{ env.RUNNER_SCHEMA }}.txt
+          path: version@${{ env.PROTOCOL_VERSION }}.txt
           destination: premises
           parent: false
           process_gcloudignore: false
