@@ -13,7 +13,7 @@ host_nameserver=$(grep '^nameserver' /etc/resolv.conf | head -1 | cut --delimite
     make deploy-dev
 )
 
-extra_flags=( )
+extra_flags=()
 if [ "${1:-}" = 'manage' ]; then
     extra_flags=(
        --label org.kofuk.premises.managed=true \
@@ -30,7 +30,7 @@ docker container run \
        --cap-add MKNOD \
        --network host \
        --dns "${host_nameserver}" \
-       "${extra_flags}" \
+       "${extra_flags[@]}" \
        premises.kofuk.org/dev-runner-raw
 
 docker exec --interactive --tty "${name}" bash
