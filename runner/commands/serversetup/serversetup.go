@@ -112,12 +112,7 @@ func (setup *ServerSetup) initializeServer() {
 
 	eg.Go(func() error {
 		slog.Info("Installing packages")
-		system.AptGet("install", "-y", "btrfs-progs", latestAvailableJre, "ufw")
-		if !isDevEnv() {
-			slog.Info("Enabling ufw")
-			system.Cmd("systemctl", []string{"enable", "--now", "ufw.service"})
-			system.Cmd("ufw", []string{"enable"})
-		}
+		system.AptGet("install", "-y", "btrfs-progs", latestAvailableJre)
 		return nil
 	})
 	eg.Go(func() error {
