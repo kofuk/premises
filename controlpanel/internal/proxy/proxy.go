@@ -187,15 +187,18 @@ func (p *ProxyHandler) handleConn(conn io.ReadWriteCloser) error {
 		return fmt.Errorf("handshake error: %w", err)
 	}
 
-	if hs.ServerAddr != p.gameDomain {
+	var running bool
+	if err := p.kvs.Get(context.TODO(), "running", &running); err != nil {
+		running = false
+	}
+
+	if hs.ServerAddr != p.gameDomain || !running {
 		if hs.NextState != 1 {
 			return fmt.Errorf("unknown server: %s", hs.ServerAddr)
 		}
 
 		return p.handleDummyServer(h, hs)
 	}
-
-	// TODO: Check if server is running
 
 	connID := uuid.New()
 

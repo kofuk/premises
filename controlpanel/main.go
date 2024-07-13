@@ -49,6 +49,10 @@ func createLongPoll(redis *redis.Client) *longpoll.PollableActionService {
 	return longpoll.New(redis, "runner-action")
 }
 
+func createKVS(redis *redis.Client) kvs.KeyValueStore {
+	return kvs.New(kvs.NewRedis(redis))
+}
+
 func startWeb(cfg *config.Config) {
 	db, err := createDatabaseClient(cfg)
 	if err != nil {
@@ -71,7 +75,7 @@ func startWeb(cfg *config.Config) {
 		os.Exit(1)
 	}
 
-	handler, err := handler.NewHandler(cfg, ":8000", db, redis, createLongPoll(redis))
+	handler, err := handler.NewHandler(cfg, ":8000", db, redis, createLongPoll(redis), createKVS(redis))
 	if err != nil {
 		slog.Error("Failed to initialize handler", slog.Any("error", err))
 		os.Exit(1)
@@ -89,7 +93,7 @@ func startProxy(cfg *config.Config) {
 		os.Exit(1)
 	}
 
-	proxy, err := proxy.NewProxyHandler(cfg, kvs.New(kvs.NewRedis(redis)), createLongPoll(redis))
+	proxy, err := proxy.NewProxyHandler(cfg, createKVS(redis), createLongPoll(redis))
 	if err != nil {
 		slog.Error("Error initializing proxy handler", slog.Any("error", err))
 		os.Exit(1)

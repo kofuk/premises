@@ -102,7 +102,7 @@ func setupSessions(h *Handler) {
 	h.engine.Use(session.Middleware(store))
 }
 
-func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Client, longpoll *longpoll.PollableActionService) (*Handler, error) {
+func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Client, longpoll *longpoll.PollableActionService, kvs kvs.KeyValueStore) (*Handler, error) {
 	engine := echo.New()
 	engine.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
@@ -126,7 +126,7 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 		db:           db,
 		redis:        redis,
 		bind:         bindAddr,
-		KVS:          kvs.New(kvs.NewRedis(redis)),
+		KVS:          kvs,
 		Streaming:    streaming.New(redis),
 		backup:       backup.New(cfg.AWSAccessKey, cfg.AWSSecretKey, cfg.S3Endpoint, cfg.S3Bucket),
 		runnerAction: longpoll,
