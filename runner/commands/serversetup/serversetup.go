@@ -140,7 +140,7 @@ func (setup *ServerSetup) initializeServer() {
 		if _, err := user.Lookup("premises"); err != nil {
 			slog.Info("Adding user")
 			// Create a system user named "premises"
-			return system.Cmd("useradd", []string{"--user-group", "--system", "--shell", "/usr/sbin/nologin", "premises"})
+			return system.Cmd("useradd", []string{"--user-group", "--system", "--no-create-home", "--shell", "/usr/sbin/nologin", "premises"})
 		}
 		return nil
 	})
