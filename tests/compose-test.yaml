@@ -2,7 +2,6 @@ services:
   web:
     environment:
       PREMISES_MC_MANIFEST_URL: https://storage.googleapis.com/premises/devtools/mcserver-fake/version_manifest.json
-      PREMISES_PROXY_API_ENDPOINT: http://host.docker.internal:8001
       PREMISES_GAME_DOMAIN: localhost
     extra_hosts:
       - host.docker.internal:host-gateway
