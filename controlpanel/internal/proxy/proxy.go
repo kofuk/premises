@@ -91,15 +91,15 @@ func (p *ProxyHandler) startConnectorChannel(ctx context.Context) error {
 		}
 
 		go func() {
-			defer conn.Close()
-
 			buf := make([]byte, 36)
 			n, err := conn.Read(buf)
 			if err != nil {
 				slog.Error("Error reading header", slog.Any("error", err))
+				conn.Close()
 				return
 			} else if n != 36 || uuid.Validate(string(buf)) != nil {
 				slog.Error("Invalid header")
+				conn.Close()
 				return
 			}
 
@@ -117,6 +117,7 @@ func (p *ProxyHandler) startConnectorChannel(ctx context.Context) error {
 			// If the connection is not handled within 30 seconds, close the it to avoid connection leak.
 			time.Sleep(30 * time.Second)
 			if !c.acquired {
+				slog.Warn("Closing connection because no downstream connection found")
 				conn.Close()
 			}
 		}()
