@@ -260,6 +260,10 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 
 	var id string
 	if err := h.KVS.Get(ctx, "runner-id:default", &id); err != nil {
+		if err == redis.Nil {
+			goto out
+		}
+
 		if err := h.Streaming.PublishEvent(
 			ctx,
 			infoStream,
@@ -308,6 +312,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 		return
 	}
 
+out:
 	if err := h.KVS.Del(ctx, "runner-id:default", "runner-info:default", "world-info:default", fmt.Sprintf("runner:%s", authKey)); err != nil {
 		slog.Error("Failed to unset runner information", slog.Any("error", err))
 		return
