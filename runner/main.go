@@ -10,6 +10,7 @@ import (
 
 	"github.com/kofuk/premises/runner/commands/cleanup"
 	"github.com/kofuk/premises/runner/commands/cli"
+	"github.com/kofuk/premises/runner/commands/connector"
 	"github.com/kofuk/premises/runner/commands/exteriord"
 	"github.com/kofuk/premises/runner/commands/keepsystemutd"
 	"github.com/kofuk/premises/runner/commands/mclauncher"
@@ -107,6 +108,11 @@ func main() {
 				Description:  "Cleanup before shutdown",
 				Run:          cleanup.CleanUp,
 				RequiresRoot: true,
+			},
+			"connector": {
+				Description:  "Connector",
+				Run:          connector.Run,
+				RequiresRoot: false,
 			},
 			"exteriord": {
 				Description:  "Exteriord",

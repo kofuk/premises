@@ -63,6 +63,14 @@ func (s *Server) HandleActionReconfigure(action runner.Action) error {
 	return rpc.ToLauncher.Notify("game/reconfigure", action.Config)
 }
 
+func (s *Server) HandleActionConnRequest(action runner.Action) error {
+	if action.ConnReq == nil {
+		return errors.New("missing request info")
+	}
+
+	return rpc.ToConnector.Notify("proxy/open", action.ConnReq)
+}
+
 func NewServer(addr string, authKey string, msgChan chan OutboundMessage) *Server {
 	s := &Server{
 		addr:          addr,
@@ -75,6 +83,7 @@ func NewServer(addr string, authKey string, msgChan chan OutboundMessage) *Serve
 	s.actionMappers[runner.ActionSnapshot] = s.HandleActionSnapshot
 	s.actionMappers[runner.ActionUndo] = s.HandleActionUndo
 	s.actionMappers[runner.ActionReconfigure] = s.HandleActionReconfigure
+	s.actionMappers[runner.ActionConnReq] = s.HandleActionConnRequest
 
 	return s
 }

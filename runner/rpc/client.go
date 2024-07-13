@@ -17,6 +17,7 @@ var (
 	ToExteriord      = NewClient(fs.DataPath("rpc@exteriord"))
 	ToSnapshotHelper = NewClient(fs.DataPath("rpc@snapshot-helper"))
 	ToLauncher       = NewClient(fs.DataPath("rpc@launcher"))
+	ToConnector      = NewClient(fs.DataPath("rpc@connector"))
 )
 
 func NewClient(path string) *Client {
