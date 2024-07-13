@@ -117,9 +117,6 @@ out:
 	for {
 		select {
 		case <-ctx.Done():
-			if buf.Len() != 0 {
-				sendStatus()
-			}
 			return
 
 		case <-ticker.C:

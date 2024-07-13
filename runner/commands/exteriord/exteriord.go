@@ -24,14 +24,16 @@ func Run(args []string) int {
 		os.Exit(1)
 	}
 
+	ctx, cancelFn := context.WithCancel(context.Background())
+
 	msgChan := make(chan outbound.OutboundMessage, 8)
 
 	ob := outbound.NewServer(config.ControlPanel, config.AuthKey, msgChan)
-	go ob.Start(context.TODO())
+	go ob.Start(ctx)
 
 	stateStore := NewStateStore(NewLocalStorageStateBackend(fs.DataPath("states.json")))
 
-	rpcHandler := NewRPCHandler(rpc.DefaultServer, msgChan, stateStore)
+	rpcHandler := NewRPCHandler(rpc.DefaultServer, msgChan, stateStore, cancelFn)
 	rpcHandler.Bind()
 
 	e := exterior.New()
@@ -82,7 +84,7 @@ func Run(args []string) int {
 			proc.UserType(proc.UserPrivileged),
 		), monitoring, systemUpdate)
 
-	e.Run(context.TODO())
+	e.Run(ctx)
 
-	return 1
+	return 0
 }

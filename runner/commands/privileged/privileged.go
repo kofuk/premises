@@ -1,6 +1,7 @@
 package privileged
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -53,6 +54,10 @@ func deleteFsSnapshot(id string) error {
 }
 
 func Run(args []string) int {
+	rpc.ToExteriord.Notify("proc/registerStopHook", os.Getenv("PREMISES_RUNNER_COMMAND"))
+
+	ctx, cancelFn := context.WithCancel(context.Background())
+
 	rpc.DefaultServer.RegisterMethod("snapshot/create", func(req *rpc.AbstractRequest) (any, error) {
 		var ss types.SnapshotHelperInput
 		if err := req.Bind(&ss); err != nil {
@@ -69,8 +74,12 @@ func Run(args []string) int {
 			Path: info.Path,
 		}, nil
 	})
+	rpc.DefaultServer.RegisterNotifyMethod("base/stop", func(req *rpc.AbstractRequest) error {
+		cancelFn()
+		return nil
+	})
 
-	<-make(chan struct{})
+	<-ctx.Done()
 
 	return 0
 }

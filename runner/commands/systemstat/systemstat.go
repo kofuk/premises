@@ -3,10 +3,12 @@ package systemstat
 import (
 	"context"
 	"log/slog"
+	"os"
 	"time"
 
 	entity "github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
+	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/system"
 )
 
@@ -43,7 +45,16 @@ func sendSysstat(ctx context.Context) error {
 }
 
 func Run(args []string) int {
-	if err := sendSysstat(context.TODO()); err != nil {
+	rpc.ToExteriord.Notify("proc/registerStopHook", os.Getenv("PREMISES_RUNNER_COMMAND"))
+
+	ctx, cancelFn := context.WithCancel(context.Background())
+
+	rpc.DefaultServer.RegisterNotifyMethod("base/stop", func(req *rpc.AbstractRequest) error {
+		cancelFn()
+		return nil
+	})
+
+	if err := sendSysstat(ctx); err != nil {
 		slog.Error("Unable to send sysstat", slog.Any("error", err))
 		return 1
 	}

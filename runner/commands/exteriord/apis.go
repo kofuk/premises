@@ -1,22 +1,30 @@
 package exteriord
 
 import (
+	"log/slog"
+	"sync"
+
 	"github.com/kofuk/premises/runner/commands/exteriord/outbound"
+	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/rpc/types"
 )
 
 type RPCHandler struct {
-	s       *rpc.Server
-	msgChan chan outbound.OutboundMessage
-	states  *StateStore
+	s        *rpc.Server
+	msgChan  chan outbound.OutboundMessage
+	states   *StateStore
+	m        sync.Mutex
+	stopHook []string
+	cancelFn func()
 }
 
-func NewRPCHandler(s *rpc.Server, msgChan chan outbound.OutboundMessage, states *StateStore) *RPCHandler {
+func NewRPCHandler(s *rpc.Server, msgChan chan outbound.OutboundMessage, states *StateStore, cancelFn func()) *RPCHandler {
 	return &RPCHandler{
-		s:       s,
-		msgChan: msgChan,
-		states:  states,
+		s:        s,
+		msgChan:  msgChan,
+		states:   states,
+		cancelFn: cancelFn,
 	}
 }
 
@@ -71,8 +79,38 @@ func (h *RPCHandler) HandleStateRemove(req *rpc.AbstractRequest) (any, error) {
 	return "ok", nil
 }
 
+func (h *RPCHandler) HandleProcRegisterStopHook(req *rpc.AbstractRequest) error {
+	var cmd string
+	if err := req.Bind(&cmd); err != nil {
+		return err
+	}
+
+	h.m.Lock()
+	h.stopHook = append(h.stopHook, cmd)
+	defer h.m.Unlock()
+
+	return nil
+}
+
+func (h *RPCHandler) HandleProcDone(req *rpc.AbstractRequest) error {
+	h.m.Lock()
+	defer h.m.Unlock()
+
+	for _, cmd := range h.stopHook {
+		if err := rpc.NewClient(fs.DataPath("rpc@"+cmd)).Notify("base/stop", nil); err != nil {
+			slog.Warn("Error calling hook", slog.String("cmd", cmd), slog.Any("error", err))
+		}
+	}
+
+	h.cancelFn()
+
+	return nil
+}
+
 func (h *RPCHandler) Bind() {
 	h.s.RegisterNotifyMethod("status/push", h.HandleStatusPush)
+	h.s.RegisterNotifyMethod("proc/registerStopHook", h.HandleProcRegisterStopHook)
+	h.s.RegisterNotifyMethod("proc/done", h.HandleProcDone)
 	h.s.RegisterMethod("state/save", h.HandleStateSet)
 	h.s.RegisterMethod("state/get", h.HandleStateGet)
 	h.s.RegisterMethod("state/remove", h.HandleStateRemove)
