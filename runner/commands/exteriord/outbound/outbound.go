@@ -2,6 +2,7 @@ package outbound
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/rpc/types"
+	"golang.org/x/sync/errgroup"
 )
 
 type ActionMapper func(action runner.Action) error
@@ -88,7 +90,7 @@ func NewServer(addr string, authKey string, msgChan chan OutboundMessage) *Serve
 	return s
 }
 
-func (s *Server) HandleMonitor() {
+func (s *Server) HandleMonitor(ctx context.Context) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
@@ -114,6 +116,12 @@ func (s *Server) HandleMonitor() {
 out:
 	for {
 		select {
+		case <-ctx.Done():
+			if buf.Len() != 0 {
+				sendStatus()
+			}
+			return
+
 		case <-ticker.C:
 			if buf.Len() == 0 {
 				// If there's no data, don't send message.
@@ -124,7 +132,8 @@ out:
 
 		case msg, ok := <-s.msgChan:
 			if !ok {
-				break out
+				slog.Error("BUG: client channel has been closed")
+				return
 			}
 
 			json, err := json.Marshal(msg.Event)
@@ -141,13 +150,20 @@ out:
 			}
 		}
 	}
-
-	slog.Error("BUG: client channel has been closed")
 }
 
-func (s *Server) PollAction() {
+func (s *Server) PollAction(ctx context.Context) {
+	var eg errgroup.Group
+	defer eg.Wait()
+
 	for {
-		req, err := http.NewRequest(http.MethodGet, s.addr+"/_runner/poll-action", nil)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.addr+"/_runner/poll-action", nil)
 		if err != nil {
 			slog.Error("Error creating request", slog.Any("error", err))
 			continue
@@ -175,16 +191,17 @@ func (s *Server) PollAction() {
 			continue
 		}
 
-		go func() {
+		eg.Go(func() error {
 			// Handle action asynchronously
 			if err := mapper(action); err != nil {
 				slog.Error(fmt.Sprintf("Error occurred in action mapper: %s", action.Type), slog.Any("error", err))
 			}
-		}()
+			return nil
+		})
 	}
 }
 
-func (s *Server) Start() {
-	go s.PollAction()
-	s.HandleMonitor()
+func (s *Server) Start(ctx context.Context) {
+	go s.PollAction(ctx)
+	s.HandleMonitor(ctx)
 }

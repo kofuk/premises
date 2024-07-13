@@ -1,6 +1,7 @@
 package exteriord
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -26,7 +27,7 @@ func Run(args []string) int {
 	msgChan := make(chan outbound.OutboundMessage, 8)
 
 	ob := outbound.NewServer(config.ControlPanel, config.AuthKey, msgChan)
-	go ob.Start()
+	go ob.Start(context.TODO())
 
 	stateStore := NewStateStore(NewLocalStorageStateBackend(fs.DataPath("states.json")))
 
@@ -81,7 +82,7 @@ func Run(args []string) int {
 			proc.UserType(proc.UserPrivileged),
 		), monitoring, systemUpdate)
 
-	e.Run()
+	e.Run(context.TODO())
 
 	return 1
 }
