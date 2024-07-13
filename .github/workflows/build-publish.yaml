@@ -226,7 +226,7 @@ jobs:
       id-token: write
       contents: read
     env:
-      PROTOCOL_VERSION: '3'
+      PROTOCOL_VERSION: 2024-07-13
     steps:
       - name: Install Required Packages
         run: |

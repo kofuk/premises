@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-export PROTOCOL_VERSION=3
+export PROTOCOL_VERSION='2024-07-13'
 
 atomic_copy() {
     from="$1"
