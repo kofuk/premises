@@ -4,10 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
-	"net/http"
-	"net/url"
 	"time"
 
 	"github.com/kofuk/premises/controlpanel/internal/config"
@@ -84,20 +81,6 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 		if len(event.Hello.Addr.IPv4) != 0 {
 			if err := AttachRunner(ctx, cfg, kvs, event.Hello.Addr.IPv4[0]); err != nil {
 				slog.Error("Error updating runner ID", slog.Any("error", err))
-			}
-
-			url, _ := url.Parse(cfg.ProxyAPIEndpoint)
-			url.Path = "/set"
-			q := url.Query()
-			q.Add("name", cfg.GameDomain)
-			q.Add("addr", event.Hello.Addr.IPv4[0]+":25565")
-			url.RawQuery = q.Encode()
-
-			resp, err := http.Post(url.String(), "text/plain", nil)
-			if err != nil {
-				slog.Error("Error updating proxy", slog.Any("error", err))
-			} else {
-				io.Copy(io.Discard, resp.Body)
 			}
 		}
 
