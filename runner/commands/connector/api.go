@@ -1,6 +1,7 @@
 package connector
 
 import (
+	"fmt"
 	"log/slog"
 	"net"
 	"net/url"
@@ -27,7 +28,7 @@ func (h *RPCHandler) HandleProxyOpen(req *rpc.AbstractRequest) error {
 		return err
 	}
 
-	slog.Info("handling connection", slog.String("id", connReq.ConnectionID))
+	slog.Info("Handling connection", slog.String("id", connReq.ConnectionID))
 
 	url, err := url.Parse(h.config.ControlPanel)
 	if err != nil {
@@ -41,12 +42,19 @@ func (h *RPCHandler) HandleProxyOpen(req *rpc.AbstractRequest) error {
 		endpoint = host + ":25530"
 	}
 
+	slog.Info(fmt.Sprintf("Endpoint is %s", endpoint))
+
 	proxy := &Proxy{
 		ID:       connReq.ConnectionID,
 		Endpoint: endpoint,
 		Cert:     connReq.ServerCert,
 	}
-	return proxy.Start()
+	go func() {
+		if err := proxy.Run(); err != nil {
+			slog.Error("Error handling proxy request", slog.Any("error", err))
+		}
+	}()
+	return nil
 }
 
 func (h *RPCHandler) Bind() {

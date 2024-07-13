@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"os"
 )
 
 type Proxy struct {
@@ -25,7 +26,7 @@ func createTLSConfig(cert string) (*tls.Config, error) {
 	}, nil
 }
 
-func (p *Proxy) Start() error {
+func (p *Proxy) Run() error {
 	tlsConfig, err := createTLSConfig(p.Cert)
 	if err != nil {
 		return err
@@ -41,7 +42,11 @@ func (p *Proxy) Start() error {
 		return err
 	}
 
-	upstrm, err := net.Dial("tcp", "localhost:25565")
+	serverAddr := "localhost:25565"
+	if _, err := os.Stat("/.dockerenv"); err == nil {
+		serverAddr = "127.0.0.2:25565"
+	}
+	upstrm, err := net.Dial("tcp", serverAddr)
 	if err != nil {
 		return err
 	}
@@ -52,11 +57,8 @@ func (p *Proxy) Start() error {
 		upstrm.Close()
 		conn.Close()
 	}()
-	go func() {
-		io.Copy(conn, upstrm)
-		upstrm.Close()
-		conn.Close()
-	}()
+
+	io.Copy(conn, upstrm)
 
 	return nil
 }
