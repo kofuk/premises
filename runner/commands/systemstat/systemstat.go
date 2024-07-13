@@ -1,8 +1,8 @@
 package systemstat
 
 import (
+	"context"
 	"log/slog"
-	"os"
 	"time"
 
 	entity "github.com/kofuk/premises/internal/entity/runner"
@@ -10,16 +10,22 @@ import (
 	"github.com/kofuk/premises/runner/system"
 )
 
-func Run(args []string) int {
+func sendSysstat(ctx context.Context) error {
 	cpuStat, err := system.NewCPUUsage()
 	if err != nil {
-		slog.Error("Failed to initialize CPU usage", slog.Any("error", err))
-		os.Exit(1)
+		return err
 	}
 
 	ticker := time.NewTicker(time.Second)
 
-	for range ticker.C {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+
+		case <-ticker.C:
+		}
+
 		usage, err := cpuStat.Percent()
 		if err != nil {
 			slog.Error("Failed to retrieve CPU usage", slog.Any("error", err))
@@ -34,6 +40,12 @@ func Run(args []string) int {
 			},
 		})
 	}
+}
 
-	return 1
+func Run(args []string) int {
+	if err := sendSysstat(context.TODO()); err != nil {
+		slog.Error("Unable to send sysstat", slog.Any("error", err))
+		return 1
+	}
+	return 0
 }
