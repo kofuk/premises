@@ -44,6 +44,7 @@ services:
       <<: *settings
       PREMISES_MODE: proxy
     ports:
+      - '25530:25530'
       - '25565:25565'
   redis:
     image: 'redis:7-alpine'
