@@ -274,7 +274,7 @@ func getAllocSizeMiB() int {
 }
 
 func waitServerHealthy(ctx context.Context) error {
-	serverAddr := "0.0.0.0:25565"
+	serverAddr := "127.0.0.1:25565"
 	if _, err := os.Stat("/.dockerenv"); err == nil {
 		serverAddr = "127.0.0.2:25565"
 	}

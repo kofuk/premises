@@ -48,7 +48,7 @@ var serverProperties = map[string]string{
 	"resource-pack":                     "",
 	"resource-pack-prompt":              "",
 	"resource-pack-sha1":                "",
-	"server-ip":                         "",
+	"server-ip":                         "127.0.0.1",
 	"server-port":                       "25565",
 	"simulation-distance":               "10",
 	"spawn-animals":                     "true",

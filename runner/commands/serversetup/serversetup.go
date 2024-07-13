@@ -26,7 +26,6 @@ const (
 var requiredProgs = []string{
 	"mkfs.btrfs",
 	"java",
-	"ufw",
 }
 
 type ServerSetup struct{}
@@ -153,12 +152,6 @@ func (setup *ServerSetup) initializeServer() {
 	system.Cmd("mkfs.btrfs", []string{fs.DataPath("gamedata.img")})
 }
 
-func (setup *ServerSetup) updateFirewallRules() {
-	system.Cmd("ufw", []string{"allow", "25565/tcp"})
-	// Old runner requires 8521 to be exposed. Now, it's not needed so we delete it here.
-	system.Cmd("ufw", []string{"delete", "allow", "8521/tcp"})
-}
-
 func (setup *ServerSetup) installRequiredJavaVersion() {
 	config, err := config.Load()
 	if err != nil {
@@ -190,9 +183,6 @@ func (setup ServerSetup) Run() {
 		slog.Info("Server seems not to be initialized. Will run full initialization")
 		setup.initializeServer()
 	}
-
-	slog.Info("Updating ufw rules")
-	setup.updateFirewallRules()
 
 	slog.Info("Installing required Java version")
 	setup.installRequiredJavaVersion()
