@@ -14,8 +14,7 @@ import (
 type RestartPolicy int
 
 const (
-	RestartAlways RestartPolicy = iota
-	RestartOnFailure
+	RestartOnFailure RestartPolicy = iota
 	RestartNever
 )
 
@@ -117,10 +116,6 @@ L:
 		}
 
 		switch p.restart {
-		case RestartAlways:
-			p.waitRestartDelay()
-			continue L
-
 		case RestartOnFailure:
 			if failure {
 				p.waitRestartDelay()

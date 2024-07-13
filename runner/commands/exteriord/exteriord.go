@@ -65,13 +65,13 @@ func Run(args []string) int {
 	e.RegisterTask("Connector",
 		proc.NewProc(fs.DataPath("bin/premises-runner"),
 			proc.Args("--connector"),
-			proc.Restart(proc.RestartAlways),
+			proc.Restart(proc.RestartOnFailure),
 			proc.UserType(proc.UserRestricted),
 		), setupTask)
 	e.RegisterTask("Snapshot Service",
 		proc.NewProc(fs.DataPath("bin/premises-runner"),
 			proc.Args("--snapshot-helper"),
-			proc.Restart(proc.RestartAlways),
+			proc.Restart(proc.RestartOnFailure),
 			proc.RestartRandomDelay(),
 			proc.UserType(proc.UserPrivileged),
 		), setupTask)
