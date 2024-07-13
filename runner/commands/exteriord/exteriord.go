@@ -42,7 +42,7 @@ func Run(args []string) int {
 			proc.Restart(proc.RestartNever),
 			proc.UserType(proc.UserPrivileged),
 		))
-	e.RegisterTask("Syatem Statistics",
+	e.RegisterTask("System Statistics",
 		proc.NewProc(fs.DataPath("bin/premises-runner"),
 			proc.Args("--sysstat"),
 			proc.Restart(proc.RestartOnFailure),
