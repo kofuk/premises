@@ -7,9 +7,6 @@ on:
 jobs:
   build-mcserver-fake:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -20,15 +17,13 @@ jobs:
         run: |
           cd mcserver-fake
           CGO_ENABLED=0 go build .
-      - uses: google-github-actions/auth@v2
-        if: github.ref_name == 'master'
-        with:
-          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GOOGLE_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v2
-        if: github.ref_name == 'master'
-      - name: Publish mcserver-fake
+      - name: Upload Artifacts
         if: github.ref_name == 'master'
         run: |
-          gcloud storage cp mcserver-fake/mcserver-fake gs://premises/devtools/mcserver-fake/
-          gcloud storage cp -R mcserver-fake/resources/* gs://premises/devtools/mcserver-fake/
+          aws s3 cp mcserver-fake/mcserver-fake s3://premises/artifacts/devtools/mcserver-fake/
+          aws s3 cp --recursive mcserver-fake/resources s3://premises/artifacts/devtools/mcserver-fake/
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
+          AWS_DEFAULT_REGION: auto

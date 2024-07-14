@@ -1,7 +1,7 @@
 services:
   web:
     environment:
-      PREMISES_MC_MANIFEST_URL: https://storage.googleapis.com/premises/devtools/mcserver-fake/version_manifest.json
+      PREMISES_MC_MANIFEST_URL: https://premises.kofuk.org/artifacts/devtools/mcserver-fake/version_manifest.json
       PREMISES_GAME_DOMAIN: localhost
     extra_hosts:
       - host.docker.internal:host-gateway

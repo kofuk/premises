@@ -23,13 +23,13 @@ http_get() {
 do_remote_update() {
     cd '/tmp'
 
-    remote_version="$(http_get "https://storage.googleapis.com/premises/version@${PROTOCOL_VERSION}.txt")"
+    remote_version="$(http_get "https://premises.kofuk.org/artifacts/version@${PROTOCOL_VERSION}.txt")"
 
     current_version="$("${PREMISES_BASEDIR}/bin/premises-runner" --version || true)"
 
     [ "${current_version}" = "${remote_version}" ] && exit 0
 
-    http_get "https://storage.googleapis.com/premises/premises-runner@${PROTOCOL_VERSION}.tar.gz" | tar -xz
+    http_get "https://premises.kofuk.org/artifacts/premises-runner@${PROTOCOL_VERSION}.tar.gz" | tar -xz
     atomic_copy 'premises-runner' "${PREMISES_BASEDIR}/bin/premises-runner"
 }
 

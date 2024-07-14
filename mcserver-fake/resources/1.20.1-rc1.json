@@ -1,7 +1,7 @@
 {
   "downloads": {
     "server": {
-      "url": "https://storage.googleapis.com/premises/devtools/mcserver-fake/mcserver-fake",
+      "url": "https://premises.kofuk.org/artifacts/devtools/mcserver-fake/mcserver-fake",
       "x-premises": {
         "launchCommand": [
           "{server_jar}"
