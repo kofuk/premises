@@ -26,6 +26,10 @@ func NewGameServer(cfg *config.Config, h *Handler) *GameServer {
 	}
 }
 
+func (s *GameServer) IsAvailable() bool {
+	return s.cfg.ConohaUser != "" && s.cfg.ConohaPassword != ""
+}
+
 func (s *GameServer) getToken(ctx context.Context) (string, error) {
 	if s.token == "" {
 		token, expires, err := conoha.GetToken(ctx, s.cfg)

@@ -32,6 +32,10 @@ func GetPageCodeByEventCode(event entity.EventCode) web.PageCode {
 }
 
 func AttachRunner(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueStore, ipv4Addr string) error {
+	if cfg.ConohaUser == "" || cfg.ConohaPassword == "" {
+		return nil
+	}
+
 	var id string
 	if err := cache.Get(ctx, "runner-id:default", &id); err == nil {
 		return nil

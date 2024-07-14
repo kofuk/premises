@@ -259,7 +259,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 	}
 
 	var id string
-	if err := h.KVS.Get(ctx, "runner-id:default", &id); err != nil {
+	if err := h.KVS.Get(ctx, "runner-id:default", &id); err != nil || !gameServer.IsAvailable() {
 		if err == redis.Nil {
 			goto out
 		}
@@ -384,7 +384,15 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 	}
 	slog.Info("Generating startup script...Done")
 
-	id := gameServer.SetUp(ctx, gameConfig, memSizeGB, startupScript)
+	id := ""
+	if gameServer.IsAvailable() {
+		id = gameServer.SetUp(ctx, gameConfig, memSizeGB, startupScript)
+
+		if err := h.KVS.Set(ctx, "runner-id:default", id, -1); err != nil {
+			slog.Error("Failed to set runner ID", slog.Any("error", err))
+			return
+		}
+	}
 	if id == "" {
 		// Startup failed. Manual setup can recover this status.
 
@@ -404,11 +412,6 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 			return
 		}
 
-		return
-	}
-
-	if err := h.KVS.Set(ctx, "runner-id:default", id, -1); err != nil {
-		slog.Error("Failed to set runner ID", slog.Any("error", err))
 		return
 	}
 
