@@ -1,6 +1,7 @@
 package exteriord
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -23,14 +24,16 @@ func Run(args []string) int {
 		os.Exit(1)
 	}
 
+	ctx, cancelFn := context.WithCancel(context.Background())
+
 	msgChan := make(chan outbound.OutboundMessage, 8)
 
 	ob := outbound.NewServer(config.ControlPanel, config.AuthKey, msgChan)
-	go ob.Start()
+	go ob.Start(ctx)
 
 	stateStore := NewStateStore(NewLocalStorageStateBackend(fs.DataPath("states.json")))
 
-	rpcHandler := NewRPCHandler(rpc.DefaultServer, msgChan, stateStore)
+	rpcHandler := NewRPCHandler(rpc.DefaultServer, msgChan, stateStore, cancelFn)
 	rpcHandler.Bind()
 
 	e := exterior.New()
@@ -41,7 +44,7 @@ func Run(args []string) int {
 			proc.Restart(proc.RestartNever),
 			proc.UserType(proc.UserPrivileged),
 		))
-	e.RegisterTask("Syatem Statistics",
+	e.RegisterTask("System Statistics",
 		proc.NewProc(fs.DataPath("bin/premises-runner"),
 			proc.Args("--sysstat"),
 			proc.Restart(proc.RestartOnFailure),
@@ -61,10 +64,16 @@ func Run(args []string) int {
 			proc.Restart(proc.RestartNever),
 			proc.UserType(proc.UserPrivileged),
 		), setupTask)
+	e.RegisterTask("Connector",
+		proc.NewProc(fs.DataPath("bin/premises-runner"),
+			proc.Args("--connector"),
+			proc.Restart(proc.RestartOnFailure),
+			proc.UserType(proc.UserRestricted),
+		), setupTask)
 	e.RegisterTask("Snapshot Service",
 		proc.NewProc(fs.DataPath("bin/premises-runner"),
 			proc.Args("--snapshot-helper"),
-			proc.Restart(proc.RestartAlways),
+			proc.Restart(proc.RestartOnFailure),
 			proc.RestartRandomDelay(),
 			proc.UserType(proc.UserPrivileged),
 		), setupTask)
@@ -75,7 +84,7 @@ func Run(args []string) int {
 			proc.UserType(proc.UserPrivileged),
 		), monitoring, systemUpdate)
 
-	e.Run()
+	e.Run(ctx)
 
-	return 1
+	return 0
 }

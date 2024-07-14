@@ -13,6 +13,7 @@ import (
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/system"
 )
 
@@ -129,6 +130,11 @@ func CleanUp(args []string) int {
 	copyLogData()
 
 	notifyStatus(entity.EventShutdown)
+
+	// XXX
+	time.Sleep(5 * time.Second)
+
+	rpc.ToExteriord.Notify("proc/done", nil)
 
 	return 0
 }

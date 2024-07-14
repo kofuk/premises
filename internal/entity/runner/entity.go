@@ -63,10 +63,16 @@ const (
 	ActionSnapshot    ActionType = "snapshot"
 	ActionUndo        ActionType = "undo"
 	ActionReconfigure ActionType = "reconfigure"
+	ActionConnReq     ActionType = "connectionRequest"
 )
 
 type SnapshotConfig struct {
 	Slot int `json:"slot"`
+}
+
+type ConnReqInfo struct {
+	ConnectionID string `json:"connectionId"`
+	ServerCert   string `json:"serverCert"`
 }
 
 type Action struct {
@@ -74,4 +80,5 @@ type Action struct {
 	Actor    int             `json:"actor"`
 	Config   *Config         `json:"config,omitempty"`
 	Snapshot *SnapshotConfig `json:"snapshot,omitempty"`
+	ConnReq  *ConnReqInfo    `json:"connectionRequestInfo,omitempty"`
 }

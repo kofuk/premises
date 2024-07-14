@@ -26,7 +26,6 @@ const (
 var requiredProgs = []string{
 	"mkfs.btrfs",
 	"java",
-	"ufw",
 }
 
 type ServerSetup struct{}
@@ -113,12 +112,7 @@ func (setup *ServerSetup) initializeServer() {
 
 	eg.Go(func() error {
 		slog.Info("Installing packages")
-		system.AptGet("install", "-y", "btrfs-progs", latestAvailableJre, "ufw")
-		if !isDevEnv() {
-			slog.Info("Enabling ufw")
-			system.Cmd("systemctl", []string{"enable", "--now", "ufw.service"})
-			system.Cmd("ufw", []string{"enable"})
-		}
+		system.AptGet("install", "-y", "btrfs-progs", latestAvailableJre)
 		return nil
 	})
 	eg.Go(func() error {
@@ -141,7 +135,7 @@ func (setup *ServerSetup) initializeServer() {
 		if _, err := user.Lookup("premises"); err != nil {
 			slog.Info("Adding user")
 			// Create a system user named "premises"
-			return system.Cmd("useradd", []string{"--user-group", "--system", "--shell", "/usr/sbin/nologin", "premises"})
+			return system.Cmd("useradd", []string{"--user-group", "--system", "--no-create-home", "--shell", "/usr/sbin/nologin", "premises"})
 		}
 		return nil
 	})
@@ -151,12 +145,6 @@ func (setup *ServerSetup) initializeServer() {
 	// This command should be executed after `apt-get install` finished
 	slog.Info("Creating filesystem for gamedata.img")
 	system.Cmd("mkfs.btrfs", []string{fs.DataPath("gamedata.img")})
-}
-
-func (setup *ServerSetup) updateFirewallRules() {
-	system.Cmd("ufw", []string{"allow", "25565/tcp"})
-	// Old runner requires 8521 to be exposed. Now, it's not needed so we delete it here.
-	system.Cmd("ufw", []string{"delete", "allow", "8521/tcp"})
 }
 
 func (setup *ServerSetup) installRequiredJavaVersion() {
@@ -190,9 +178,6 @@ func (setup ServerSetup) Run() {
 		slog.Info("Server seems not to be initialized. Will run full initialization")
 		setup.initializeServer()
 	}
-
-	slog.Info("Updating ufw rules")
-	setup.updateFirewallRules()
 
 	slog.Info("Installing required Java version")
 	setup.installRequiredJavaVersion()

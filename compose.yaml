@@ -21,7 +21,6 @@ x-common-settings: &settings
   PREMISES_POSTGRES_USER: premises
   PREMISES_POSTGRES_PASSWORD: password
   PREMISES_POSTGRES_DB: premises
-  PREMISES_PROXY_API_ENDPOINT: http://proxy:8001
   PREMISES_GAME_DOMAIN:
   PREMISES_ICON_URL:
 
@@ -45,6 +44,7 @@ services:
       <<: *settings
       PREMISES_MODE: proxy
     ports:
+      - '25530:25530'
       - '25565:25565'
   redis:
     image: 'redis:7-alpine'

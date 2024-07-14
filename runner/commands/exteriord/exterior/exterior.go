@@ -1,6 +1,8 @@
 package exterior
 
 import (
+	"context"
+
 	"github.com/kofuk/premises/runner/commands/exteriord/exterior/scheduler"
 	"github.com/kofuk/premises/runner/commands/exteriord/proc"
 )
@@ -23,7 +25,7 @@ func (e *Exterior) RegisterTask(description string, proc proc.Proc, deps ...sche
 	return task.ID()
 }
 
-func (e *Exterior) Run() {
+func (e *Exterior) Run(ctx context.Context) {
 	e.scheduler.Run()
-	<-make(chan struct{})
+	<-ctx.Done()
 }

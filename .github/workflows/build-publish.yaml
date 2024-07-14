@@ -1,6 +1,9 @@
 name: Build and Publish
 on: push
 
+env:
+  PROTOCOL_VERSION: 2024-07-13
+
 jobs:
   go-test:
     runs-on: ubuntu-latest
@@ -221,12 +224,10 @@ jobs:
   publish-binaries:
     runs-on: ubuntu-latest
     needs: integ-test
-    if: github.ref_name == 'master'
+    if: github.ref_name == 'master' || github.ref_name == 'staging'
     permissions:
       id-token: write
       contents: read
-    env:
-      RUNNER_SCHEMA: '3'
     steps:
       - name: Install Required Packages
         run: |
@@ -241,23 +242,23 @@ jobs:
           chmod +x premises-runner
       - name: Create Archive
         run : |
-          tar -czf "premises-runner@v${RUNNER_SCHEMA}.tar.gz" premises-runner
+          tar -czf "premises-runner@${PROTOCOL_VERSION}.tar.gz" premises-runner
       - name: Generate metadata
         run: |
-          echo ${{ github.sha }} >"version@v${RUNNER_SCHEMA}.txt"
+          echo ${{ github.sha }} >"version@${PROTOCOL_VERSION}.txt"
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GOOGLE_SERVICE_ACCOUNT }}
       - uses: google-github-actions/upload-cloud-storage@v2
         with:
-          path: premises-runner@v${{ env.RUNNER_SCHEMA }}.tar.gz
+          path: premises-runner@${{ env.PROTOCOL_VERSION }}.tar.gz
           destination: premises
           parent: false
           process_gcloudignore: false
       - uses: google-github-actions/upload-cloud-storage@v2
         with:
-          path: version@v${{ env.RUNNER_SCHEMA }}.txt
+          path: version@${{ env.PROTOCOL_VERSION }}.txt
           destination: premises
           parent: false
           process_gcloudignore: false
@@ -266,10 +267,12 @@ jobs:
   publish-controlpanel-docker-image:
     runs-on: ubuntu-latest
     needs: integ-test
-    if: github.ref_name == 'master'
+    if: github.ref_name == 'master' || github.ref_name == 'staging'
     permissions:
       contents: read
       packages: write
+    env:
+      IMAGE_TAG: ${{ github.ref_name == 'master' && 'latest' || github.ref_name }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -281,6 +284,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Load image
-        run: docker load --input image.tar
+        run: |
+          docker load --input image.tar
+          docker tag ghcr.io/kofuk/premises:latest "ghcr.io/kofuk/premises:${IMAGE_TAG}"
       - name: Push image
-        run: docker push ghcr.io/kofuk/premises:latest
+        run: docker push "ghcr.io/kofuk/premises:${IMAGE_TAG}"
