@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/kofuk/premises/runner/env"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/ulikunitz/xz"
 )
@@ -23,7 +24,7 @@ type FileCreator struct {
 }
 
 func NewFileCreator(outDir string) (*FileCreator, error) {
-	tmpDir, err := fs.MkdirTemp()
+	tmpDir, err := env.MkdirTemp()
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +122,7 @@ type Unarchiver interface {
 type ZipUnarchiver struct{}
 
 func (*ZipUnarchiver) toFile(r io.Reader) (string, error) {
-	tmpDir, err := fs.MkdirTemp()
+	tmpDir, err := env.MkdirTemp()
 	if err != nil {
 		return "", err
 	}

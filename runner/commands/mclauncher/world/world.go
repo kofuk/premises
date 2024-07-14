@@ -19,6 +19,7 @@ import (
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/internal/s3wrap"
+	"github.com/kofuk/premises/runner/env"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/util"
 )
@@ -48,7 +49,7 @@ func makeArchiveName() string {
 }
 
 func (w *WorldService) getExtractionPipeline(name string) (*ExtractionPipeline, error) {
-	c, err := NewFileCreator(fs.DataPath("gamedata/world"))
+	c, err := NewFileCreator(env.DataPath("gamedata/world"))
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +78,7 @@ func (w *WorldService) getExtractionPipeline(name string) (*ExtractionPipeline, 
 
 func (w *WorldService) DownloadWorldData(config *runner.Config) error {
 	slog.Info("Downloading world archive...")
-	if err := fs.RemoveIfExists(fs.DataPath("gamedata/world")); err != nil {
+	if err := fs.RemoveIfExists(env.DataPath("gamedata/world")); err != nil {
 		return err
 	}
 
@@ -126,7 +127,7 @@ func (w *WorldService) UploadWorldData(config *runner.Config) (string, error) {
 func (w *WorldService) doUploadWorldData(config *runner.Config) (string, error) {
 	slog.Info("Uploading world archive...")
 
-	archivePath := fs.DataPath("world.tar.zst")
+	archivePath := env.DataPath("world.tar.zst")
 
 	file, err := os.Open(archivePath)
 	if err != nil {
@@ -307,7 +308,7 @@ func writeTar(to io.Writer, baseDir string, dirs ...string) error {
 func createArchive() error {
 	slog.Info("Creating world archive...")
 
-	outFile, err := os.Create(fs.DataPath("world.tar.zst"))
+	outFile, err := os.Create(env.DataPath("world.tar.zst"))
 	if err != nil {
 		return err
 	}
@@ -319,7 +320,7 @@ func createArchive() error {
 	}
 	defer zstWriter.Close()
 
-	if err := writeTar(zstWriter, fs.DataPath("gamedata"), "world"); err != nil {
+	if err := writeTar(zstWriter, env.DataPath("gamedata"), "world"); err != nil {
 		return err
 	}
 

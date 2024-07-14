@@ -1,21 +1,6 @@
 package fs
 
-import (
-	"os"
-	"path/filepath"
-)
-
-const (
-	BaseDir = "/opt/premises"
-)
-
-func DataPath(path ...string) string {
-	return filepath.Join(BaseDir, filepath.Join(path...))
-}
-
-func LocateServer(serverName string) string {
-	return DataPath(filepath.Join("servers.d", serverName+".jar"))
-}
+import "os"
 
 func RemoveIfExists(path string) error {
 	if _, err := os.Stat(path); err != nil {
@@ -30,12 +15,4 @@ func RemoveIfExists(path string) error {
 	}
 
 	return nil
-}
-
-func GetTempDir() string {
-	return DataPath("tmp")
-}
-
-func MkdirTemp() (string, error) {
-	return os.MkdirTemp(GetTempDir(), "premises-temp")
 }

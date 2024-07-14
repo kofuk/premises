@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/gorcon/rcon"
+	"github.com/kofuk/premises/runner/env"
 	"golang.org/x/sys/unix"
 )
 
@@ -41,7 +42,7 @@ func (r *Rcon) connect(address, password string) error {
 
 func (r *Rcon) Run(args []string) int {
 	address := ":25575"
-	if _, err := os.Stat("/.dockerenv"); err == nil {
+	if env.IsDevEnv() {
 		address = "127.0.0.2:25575"
 	}
 	password := "x"

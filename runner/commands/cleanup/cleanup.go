@@ -11,8 +11,8 @@ import (
 
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
+	"github.com/kofuk/premises/runner/env"
 	"github.com/kofuk/premises/runner/exterior"
-	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/system"
 )
@@ -26,7 +26,7 @@ func removeFilesIgnoreError(paths ...string) {
 }
 
 func removeTempFiles() {
-	dirent, err := os.ReadDir(fs.DataPath("tmp"))
+	dirent, err := os.ReadDir(env.DataPath("tmp"))
 	if err != nil {
 		slog.Error("Error reading temp dir", slog.Any("error", err))
 		return
@@ -34,14 +34,14 @@ func removeTempFiles() {
 
 	var paths []string
 	for _, e := range dirent {
-		paths = append(paths, filepath.Join(fs.DataPath("tmp"), e.Name()))
+		paths = append(paths, filepath.Join(env.DataPath("tmp"), e.Name()))
 	}
 
 	removeFilesIgnoreError(paths...)
 }
 
 func removeSnapshots() {
-	dirent, err := os.ReadDir(fs.DataPath("gamedata"))
+	dirent, err := os.ReadDir(env.DataPath("gamedata"))
 	if err != nil {
 		slog.Error("Error reading data dir", slog.Any("error", err))
 		return
@@ -52,7 +52,7 @@ func removeSnapshots() {
 	for _, ent := range dirent {
 		if len(ent.Name()) > 3 && ent.Name()[:3] == "ss@" {
 			needsClean = true
-			args = append(args, fs.DataPath("gamedata", ent.Name()))
+			args = append(args, env.DataPath("gamedata", ent.Name()))
 		}
 	}
 
@@ -64,7 +64,7 @@ func removeSnapshots() {
 }
 
 func unmountData() {
-	if err := syscall.Unmount(fs.DataPath("gamedata"), 0); err != nil {
+	if err := syscall.Unmount(env.DataPath("gamedata"), 0); err != nil {
 		slog.Error("Error unmounting data dir", slog.Any("error", err))
 	}
 }
@@ -107,7 +107,7 @@ func copyLogData() {
 	}
 }
 
-func CleanUp(args []string) int {
+func Run(args []string) int {
 	notifyStatus(entity.EventClean)
 
 	slog.Info("Removing snaphots...")
@@ -121,7 +121,7 @@ func CleanUp(args []string) int {
 
 	slog.Info("Removing config files...")
 	removeFilesIgnoreError(
-		fs.DataPath("config.json"),
+		env.DataPath("config.json"),
 		"/userdata",
 		"/userdata_decoded.sh",
 	)

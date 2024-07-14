@@ -13,7 +13,7 @@ import (
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
 	lm "github.com/kofuk/premises/internal/mc/launchermeta"
-	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/env"
 	"github.com/kofuk/premises/runner/system"
 	"github.com/kofuk/premises/runner/util"
 )
@@ -109,7 +109,7 @@ func downloadServerJar(url, savePath string) error {
 }
 
 func DownloadServerJar(url, savePath string) error {
-	if err := os.MkdirAll(fs.DataPath("servers.d"), 0755); err != nil {
+	if err := os.MkdirAll(env.DataPath("servers.d"), 0755); err != nil {
 		return err
 	}
 

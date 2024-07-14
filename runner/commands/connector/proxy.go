@@ -6,7 +6,8 @@ import (
 	"errors"
 	"io"
 	"net"
-	"os"
+
+	"github.com/kofuk/premises/runner/env"
 )
 
 type Proxy struct {
@@ -43,7 +44,7 @@ func (p *Proxy) Run() error {
 	}
 
 	serverAddr := "localhost:25565"
-	if _, err := os.Stat("/.dockerenv"); err == nil {
+	if env.IsDevEnv() {
 		serverAddr = "127.0.0.2:25565"
 	}
 	upstrm, err := net.Dial("tcp", serverAddr)

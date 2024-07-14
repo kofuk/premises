@@ -17,7 +17,7 @@ import (
 	"github.com/kofuk/premises/runner/commands/privileged"
 	"github.com/kofuk/premises/runner/commands/serversetup"
 	"github.com/kofuk/premises/runner/commands/systemstat"
-	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/env"
 	"github.com/kofuk/premises/runner/metadata"
 	"github.com/kofuk/premises/runner/rpc"
 	"golang.org/x/sync/errgroup"
@@ -67,7 +67,7 @@ func (app App) Run(args []string) int {
 	slog.SetDefault(slog.Default().With(slog.String("runner_command", cmdName)))
 	os.Setenv("PREMISES_RUNNER_COMMAND", cmdName)
 
-	rpc.InitializeDefaultServer(fs.DataPath("rpc@" + cmdName))
+	rpc.InitializeDefaultServer(env.DataPath("rpc@" + cmdName))
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -106,7 +106,7 @@ func main() {
 		Commands: map[string]Command{
 			"clean": {
 				Description:  "Cleanup before shutdown",
-				Run:          cleanup.CleanUp,
+				Run:          cleanup.Run,
 				RequiresRoot: true,
 			},
 			"connector": {

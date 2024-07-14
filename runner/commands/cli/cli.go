@@ -10,7 +10,9 @@ func Run(args []string) int {
 		fmt.Fprintln(os.Stderr, `Subcommand required.
 Available subcommands:
   rcon [host:port] [password]
-    Minecraft RCON client`)
+    Minecraft RCON client
+  rpc <path> <call|notify> <method>
+    Send a request to the RPC server`)
 		return 1
 	}
 

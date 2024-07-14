@@ -10,14 +10,14 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/env"
 )
 
 var logNum uint64
 
 func createLog() (io.Writer, string, error) {
 	for {
-		logPath := filepath.Join(fs.GetTempDir(), fmt.Sprintf("command-%d.log", atomic.AddUint64(&logNum, 1)-1))
+		logPath := filepath.Join(env.GetTempDir(), fmt.Sprintf("command-%d.log", atomic.AddUint64(&logNum, 1)-1))
 		log, err := os.OpenFile(logPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
 		if err != nil {
 			if os.IsExist(err) {

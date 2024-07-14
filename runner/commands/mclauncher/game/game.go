@@ -14,6 +14,7 @@ import (
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/world"
+	"github.com/kofuk/premises/runner/env"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/rpc"
@@ -45,7 +46,7 @@ func NewLauncher(config *runner.Config, world *world.WorldService) *Launcher {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	rconAddr := "127.0.0.1:25575"
-	if _, err := os.Stat("/.dockerenv"); err == nil {
+	if env.IsDevEnv() {
 		rconAddr = "127.0.0.2:25575"
 	}
 
@@ -150,7 +151,7 @@ func storeLastServerVersion(config *runner.Config) error {
 
 func (l *Launcher) downloadWorld() error {
 	if l.config.World.ShouldGenerate {
-		if err := fs.RemoveIfExists(fs.DataPath("gamedata/world")); err != nil {
+		if err := fs.RemoveIfExists(env.DataPath("gamedata/world")); err != nil {
 			slog.Error("Unable to remove world directory", slog.Any("error", err))
 		}
 
@@ -192,7 +193,7 @@ func (l *Launcher) downloadWorld() error {
 }
 
 func (l *Launcher) downloadServerJar() error {
-	if _, err := os.Stat(fs.LocateServer(l.config.Server.Version)); err == nil {
+	if _, err := os.Stat(env.LocateServer(l.config.Server.Version)); err == nil {
 		slog.Info("No need to download server.jar")
 		return nil
 	} else if !os.IsNotExist(err) {
@@ -208,7 +209,7 @@ func (l *Launcher) downloadServerJar() error {
 
 	slog.Info("Downloading Minecraft server...", slog.String("url", l.config.Server.DownloadUrl))
 
-	if err := DownloadServerJar(l.config.Server.DownloadUrl, fs.LocateServer(l.config.Server.Version)); err != nil {
+	if err := DownloadServerJar(l.config.Server.DownloadUrl, env.LocateServer(l.config.Server.Version)); err != nil {
 		return err
 	}
 
@@ -260,7 +261,7 @@ func (l *Launcher) uploadWorld() error {
 }
 
 func getAllocSizeMiB() int {
-	if _, err := os.Stat("/.dockerenv"); err == nil {
+	if env.IsDevEnv() {
 		// Docker environment.
 		return 1024
 	}
@@ -275,7 +276,7 @@ func getAllocSizeMiB() int {
 
 func waitServerHealthy(ctx context.Context) error {
 	serverAddr := "127.0.0.1:25565"
-	if _, err := os.Stat("/.dockerenv"); err == nil {
+	if env.IsDevEnv() {
 		serverAddr = "127.0.0.2:25565"
 	}
 	for {
@@ -353,7 +354,7 @@ func (l *Launcher) executeServer(cmdline []string) error {
 		l.stopAfterLongInactive(ctx)
 	}()
 
-	err := system.Cmd(cmdline[0], cmdline[1:], system.WithWorkingDir(fs.DataPath("gamedata")))
+	err := system.Cmd(cmdline[0], cmdline[1:], system.WithWorkingDir(env.DataPath("gamedata")))
 
 	cancel()
 
@@ -368,7 +369,7 @@ func (l *Launcher) startServer() error {
 		launchCommand = l.config.Server.CustomCommand
 		for i := 0; i < len(launchCommand); i++ {
 			if launchCommand[i] == "{server_jar}" {
-				launchCommand[i] = fs.LocateServer(l.config.Server.Version)
+				launchCommand[i] = env.LocateServer(l.config.Server.Version)
 			}
 		}
 	} else {
@@ -377,7 +378,7 @@ func (l *Launcher) startServer() error {
 			fmt.Sprintf("-Xmx%dM", allocSize),
 			fmt.Sprintf("-Xms%dM", allocSize),
 			"-jar",
-			fs.LocateServer(l.config.Server.Version),
+			env.LocateServer(l.config.Server.Version),
 			"nogui",
 		}
 	}
@@ -412,7 +413,7 @@ func (l *Launcher) StopToRestart() {
 }
 
 func cleanGameDir() error {
-	ents, err := os.ReadDir(fs.DataPath("gamedata"))
+	ents, err := os.ReadDir(env.DataPath("gamedata"))
 	if err != nil {
 		return err
 	}
@@ -422,7 +423,7 @@ func cleanGameDir() error {
 		if ent.Name() == "server.properties" || ent.Name() == "world" || strings.HasPrefix(ent.Name(), "ss@") {
 			continue
 		}
-		if err := os.RemoveAll(fs.DataPath(filepath.Join("gamedata", ent.Name()))); err != nil {
+		if err := os.RemoveAll(env.DataPath(filepath.Join("gamedata", ent.Name()))); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -633,11 +634,11 @@ func (l *Launcher) sendStartedEvent(config *runner.Config) {
 func generateServerProps(config *runner.Config) error {
 	serverProps := NewServerProperties()
 	serverProps.LoadConfig(config)
-	if _, err := os.Stat("/.dockerenv"); err == nil {
+	if env.IsDevEnv() {
 		serverProps.DangerouslySetProperty("server-ip", "127.0.0.2")
 	}
 
-	out, err := os.Create(fs.DataPath("gamedata/server.properties"))
+	out, err := os.Create(env.DataPath("gamedata/server.properties"))
 	if err != nil {
 		return err
 	}
@@ -651,7 +652,7 @@ func generateServerProps(config *runner.Config) error {
 }
 
 func generateEula() error {
-	eulaFile, err := os.Create(fs.DataPath("gamedata/eula.txt"))
+	eulaFile, err := os.Create(env.DataPath("gamedata/eula.txt"))
 	if err != nil {
 		return err
 	}
@@ -661,14 +662,14 @@ func generateEula() error {
 }
 
 func processQuickUndo(slot int) error {
-	if err := os.RemoveAll(fs.DataPath("gamedata/world")); err != nil {
+	if err := os.RemoveAll(env.DataPath("gamedata/world")); err != nil {
 		return err
 	}
-	if err := os.Mkdir(fs.DataPath("gamedata/world"), 0755); err != nil {
+	if err := os.Mkdir(env.DataPath("gamedata/world"), 0755); err != nil {
 		return err
 	}
 
-	if err := fs.CopyAll(fs.DataPath("gamedata", fmt.Sprintf("ss@quick%d/world", slot)), fs.DataPath("gamedata/world")); err != nil {
+	if err := fs.CopyAll(env.DataPath("gamedata", fmt.Sprintf("ss@quick%d/world", slot)), env.DataPath("gamedata/world")); err != nil {
 		return err
 	}
 

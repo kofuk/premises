@@ -9,8 +9,8 @@ import (
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/runner/commands/mclauncher/game"
+	"github.com/kofuk/premises/runner/env"
 	"github.com/kofuk/premises/runner/exterior"
-	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/rpc/types"
 )
@@ -44,7 +44,7 @@ func (h *RPCHandler) HandleGameReconfigure(req *rpc.AbstractRequest) error {
 		return err
 	}
 
-	if err := os.WriteFile(fs.DataPath("config.json"), data, 0644); err != nil {
+	if err := os.WriteFile(env.DataPath("config.json"), data, 0644); err != nil {
 		slog.Error("Failed to write server config", slog.Any("error", err))
 		return err
 	}
@@ -103,7 +103,7 @@ func (h *RPCHandler) HandleSnapshotUndo(req *rpc.AbstractRequest) error {
 	}
 
 	go func() {
-		if _, err := os.Stat(fs.DataPath(fmt.Sprintf("gamedata/ss@quick%d/world", input.Slot))); err != nil {
+		if _, err := os.Stat(env.DataPath(fmt.Sprintf("gamedata/ss@quick%d/world", input.Slot))); err != nil {
 			exterior.DispatchEvent(runner.Event{
 				Type: runner.EventInfo,
 				Info: &runner.InfoExtra{

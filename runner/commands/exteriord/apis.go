@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/kofuk/premises/runner/commands/exteriord/outbound"
-	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/env"
 	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/rpc/types"
 )
@@ -97,7 +97,7 @@ func (h *RPCHandler) HandleProcDone(req *rpc.AbstractRequest) error {
 	defer h.m.Unlock()
 
 	for _, cmd := range h.stopHook {
-		if err := rpc.NewClient(fs.DataPath("rpc@"+cmd)).Notify("base/stop", nil); err != nil {
+		if err := rpc.NewClient(env.DataPath("rpc@"+cmd)).Notify("base/stop", nil); err != nil {
 			slog.Warn("Error calling hook", slog.String("cmd", cmd), slog.Any("error", err))
 		}
 	}

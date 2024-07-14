@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/kofuk/premises/internal/mc/nbt"
-	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/env"
 )
 
 type limitedReader struct {
@@ -53,7 +53,7 @@ func toServerVersionName(name string) string {
 }
 
 func DetectServerVersion() (string, error) {
-	levelDatFile, err := os.Open(fs.DataPath("gamedata/world/level.dat"))
+	levelDatFile, err := os.Open(env.DataPath("gamedata/world/level.dat"))
 	if err != nil {
 		return "", err
 	}

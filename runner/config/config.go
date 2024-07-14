@@ -5,11 +5,11 @@ import (
 	"os"
 
 	"github.com/kofuk/premises/internal/entity/runner"
-	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/env"
 )
 
 func Load() (*runner.Config, error) {
-	data, err := os.ReadFile(fs.DataPath("config.json"))
+	data, err := os.ReadFile(env.DataPath("config.json"))
 	if err != nil {
 		return nil, err
 	}

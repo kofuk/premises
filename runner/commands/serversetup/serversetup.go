@@ -11,6 +11,7 @@ import (
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/runner/config"
+	"github.com/kofuk/premises/runner/env"
 	"github.com/kofuk/premises/runner/exterior"
 	"github.com/kofuk/premises/runner/fs"
 	"github.com/kofuk/premises/runner/system"
@@ -39,20 +40,15 @@ func isServerInitialized() bool {
 		}
 	}
 
-	if _, err := os.Stat(fs.DataPath("gamedata.img")); os.IsNotExist(err) {
+	if _, err := os.Stat(env.DataPath("gamedata.img")); os.IsNotExist(err) {
 		return false
 	}
 
 	return true
 }
 
-func isDevEnv() bool {
-	_, err := os.Stat("/.dockerenv")
-	return err == nil
-}
-
 func getIPAddr() (v4Addrs []string, v6Addrs []string, err error) {
-	if isDevEnv() {
+	if env.IsDevEnv() {
 		return []string{"127.0.0.2"}, nil, nil
 	}
 
@@ -116,16 +112,16 @@ func (setup *ServerSetup) initializeServer() {
 		return nil
 	})
 	eg.Go(func() error {
-		if _, err := os.Stat(fs.DataPath("gamedata.img")); !os.IsNotExist(err) {
+		if _, err := os.Stat(env.DataPath("gamedata.img")); !os.IsNotExist(err) {
 			return nil
 		}
 
 		slog.Info("Creating image file to save game data")
 		size := 8 * 1024 * 1024 * 1024 // 8 GiB
-		if isDevEnv() {
+		if env.IsDevEnv() {
 			size = 1 * 1024 * 1024 * 1024 // 1 GiB
 		}
-		if err := fs.Fallocate(fs.DataPath("gamedata.img"), int64(size)); err != nil {
+		if err := fs.Fallocate(env.DataPath("gamedata.img"), int64(size)); err != nil {
 			slog.Error("Unable to create gamedata.img", slog.Any("error", err))
 			return err
 		}
@@ -151,7 +147,7 @@ func (setup *ServerSetup) initializeServer() {
 
 	// This command should be executed after `apt-get install` finished
 	slog.Info("Creating filesystem for gamedata.img")
-	system.Cmd("mkfs.btrfs", []string{fs.DataPath("gamedata.img")})
+	system.Cmd("mkfs.btrfs", []string{env.DataPath("gamedata.img")})
 }
 
 func (setup *ServerSetup) installRequiredJavaVersion() {
@@ -175,7 +171,7 @@ func (setup ServerSetup) Run() {
 
 	slog.Info("Creating required directories (if not exists)")
 	for _, dir := range []string{"servers.d", "gamedata", "tmp"} {
-		os.MkdirAll(fs.DataPath(dir), 0755)
+		os.MkdirAll(env.DataPath(dir), 0755)
 	}
 
 	slog.Info("Updating package indices")
@@ -190,13 +186,13 @@ func (setup ServerSetup) Run() {
 	setup.installRequiredJavaVersion()
 
 	slog.Info("Mounting gamedata.img")
-	system.Cmd("mount", []string{fs.DataPath("gamedata.img"), fs.DataPath("gamedata")})
+	system.Cmd("mount", []string{env.DataPath("gamedata.img"), env.DataPath("gamedata")})
 
 	slog.Info("Ensure data directory owned by execution user")
 	if uid, gid, err := system.GetAppUserID(); err != nil {
 		slog.Error("Error retrieving user ID for premises", slog.Any("error", err))
 	} else {
-		if err := fs.ChownRecursive(fs.DataPath(), uid, gid); err != nil {
+		if err := fs.ChownRecursive(env.DataPath(), uid, gid); err != nil {
 			slog.Error("Error changing ownership", slog.Any("error", err))
 		}
 	}
