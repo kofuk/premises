@@ -1,7 +1,7 @@
 #!/bin/bash
 set -x
 
-export PROTOCOL_VERSION='2024-07-13'
+export PROTOCOL_VERSION='%s'
 
 atomic_copy() {
     from="$1"
@@ -69,7 +69,7 @@ __run() {
     )
 
     cat <<'EOF' >"${PREMISES_BASEDIR}/config.json"
-#__CONFIG_FILE__
+%s
 EOF
 
     [ -e /premises-dev/env ] && . /premises-dev/env

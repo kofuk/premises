@@ -1,11 +1,11 @@
 package conoha
 
 import (
-	"bytes"
 	_ "embed"
 	"encoding/json"
-	"strings"
+	"fmt"
 
+	"github.com/kofuk/premises/internal"
 	"github.com/kofuk/premises/internal/entity/runner"
 )
 
@@ -18,16 +18,5 @@ func GenerateStartupScript(gameConfig *runner.Config) ([]byte, error) {
 		return nil, err
 	}
 
-	lines := strings.Split(strings.ReplaceAll(startupScriptTemplate, "\r\n", "\n"), "\n")
-	var result bytes.Buffer
-	for _, line := range lines {
-		switch line {
-		case "#__CONFIG_FILE__":
-			result.Write(gameConfigData)
-		default:
-			result.Write([]byte(line))
-		}
-		result.Write([]byte("\n"))
-	}
-	return result.Bytes(), nil
+	return []byte(fmt.Sprintf(startupScriptTemplate, internal.ProtocolVersion, gameConfigData)), nil
 }
