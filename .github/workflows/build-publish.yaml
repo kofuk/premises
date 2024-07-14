@@ -272,7 +272,7 @@ jobs:
       contents: read
       packages: write
     env:
-      IMAGE_TAG: ${{ github.ref_name }}
+      IMAGE_TAG: ${{ github.ref_name == 'master' && 'latest' || github.ref_name }}
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v4
