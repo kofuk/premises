@@ -103,7 +103,7 @@ echo
 exec 3<&-
 
 echo 'Launching Premises...'
-curl -H "Authorization: Setup-Code ${auth}" '%s://%s/_runner/startup' | bash
+curl -H "Authorization: Setup-Code ${auth}" '%s://%s/_/startup' | bash
 
 echo 'Success! Premises should be started shortly!'
 

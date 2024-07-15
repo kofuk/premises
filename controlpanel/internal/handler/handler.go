@@ -83,7 +83,7 @@ func setupRoutes(h *Handler) {
 
 	h.setupRootRoutes(h.engine.Group(""))
 	h.setupApiRoutes(h.engine.Group("/api"))
-	h.setupRunnerRoutes(h.engine.Group("/_runner"))
+	h.setupRunnerRoutes(h.engine.Group("/_"))
 }
 
 func setupSessions(h *Handler) {

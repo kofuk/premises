@@ -97,7 +97,7 @@ func (s *Server) HandleMonitor(ctx context.Context) {
 	buf := bytes.NewBuffer(nil)
 
 	sendStatus := func() {
-		req, err := http.NewRequest(http.MethodPost, s.addr+"/_runner/push-status", buf)
+		req, err := http.NewRequest(http.MethodPost, s.addr+"/_/push-status", buf)
 		if err != nil {
 			slog.Error("Error creating request", slog.Any("error", err))
 			return
@@ -160,7 +160,7 @@ func (s *Server) PollAction(ctx context.Context) {
 		default:
 		}
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.addr+"/_runner/poll-action", nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.addr+"/_/poll-action", nil)
 		if err != nil {
 			slog.Error("Error creating request", slog.Any("error", err))
 			continue
