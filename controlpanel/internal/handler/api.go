@@ -358,14 +358,6 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
 
-	if err := h.Streaming.PublishEvent(
-		ctx,
-		stdStream,
-		streaming.NewStandardMessageWithProgress(entity.EventCreateRunner, 10, web.PageLoading),
-	); err != nil {
-		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-	}
-
 	slog.Info("Generating startup script...")
 	startupScript, err := conoha.GenerateStartupScript(gameConfig)
 	if err != nil {
@@ -384,51 +376,41 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 	}
 	slog.Info("Generating startup script...Done")
 
-	id := ""
 	if gameServer.IsAvailable() {
-		id = gameServer.SetUp(ctx, gameConfig, memSizeGB, startupScript)
+		if id := gameServer.SetUp(ctx, gameConfig, memSizeGB, startupScript); id != "" {
+			if err := h.KVS.Set(ctx, "runner-id:default", id, -1); err != nil {
+				slog.Error("Failed to set runner ID", slog.Any("error", err))
+				return
+			}
 
-		if err := h.KVS.Set(ctx, "runner-id:default", id, -1); err != nil {
-			slog.Error("Failed to set runner ID", slog.Any("error", err))
+			if err := h.Streaming.PublishEvent(
+				ctx,
+				stdStream,
+				streaming.NewStandardMessageWithProgress(entity.EventCreateRunner, 50, web.PageLoading),
+			); err != nil {
+				slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
+			}
+
 			return
 		}
 	}
-	if id == "" {
-		// Startup failed. Manual setup can recover this status.
 
-		encoder := base32.StdEncoding.WithPadding(base32.NoPadding)
-		authCode := encoder.EncodeToString(securecookie.GenerateRandomKey(10))
+	// Startup failed. Manual setup required.
 
-		if err := h.Streaming.PublishEvent(
-			ctx,
-			stdStream,
-			streaming.NewStandardMessageWithTextData(entity.EventManualSetup, authCode, web.PageManualSetup),
-		); err != nil {
-			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-		}
+	encoder := base32.StdEncoding.WithPadding(base32.NoPadding)
+	authCode := encoder.EncodeToString(securecookie.GenerateRandomKey(10))
 
-		if err := h.KVS.Set(ctx, fmt.Sprintf("startup:%s", authCode), string(startupScript), time.Hour); err != nil {
-			slog.Error("Failed to set startup script", slog.Any("error", err))
-			return
-		}
+	if err := h.Streaming.PublishEvent(
+		ctx,
+		stdStream,
+		streaming.NewStandardMessageWithTextData(entity.EventManualSetup, authCode, web.PageManualSetup),
+	); err != nil {
+		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
+	}
 
+	if err := h.KVS.Set(ctx, fmt.Sprintf("startup:%s", authCode), string(startupScript), time.Hour); err != nil {
+		slog.Error("Failed to set startup script", slog.Any("error", err))
 		return
-	}
-
-	if err := h.Streaming.PublishEvent(
-		ctx,
-		stdStream,
-		streaming.NewStandardMessageWithProgress(entity.EventCreateRunner, 50, web.PageLoading),
-	); err != nil {
-		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-	}
-
-	if err := h.Streaming.PublishEvent(
-		ctx,
-		stdStream,
-		streaming.NewStandardMessageWithProgress(entity.EventCreateRunner, 80, web.PageLoading),
-	); err != nil {
-		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
 	}
 }
 
