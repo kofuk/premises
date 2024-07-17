@@ -16,16 +16,12 @@ func Run(args []string) int {
 		return 1
 	}
 
-	rpc.ToExteriord.Notify("proc/registerStopHook", os.Getenv("PREMISES_RUNNER_COMMAND"))
-
 	ctx, cancelFn := context.WithCancel(context.Background())
-	rpc.DefaultServer.RegisterNotifyMethod("base/stop", func(req *rpc.AbstractRequest) error {
-		cancelFn()
-		return nil
-	})
 
-	rpcHandler := NewRPCHandler(rpc.DefaultServer, config)
+	rpcHandler := NewRPCHandler(rpc.DefaultServer, config, cancelFn)
 	rpcHandler.Bind()
+
+	rpc.ToExteriord.Notify("proc/registerStopHook", os.Getenv("PREMISES_RUNNER_COMMAND"))
 
 	<-ctx.Done()
 

@@ -3,22 +3,22 @@ package connector
 import (
 	"fmt"
 	"log/slog"
-	"net"
-	"net/url"
 
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/runner/rpc"
 )
 
 type RPCHandler struct {
-	s      *rpc.Server
-	config *runner.Config
+	s        *rpc.Server
+	config   *runner.Config
+	cancelFn func()
 }
 
-func NewRPCHandler(s *rpc.Server, config *runner.Config) *RPCHandler {
+func NewRPCHandler(s *rpc.Server, config *runner.Config, cancelFn func()) *RPCHandler {
 	return &RPCHandler{
-		s:      s,
-		config: config,
+		s:        s,
+		config:   config,
+		cancelFn: cancelFn,
 	}
 }
 
@@ -30,23 +30,11 @@ func (h *RPCHandler) HandleProxyOpen(req *rpc.AbstractRequest) error {
 
 	slog.Info("Handling connection", slog.String("id", connReq.ConnectionID))
 
-	url, err := url.Parse(h.config.ControlPanel)
-	if err != nil {
-		return err
-	}
-
-	endpoint := ""
-	if host, _, err := net.SplitHostPort(url.Host); err != nil {
-		endpoint = url.Host + ":25530"
-	} else {
-		endpoint = host + ":25530"
-	}
-
-	slog.Info(fmt.Sprintf("Endpoint is %s", endpoint))
+	slog.Info(fmt.Sprintf("Endpoint is %s", connReq.Endpoint))
 
 	proxy := &Proxy{
 		ID:       connReq.ConnectionID,
-		Endpoint: endpoint,
+		Endpoint: connReq.Endpoint,
 		Cert:     connReq.ServerCert,
 	}
 	go func() {
@@ -57,6 +45,12 @@ func (h *RPCHandler) HandleProxyOpen(req *rpc.AbstractRequest) error {
 	return nil
 }
 
+func (h *RPCHandler) HandleBaseStop(req *rpc.AbstractRequest) error {
+	h.cancelFn()
+	return nil
+}
+
 func (h *RPCHandler) Bind() {
 	h.s.RegisterNotifyMethod("proxy/open", h.HandleProxyOpen)
+	h.s.RegisterNotifyMethod("base/stop", h.HandleBaseStop)
 }

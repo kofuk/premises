@@ -213,7 +213,6 @@ jobs:
             --env-file tests/test.env \
             --network host \
             -e PREMISES_MODE=proxy \
-            -e PREMISES_PROXY_BIND=127.0.0.1:25565 \
             -e PREMISES_REDIS_ADDRESS=localhost:6379 \
             -d \
             ghcr.io/kofuk/premises:latest

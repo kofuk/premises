@@ -72,6 +72,7 @@ type SnapshotConfig struct {
 
 type ConnReqInfo struct {
 	ConnectionID string `json:"connectionId"`
+	Endpoint     string `json:"endpoint"`
 	ServerCert   string `json:"serverCert"`
 }
 

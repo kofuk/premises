@@ -28,6 +28,7 @@ type Config struct {
 	RedisAddress          string   `envconfig:"PREMISES_REDIS_ADDRESS"`
 	RedisPassword         string   `envconfig:"PREMISES_REDIS_PASSWORD"`
 	ProxyBind             string   `envconfig:"PREMISES_PROXY_BIND"`
+	ProxyBackendAddr      string   `envconfig:"PREMISES_PROXY_BACKEND_ADDRESS"`
 	GameDomain            string   `envconfig:"PREMISES_GAME_DOMAIN"`
 	IconURL               string   `envconfig:"PREMISES_ICON_URL"`
 }

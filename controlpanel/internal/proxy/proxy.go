@@ -34,6 +34,7 @@ type ProxyHandler struct {
 	kvs        kvs.KeyValueStore
 	action     *longpoll.PollableActionService
 	bindAddr   string
+	endpoint   string
 	iconURL    string
 	gameDomain string
 	cert       *Certificate
@@ -54,6 +55,7 @@ func NewProxyHandler(cfg *config.Config, kvs kvs.KeyValueStore, action *longpoll
 
 	return &ProxyHandler{
 		bindAddr:   bindAddr,
+		endpoint:   cfg.ProxyBackendAddr,
 		kvs:        kvs,
 		action:     action,
 		iconURL:    cfg.IconURL,
@@ -218,6 +220,7 @@ func (p *ProxyHandler) handleConn(conn io.ReadWriteCloser) error {
 		Type: runner.ActionConnReq,
 		ConnReq: &runner.ConnReqInfo{
 			ConnectionID: connID.String(),
+			Endpoint:     p.endpoint,
 			ServerCert:   p.cert.Cert,
 		},
 	})

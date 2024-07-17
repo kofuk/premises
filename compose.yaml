@@ -43,6 +43,7 @@ services:
     environment:
       <<: *settings
       PREMISES_MODE: proxy
+      PREMISES_PROXY_BACKEND_ADDRESS:
     ports:
       - '25530:25530'
       - '25565:25565'
