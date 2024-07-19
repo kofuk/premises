@@ -3,15 +3,15 @@ export type SessionData = {
   userName: string;
 };
 
-export type GenerationInfo = {
+export type WorldGeneration = {
   gen: string;
   id: string;
   timestamp: number;
 };
 
-export type WorldBackup = {
+export type World = {
   worldName: string;
-  generations: GenerationInfo[];
+  generations: WorldGeneration[];
 };
 
 export type MCVersion = {

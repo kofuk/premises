@@ -22,7 +22,7 @@ import {MenuItem} from '../menu-container';
 
 import {valueLabel} from './common';
 
-import {useBackups} from '@/api';
+import {useWorlds} from '@/api';
 import Loading from '@/components/loading';
 import SaveInput from '@/components/save-input';
 
@@ -34,12 +34,12 @@ export enum WorldLocation {
 const SavedWorld = ({name, setName, gen, setGen}: {name: string; setName: (name: string) => void; gen: string; setGen: (gen: string) => void}) => {
   const [t] = useTranslation();
 
-  const {data: backups, isLoading} = useBackups();
+  const {data: savedWorlds, isLoading} = useWorlds();
   if (isLoading) {
     return <Loading compact />;
   }
 
-  if (!backups || backups.length === 0) {
+  if (!savedWorlds || savedWorlds.length === 0) {
     return <Alert severity="error">{t('launch.world.no_world')}</Alert>;
   }
 
@@ -53,14 +53,14 @@ const SavedWorld = ({name, setName, gen, setGen}: {name: string; setName: (name:
     setGen(event.target.value);
   };
 
-  const selectedWorld = backups!.find((e) => e.worldName === name);
+  const selectedWorld = savedWorlds!.find((e) => e.worldName === name);
 
   return (
     <Stack spacing={1}>
       <FormControl fullWidth>
         <InputLabel>{t('launch.world.select')}</InputLabel>
         <Select label={t('launch.world.select')} onChange={handleChangeWorld} value={name}>
-          {backups?.map((e) => (
+          {savedWorlds?.map((e) => (
             <MUIMenuItem key={e.worldName} value={e.worldName}>
               {e.worldName.replace(/^[0-9]+-/, '')}
             </MUIMenuItem>

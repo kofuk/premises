@@ -1,4 +1,4 @@
-package backup
+package world
 
 import (
 	"context"
@@ -6,28 +6,28 @@ import (
 	"sort"
 	"strings"
 
-	entity "github.com/kofuk/premises/internal/entity/web"
+	"github.com/kofuk/premises/internal/entity/web"
 	"github.com/kofuk/premises/internal/s3wrap"
 )
 
-type BackupService struct {
+type WorldService struct {
 	s3     *s3wrap.Client
 	bucket string
 }
 
-func New(ctx context.Context, bucket string, forcePathStyle bool) (*BackupService, error) {
+func New(ctx context.Context, bucket string, forcePathStyle bool) (*WorldService, error) {
 	client, err := s3wrap.New(ctx, forcePathStyle)
 	if err != nil {
 		return nil, err
 	}
 
-	return &BackupService{
+	return &WorldService{
 		s3:     client,
 		bucket: bucket,
 	}, nil
 }
 
-func extractBackupInfoFromKey(key string) (string, string, error) {
+func extractWorldInfoFromKey(key string) (string, string, error) {
 	splitIndex := strings.IndexRune(key, '/')
 	if splitIndex < 0 {
 		return "", "", fmt.Errorf("invalid backup key: %s", key)
@@ -44,21 +44,21 @@ func extractBackupInfoFromKey(key string) (string, string, error) {
 	return world, name, nil
 }
 
-func (backup *BackupService) GetWorlds(ctx context.Context) ([]entity.WorldBackup, error) {
-	worlds := make(map[string]entity.WorldBackup)
-	objects, err := backup.s3.ListObjects(ctx, backup.bucket)
+func (ws *WorldService) GetWorlds(ctx context.Context) ([]web.World, error) {
+	worlds := make(map[string]web.World)
+	objects, err := ws.s3.ListObjects(ctx, ws.bucket)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, obj := range objects {
-		world, gen, err := extractBackupInfoFromKey(obj.Key)
+		world, gen, err := extractWorldInfoFromKey(obj.Key)
 		if err != nil {
 			return nil, err
 		}
-		worlds[world] = entity.WorldBackup{
+		worlds[world] = web.World{
 			WorldName: world,
-			Generations: append(worlds[world].Generations, entity.BackupGeneration{
+			Generations: append(worlds[world].Generations, web.WorldGeneration{
 				Gen:       gen,
 				ID:        obj.Key,
 				Timestamp: int(obj.Timestamp.UnixMilli()),
@@ -78,7 +78,7 @@ func (backup *BackupService) GetWorlds(ctx context.Context) ([]entity.WorldBacku
 	}
 	sort.Strings(keys)
 
-	result := make([]entity.WorldBackup, 0)
+	result := make([]web.World, 0)
 	for _, k := range keys {
 		result = append(result, worlds[k])
 	}

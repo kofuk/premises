@@ -12,7 +12,7 @@ import {
   SnapshotConfiguration,
   SystemInfo,
   UpdatePassword,
-  WorldBackup,
+  World,
   WorldInfo
 } from './entities';
 
@@ -47,7 +47,7 @@ const declareApi =
 
 export const login = declareApi<PasswordCredential, SessionState>('/login', 'post');
 export const getSessionData = declareApi<null, SessionData>('/api/session-data');
-export const getBackups = declareApi<null, WorldBackup[]>('/api/backups');
+export const listWorlds = declareApi<null, World[]>('/api/worlds');
 export const getMCVersions = declareApi<null, MCVersion[]>('/api/mcversions');
 export const changePassword = declareApi<UpdatePassword, null>('/api/users/change-password', 'post');
 export const addUser = declareApi<PasswordCredential, null>('/api/users/add', 'post');
@@ -80,8 +80,8 @@ export const useSessionData = (): MutableUseResponse<SessionData> => {
   };
 };
 
-export const useBackups = (): MutableUseResponse<WorldBackup[]> => {
-  const {data, error, isLoading, mutate} = useSWR('/api/backups', () => getBackups());
+export const useWorlds = (): MutableUseResponse<World[]> => {
+  const {data, error, isLoading, mutate} = useSWR('/api/worlds', () => listWorlds());
   return {
     data,
     error,

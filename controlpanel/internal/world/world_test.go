@@ -1,4 +1,4 @@
-package backup
+package world
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_extractBackupInfoFromKey_success(t *testing.T) {
+func Test_extractWorldInfoFromKey_success(t *testing.T) {
 	testcases := []struct {
 		key   string
 		world string
@@ -46,7 +46,7 @@ func Test_extractBackupInfoFromKey_success(t *testing.T) {
 
 	for _, tt := range testcases {
 		t.Run(tt.key, func(t *testing.T) {
-			world, name, err := extractBackupInfoFromKey(tt.key)
+			world, name, err := extractWorldInfoFromKey(tt.key)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.world, world)
 			assert.Equal(t, tt.name, name)
@@ -54,7 +54,7 @@ func Test_extractBackupInfoFromKey_success(t *testing.T) {
 	}
 }
 
-func Test_extractBackupInfoFromKey_fail(t *testing.T) {
-	_, _, err := extractBackupInfoFromKey("foo.tar.zst")
-	assert.Error(t, err, "Invalid backup key: foo.tar.zst")
+func Test_extractWorldInfoFromKey_fail(t *testing.T) {
+	_, _, err := extractWorldInfoFromKey("foo.tar.zst")
+	assert.Error(t, err, "invalid backup key: foo.tar.zst")
 }

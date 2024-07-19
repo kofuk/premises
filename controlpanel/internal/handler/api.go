@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	CacheKeyBackups          = "backups"
+	CacheKeyWorlds           = "worlds"
 	CacheKeyMCVersions       = "mcversions"
 	CacheKeySystemInfoPrefix = "system-info"
 )
@@ -535,16 +535,16 @@ func (h *Handler) handleApiStop(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiBackups(c echo.Context) error {
-	if val, err := h.redis.Get(c.Request().Context(), CacheKeyBackups).Result(); err == nil {
+func (h *Handler) handleApiListWorlds(c echo.Context) error {
+	if val, err := h.redis.Get(c.Request().Context(), CacheKeyWorlds).Result(); err == nil {
 		return c.JSONBlob(http.StatusOK, []byte(val))
 	} else if err != redis.Nil {
 		slog.Error("Error retrieving backups from cache", slog.Any("error", err))
 	}
 
-	slog.Info("cache miss", slog.String("cache_key", CacheKeyBackups))
+	slog.Info("cache miss", slog.String("cache_key", CacheKeyWorlds))
 
-	backups, err := h.backup.GetWorlds(c.Request().Context())
+	worlds, err := h.world.GetWorlds(c.Request().Context())
 	if err != nil {
 		slog.Error("Failed to retrieve backup list", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -553,9 +553,9 @@ func (h *Handler) handleApiBackups(c echo.Context) error {
 		})
 	}
 
-	resp := web.SuccessfulResponse[[]web.WorldBackup]{
+	resp := web.SuccessfulResponse[[]web.World]{
 		Success: true,
-		Data:    backups,
+		Data:    worlds,
 	}
 
 	jsonResp, err := json.Marshal(resp)
@@ -567,7 +567,7 @@ func (h *Handler) handleApiBackups(c echo.Context) error {
 		})
 	}
 
-	if _, err := h.redis.Set(c.Request().Context(), CacheKeyBackups, jsonResp, time.Minute).Result(); err != nil {
+	if _, err := h.redis.Set(c.Request().Context(), CacheKeyWorlds, jsonResp, time.Minute).Result(); err != nil {
 		slog.Error("Failed to store backup list", slog.Any("error", err))
 	}
 
@@ -1037,7 +1037,7 @@ func (h *Handler) setupApiRoutes(group *echo.Group) {
 	needsAuth.POST("/launch", h.handleApiLaunch)
 	needsAuth.POST("/reconfigure", h.handleApiReconfigure)
 	needsAuth.POST("/stop", h.handleApiStop)
-	needsAuth.GET("/backups", h.handleApiBackups)
+	needsAuth.GET("/worlds", h.handleApiListWorlds)
 	needsAuth.GET("/mcversions", h.handleApiMcversions)
 	needsAuth.GET("/systeminfo", h.handleApiSystemInfo)
 	needsAuth.GET("/worldinfo", h.handleApiWorldInfo)

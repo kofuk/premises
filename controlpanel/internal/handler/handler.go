@@ -11,12 +11,12 @@ import (
 	"github.com/boj/redistore"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/sessions"
-	"github.com/kofuk/premises/controlpanel/internal/backup"
 	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/controlpanel/internal/kvs"
 	"github.com/kofuk/premises/controlpanel/internal/longpoll"
 	"github.com/kofuk/premises/controlpanel/internal/mcversions"
 	"github.com/kofuk/premises/controlpanel/internal/streaming"
+	"github.com/kofuk/premises/controlpanel/internal/world"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/web"
 	"github.com/labstack/echo-contrib/session"
@@ -35,7 +35,7 @@ type Handler struct {
 	KVS          kvs.KeyValueStore
 	MCVersions   mcversions.MCVersionsService
 	Streaming    *streaming.StreamingService
-	backup       *backup.BackupService
+	world        *world.WorldService
 	runnerAction *longpoll.PollableActionService
 }
 
@@ -121,7 +121,7 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 	engine.HideBanner = true
 	engine.HidePort = true
 
-	backupService, err := backup.New(context.TODO(), cfg.S3Bucket, cfg.S3ForcePathStyle)
+	worldService, err := world.New(context.TODO(), cfg.S3Bucket, cfg.S3ForcePathStyle)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 		bind:         bindAddr,
 		KVS:          kvs,
 		Streaming:    streaming.New(redis),
-		backup:       backupService,
+		world:        worldService,
 		runnerAction: longpoll,
 	}
 	h.GameServer = NewGameServer(cfg, h)
