@@ -15,19 +15,16 @@ type BackupService struct {
 	bucket string
 }
 
-func New(awsAccessKey, awsSecretKey, s3Endpoint, bucket string) *BackupService {
-	if strings.HasPrefix(s3Endpoint, "http://s3.premises.local:") {
-		// When S3 endpoint is localhost, it should be a development environment on Docker.
-		// We implicitly rewrite the address so that we can access S3 host.
-		s3Endpoint = strings.Replace(s3Endpoint, "http://s3.premises.local", "http://localhost", 1)
+func New(ctx context.Context, bucket string, forcePathStyle bool) (*BackupService, error) {
+	client, err := s3wrap.New(ctx, forcePathStyle)
+	if err != nil {
+		return nil, err
 	}
-
-	client := s3wrap.New(awsAccessKey, awsSecretKey, s3Endpoint)
 
 	return &BackupService{
 		s3:     client,
 		bucket: bucket,
-	}
+	}, nil
 }
 
 func extractBackupInfoFromKey(key string) (string, string, error) {

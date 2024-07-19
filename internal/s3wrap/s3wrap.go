@@ -2,19 +2,16 @@ package s3wrap
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4Signer "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/aws/smithy-go/logging"
 )
 
 type Client struct {
@@ -35,19 +32,14 @@ func (signer *noAcceptEncodingSigner) SignHTTP(ctx context.Context, credentials 
 	return err
 }
 
-func New(awsAccessKey, awsSecretKey, s3Endpoint string) *Client {
-	config := aws.Config{
-		Region:       "AUTO",
-		Credentials:  credentials.NewStaticCredentialsProvider(awsAccessKey, awsSecretKey, ""),
-		BaseEndpoint: &s3Endpoint,
-		Logger: logging.LoggerFunc(func(classification logging.Classification, format string, v ...interface{}) {
-			slog.Debug(fmt.Sprintf(format, v), slog.String("source", "aws-sdk"))
-		}),
-		ClientLogMode: aws.LogRequest | aws.LogResponse,
+func New(ctx context.Context, forcePathStyle bool) (*Client, error) {
+	config, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	s3Client := s3.NewFromConfig(config, func(options *s3.Options) {
-		options.UsePathStyle = true
+		options.UsePathStyle = forcePathStyle
 		defSigner := v4Signer.NewSigner(func(so *v4Signer.SignerOptions) {
 			so.Logger = options.Logger
 			so.LogSigning = options.ClientLogMode.IsSigning()
@@ -56,9 +48,7 @@ func New(awsAccessKey, awsSecretKey, s3Endpoint string) *Client {
 		options.HTTPSignerV4 = &noAcceptEncodingSigner{signer: defSigner}
 	})
 
-	return &Client{
-		s3Client: s3Client,
-	}
+	return &Client{s3Client: s3Client}, nil
 }
 
 type ObjectMetaData struct {

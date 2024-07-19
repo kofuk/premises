@@ -233,12 +233,6 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 
 	result.SetOperators(cfg.Operators)
 	result.SetWhitelist(cfg.Whitelist)
-	result.C.AWS.AccessKey = cfg.AWSAccessKey
-	result.C.AWS.SecretKey = cfg.AWSSecretKey
-	result.C.S3.Endpoint = cfg.S3Endpoint
-	if strings.HasPrefix(h.cfg.S3Endpoint, "http://host.docker.internal:") {
-		result.C.S3.Endpoint = strings.Replace(h.cfg.S3Endpoint, "http://host.docker.internal", "http://localhost", 1)
-	}
 	result.C.S3.Bucket = cfg.S3Bucket
 
 	return &result.C, nil

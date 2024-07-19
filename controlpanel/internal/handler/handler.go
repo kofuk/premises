@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
@@ -120,6 +121,11 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 	engine.HideBanner = true
 	engine.HidePort = true
 
+	backupService, err := backup.New(context.TODO(), cfg.S3Bucket, cfg.S3ForcePathStyle)
+	if err != nil {
+		return nil, err
+	}
+
 	h := &Handler{
 		cfg:          cfg,
 		engine:       engine,
@@ -128,7 +134,7 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 		bind:         bindAddr,
 		KVS:          kvs,
 		Streaming:    streaming.New(redis),
-		backup:       backup.New(cfg.AWSAccessKey, cfg.AWSSecretKey, cfg.S3Endpoint, cfg.S3Bucket),
+		backup:       backupService,
 		runnerAction: longpoll,
 	}
 	h.GameServer = NewGameServer(cfg, h)

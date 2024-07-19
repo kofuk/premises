@@ -138,7 +138,7 @@ func copyUserDataToContainer(ctx context.Context, docker *docker.Client, contain
 	tarWriter.Write(userData)
 	tarWriter.Close()
 
-	if err := docker.CopyToContainer(ctx, containerId, "/", &buf, types.CopyToContainerOptions{}); err != nil {
+	if err := docker.CopyToContainer(ctx, containerId, "/", &buf, container.CopyToContainerOptions{}); err != nil {
 		return err
 	}
 

@@ -13,10 +13,8 @@ type Config struct {
 	ConohaNetworkService  string   `envconfig:"PREMISES_CONOHA_NETWORK_SERVICE"`
 	ConohaVolumeService   string   `envconfig:"PREMISES_CONOHA_VOLUME_SERVICE"`
 	ConohaNameTag         string   `envconfig:"PREMISES_CONOHA_NAME_TAG"`
-	S3Endpoint            string   `envconfig:"S3_ENDPOINT"`
 	S3Bucket              string   `envconfig:"S3_BUCKET"`
-	AWSAccessKey          string   `envconfig:"AWS_ACCESS_KEY_ID"`
-	AWSSecretKey          string   `envconfig:"AWS_SECRET_ACCESS_KEY"`
+	S3ForcePathStyle      bool     `envconfig:"PREMISES_S3_FORCE_PATH_STYLE"`
 	Operators             []string `envconfig:"PREMISES_GAME_OPERATORS"`
 	Whitelist             []string `envconfig:"PREMISES_GAME_WHITELIST"`
 	Secret                string   `envconfig:"PREMISES_SECRET"`
