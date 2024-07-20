@@ -87,6 +87,23 @@ func (ws *WorldService) GetWorlds(ctx context.Context) ([]web.World, error) {
 	return result, nil
 }
 
+func (ws *WorldService) GetLatestWorldKey(ctx context.Context, world string) (string, error) {
+	objects, err := ws.s3.ListObjects(ctx, ws.bucket, s3wrap.WithPrefix(world+"/"))
+	if err != nil {
+		return "", err
+	}
+
+	if len(objects) == 0 {
+		return "", fmt.Errorf("world not found: %s", world)
+	}
+
+	sort.Slice(objects, func(i, j int) bool {
+		return objects[i].Timestamp.Unix() > objects[j].Timestamp.Unix()
+	})
+
+	return objects[0].Key, nil
+}
+
 func (ws *WorldService) GetPresignedGetURL(ctx context.Context, id string) (string, error) {
 	return ws.s3.GetPresignedGetURL(ctx, ws.bucket, id, 5*time.Minute)
 }

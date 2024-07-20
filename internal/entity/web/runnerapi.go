@@ -1,5 +1,9 @@
 package web
 
+type GetLatestWorldIDResponse struct {
+	WorldID string `json:"worldId"`
+}
+
 type CreateWorldDownloadURLRequest struct {
 	WorldID string `json:"worldId"`
 }

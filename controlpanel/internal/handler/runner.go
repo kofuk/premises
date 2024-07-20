@@ -134,6 +134,31 @@ func (h *Handler) handleGetStartupScript(c echo.Context) error {
 	return c.String(http.StatusOK, script)
 }
 
+func (h *Handler) handleGetLatestWorldID(c echo.Context) error {
+	worldName := c.Param("worldName")
+	if worldName == "" {
+		slog.Error("World name is not set")
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	key, err := h.world.GetLatestWorldKey(c.Request().Context(), worldName)
+	if err != nil {
+		slog.Error("Unable to get latest world key", slog.Any("error", err))
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.GetLatestWorldIDResponse]{
+		Success: true,
+		Data:    web.GetLatestWorldIDResponse{WorldID: key},
+	})
+}
+
 func (h *Handler) handleCreateWorldDownloadURL(c echo.Context) error {
 	var req web.CreateWorldDownloadURLRequest
 	if err := c.Bind(&req); err != nil {
@@ -215,6 +240,7 @@ func (h *Handler) setupRunnerRoutes(group *echo.Group) {
 	privates := group.Group("", h.authKeyMiddleware)
 	privates.GET("/poll-action", h.handleRunnerPollAction)
 	privates.POST("/push-status", h.handlePushStatus)
-	privates.POST("/world-download-url", h.handleCreateWorldDownloadURL)
-	privates.POST("/world-upload-url", h.handleCreateWorldUploadURL)
+	privates.GET("/world/latest-id/:worldName", h.handleGetLatestWorldID)
+	privates.POST("/world/download-url", h.handleCreateWorldDownloadURL)
+	privates.POST("/world/upload-url", h.handleCreateWorldUploadURL)
 }
