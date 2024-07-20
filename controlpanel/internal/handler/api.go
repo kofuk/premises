@@ -306,6 +306,10 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 	}
 
 out:
+	if err := h.world.Prune(ctx, 5); err != nil {
+		slog.Error("Failed to prune worlds", slog.Any("error", err))
+	}
+
 	if err := h.KVS.Del(ctx, "runner-id:default", "runner-info:default", "world-info:default", fmt.Sprintf("runner:%s", authKey)); err != nil {
 		slog.Error("Failed to unset runner information", slog.Any("error", err))
 		return

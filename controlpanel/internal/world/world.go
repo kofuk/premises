@@ -2,6 +2,7 @@ package world
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -110,4 +111,65 @@ func (ws *WorldService) GetPresignedGetURL(ctx context.Context, id string) (stri
 
 func (ws *WorldService) GetPresignedPutURL(ctx context.Context, id string) (string, error) {
 	return ws.s3.GetPresignedPutURL(ctx, ws.bucket, id, 5*time.Minute)
+}
+
+func groupByPrefix(objs []s3wrap.ObjectMetaData) map[string][]s3wrap.ObjectMetaData {
+	result := make(map[string][]s3wrap.ObjectMetaData)
+	for _, obj := range objs {
+		pk := strings.SplitN(obj.Key, "/", 2)
+		if len(pk) != 2 {
+			continue
+		}
+
+		result[pk[0]] = append(result[pk[0]], obj)
+	}
+
+	return result
+}
+
+func (w *WorldService) pruneSlice(ctx context.Context, objs []s3wrap.ObjectMetaData, preserveCount int) error {
+	if len(objs) <= preserveCount {
+		return nil
+	}
+
+	sort.Slice(objs, func(i, j int) bool {
+		return objs[i].Timestamp.Unix() > objs[j].Timestamp.Unix()
+	})
+
+	var keys []string
+	for _, obj := range objs[preserveCount:] {
+		keys = append(keys, obj.Key)
+	}
+	if err := w.s3.DeleteObjects(ctx, w.bucket, keys); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type PruneError struct {
+	Prefix string
+	Err    error
+}
+
+func (e PruneError) Error() string {
+	return fmt.Sprintf("%s: %s", e.Prefix, e.Err.Error())
+}
+
+func (w *WorldService) Prune(ctx context.Context, preserveCount int) error {
+	objs, err := w.s3.ListObjects(ctx, w.bucket)
+	if err != nil {
+		return err
+	}
+
+	groupedObjs := groupByPrefix(objs)
+
+	var errs []error
+	for prefix, objs := range groupedObjs {
+		if err := w.pruneSlice(ctx, objs, preserveCount); err != nil {
+			errs = append(errs, PruneError{Prefix: prefix, Err: err})
+		}
+	}
+
+	return errors.Join(errs...)
 }

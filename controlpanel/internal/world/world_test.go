@@ -3,6 +3,7 @@ package world
 import (
 	"testing"
 
+	"github.com/kofuk/premises/internal/s3wrap"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -57,4 +58,59 @@ func Test_extractWorldInfoFromKey_success(t *testing.T) {
 func Test_extractWorldInfoFromKey_fail(t *testing.T) {
 	_, _, err := extractWorldInfoFromKey("foo.tar.zst")
 	assert.Error(t, err, "invalid backup key: foo.tar.zst")
+}
+
+func Test_groupByPrefix(t *testing.T) {
+	tests := []struct {
+		name     string
+		objs     []s3wrap.ObjectMetaData
+		expected map[string][]s3wrap.ObjectMetaData
+	}{{
+		name:     "Empty slice",
+		objs:     []s3wrap.ObjectMetaData{},
+		expected: make(map[string][]s3wrap.ObjectMetaData),
+	}, {
+		name: "Different prefixes",
+		objs: []s3wrap.ObjectMetaData{
+			{Key: "prefix1/object1"},
+			{Key: "prefix1/object2"},
+			{Key: "prefix2/object3"},
+			{Key: "prefix2/object4"},
+		},
+		expected: map[string][]s3wrap.ObjectMetaData{
+			"prefix1": {{Key: "prefix1/object1"}, {Key: "prefix1/object2"}},
+			"prefix2": {{Key: "prefix2/object3"}, {Key: "prefix2/object4"}},
+		},
+	}, {
+		name: "Objects without prefixes",
+		objs: []s3wrap.ObjectMetaData{
+			{Key: "object"},
+		},
+		expected: map[string][]s3wrap.ObjectMetaData{},
+	}, {
+		name: "Multiple slashes in keys",
+		objs: []s3wrap.ObjectMetaData{
+			{Key: "prefix1/subprefix1/object1"},
+			{Key: "prefix1/subprefix2/object2"},
+			{Key: "prefix2/subprefix1/object3"},
+			{Key: "prefix2/subprefix2/object4"},
+		},
+		expected: map[string][]s3wrap.ObjectMetaData{
+			"prefix1": {
+				{Key: "prefix1/subprefix1/object1"},
+				{Key: "prefix1/subprefix2/object2"},
+			},
+			"prefix2": {
+				{Key: "prefix2/subprefix1/object3"},
+				{Key: "prefix2/subprefix2/object4"},
+			},
+		},
+	}}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := groupByPrefix(tt.objs)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
 }
