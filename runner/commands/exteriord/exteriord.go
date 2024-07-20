@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/kofuk/premises/internal"
 	"github.com/kofuk/premises/runner/commands/exteriord/exterior"
 	"github.com/kofuk/premises/runner/commands/exteriord/outbound"
 	"github.com/kofuk/premises/runner/commands/exteriord/proc"
@@ -17,6 +18,8 @@ import (
 
 func Run(args []string) int {
 	signal.Ignore(syscall.SIGHUP)
+
+	slog.Info("Starting premises-runner...", slog.String("protocol_version", internal.ProtocolVersion))
 
 	config, err := config.Load()
 	if err != nil {
