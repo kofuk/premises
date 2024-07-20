@@ -2,16 +2,13 @@ package world
 
 import (
 	"archive/tar"
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	gofs "io/fs"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -21,26 +18,20 @@ import (
 	"github.com/klauspost/compress/zstd"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
-	"github.com/kofuk/premises/internal/entity/web"
 	"github.com/kofuk/premises/runner/env"
 	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/internal/api"
 	"github.com/kofuk/premises/runner/util"
 )
 
 type WorldService struct {
-	endpoint string
-	authKey  string
+	client *api.Client
 }
 
 func New(endpoint, authKey string) *WorldService {
 	return &WorldService{
-		endpoint: endpoint,
-		authKey:  authKey,
+		client: api.New(endpoint, authKey, http.DefaultClient),
 	}
-}
-
-func makeArchiveName() string {
-	return fmt.Sprintf("%s.tar.zst", time.Now().Format(time.DateTime))
 }
 
 func (w *WorldService) getExtractionPipeline(name string) (*ExtractionPipeline, error) {
@@ -71,62 +62,13 @@ func (w *WorldService) getExtractionPipeline(name string) (*ExtractionPipeline, 
 	return nil, errors.New("unsupported archive type")
 }
 
-func (w *WorldService) doRequest(ctx context.Context, method string, path string, body any) ([]byte, error) {
-	var reqBody io.Reader
-	if body != nil {
-		reqData, err := json.Marshal(body)
-		if err != nil {
-			return nil, err
-		}
-		reqBody = bytes.NewBuffer(reqData)
-	}
-
-	url, err := url.Parse(w.endpoint)
-	if err != nil {
-		return nil, err
-	}
-	url.Path = path
-
-	req, err := http.NewRequestWithContext(ctx, method, url.String(), reqBody)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", w.authKey)
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	var respData web.SuccessfulResponse[json.RawMessage]
-	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
-		return nil, err
-	}
-
-	if !respData.Success {
-		return nil, errors.New("request failed")
-	}
-
-	return respData.Data, nil
-}
-
 func (w *WorldService) getDownloadURL(ctx context.Context, genID string) (string, error) {
-	resp, err := w.doRequest(ctx, http.MethodPost, "/_/world/download-url", web.CreateWorldDownloadURLRequest{
-		WorldID: genID,
-	})
+	resp, err := w.client.CreateWorldDownloadURL(ctx, genID)
 	if err != nil {
 		return "", err
 	}
 
-	var respData web.CreateWorldDownloadURLResponse
-	if err := json.Unmarshal(resp, &respData); err != nil {
-		return "", err
-	}
-
-	return respData.URL, nil
+	return resp.URL, nil
 }
 
 func (w *WorldService) DownloadWorldData(config *runner.Config) error {
@@ -165,17 +107,12 @@ func (w *WorldService) DownloadWorldData(config *runner.Config) error {
 }
 
 func (w *WorldService) GetLatestKey(ctx context.Context, world string) (string, error) {
-	resp, err := w.doRequest(ctx, http.MethodGet, "/_/world/latest-id/"+world, nil)
+	resp, err := w.client.GetLatestWorldID(ctx, world)
 	if err != nil {
 		return "", err
 	}
 
-	var respData web.GetLatestWorldIDResponse
-	if err := json.Unmarshal(resp, &respData); err != nil {
-		return "", err
-	}
-
-	return respData.WorldID, nil
+	return resp.WorldID, nil
 }
 
 func (w *WorldService) UploadWorldData(config *runner.Config) (string, error) {
@@ -183,19 +120,12 @@ func (w *WorldService) UploadWorldData(config *runner.Config) (string, error) {
 }
 
 func (w *WorldService) getUploadURL(ctx context.Context, worldName string) (string, string, error) {
-	resp, err := w.doRequest(ctx, http.MethodPost, "/_/world/upload-url", web.CreateWorldUploadURLRequest{
-		WorldName: worldName,
-	})
+	resp, err := w.client.CreateWorldUploadURL(ctx, worldName)
 	if err != nil {
 		return "", "", err
 	}
 
-	var respData web.CreateWorldUploadURLResponse
-	if err := json.Unmarshal(resp, &respData); err != nil {
-		return "", "", err
-	}
-
-	return respData.URL, respData.WorldID, nil
+	return resp.URL, resp.WorldID, nil
 }
 
 func (w *WorldService) doUploadWorldData(config *runner.Config) (string, error) {

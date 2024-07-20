@@ -6,18 +6,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/kofuk/premises/internal/entity/runner"
+	"github.com/kofuk/premises/runner/internal/api"
 	"github.com/kofuk/premises/runner/rpc"
 	"github.com/kofuk/premises/runner/rpc/types"
 	"golang.org/x/sync/errgroup"
 )
 
-type ActionMapper func(action runner.Action) error
+type ActionMapper func(action *runner.Action) error
 
 type OutboundMessage struct {
 	Dispatch bool         `json:"dispatch"`
@@ -25,17 +25,16 @@ type OutboundMessage struct {
 }
 
 type Server struct {
-	addr          string
-	authKey       string
+	client        *api.Client
 	msgChan       chan OutboundMessage
 	actionMappers map[runner.ActionType]ActionMapper
 }
 
-func (s *Server) HandleActionStop(action runner.Action) error {
+func (s *Server) HandleActionStop(action *runner.Action) error {
 	return rpc.ToLauncher.Notify("game/stop", nil)
 }
 
-func (s *Server) HandleActionSnapshot(action runner.Action) error {
+func (s *Server) HandleActionSnapshot(action *runner.Action) error {
 	if action.Snapshot == nil {
 		return errors.New("missing snapshot config")
 	}
@@ -46,7 +45,7 @@ func (s *Server) HandleActionSnapshot(action runner.Action) error {
 	})
 }
 
-func (s *Server) HandleActionUndo(action runner.Action) error {
+func (s *Server) HandleActionUndo(action *runner.Action) error {
 	if action.Snapshot == nil {
 		return errors.New("missing snapshot config")
 	}
@@ -57,7 +56,7 @@ func (s *Server) HandleActionUndo(action runner.Action) error {
 	})
 }
 
-func (s *Server) HandleActionReconfigure(action runner.Action) error {
+func (s *Server) HandleActionReconfigure(action *runner.Action) error {
 	if action.Config == nil {
 		return errors.New("missing config")
 	}
@@ -65,7 +64,7 @@ func (s *Server) HandleActionReconfigure(action runner.Action) error {
 	return rpc.ToLauncher.Notify("game/reconfigure", action.Config)
 }
 
-func (s *Server) HandleActionConnRequest(action runner.Action) error {
+func (s *Server) HandleActionConnRequest(action *runner.Action) error {
 	if action.ConnReq == nil {
 		return errors.New("missing request info")
 	}
@@ -75,8 +74,7 @@ func (s *Server) HandleActionConnRequest(action runner.Action) error {
 
 func NewServer(addr string, authKey string, msgChan chan OutboundMessage) *Server {
 	s := &Server{
-		addr:          addr,
-		authKey:       authKey,
+		client:        api.New(addr, authKey, http.DefaultClient),
 		msgChan:       msgChan,
 		actionMappers: make(map[runner.ActionType]ActionMapper),
 	}
@@ -97,18 +95,10 @@ func (s *Server) HandleMonitor(ctx context.Context) {
 	buf := bytes.NewBuffer(nil)
 
 	sendStatus := func() {
-		req, err := http.NewRequest(http.MethodPost, s.addr+"/_/push-status", buf)
-		if err != nil {
-			slog.Error("Error creating request", slog.Any("error", err))
-			return
-		}
-		req.Header.Set("Authorization", s.authKey)
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
+		if err := s.client.PostStatus(ctx, buf.Bytes()); err != nil {
 			slog.Error("Error writing status", slog.Any("error", err))
 			return
 		}
-		io.Copy(io.Discard, resp.Body)
 
 		buf.Reset()
 	}
@@ -160,25 +150,11 @@ func (s *Server) PollAction(ctx context.Context) {
 		default:
 		}
 
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.addr+"/_/poll-action", nil)
-		if err != nil {
-			slog.Error("Error creating request", slog.Any("error", err))
-			continue
-		}
-		req.Header.Set("Authorization", s.authKey)
-
-		resp, err := http.DefaultClient.Do(req)
+		action, err := s.client.PollAction(ctx)
 		if err != nil {
 			slog.Error("Error polling action", slog.Any("error", err))
 
 			time.Sleep(5 * time.Second)
-			continue
-		}
-
-		var action runner.Action
-		dec := json.NewDecoder(resp.Body)
-		if err := dec.Decode(&action); err != nil {
-			slog.Error("Error decoding request", slog.Any("error", err))
 			continue
 		}
 

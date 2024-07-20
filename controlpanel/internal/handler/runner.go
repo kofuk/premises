@@ -19,11 +19,14 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (h *Handler) handleRunnerPollAction(c echo.Context) error {
+func (h *Handler) handleRunnerPoll(c echo.Context) error {
 	runnerId, ok := c.Get("runner-id").(string)
 	if !ok || runnerId == "" {
 		slog.Error("Server ID is not set")
-		return c.String(http.StatusInternalServerError, "")
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
 	}
 
 	action, err := h.runnerAction.Wait(c.Request().Context(), runnerId)
@@ -32,23 +35,35 @@ func (h *Handler) handleRunnerPollAction(c echo.Context) error {
 			return nil
 		}
 		slog.Error("Error waiting action", slog.Any("error", err))
-		return c.String(http.StatusInternalServerError, "")
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
 	}
 
-	return c.JSONBlob(http.StatusOK, []byte(action))
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[json.RawMessage]{
+		Success: true,
+		Data:    json.RawMessage(action),
+	})
 }
 
-func (h *Handler) handlePushStatus(c echo.Context) error {
+func (h *Handler) handlePostStatus(c echo.Context) error {
 	runnerId, ok := c.Get("runner-id").(string)
 	if !ok || runnerId == "" {
 		slog.Error("Runner ID is not set")
-		return c.String(http.StatusInternalServerError, "")
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
 	}
 
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		slog.Error("Error reading status", slog.Any("error", err))
-		return c.String(http.StatusInternalServerError, "")
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
 	}
 
 	events := bytes.Split(body, []byte{0})
@@ -77,7 +92,10 @@ func (h *Handler) handlePushStatus(c echo.Context) error {
 		}
 	}
 
-	return nil
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[interface{}]{
+		Success: true,
+		Data:    nil,
+	})
 }
 
 func (h *Handler) handleGetInstallScript(c echo.Context) error {
@@ -229,7 +247,10 @@ func (h *Handler) authKeyMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		var runnerId string
 		if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("runner:%s", authKey), &runnerId); err != nil {
 			slog.Error("Invalid auth key", slog.Any("error", err))
-			return c.String(http.StatusBadRequest, "")
+			return c.JSON(http.StatusOK, web.ErrorResponse{
+				Success:   false,
+				ErrorCode: entity.ErrBadRequest,
+			})
 		}
 
 		c.Set("runner-id", runnerId)
@@ -243,8 +264,8 @@ func (h *Handler) setupRunnerRoutes(group *echo.Group) {
 	group.GET("/startup", h.handleGetStartupScript)
 
 	privates := group.Group("", h.authKeyMiddleware)
-	privates.GET("/poll-action", h.handleRunnerPollAction)
-	privates.POST("/push-status", h.handlePushStatus)
+	privates.GET("/poll", h.handleRunnerPoll)
+	privates.POST("/status", h.handlePostStatus)
 	privates.GET("/world/latest-id/:worldName", h.handleGetLatestWorldID)
 	privates.POST("/world/download-url", h.handleCreateWorldDownloadURL)
 	privates.POST("/world/upload-url", h.handleCreateWorldUploadURL)

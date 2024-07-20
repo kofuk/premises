@@ -1,8 +1,16 @@
 package web
 
 import (
+	"encoding/json"
+
 	"github.com/kofuk/premises/internal/entity"
 )
+
+type GenericResponse struct {
+	Success   bool             `json:"success"`
+	ErrorCode entity.ErrorCode `json:"errorCode"`
+	Data      json.RawMessage  `json:"data"`
+}
 
 type ErrorResponse struct {
 	Success   bool             `json:"success"`
