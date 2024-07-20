@@ -199,7 +199,9 @@ jobs:
           done
       - name: Launch ostack-fake
         run: |
-          DOCKER_API_VERSION="$(docker version --format '{{ .Server.APIVersion }}' | tee /dev/stderr)" ostack-fake &
+          export DOCKER_API_VERSION="$(docker version --format '{{ .Server.APIVersion }}' | tee /dev/stderr)"
+          export EXTRA_HOSTS='host.docker.internal:127.0.0.1'
+          ostack-fake &
           for i in {1..20}; do
             curl -f http://localhost:8010/health && break
             sleep 3
