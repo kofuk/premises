@@ -1,4 +1,7 @@
-import { assertEquals } from "https://deno.land/std@0.83.0/testing/asserts.ts";
+import {
+  assertEquals,
+  assertNotEquals,
+} from "https://deno.land/std@0.83.0/testing/asserts.ts";
 
 import api, { login } from "../lib/api.ts";
 import {
@@ -34,6 +37,10 @@ await stopServer(cookie);
 
 console.log("Launch server with another world (to purge cache)");
 await launchNewWorld(cookie, `test-${Date.now()}`);
+if (usingFakeMinecraftServer()) {
+  const state = await getState();
+  assertNotEquals(state.serverState!.worldVersionPrev, worldVersion);
+}
 await stopServer(cookie);
 
 console.log("Relaunch server");
