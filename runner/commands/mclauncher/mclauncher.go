@@ -20,7 +20,7 @@ func Run(args []string) int {
 		return 1
 	}
 
-	worldService := world.New(config.AWS.AccessKey, config.AWS.SecretKey, config.S3.Endpoint, config.S3.Bucket)
+	worldService := world.New(config.ControlPanel, config.AuthKey)
 
 	launcher := game.NewLauncher(config, worldService)
 

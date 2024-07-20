@@ -159,9 +159,9 @@ func (l *Launcher) downloadWorld() error {
 	}
 
 	if l.config.World.GenerationId == "@/latest" {
-		genId, err := l.world.GetLatestKey(l.config.World.Name)
+		genId, err := l.world.GetLatestKey(context.TODO(), l.config.World.Name)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get latest world ID: %w", err)
 		}
 		l.config.World.GenerationId = genId
 	}
@@ -535,10 +535,6 @@ func (l *Launcher) Launch() error {
 
 	if err := l.uploadWorld(); err != nil {
 		return err
-	}
-
-	if err := l.world.RemoveOldBackups(l.config); err != nil {
-		slog.Error("Unable to delete outdated backups", slog.Any("error", err))
 	}
 
 	if l.shouldRestart {

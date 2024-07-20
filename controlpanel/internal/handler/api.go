@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	CacheKeyBackups          = "backups"
+	CacheKeyWorlds           = "worlds"
 	CacheKeyMCVersions       = "mcversions"
 	CacheKeySystemInfoPrefix = "system-info"
 )
@@ -233,13 +233,6 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 
 	result.SetOperators(cfg.Operators)
 	result.SetWhitelist(cfg.Whitelist)
-	result.C.AWS.AccessKey = cfg.AWSAccessKey
-	result.C.AWS.SecretKey = cfg.AWSSecretKey
-	result.C.S3.Endpoint = cfg.S3Endpoint
-	if strings.HasPrefix(h.cfg.S3Endpoint, "http://host.docker.internal:") {
-		result.C.S3.Endpoint = strings.Replace(h.cfg.S3Endpoint, "http://host.docker.internal", "http://localhost", 1)
-	}
-	result.C.S3.Bucket = cfg.S3Bucket
 
 	return &result.C, nil
 }
@@ -313,6 +306,10 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 	}
 
 out:
+	if err := h.world.Prune(ctx, 5); err != nil {
+		slog.Error("Failed to prune worlds", slog.Any("error", err))
+	}
+
 	if err := h.KVS.Del(ctx, "runner-id:default", "runner-info:default", "world-info:default", fmt.Sprintf("runner:%s", authKey)); err != nil {
 		slog.Error("Failed to unset runner information", slog.Any("error", err))
 		return
@@ -541,16 +538,16 @@ func (h *Handler) handleApiStop(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiBackups(c echo.Context) error {
-	if val, err := h.redis.Get(c.Request().Context(), CacheKeyBackups).Result(); err == nil {
+func (h *Handler) handleApiListWorlds(c echo.Context) error {
+	if val, err := h.redis.Get(c.Request().Context(), CacheKeyWorlds).Result(); err == nil {
 		return c.JSONBlob(http.StatusOK, []byte(val))
 	} else if err != redis.Nil {
 		slog.Error("Error retrieving backups from cache", slog.Any("error", err))
 	}
 
-	slog.Info("cache miss", slog.String("cache_key", CacheKeyBackups))
+	slog.Info("cache miss", slog.String("cache_key", CacheKeyWorlds))
 
-	backups, err := h.backup.GetWorlds(c.Request().Context())
+	worlds, err := h.world.GetWorlds(c.Request().Context())
 	if err != nil {
 		slog.Error("Failed to retrieve backup list", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -559,9 +556,9 @@ func (h *Handler) handleApiBackups(c echo.Context) error {
 		})
 	}
 
-	resp := web.SuccessfulResponse[[]web.WorldBackup]{
+	resp := web.SuccessfulResponse[[]web.World]{
 		Success: true,
-		Data:    backups,
+		Data:    worlds,
 	}
 
 	jsonResp, err := json.Marshal(resp)
@@ -573,7 +570,7 @@ func (h *Handler) handleApiBackups(c echo.Context) error {
 		})
 	}
 
-	if _, err := h.redis.Set(c.Request().Context(), CacheKeyBackups, jsonResp, time.Minute).Result(); err != nil {
+	if _, err := h.redis.Set(c.Request().Context(), CacheKeyWorlds, jsonResp, time.Minute).Result(); err != nil {
 		slog.Error("Failed to store backup list", slog.Any("error", err))
 	}
 
@@ -1043,7 +1040,7 @@ func (h *Handler) setupApiRoutes(group *echo.Group) {
 	needsAuth.POST("/launch", h.handleApiLaunch)
 	needsAuth.POST("/reconfigure", h.handleApiReconfigure)
 	needsAuth.POST("/stop", h.handleApiStop)
-	needsAuth.GET("/backups", h.handleApiBackups)
+	needsAuth.GET("/worlds", h.handleApiListWorlds)
 	needsAuth.GET("/mcversions", h.handleApiMcversions)
 	needsAuth.GET("/systeminfo", h.handleApiSystemInfo)
 	needsAuth.GET("/worldinfo", h.handleApiWorldInfo)

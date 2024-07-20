@@ -91,7 +91,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .node-version
+          # node-version-file: .node-version
+          # workaround for npm/cli#7657
+          node-version: 22.4.x
       - uses: actions/cache/restore@v4
         id: cache
         with:
@@ -176,29 +178,36 @@ jobs:
           path: ./bin
       - name: Load image
         run: docker load --input image.tar
-      - name: Prepare services
+      - name: Prepare binaries
         run: |
           mkdir /tmp/premises
           mv bin/premises-runner /tmp/premises
           chmod +x bin/*
-
-          echo '::group::Launch MinIO'
-          docker run -d -p 9001:9001 -p 9000:9000 -e MINIO_ROOT_USER=premises -e MINIO_ROOT_PASSWORD=password --entrypoint /bin/bash quay.io/minio/minio '-c' 'mkdir -p /data/premises && minio server /data --console-address :9001'
+      - name: Launch MinIO
+        run: |
+          docker run -d \
+              -p 9001:9001 \
+              -p 9000:9000 \
+              -e MINIO_ROOT_USER=premises \
+              -e MINIO_ROOT_PASSWORD=password \
+              --entrypoint /bin/bash \
+              quay.io/minio/minio \
+              '-c' 'mkdir -p /data/premises && minio server /data --console-address :9001'
           for i in {1..20}; do
             curl http://localhost:9001 && break
             sleep 3
           done
-          echo '::endgroup::'
-
-          echo '::group::Launch ostack-fake'
-          DOCKER_API_VERSION="$(docker version --format '{{ .Server.APIVersion }}' | tee /dev/stderr)" ostack-fake &
+      - name: Launch ostack-fake
+        run: |
+          export DOCKER_API_VERSION="$(docker version --format '{{ .Server.APIVersion }}' | tee /dev/stderr)"
+          export EXTRA_HOSTS='host.docker.internal:127.0.0.1'
+          ostack-fake &
           for i in {1..20}; do
             curl -f http://localhost:8010/health && break
             sleep 3
           done
-          echo '::endgroup::'
-
-          echo '::group::Launch app'
+      - name: Launch app
+        run: |
           docker compose --env-file tests/test.env -f compose.yaml -f tests/compose-test.yaml run --rm web /premises migrate
           docker compose --env-file tests/test.env -f compose.yaml -f tests/compose-test.yaml run --rm web pmctl user add -u user1 -p password1 --initialized
           docker compose --env-file tests/test.env -f compose.yaml -f tests/compose-test.yaml up -d
@@ -206,9 +215,8 @@ jobs:
             curl -f http://localhost:8000/ && break
             sleep 3
           done
-          echo '::endgroup::'
-
-          echo '::group::Launch proxy'
+      - name: Launch proxy
+        run: |
           docker container run \
             --env-file tests/test.env \
             --network host \
@@ -216,11 +224,9 @@ jobs:
             -e PREMISES_REDIS_ADDRESS=localhost:6379 \
             -d \
             ghcr.io/kofuk/premises:latest
-          echo '::endgroup::'
-
-          echo '::group::Build base image for ostack-fake'
+      - name: Build base image for ostack-fake
+        run: |
           ./.devcontainer/fake-runner/build_base_image.sh
-          echo '::endgroup::'
       - name: Run test
         run: |
           export TARGET_HOST='http://localhost:8000'

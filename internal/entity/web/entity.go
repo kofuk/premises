@@ -1,8 +1,16 @@
 package web
 
 import (
+	"encoding/json"
+
 	"github.com/kofuk/premises/internal/entity"
 )
+
+type GenericResponse struct {
+	Success   bool             `json:"success"`
+	ErrorCode entity.ErrorCode `json:"errorCode"`
+	Data      json.RawMessage  `json:"data"`
+}
 
 type ErrorResponse struct {
 	Success   bool             `json:"success"`
@@ -35,15 +43,15 @@ type PasswordCredential struct {
 	Password string `json:"password"`
 }
 
-type BackupGeneration struct {
+type WorldGeneration struct {
 	Gen       string `json:"gen"`
 	ID        string `json:"id"`
 	Timestamp int    `json:"timestamp"`
 }
 
-type WorldBackup struct {
-	WorldName   string             `json:"worldName"`
-	Generations []BackupGeneration `json:"generations"`
+type World struct {
+	WorldName   string            `json:"worldName"`
+	Generations []WorldGeneration `json:"generations"`
 }
 
 type UpdatePassword struct {

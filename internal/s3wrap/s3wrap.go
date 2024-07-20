@@ -2,23 +2,20 @@ package s3wrap
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4Signer "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-	"github.com/aws/smithy-go/logging"
 )
 
 type Client struct {
-	s3Client *s3.Client
+	s3 *s3.Client
 }
 
 type noAcceptEncodingSigner struct {
@@ -35,19 +32,14 @@ func (signer *noAcceptEncodingSigner) SignHTTP(ctx context.Context, credentials 
 	return err
 }
 
-func New(awsAccessKey, awsSecretKey, s3Endpoint string) *Client {
-	config := aws.Config{
-		Region:       "AUTO",
-		Credentials:  credentials.NewStaticCredentialsProvider(awsAccessKey, awsSecretKey, ""),
-		BaseEndpoint: &s3Endpoint,
-		Logger: logging.LoggerFunc(func(classification logging.Classification, format string, v ...interface{}) {
-			slog.Debug(fmt.Sprintf(format, v), slog.String("source", "aws-sdk"))
-		}),
-		ClientLogMode: aws.LogRequest | aws.LogResponse,
+func New(ctx context.Context, forcePathStyle bool) (*Client, error) {
+	config, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	s3Client := s3.NewFromConfig(config, func(options *s3.Options) {
-		options.UsePathStyle = true
+		options.UsePathStyle = forcePathStyle
 		defSigner := v4Signer.NewSigner(func(so *v4Signer.SignerOptions) {
 			so.Logger = options.Logger
 			so.LogSigning = options.ClientLogMode.IsSigning()
@@ -56,9 +48,7 @@ func New(awsAccessKey, awsSecretKey, s3Endpoint string) *Client {
 		options.HTTPSignerV4 = &noAcceptEncodingSigner{signer: defSigner}
 	})
 
-	return &Client{
-		s3Client: s3Client,
-	}
+	return &Client{s3: s3Client}, nil
 }
 
 type ObjectMetaData struct {
@@ -89,7 +79,7 @@ func (client *Client) ListObjects(ctx context.Context, bucket string, opts ...Li
 		first = false
 		params.ContinuationToken = continuationToken
 
-		resp, err := client.s3Client.ListObjectsV2(ctx, params)
+		resp, err := client.s3.ListObjectsV2(ctx, params)
 		if err != nil {
 			return nil, err
 		}
@@ -118,7 +108,7 @@ func (client *Client) DeleteObjects(ctx context.Context, bucket string, keys []s
 			Key: &key,
 		})
 	}
-	if _, err := client.s3Client.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{
+	if _, err := client.s3.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{
 		Bucket: &bucket,
 		Delete: &types.Delete{
 			Objects: objectIds,
@@ -136,7 +126,7 @@ type Object struct {
 }
 
 func (client *Client) GetObject(ctx context.Context, bucket, key string) (*Object, error) {
-	resp, err := client.s3Client.GetObject(context.Background(), &s3.GetObjectInput{
+	resp, err := client.s3.GetObject(context.Background(), &s3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
 	})
@@ -151,7 +141,7 @@ func (client *Client) GetObject(ctx context.Context, bucket, key string) (*Objec
 }
 
 func (client *Client) PutObject(ctx context.Context, bucket, key string, body io.ReadSeeker, size int64) error {
-	if _, err := client.s3Client.PutObject(context.Background(), &s3.PutObjectInput{
+	if _, err := client.s3.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
 		Body:   body,
@@ -160,4 +150,34 @@ func (client *Client) PutObject(ctx context.Context, bucket, key string, body io
 	}
 
 	return nil
+}
+
+func (client *Client) GetPresignedGetURL(ctx context.Context, bucket, key string, expires time.Duration) (string, error) {
+	presignClient := s3.NewPresignClient(client.s3)
+	req, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: &bucket,
+		Key:    &key,
+	}, func(opts *s3.PresignOptions) {
+		opts.Expires = expires
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return req.URL, nil
+}
+
+func (client *Client) GetPresignedPutURL(ctx context.Context, bucket, key string, expires time.Duration) (string, error) {
+	presignClient := s3.NewPresignClient(client.s3)
+	req, err := presignClient.PresignPutObject(ctx, &s3.PutObjectInput{
+		Bucket: &bucket,
+		Key:    &key,
+	}, func(opts *s3.PresignOptions) {
+		opts.Expires = expires
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return req.URL, nil
 }

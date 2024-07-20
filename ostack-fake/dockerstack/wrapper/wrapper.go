@@ -108,12 +108,18 @@ func createContainer(ctx context.Context, docker *docker.Client, imageID, nameTa
 		return nil, "", err
 	}
 
+	var extraHosts []string
+	if os.Getenv("EXTRA_HOSTS") != "" {
+		extraHosts = strings.Split(os.Getenv("EXTRA_HOSTS"), ",")
+	}
+
 	hostConfig := container.HostConfig{
 		Binds:       binds,
 		CapAdd:      strslice.StrSlice{"MKNOD"},
 		NetworkMode: "host",
 		Privileged:  true,
 		DNS:         []string{ns},
+		ExtraHosts:  extraHosts,
 	}
 
 	resp, err := docker.ContainerCreate(ctx, &containerConfig, &hostConfig, nil, nil, "")
@@ -138,7 +144,7 @@ func copyUserDataToContainer(ctx context.Context, docker *docker.Client, contain
 	tarWriter.Write(userData)
 	tarWriter.Close()
 
-	if err := docker.CopyToContainer(ctx, containerId, "/", &buf, types.CopyToContainerOptions{}); err != nil {
+	if err := docker.CopyToContainer(ctx, containerId, "/", &buf, container.CopyToContainerOptions{}); err != nil {
 		return err
 	}
 

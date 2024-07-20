@@ -8,44 +8,30 @@ import (
 	"io"
 	gofs "io/fs"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
-	"github.com/kofuk/premises/internal/s3wrap"
 	"github.com/kofuk/premises/runner/env"
 	"github.com/kofuk/premises/runner/fs"
+	"github.com/kofuk/premises/runner/internal/api"
 	"github.com/kofuk/premises/runner/util"
 )
 
 type WorldService struct {
-	s3     *s3wrap.Client
-	bucket string
+	client *api.Client
 }
 
-func New(awsAccessKey, awsSecretKey, s3Endpoint, bucket string) *WorldService {
-	if strings.HasPrefix(s3Endpoint, "http://s3.premises.local:") {
-		// When S3 endpoint is localhost, it should be a development environment on Docker.
-		// We implicitly rewrite the address so that we can access S3 host.
-		s3Endpoint = strings.Replace(s3Endpoint, "http://s3.premises.local", "http://host.docker.internal", 1)
-	}
-
-	s3 := s3wrap.New(awsAccessKey, awsSecretKey, s3Endpoint)
-
+func New(endpoint, authKey string) *WorldService {
 	return &WorldService{
-		s3:     s3,
-		bucket: bucket,
+		client: api.New(endpoint, authKey, http.DefaultClient),
 	}
-}
-
-func makeArchiveName() string {
-	return fmt.Sprintf("%s.tar.zst", time.Now().Format(time.DateTime))
 }
 
 func (w *WorldService) getExtractionPipeline(name string) (*ExtractionPipeline, error) {
@@ -76,6 +62,15 @@ func (w *WorldService) getExtractionPipeline(name string) (*ExtractionPipeline, 
 	return nil, errors.New("unsupported archive type")
 }
 
+func (w *WorldService) getDownloadURL(ctx context.Context, genID string) (string, error) {
+	resp, err := w.client.CreateWorldDownloadURL(ctx, genID)
+	if err != nil {
+		return "", err
+	}
+
+	return resp.URL, nil
+}
+
 func (w *WorldService) DownloadWorldData(config *runner.Config) error {
 	slog.Info("Downloading world archive...")
 	if err := fs.RemoveIfExists(env.DataPath("gamedata/world")); err != nil {
@@ -87,13 +82,20 @@ func (w *WorldService) DownloadWorldData(config *runner.Config) error {
 		return err
 	}
 
-	resp, err := w.s3.GetObject(context.Background(), w.bucket, config.World.GenerationId)
+	url, err := w.getDownloadURL(context.TODO(), config.World.GenerationId)
+	if err != nil {
+		return fmt.Errorf("unable to get download URL: %w", err)
+	}
+
+	resp, err := http.Get(url)
 	if err != nil {
 		return fmt.Errorf("unable to download %s: %w", config.World.GenerationId, err)
 	}
-	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unable to download %s: %s", config.World.GenerationId, resp.Status)
+	}
 
-	reader := util.NewProgressReader(resp.Body, entity.EventWorldDownload, int(resp.Size))
+	reader := util.NewProgressReader(resp.Body, entity.EventWorldDownload, int(resp.ContentLength))
 
 	if err := pl.Run(reader); err != nil {
 		return err
@@ -104,24 +106,26 @@ func (w *WorldService) DownloadWorldData(config *runner.Config) error {
 	return nil
 }
 
-func (w *WorldService) GetLatestKey(world string) (string, error) {
-	objs, err := w.s3.ListObjects(context.Background(), w.bucket, s3wrap.WithPrefix(world+"/"))
+func (w *WorldService) GetLatestKey(ctx context.Context, world string) (string, error) {
+	resp, err := w.client.GetLatestWorldID(ctx, world)
 	if err != nil {
 		return "", err
 	}
-	if len(objs) == 0 {
-		return "", errors.New("no backup found for world")
-	}
 
-	sort.Slice(objs, func(i, j int) bool {
-		return objs[i].Timestamp.Unix() > objs[j].Timestamp.Unix()
-	})
-
-	return objs[0].Key, nil
+	return resp.WorldID, nil
 }
 
 func (w *WorldService) UploadWorldData(config *runner.Config) (string, error) {
 	return w.doUploadWorldData(config)
+}
+
+func (w *WorldService) getUploadURL(ctx context.Context, worldName string) (string, string, error) {
+	resp, err := w.client.CreateWorldUploadURL(ctx, worldName)
+	if err != nil {
+		return "", "", err
+	}
+
+	return resp.URL, resp.WorldID, nil
 }
 
 func (w *WorldService) doUploadWorldData(config *runner.Config) (string, error) {
@@ -139,11 +143,30 @@ func (w *WorldService) doUploadWorldData(config *runner.Config) (string, error) 
 		return "", err
 	}
 
-	key := fmt.Sprintf("%s/%s", config.World.Name, makeArchiveName())
-	reader := util.NewProgressReader(file, entity.EventWorldUpload, int(fileInfo.Size())).ToSeekable()
-	if err := w.s3.PutObject(context.Background(), w.bucket, key, reader, fileInfo.Size()); err != nil {
-		return "", fmt.Errorf("unable to upload %s: %w", key, err)
+	url, key, err := w.getUploadURL(context.TODO(), config.World.Name)
+	if err != nil {
+		return "", err
 	}
+
+	reader := util.NewProgressReader(file, entity.EventWorldUpload, int(fileInfo.Size())).ToSeekable()
+
+	req, err := http.NewRequest(http.MethodPut, url, reader)
+	if err != nil {
+		return "", err
+	}
+	req.ContentLength = fileInfo.Size()
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("upload failed: %s", resp.Status)
+	}
+
+	io.Copy(io.Discard, resp.Body)
+
 	slog.Info("Uploading world archive...Done")
 
 	if err := os.Remove(archivePath); err != nil {
@@ -151,32 +174,6 @@ func (w *WorldService) doUploadWorldData(config *runner.Config) (string, error) 
 	}
 
 	return key, nil
-}
-
-func (w *WorldService) RemoveOldBackups(config *runner.Config) error {
-	objs, err := w.s3.ListObjects(context.Background(), w.bucket, s3wrap.WithPrefix(config.World.Name+"/"))
-	if err != nil {
-		return err
-	}
-
-	if len(objs) <= 5 {
-		// We don't need to delete old backups. Exiting...
-		return nil
-	}
-
-	sort.Slice(objs, func(i, j int) bool {
-		return objs[i].Timestamp.Unix() > objs[j].Timestamp.Unix()
-	})
-
-	var keys []string
-	for _, obj := range objs[5:] {
-		keys = append(keys, obj.Key)
-	}
-	if err := w.s3.DeleteObjects(context.Background(), w.bucket, keys); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func writeTar(to io.Writer, baseDir string, dirs ...string) error {
