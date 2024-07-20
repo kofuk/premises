@@ -27,8 +27,8 @@ func DetectAndUpdateVersion(config *runner.Config) error {
 
 	var options []lm.Option
 
-	if config.Server.ManifestOverride != "" {
-		options = append(options, lm.ManifestURL(config.Server.ManifestOverride))
+	if config.GameConfig.Server.ManifestOverride != "" {
+		options = append(options, lm.ManifestURL(config.GameConfig.Server.ManifestOverride))
 	}
 
 	fetcher := lm.New(options...)
@@ -54,9 +54,9 @@ func DetectAndUpdateVersion(config *runner.Config) error {
 	}
 
 	if serverInfo.DownloadURL != "" {
-		config.Server.DownloadUrl = serverInfo.DownloadURL
-		config.Server.Version = version
-		config.Server.JavaVersion = serverInfo.JavaVersion
+		config.GameConfig.Server.DownloadUrl = serverInfo.DownloadURL
+		config.GameConfig.Server.Version = version
+		config.GameConfig.Server.JavaVersion = serverInfo.JavaVersion
 
 		return nil
 	}

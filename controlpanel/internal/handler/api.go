@@ -174,13 +174,11 @@ func isValidMemSize(memSize int) bool {
 	return memSize == 1 || memSize == 2 || memSize == 4 || memSize == 8 || memSize == 16 || memSize == 32 || memSize == 64
 }
 
-func (h *Handler) createConfigFromPostData(ctx context.Context, config web.PendingConfig, cfg *config.Config) (*runner.Config, error) {
+func (h *Handler) createConfigFromPostData(ctx context.Context, config web.PendingConfig, cfg *config.Config) (*runner.GameConfig, error) {
 	if config.ServerVersion == nil || *config.ServerVersion == "" {
 		return nil, errors.New("server version is not set")
 	}
 	result := gameconfig.New()
-
-	result.C.ControlPanel = h.cfg.Origin
 
 	serverInfo, err := h.MCVersions.GetServerInfo(ctx, *config.ServerVersion)
 	if err != nil {
@@ -196,8 +194,6 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 	} else {
 		result.C.Server.InactiveTimeout = -1
 	}
-
-	result.GenerateAuthKey()
 
 	if config.WorldSource != nil && *config.WorldSource == "backups" {
 		if config.WorldName == nil || config.BackupGen == nil {
@@ -328,11 +324,11 @@ out:
 	}
 }
 
-func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, gameServer *GameServer, memSizeGB int) {
+func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config, gameServer *GameServer, memSizeGB int) {
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
 	infoStream := h.Streaming.GetStream(streaming.InfoStream)
 
-	if err := h.KVS.Set(ctx, fmt.Sprintf("runner:%s", gameConfig.AuthKey), "default", -1); err != nil {
+	if err := h.KVS.Set(ctx, fmt.Sprintf("runner:%s", serverConfig.AuthKey), "default", -1); err != nil {
 		slog.Error("Failed to save runner id", slog.Any("error", err))
 
 		if err := h.Streaming.PublishEvent(
@@ -356,7 +352,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 	}
 
 	slog.Info("Generating startup script...")
-	startupScript, err := conoha.GenerateStartupScript(gameConfig)
+	startupScript, err := conoha.GenerateStartupScript(serverConfig)
 	if err != nil {
 		slog.Error("Failed to generate startup script", slog.Any("error", err))
 
@@ -374,7 +370,7 @@ func (h *Handler) LaunchServer(ctx context.Context, gameConfig *runner.Config, g
 	slog.Info("Generating startup script...Done")
 
 	if gameServer.IsAvailable() {
-		if id := gameServer.SetUp(ctx, gameConfig, memSizeGB, startupScript); id != "" {
+		if id := gameServer.SetUp(ctx, serverConfig, memSizeGB, startupScript); id != "" {
 			if err := h.KVS.Set(ctx, "runner-id:default", id, -1); err != nil {
 				slog.Error("Failed to set runner ID", slog.Any("error", err))
 				return
@@ -424,6 +420,12 @@ func (h *Handler) aquireServerLock(ctx context.Context) (bool, error) {
 
 func (h *Handler) releaseServerLock(ctx context.Context) error {
 	return h.KVS.Del(ctx, "running")
+}
+
+func generateAuthKey() string {
+	encoder := base32.StdEncoding.WithPadding(base32.NoPadding)
+	result := encoder.EncodeToString(securecookie.GenerateRandomKey(30))
+	return result
 }
 
 func (h *Handler) handleApiLaunch(c echo.Context) error {
@@ -481,7 +483,13 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 		})
 	}
 
-	go h.LaunchServer(context.Background(), gameConfig, h.GameServer, memSizeGB)
+	serverConfig := &runner.Config{
+		AuthKey:      generateAuthKey(),
+		ControlPanel: h.cfg.Origin,
+		GameConfig:   *gameConfig,
+	}
+
+	go h.LaunchServer(context.Background(), serverConfig, h.GameServer, memSizeGB)
 
 	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
 		Success: true,

@@ -79,7 +79,7 @@ type ConnReqInfo struct {
 type Action struct {
 	Type     ActionType      `json:"type"`
 	Actor    int             `json:"actor"`
-	Config   *Config         `json:"config,omitempty"`
+	Config   *GameConfig     `json:"config,omitempty"`
 	Snapshot *SnapshotConfig `json:"snapshot,omitempty"`
 	ConnReq  *ConnReqInfo    `json:"connectionRequestInfo,omitempty"`
 }

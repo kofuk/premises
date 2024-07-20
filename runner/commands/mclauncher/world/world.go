@@ -77,22 +77,22 @@ func (w *WorldService) DownloadWorldData(config *runner.Config) error {
 		return err
 	}
 
-	pl, err := w.getExtractionPipeline(config.World.GenerationId)
+	pl, err := w.getExtractionPipeline(config.GameConfig.World.GenerationId)
 	if err != nil {
 		return err
 	}
 
-	url, err := w.getDownloadURL(context.TODO(), config.World.GenerationId)
+	url, err := w.getDownloadURL(context.TODO(), config.GameConfig.World.GenerationId)
 	if err != nil {
 		return fmt.Errorf("unable to get download URL: %w", err)
 	}
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return fmt.Errorf("unable to download %s: %w", config.World.GenerationId, err)
+		return fmt.Errorf("unable to download %s: %w", config.GameConfig.World.GenerationId, err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unable to download %s: %s", config.World.GenerationId, resp.Status)
+		return fmt.Errorf("unable to download %s: %s", config.GameConfig.World.GenerationId, resp.Status)
 	}
 
 	reader := util.NewProgressReader(resp.Body, entity.EventWorldDownload, int(resp.ContentLength))
@@ -143,7 +143,7 @@ func (w *WorldService) doUploadWorldData(config *runner.Config) (string, error) 
 		return "", err
 	}
 
-	url, key, err := w.getUploadURL(context.TODO(), config.World.Name)
+	url, key, err := w.getUploadURL(context.TODO(), config.GameConfig.World.Name)
 	if err != nil {
 		return "", err
 	}

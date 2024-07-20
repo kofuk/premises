@@ -1,8 +1,7 @@
 package runner
 
-type Config struct {
-	AuthKey string `json:"authKey"`
-	Server  struct {
+type GameConfig struct {
+	Server struct {
 		PreferDetected     bool              `json:"preferDetected"`
 		Version            string            `json:"name"`
 		DownloadUrl        string            `json:"downloadUrl"`
@@ -20,8 +19,13 @@ type Config struct {
 		LevelType      string `json:"levelType"`
 		Difficulty     string `json:"difficulty"`
 	} `json:"world"`
-	Motd         string   `json:"motd"`
-	Operators    []string `json:"operators"`
-	Whitelist    []string `json:"whitelist"`
-	ControlPanel string   `json:"controlPanel"`
+	Motd      string   `json:"motd"`
+	Operators []string `json:"operators"`
+	Whitelist []string `json:"whitelist"`
+}
+
+type Config struct {
+	AuthKey      string     `json:"authKey"`
+	ControlPanel string     `json:"controlPanel"`
+	GameConfig   GameConfig `json:"gameConfig"`
 }

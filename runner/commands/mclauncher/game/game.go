@@ -71,8 +71,8 @@ func NewLauncher(config *runner.Config, world *world.WorldService) *Launcher {
 	l.RegisterOnHealthyHook(func(l *Launcher) {
 		go l.sendStartedEvent(config)
 
-		l.AddToWhiteList(l.config.Whitelist)
-		l.AddToOp(l.config.Operators)
+		l.AddToWhiteList(l.config.GameConfig.Whitelist)
+		l.AddToOp(l.config.GameConfig.Operators)
 
 		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
@@ -145,12 +145,12 @@ func clearLastServerVersion() error {
 func storeLastServerVersion(config *runner.Config) error {
 	return rpc.ToExteriord.Call("state/save", types.StateSetInput{
 		Key:   "lastVersion",
-		Value: config.Server.Version,
+		Value: config.GameConfig.Server.Version,
 	}, nil)
 }
 
 func (l *Launcher) downloadWorld() error {
-	if l.config.World.ShouldGenerate {
+	if l.config.GameConfig.World.ShouldGenerate {
 		if err := fs.RemoveIfExists(env.DataPath("gamedata/world")); err != nil {
 			slog.Error("Unable to remove world directory", slog.Any("error", err))
 		}
@@ -158,12 +158,12 @@ func (l *Launcher) downloadWorld() error {
 		return nil
 	}
 
-	if l.config.World.GenerationId == "@/latest" {
-		genId, err := l.world.GetLatestKey(context.TODO(), l.config.World.Name)
+	if l.config.GameConfig.World.GenerationId == "@/latest" {
+		genId, err := l.world.GetLatestKey(context.TODO(), l.config.GameConfig.World.Name)
 		if err != nil {
 			return fmt.Errorf("failed to get latest world ID: %w", err)
 		}
-		l.config.World.GenerationId = genId
+		l.config.GameConfig.World.GenerationId = genId
 	}
 
 	lastWorld, err := getLastWorld()
@@ -171,7 +171,7 @@ func (l *Launcher) downloadWorld() error {
 		return err
 	}
 
-	if lastWorld == "" || l.config.World.GenerationId != lastWorld {
+	if lastWorld == "" || l.config.GameConfig.World.GenerationId != lastWorld {
 		if err := clearLastWorld(); err != nil {
 			slog.Error("Failed to remove last world hash", slog.Any("error", err))
 		}
@@ -193,7 +193,7 @@ func (l *Launcher) downloadWorld() error {
 }
 
 func (l *Launcher) downloadServerJar() error {
-	if _, err := os.Stat(env.LocateServer(l.config.Server.Version)); err == nil {
+	if _, err := os.Stat(env.LocateServer(l.config.GameConfig.Server.Version)); err == nil {
 		slog.Info("No need to download server.jar")
 		return nil
 	} else if !os.IsNotExist(err) {
@@ -207,9 +207,9 @@ func (l *Launcher) downloadServerJar() error {
 		},
 	})
 
-	slog.Info("Downloading Minecraft server...", slog.String("url", l.config.Server.DownloadUrl))
+	slog.Info("Downloading Minecraft server...", slog.String("url", l.config.GameConfig.Server.DownloadUrl))
 
-	if err := DownloadServerJar(l.config.Server.DownloadUrl, env.LocateServer(l.config.Server.Version)); err != nil {
+	if err := DownloadServerJar(l.config.GameConfig.Server.DownloadUrl, env.LocateServer(l.config.GameConfig.Server.Version)); err != nil {
 		return err
 	}
 
@@ -297,7 +297,7 @@ func waitServerHealthy(ctx context.Context) error {
 }
 
 func (l *Launcher) stopAfterLongInactive(ctx context.Context) {
-	timeout := l.config.Server.InactiveTimeout
+	timeout := l.config.GameConfig.Server.InactiveTimeout
 	if timeout < 0 {
 		return
 	} else if timeout < 5 {
@@ -327,7 +327,7 @@ func (l *Launcher) stopAfterLongInactive(ctx context.Context) {
 }
 
 func (l *Launcher) executeServer(cmdline []string) error {
-	slog.Info("Launching Minecraft server", slog.String("server_name", l.config.Server.Version), slog.Any("commandline", cmdline))
+	slog.Info("Launching Minecraft server", slog.String("server_name", l.config.GameConfig.Server.Version), slog.Any("commandline", cmdline))
 
 	exterior.SendEvent(runner.Event{
 		Type: runner.EventStatus,
@@ -365,20 +365,20 @@ func (l *Launcher) startServer() error {
 	allocSize := getAllocSizeMiB()
 
 	var launchCommand []string
-	if len(l.config.Server.CustomCommand) > 0 {
-		launchCommand = l.config.Server.CustomCommand
+	if len(l.config.GameConfig.Server.CustomCommand) > 0 {
+		launchCommand = l.config.GameConfig.Server.CustomCommand
 		for i := 0; i < len(launchCommand); i++ {
 			if launchCommand[i] == "{server_jar}" {
-				launchCommand[i] = env.LocateServer(l.config.Server.Version)
+				launchCommand[i] = env.LocateServer(l.config.GameConfig.Server.Version)
 			}
 		}
 	} else {
 		launchCommand = []string{
-			findJavaPath(l.config.Server.JavaVersion),
+			findJavaPath(l.config.GameConfig.Server.JavaVersion),
 			fmt.Sprintf("-Xmx%dM", allocSize),
 			fmt.Sprintf("-Xms%dM", allocSize),
 			"-jar",
-			env.LocateServer(l.config.Server.Version),
+			env.LocateServer(l.config.GameConfig.Server.Version),
 			"nogui",
 		}
 	}
@@ -436,11 +436,11 @@ func (l *Launcher) cleanGameDirIfVersionChanged() error {
 	if err != nil {
 		return err
 	}
-	if ver == l.config.Server.Version {
+	if ver == l.config.GameConfig.Server.Version {
 		return nil
 	}
 
-	slog.Info("Different version of server selected. cleaning up...", slog.String("old", ver), slog.String("new", l.config.Server.Version))
+	slog.Info("Different version of server selected. cleaning up...", slog.String("old", ver), slog.String("new", l.config.GameConfig.Server.Version))
 
 	if err := cleanGameDir(); err != nil {
 		return err
@@ -489,7 +489,7 @@ func (l *Launcher) Launch() error {
 		return nil
 	}
 
-	if l.config.Server.PreferDetected {
+	if l.config.GameConfig.Server.PreferDetected {
 		slog.Info("Read server version from level.dat")
 		if err := DetectAndUpdateVersion(l.config); err != nil {
 			slog.Error("Error detecting Minecraft version", slog.Any("error", err))
@@ -613,8 +613,8 @@ func (l *Launcher) sendStartedEvent(config *runner.Config) {
 
 	data := new(runner.StartedExtra)
 
-	data.ServerVersion = config.Server.Version
-	data.World.Name = config.World.Name
+	data.ServerVersion = config.GameConfig.Server.Version
+	data.World.Name = config.GameConfig.World.Name
 	seed, err := l.Rcon.Seed()
 	if err != nil {
 		slog.Error("Failed to retrieve seed", slog.Any("error", err))

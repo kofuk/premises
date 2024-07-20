@@ -89,11 +89,11 @@ func NewServerProperties() *ServerProperties {
 
 func (p *ServerProperties) LoadConfig(config *runner.Config) error {
 	serverProps := NewServerProperties()
-	serverProps.SetMotd(config.Motd)
-	serverProps.SetDifficulty(config.World.Difficulty)
-	serverProps.SetLevelType(config.World.LevelType)
-	serverProps.SetSeed(config.World.Seed)
-	serverProps.OverrideProperties(config.Server.ServerPropOverride)
+	serverProps.SetMotd(config.GameConfig.Motd)
+	serverProps.SetDifficulty(config.GameConfig.World.Difficulty)
+	serverProps.SetLevelType(config.GameConfig.World.LevelType)
+	serverProps.SetSeed(config.GameConfig.World.Seed)
+	serverProps.OverrideProperties(config.GameConfig.Server.ServerPropOverride)
 	return nil
 }
 

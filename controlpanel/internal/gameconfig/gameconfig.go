@@ -1,17 +1,15 @@
 package gameconfig
 
 import (
-	"encoding/base32"
 	"errors"
 	"fmt"
 
-	"github.com/gorilla/securecookie"
 	"github.com/kofuk/premises/internal/entity/runner"
 	"golang.org/x/exp/slices"
 )
 
 type Config struct {
-	C runner.Config
+	C runner.GameConfig
 }
 
 func New() *Config {
@@ -40,13 +38,6 @@ func calculateMemSizeForGame(availableSizeMiB int) (int, error) {
 
 func (c *Config) SetDetectServerVersion(detect bool) {
 	c.C.Server.PreferDetected = detect
-}
-
-func (c *Config) GenerateAuthKey() string {
-	encoder := base32.StdEncoding.WithPadding(base32.NoPadding)
-	result := encoder.EncodeToString(securecookie.GenerateRandomKey(30))
-	c.C.AuthKey = result
-	return result
 }
 
 func (c *Config) SetWorld(worldName string, generationId string) error {

@@ -158,8 +158,8 @@ func (setup *ServerSetup) installRequiredJavaVersion() {
 	}
 
 	installArgs := []string{"install", "-y", latestAvailableJre}
-	if config.Server.JavaVersion != 0 {
-		installArgs = append(installArgs, fmt.Sprintf("openjdk-%d-jre-headless", config.Server.JavaVersion))
+	if config.GameConfig.Server.JavaVersion != 0 {
+		installArgs = append(installArgs, fmt.Sprintf("openjdk-%d-jre-headless", config.GameConfig.Server.JavaVersion))
 	}
 
 	system.AptGet(installArgs...)

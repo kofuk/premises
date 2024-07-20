@@ -33,10 +33,22 @@ func (h *RPCHandler) HandleGameStop(req *rpc.AbstractRequest) error {
 }
 
 func (h *RPCHandler) HandleGameReconfigure(req *rpc.AbstractRequest) error {
-	var config runner.Config
-	if err := req.Bind(&config); err != nil {
+	var gameConfig runner.GameConfig
+	if err := req.Bind(&gameConfig); err != nil {
 		return err
 	}
+
+	oldData, err := os.ReadFile(env.DataPath("config.json"))
+	if err != nil {
+		return err
+	}
+
+	var config runner.Config
+	if err := json.Unmarshal(oldData, &config); err != nil {
+		return err
+	}
+
+	config.GameConfig = gameConfig
 
 	data, err := json.Marshal(&config)
 	if err != nil {
