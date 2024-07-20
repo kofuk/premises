@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/kofuk/premises/internal/entity/web"
 	"github.com/kofuk/premises/internal/s3wrap"
@@ -84,4 +85,12 @@ func (ws *WorldService) GetWorlds(ctx context.Context) ([]web.World, error) {
 	}
 
 	return result, nil
+}
+
+func (ws *WorldService) GetPresignedGetURL(ctx context.Context, id string) (string, error) {
+	return ws.s3.GetPresignedGetURL(ctx, ws.bucket, id, 5*time.Minute)
+}
+
+func (ws *WorldService) GetPresignedPutURL(ctx context.Context, id string) (string, error) {
+	return ws.s3.GetPresignedPutURL(ctx, ws.bucket, id, 5*time.Minute)
 }

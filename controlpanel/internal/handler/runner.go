@@ -9,11 +9,13 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/kofuk/premises/controlpanel/internal/longpoll"
 	"github.com/kofuk/premises/controlpanel/internal/monitor"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
+	"github.com/kofuk/premises/internal/entity/web"
 	"github.com/labstack/echo/v4"
 )
 
@@ -132,6 +134,64 @@ func (h *Handler) handleGetStartupScript(c echo.Context) error {
 	return c.String(http.StatusOK, script)
 }
 
+func (h *Handler) handleCreateWorldDownloadURL(c echo.Context) error {
+	var req web.CreateWorldDownloadURLRequest
+	if err := c.Bind(&req); err != nil {
+		slog.Error("Unable to bind request", slog.Any("error", err))
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	url, err := h.world.GetPresignedGetURL(c.Request().Context(), req.WorldID)
+	if err != nil {
+		slog.Error("Unable to get presigned URL", slog.Any("error", err))
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.CreateWorldDownloadURLResponse]{
+		Success: true,
+		Data:    web.CreateWorldDownloadURLResponse{URL: url},
+	})
+}
+
+func (h *Handler) handleCreateWorldUploadURL(c echo.Context) error {
+	var req web.CreateWorldUploadURLRequest
+	if err := c.Bind(&req); err != nil {
+		slog.Error("Unable to bind request", slog.Any("error", err))
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	if strings.ContainsRune(req.WorldName, '/') {
+		slog.Error("Invalid world name", slog.Any("worldName", req.WorldName))
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	url, err := h.world.GetPresignedPutURL(c.Request().Context(), fmt.Sprintf("%s/%s.tar.zst", req.WorldName, time.Now().Format(time.DateTime)))
+	if err != nil {
+		slog.Error("Unable to get presigned URL", slog.Any("error", err))
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.CreateWorldDownloadURLResponse]{
+		Success: true,
+		Data:    web.CreateWorldDownloadURLResponse{URL: url},
+	})
+}
+
 func (h *Handler) authKeyMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		authKey := c.Request().Header.Get("Authorization")
@@ -155,4 +215,6 @@ func (h *Handler) setupRunnerRoutes(group *echo.Group) {
 	privates := group.Group("", h.authKeyMiddleware)
 	privates.GET("/poll-action", h.handleRunnerPollAction)
 	privates.POST("/push-status", h.handlePushStatus)
+	privates.POST("/world-download-url", h.handleCreateWorldDownloadURL)
+	privates.POST("/world-upload-url", h.handleCreateWorldUploadURL)
 }

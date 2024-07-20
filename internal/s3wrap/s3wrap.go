@@ -15,7 +15,7 @@ import (
 )
 
 type Client struct {
-	s3Client *s3.Client
+	s3 *s3.Client
 }
 
 type noAcceptEncodingSigner struct {
@@ -48,7 +48,7 @@ func New(ctx context.Context, forcePathStyle bool) (*Client, error) {
 		options.HTTPSignerV4 = &noAcceptEncodingSigner{signer: defSigner}
 	})
 
-	return &Client{s3Client: s3Client}, nil
+	return &Client{s3: s3Client}, nil
 }
 
 type ObjectMetaData struct {
@@ -79,7 +79,7 @@ func (client *Client) ListObjects(ctx context.Context, bucket string, opts ...Li
 		first = false
 		params.ContinuationToken = continuationToken
 
-		resp, err := client.s3Client.ListObjectsV2(ctx, params)
+		resp, err := client.s3.ListObjectsV2(ctx, params)
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +108,7 @@ func (client *Client) DeleteObjects(ctx context.Context, bucket string, keys []s
 			Key: &key,
 		})
 	}
-	if _, err := client.s3Client.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{
+	if _, err := client.s3.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{
 		Bucket: &bucket,
 		Delete: &types.Delete{
 			Objects: objectIds,
@@ -126,7 +126,7 @@ type Object struct {
 }
 
 func (client *Client) GetObject(ctx context.Context, bucket, key string) (*Object, error) {
-	resp, err := client.s3Client.GetObject(context.Background(), &s3.GetObjectInput{
+	resp, err := client.s3.GetObject(context.Background(), &s3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
 	})
@@ -141,7 +141,7 @@ func (client *Client) GetObject(ctx context.Context, bucket, key string) (*Objec
 }
 
 func (client *Client) PutObject(ctx context.Context, bucket, key string, body io.ReadSeeker, size int64) error {
-	if _, err := client.s3Client.PutObject(context.Background(), &s3.PutObjectInput{
+	if _, err := client.s3.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
 		Body:   body,
@@ -150,4 +150,34 @@ func (client *Client) PutObject(ctx context.Context, bucket, key string, body io
 	}
 
 	return nil
+}
+
+func (client *Client) GetPresignedGetURL(ctx context.Context, bucket, key string, expires time.Duration) (string, error) {
+	presignClient := s3.NewPresignClient(client.s3)
+	req, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: &bucket,
+		Key:    &key,
+	}, func(opts *s3.PresignOptions) {
+		opts.Expires = expires
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return req.URL, nil
+}
+
+func (client *Client) GetPresignedPutURL(ctx context.Context, bucket, key string, expires time.Duration) (string, error) {
+	presignClient := s3.NewPresignClient(client.s3)
+	req, err := presignClient.PresignPutObject(ctx, &s3.PutObjectInput{
+		Bucket: &bucket,
+		Key:    &key,
+	}, func(opts *s3.PresignOptions) {
+		opts.Expires = expires
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return req.URL, nil
 }
