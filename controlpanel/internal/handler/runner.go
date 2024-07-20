@@ -76,19 +76,28 @@ func (h *Handler) handlePostStatus(c echo.Context) error {
 		var event runner.Event
 		if err := json.Unmarshal(eventData, &event); err != nil {
 			slog.Error("Unable to unmarshal status data", slog.Any("error", err))
-			return c.String(http.StatusBadRequest, "")
+			return c.JSON(http.StatusOK, web.SuccessfulResponse[interface{}]{
+				Success: true,
+				Data:    nil,
+			})
 		}
 
 		if event.Type == runner.EventStatus && event.Status.EventCode == entity.EventShutdown {
 			go h.shutdownServer(context.Background(), h.GameServer, c.Request().Header.Get("Authorization"))
-			return c.String(http.StatusOK, "")
+			return c.JSON(http.StatusOK, web.SuccessfulResponse[interface{}]{
+				Success: true,
+				Data:    nil,
+			})
 		}
 
 		slog.Debug("Event from runner", slog.Any("payload", event))
 
 		if err := monitor.HandleEvent(context.Background(), runnerId, h.Streaming, h.cfg, &h.KVS, &event); err != nil {
 			slog.Error("Unable to handle event", slog.Any("error", err))
-			return c.String(http.StatusInternalServerError, "")
+			return c.JSON(http.StatusOK, web.ErrorResponse{
+				Success:   false,
+				ErrorCode: entity.ErrInternal,
+			})
 		}
 	}
 

@@ -95,12 +95,12 @@ func (s *Server) HandleMonitor(ctx context.Context) {
 	buf := bytes.NewBuffer(nil)
 
 	sendStatus := func() {
+		defer buf.Reset()
+
 		if err := s.client.PostStatus(ctx, buf.Bytes()); err != nil {
 			slog.Error("Error writing status", slog.Any("error", err))
 			return
 		}
-
-		buf.Reset()
 	}
 
 out:
