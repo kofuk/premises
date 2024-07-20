@@ -1,5 +1,3 @@
-import React from 'react';
-
 import {Check as CheckIcon} from '@mui/icons-material';
 import {LoadingButton} from '@mui/lab';
 import {green} from '@mui/material/colors';

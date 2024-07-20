@@ -1,10 +1,10 @@
-import React from 'react';
+import {lazy} from 'react';
 import {useRoutes} from 'react-router-dom';
 
-const LoginPage = React.lazy(() => import('@/features/login'));
-const LaunchPage = React.lazy(() => import('@/features/launch'));
-const UI = React.lazy(() => import('@/features/ui'));
-const SettingsRoutes = React.lazy(() => import('@/features/settings/routes'));
+const LoginPage = lazy(() => import('@/features/login'));
+const LaunchPage = lazy(() => import('@/features/launch'));
+const UI = lazy(() => import('@/features/ui'));
+const SettingsRoutes = lazy(() => import('@/features/settings/routes'));
 
 const AppRoutes = () => {
   const routes = useRoutes([

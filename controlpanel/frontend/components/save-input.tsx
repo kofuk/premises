@@ -1,4 +1,4 @@
-import React, {FormEvent, useEffect, useState} from 'react';
+import {FormEvent, useEffect, useState} from 'react';
 
 import {Save as SaveIcon} from '@mui/icons-material';
 import {FormControl, IconButton, InputAdornment, InputLabel, OutlinedInput} from '@mui/material';

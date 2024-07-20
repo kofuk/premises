@@ -1,4 +1,4 @@
-import React, {ReactNode, useContext} from 'react';
+import {ReactNode, createContext, useContext} from 'react';
 
 import {login as apiLogin, useSessionData} from '@/api';
 import Loading from '@/components/loading';
@@ -16,7 +16,7 @@ type AuthContextType = {
   initializePassword: (username: string, newPassword: string) => Promise<void>;
 };
 
-const AuthContext = React.createContext<AuthContextType>(null!);
+const AuthContext = createContext<AuthContextType>(null!);
 
 export const AuthProvider = ({children}: {children: ReactNode}) => {
   const {data: session, error, isLoading, mutate} = useSessionData();

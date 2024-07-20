@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import {useState} from 'react';
 
 import {useSnackbar} from 'notistack';
 import {useForm} from 'react-hook-form';

@@ -30,7 +30,8 @@ export default [
         {
           reservedFirst: true
         }
-      ]
+      ],
+      'react/react-in-jsx-scope': 'off'
     }
   },
   {

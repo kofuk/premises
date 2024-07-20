@@ -1,4 +1,4 @@
-import React, {ReactNode, useContext} from 'react';
+import {ReactNode, createContext, useContext} from 'react';
 
 import useSWR from 'swr';
 
@@ -14,7 +14,7 @@ type ConfigContextType = {
   reconfigure: () => Promise<void>;
 };
 
-const ConfigContext = React.createContext<ConfigContextType>(null!);
+const ConfigContext = createContext<ConfigContextType>(null!);
 
 export const ConfigProvider = ({children}: {children: ReactNode}) => {
   const {data, mutate, error, isLoading} = useSWR('/api/config', async () => await getConfig());

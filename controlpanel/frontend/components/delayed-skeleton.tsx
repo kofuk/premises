@@ -1,5 +1,3 @@
-import React from 'react';
-
 import {Fade, Skeleton} from '@mui/material';
 
 type Props = {

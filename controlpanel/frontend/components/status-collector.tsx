@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import {useEffect} from 'react';
 
 import {useSnackbar} from 'notistack';
 import {useTranslation} from 'react-i18next';

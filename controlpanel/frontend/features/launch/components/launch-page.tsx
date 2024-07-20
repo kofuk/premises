@@ -1,5 +1,3 @@
-import React from 'react';
-
 import {useTranslation} from 'react-i18next';
 
 import {PlayArrow as StartIcon} from '@mui/icons-material';

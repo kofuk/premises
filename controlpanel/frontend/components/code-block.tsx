@@ -1,5 +1,3 @@
-import React from 'react';
-
 import styled from '@emotion/styled';
 
 import {ContentCopy as CopyIcon} from '@mui/icons-material';

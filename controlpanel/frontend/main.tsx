@@ -1,4 +1,4 @@
-import React from 'react';
+import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 
 import Premises from './premises';
@@ -12,8 +12,8 @@ import '@fontsource/roboto/700.css';
 (() => {
   const root = createRoot(document.getElementById('app')!);
   root.render(
-    <React.StrictMode>
+    <StrictMode>
       <Premises />
-    </React.StrictMode>
+    </StrictMode>
   );
 })();

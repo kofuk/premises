@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import {Fragment, useState} from 'react';
 
 import {ArrowBack as BackIcon, Close as CloseIcon} from '@mui/icons-material';
 import {
@@ -48,7 +48,7 @@ const MenuContainer = ({items, menuFooter}: Props) => {
     const itemElements = items
       .filter((e) => !e.disabled)
       .map((e, i) => (
-        <React.Fragment key={`${i}`}>
+        <Fragment key={`${i}`}>
           <ListItem disablePadding>
             <ListItemButton onClick={() => setSelectedItem(i)}>
               {e.icon && <ListItemIcon>{e.icon}</ListItemIcon>}
@@ -56,7 +56,7 @@ const MenuContainer = ({items, menuFooter}: Props) => {
             </ListItemButton>
           </ListItem>
           <Divider component="li" />
-        </React.Fragment>
+        </Fragment>
       ));
 
     return <List>{itemElements}</List>;
@@ -72,7 +72,7 @@ const MenuContainer = ({items, menuFooter}: Props) => {
         }
       : {};
     return (
-      <React.Fragment key={`${i}`}>
+      <Fragment key={`${i}`}>
         <Dialog fullWidth open={i == selectedItem} scroll="paper" {...dialogProps}>
           <DialogTitle>
             {e.cancellable && (
@@ -84,7 +84,7 @@ const MenuContainer = ({items, menuFooter}: Props) => {
           </DialogTitle>
           <DialogContent>{e.ui}</DialogContent>
         </Dialog>
-      </React.Fragment>
+      </Fragment>
     );
   });
 

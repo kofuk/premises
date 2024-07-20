@@ -1,5 +1,3 @@
-import React from 'react';
-
 import {useTranslation} from 'react-i18next';
 
 import {FormControl, InputLabel, MenuItem as MUIMenuItem, Select, Stack} from '@mui/material';
