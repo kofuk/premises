@@ -202,7 +202,9 @@ func (h *Handler) handleCreateWorldUploadURL(c echo.Context) error {
 		})
 	}
 
-	url, err := h.world.GetPresignedPutURL(c.Request().Context(), fmt.Sprintf("%s/%s.tar.zst", req.WorldName, time.Now().Format(time.DateTime)))
+	key := fmt.Sprintf("%s/%s.tar.zst", req.WorldName, time.Now().Format(time.DateTime))
+
+	url, err := h.world.GetPresignedPutURL(c.Request().Context(), key)
 	if err != nil {
 		slog.Error("Unable to get presigned URL", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -211,9 +213,12 @@ func (h *Handler) handleCreateWorldUploadURL(c echo.Context) error {
 		})
 	}
 
-	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.CreateWorldDownloadURLResponse]{
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.CreateWorldUploadURLResponse]{
 		Success: true,
-		Data:    web.CreateWorldDownloadURLResponse{URL: url},
+		Data: web.CreateWorldUploadURLResponse{
+			URL:     url,
+			WorldID: key,
+		},
 	})
 }
 

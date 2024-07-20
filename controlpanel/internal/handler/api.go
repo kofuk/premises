@@ -233,7 +233,6 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 
 	result.SetOperators(cfg.Operators)
 	result.SetWhitelist(cfg.Whitelist)
-	result.C.S3.Bucket = cfg.S3Bucket
 
 	return &result.C, nil
 }

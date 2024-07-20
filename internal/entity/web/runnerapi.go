@@ -17,5 +17,6 @@ type CreateWorldUploadURLRequest struct {
 }
 
 type CreateWorldUploadURLResponse struct {
-	URL string `json:"url"`
+	URL     string `json:"url"`
+	WorldID string `json:"worldId"`
 }

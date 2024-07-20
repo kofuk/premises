@@ -20,16 +20,8 @@ type Config struct {
 		LevelType      string `json:"levelType"`
 		Difficulty     string `json:"difficulty"`
 	} `json:"world"`
-	Motd      string   `json:"motd"`
-	Operators []string `json:"operators"`
-	Whitelist []string `json:"whitelist"`
-	AWS       struct {
-		AccessKey string `json:"acceessKey"`
-		SecretKey string `json:"secretKey"`
-	} `json:"aws"`
-	S3 struct {
-		Endpoint string `json:"endpoint"`
-		Bucket   string `json:"bucket"`
-	} `json:"s3"`
-	ControlPanel string `json:"controlPanel"`
+	Motd         string   `json:"motd"`
+	Operators    []string `json:"operators"`
+	Whitelist    []string `json:"whitelist"`
+	ControlPanel string   `json:"controlPanel"`
 }
