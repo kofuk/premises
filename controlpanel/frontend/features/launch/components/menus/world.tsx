@@ -60,7 +60,7 @@ const SavedWorld = ({name, setName, gen, setGen}: {name: string; setName: (name:
         <Select label={t('launch.world.select')} onChange={handleChangeWorld} value={name}>
           {savedWorlds?.map((e) => (
             <MUIMenuItem key={e.worldName} value={e.worldName}>
-              {e.worldName.replace(/^[0-9]+-/, '')}
+              {e.worldName}
             </MUIMenuItem>
           ))}
         </Select>

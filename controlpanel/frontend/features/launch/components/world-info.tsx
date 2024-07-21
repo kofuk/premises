@@ -35,7 +35,7 @@ const WorldInfo = () => {
           {worldInfo ? worldInfo.version : <DelayedSkeleton width="25%" />}
         </CopyableListItem>
         <CopyableListItem key="world_name" title={t('launch.world_info.world_name')}>
-          {worldInfo ? worldInfo.worldName.replace(/^[0-9]+-/, '') : <DelayedSkeleton width="25%" />}
+          {worldInfo ? worldInfo.worldName : <DelayedSkeleton width="25%" />}
         </CopyableListItem>
         <CopyableListItem key="seed" title={t('launch.world_info.seed')}>
           {worldInfo ? worldInfo.seed : <DelayedSkeleton width="25%" />}
