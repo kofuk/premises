@@ -155,6 +155,7 @@ func (w *WorldService) doUploadWorldData(config *runner.Config) (string, error) 
 		return "", err
 	}
 	req.ContentLength = fileInfo.Size()
+	req.Header.Set("Content-Type", "application/zstd")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
