@@ -208,9 +208,9 @@ jobs:
           done
       - name: Launch app
         run: |
-          docker compose --env-file tests/test.env -f compose.yaml -f tests/compose-test.yaml run --rm web /premises migrate
-          docker compose --env-file tests/test.env -f compose.yaml -f tests/compose-test.yaml run --rm web pmctl user add -u user1 -p password1 --initialized
-          docker compose --env-file tests/test.env -f compose.yaml -f tests/compose-test.yaml up -d
+          docker compose --env-file tests/integ/test.env -f compose.yaml -f tests/integ/compose-test.yaml run --rm web /premises migrate
+          docker compose --env-file tests/integ/test.env -f compose.yaml -f tests/integ/compose-test.yaml run --rm web pmctl user add -u user1 -p password1 --initialized
+          docker compose --env-file tests/integ/test.env -f compose.yaml -f tests/integ/compose-test.yaml up -d
           for i in {1..20}; do
             curl -f http://localhost:8000/ && break
             sleep 3
@@ -218,7 +218,7 @@ jobs:
       - name: Launch proxy
         run: |
           docker container run \
-            --env-file tests/test.env \
+            --env-file tests/integ/test.env \
             --network host \
             -e PREMISES_MODE=proxy \
             -e PREMISES_REDIS_ADDRESS=localhost:6379 \
@@ -232,7 +232,7 @@ jobs:
           export TARGET_HOST='http://localhost:8000'
           export USING_MCSERVER_FAKE='yes'
 
-          cd tests
+          cd tests/integ
           ./run_all_tests.sh
 
   publish-binaries:

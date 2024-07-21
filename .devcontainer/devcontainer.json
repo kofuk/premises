@@ -51,7 +51,7 @@
 				"golang.go"
 			],
 			"settings": {
-				"deno.enablePaths": ["./tests"],
+				"deno.enablePaths": ["./tests/integ"],
 				"[typescript]": {
 					"editor.defaultFormatter": "esbenp.prettier-vscode"
 				},
