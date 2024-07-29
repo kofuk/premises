@@ -134,6 +134,7 @@ const buildHandshakeData = (data: {
   ];
 };
 
+// deno-lint-ignore no-explicit-any
 const receiveStatus = async (conn: Conn): Promise<any> => {
   await receiveHeader(conn);
   const len = await readVarInt(conn);
