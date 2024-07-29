@@ -9,11 +9,11 @@ services:
       - external_network
       - internal_network
   redis:
-    image: redis:7-alpine
+    image: redis:7.2
     networks:
       - internal_network
   postgres:
-    image: postgres:15-alpine
+    image: postgres:15
     environment:
       - POSTGRES_USER=premises
       - POSTGRES_PASSWORD=password
