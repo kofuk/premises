@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	"github.com/kofuk/premises/controlpanel/internal/config"
+	"github.com/kofuk/premises/controlpanel/internal/cron"
 	"github.com/kofuk/premises/controlpanel/internal/db"
 	"github.com/kofuk/premises/controlpanel/internal/db/model/migrations"
 	"github.com/kofuk/premises/controlpanel/internal/handler"
@@ -105,6 +108,17 @@ func startProxy(cfg *config.Config) {
 	}
 }
 
+func startCron(config *config.Config) {
+	ctx, cancelFn := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+	defer cancelFn()
+
+	cron := &cron.CronService{}
+	if err := cron.Run(ctx, config); err != nil {
+		slog.Error("Error in cron", slog.Any("error", err))
+		os.Exit(1)
+	}
+}
+
 func main() {
 	godotenv.Load()
 
@@ -128,6 +142,8 @@ func main() {
 		startWeb(cfg)
 	case "proxy":
 		startProxy(cfg)
+	case "cron":
+		startCron(cfg)
 	default:
 		slog.Error(fmt.Sprintf("Unknown mode: %s", cfg.Mode))
 		os.Exit(1)
