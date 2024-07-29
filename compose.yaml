@@ -57,6 +57,8 @@ services:
       timeout: 30s
       retries: 30
     restart: always
+    volumes:
+      - redis:/data
   postgres:
     image: 'postgres:15-alpine'
     environment:
@@ -74,3 +76,4 @@ services:
 
 volumes:
   db:
+  redis:
