@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     open: false,
     watch: {
-      ignored: ['!frontend/**']
+      ignored: ['!src/**']
     }
   },
   build: {
