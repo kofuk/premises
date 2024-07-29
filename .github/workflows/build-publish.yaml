@@ -69,8 +69,8 @@ jobs:
           cache-dependency-path: go.sum
       - name: Build
         run: |
-          cd runner
-          ldflags="-X github.com/kofuk/premises/runner/metadata.Revision=${COMMIT_HASH}"
+          cd runner/cmd/premises-runner
+          ldflags="-X github.com/kofuk/premises/runner/internal/metadata.Revision=${COMMIT_HASH}"
           CGO_ENABLED=0 go build -o premises-runner -ldflags "${ldflags}" .
         env:
           COMMIT_HASH: ${{ github.sha }}
