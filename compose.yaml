@@ -49,6 +49,11 @@ services:
     ports:
       - '25530:25530'
       - '25565:25565'
+  cron:
+    image: 'ghcr.io/kofuk/premises:latest'
+    environment:
+      <<: *settings
+      PREMISES_MODE: cron
   redis:
     image: 'redis:7.2'
     healthcheck:
