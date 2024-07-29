@@ -2,49 +2,65 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 
 	"github.com/kofuk/premises/runner/internal/rpc"
+	"github.com/spf13/cobra"
 )
 
 type RPC struct {
+	Path        string
+	RequestType string
+	Method      string
 }
 
-func (r *RPC) Run(args []string) int {
-	if len(args) < 3 {
-		fmt.Fprintln(os.Stderr, `usage: premises-runner cli rpc <path> <call|notify> <method>
-Read params from stdin and send a request to the RPC server`)
-		return 1
-	}
-	path := args[0]
-	reqType := args[1]
-	method := args[2]
+func NewRPCCommand() *cobra.Command {
+	rpc := &RPC{}
 
+	cmd := &cobra.Command{
+		Use:   "rpc",
+		Short: "Send a request to the RPC server",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return rpc.Run()
+		},
+	}
+
+	flags := cmd.Flags()
+
+	flags.StringVarP(&rpc.Path, "path", "p", "", "Path to the RPC server")
+	flags.StringVarP(&rpc.RequestType, "type", "t", "call", "Request type (call or notify)")
+	flags.StringVarP(&rpc.Method, "method", "m", "", "Method to call")
+
+	return cmd
+}
+
+func (r *RPC) Run() error {
 	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Unable to read from stdin:", err.Error())
-		return 1
+		return fmt.Errorf("failed to read stdin: %w", err)
 	}
 
-	client := rpc.NewClient(path)
-	if reqType == "call" {
+	client := rpc.NewClient(r.Path)
+
+	switch r.RequestType {
+	case "call":
 		var resp json.RawMessage
-		if err := client.Call(method, json.RawMessage(data), &resp); err != nil {
-			fmt.Fprintln(os.Stderr, "Error:", err.Error())
-			return 1
+		if err := client.Call(r.Method, json.RawMessage(data), &resp); err != nil {
+			return err
 		}
 		fmt.Println(string(resp))
-	} else if reqType == "notify" {
-		if err := client.Notify(method, json.RawMessage(data)); err != nil {
-			fmt.Fprintln(os.Stderr, "Error:", err.Error())
-			return 1
+
+	case "notify":
+		if err := client.Notify(r.Method, json.RawMessage(data)); err != nil {
+			return err
 		}
-	} else {
-		fmt.Fprintln(os.Stderr, "Unknown request type")
-		return 1
+
+	default:
+		return errors.New("unknown request type")
 	}
 
-	return 0
+	return nil
 }

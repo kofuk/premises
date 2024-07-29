@@ -9,16 +9,38 @@ import (
 
 	"github.com/gorcon/rcon"
 	"github.com/kofuk/premises/runner/internal/env"
+	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
 )
 
-func isatty() bool {
-	_, err := unix.IoctlGetTermios(syscall.Stdin, unix.TCGETS)
-	return err == nil
+type Rcon struct {
+	Address  string
+	Password string
+	conn     *rcon.Conn
 }
 
-type Rcon struct {
-	conn *rcon.Conn
+func NewRconCommand() *cobra.Command {
+	rcon := &Rcon{}
+
+	cmd := &cobra.Command{
+		Use:   "rcon",
+		Short: "Minecraft RCON client",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return rcon.Run()
+		},
+	}
+
+	flags := cmd.Flags()
+
+	defaultAddr := ":25575"
+	if env.IsDevEnv() {
+		defaultAddr = "127.0.0.2:25575"
+	}
+
+	flags.StringVarP(&rcon.Address, "address", "a", defaultAddr, "Address of the RCON server")
+	flags.StringVarP(&rcon.Password, "password", "p", "x", "Password for the RCON server")
+
+	return cmd
 }
 
 func (r *Rcon) execute(line string) (string, error) {
@@ -40,20 +62,14 @@ func (r *Rcon) connect(address, password string) error {
 	return nil
 }
 
-func (r *Rcon) Run(args []string) int {
-	address := ":25575"
-	if env.IsDevEnv() {
-		address = "127.0.0.2:25575"
-	}
-	password := "x"
-	if len(args) >= 2 {
-		address = args[0]
-		password = args[1]
-	}
+func isatty() bool {
+	_, err := unix.IoctlGetTermios(syscall.Stdin, unix.TCGETS)
+	return err == nil
+}
 
-	if err := r.connect(address, password); err != nil {
-		fmt.Fprintln(os.Stderr, "Unable to connect to the host:", err.Error())
-		return 1
+func (r *Rcon) Run() error {
+	if err := r.connect(r.Address, r.Password); err != nil {
+		return err
 	}
 	defer r.conn.Close()
 
@@ -70,12 +86,11 @@ func (r *Rcon) Run(args []string) int {
 
 		output, err := r.execute(scanner.Text())
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "Error executing command:", err.Error())
-			return 1
+			return err
 		}
 
 		fmt.Println(output)
 	}
 
-	return 0
+	return nil
 }
