@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	docker "github.com/docker/docker/client"
-	"github.com/kofuk/premises/ostack-fake/dockerstack/wrapper"
-	"github.com/kofuk/premises/ostack-fake/entity"
+	"github.com/kofuk/premises/internal/fake/ostack/dockerstack/wrapper"
+	"github.com/kofuk/premises/internal/fake/ostack/entity"
 )
 
 func ListServerDetails(ctx context.Context, docker *docker.Client) (*entity.ListServerDetailsResp, error) {
