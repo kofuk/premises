@@ -3,6 +3,8 @@ package main
 import (
 	"log/slog"
 	"os"
+
+	"github.com/kofuk/premises/internal/fake/ostack"
 )
 
 func main() {
@@ -11,7 +13,7 @@ func main() {
 		Level:     slog.LevelDebug,
 	})))
 
-	ostack, err := NewOstack(TenantCredentials("tenantId", "user", "password"), Token("xxxxxxxxxx"))
+	ostack, err := ostack.NewOstack(ostack.TenantCredentials("tenantId", "user", "password"), ostack.Token("xxxxxxxxxx"))
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)

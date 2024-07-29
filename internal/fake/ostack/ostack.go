@@ -1,4 +1,4 @@
-package main
+package ostack
 
 import (
 	"crypto/subtle"
@@ -13,8 +13,8 @@ import (
 
 	docker "github.com/docker/docker/client"
 	"github.com/google/uuid"
-	"github.com/kofuk/premises/ostack-fake/dockerstack"
-	"github.com/kofuk/premises/ostack-fake/entity"
+	"github.com/kofuk/premises/internal/fake/ostack/dockerstack"
+	"github.com/kofuk/premises/internal/fake/ostack/entity"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )

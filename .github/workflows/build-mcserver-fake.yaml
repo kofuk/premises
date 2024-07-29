@@ -2,7 +2,9 @@ name: Build mcserver-fake
 on:
   push:
     paths:
-      - 'mcserver-fake/**'
+      - 'cmd/mcserver-fake/**'
+      - 'internal/fake/mcserver/**'
+      - 'etc/fake-version-manifest/**'
 
 jobs:
   build-mcserver-fake:
@@ -15,13 +17,13 @@ jobs:
           cache-dependency-path: go.sum
       - name: Build mcserver-fake
         run: |
-          cd mcserver-fake
+          cd cmd/mcserver-fake
           CGO_ENABLED=0 go build .
       - name: Upload Artifacts
         if: github.ref_name == 'master'
         run: |
-          aws s3 cp mcserver-fake/mcserver-fake s3://premises/artifacts/devtools/mcserver-fake/
-          aws s3 cp --recursive mcserver-fake/resources s3://premises/artifacts/devtools/mcserver-fake/
+          aws s3 cp cmd/mcserver-fake/mcserver-fake s3://premises/artifacts/devtools/mcserver-fake/
+          aws s3 cp --recursive etc/fake-version-manifest s3://premises/artifacts/devtools/mcserver-fake/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
