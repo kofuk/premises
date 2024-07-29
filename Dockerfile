@@ -8,10 +8,11 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=bind,source=go.mod,target=go.mod \
     --mount=type=bind,source=go.sum,target=go.sum \
     --mount=type=bind,source=./internal,target=./internal \
-    --mount=type=bind,source=./controlpanel,target=./controlpanel \
-    cd /build/controlpanel/pmctl && \
+    --mount=type=bind,source=./controlpanel/cmd,target=./controlpanel/cmd \
+    --mount=type=bind,source=./controlpanel/internal,target=./controlpanel/internal \
+    cd /build/controlpanel/cmd/pmctl && \
     CGO_ENABLED=0 go build -o /pmctl . && \
-    cd /build/controlpanel && \
+    cd /build/controlpanel/cmd/premises && \
     CGO_ENABLED=0 go build -o /premises .
 
 FROM node:22 AS frontend_build

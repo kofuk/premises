@@ -27,7 +27,7 @@ func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
 		cfg.PostgresPassword,
 		cfg.PostgresDB,
 	)
-	if cfg.DebugMode {
+	if cfg.DevMode {
 		db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
 	}
 
@@ -115,7 +115,7 @@ func main() {
 	}
 
 	logLevel := slog.LevelInfo
-	if cfg.DebugMode {
+	if cfg.DevMode {
 		logLevel = slog.LevelDebug
 	}
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
