@@ -60,7 +60,7 @@ services:
     volumes:
       - redis:/data
   postgres:
-    image: 'postgres:15'
+    image: 'postgres:16'
     environment:
       - POSTGRES_USER=premises
       - POSTGRES_PASSWORD=password
