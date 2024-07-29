@@ -2,11 +2,7 @@ GO = go
 DOCKER = docker
 
 .PHONY: all
-all: premises-runner
-
-premises-runner:
-	CGO_ENABLED=0 $(GO) build -o premises-runner -ldflags \
-	    '-X github.com/kofuk/premises/runner/metadata.Revision=$(shell [ -e ../.git ] && git rev-parse HEAD || echo unkonwn)'
+all:
 
 .PHONY: sh
 sh:

@@ -67,14 +67,13 @@ jobs:
         with:
           go-version-file: go.mod
           cache-dependency-path: go.sum
-      - name: Install Required Packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y make
       - name: Build
         run: |
           cd runner
-          make
+          ldflags="-X github.com/kofuk/premises/runner/metadata.Revision=${COMMIT_HASH}"
+          CGO_ENABLED=0 go build -o premises-runner -ldflags "${ldflags}" .
+        env:
+          COMMIT_HASH: ${{ github.sha }}
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
