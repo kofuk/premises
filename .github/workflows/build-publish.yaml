@@ -78,7 +78,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: runner
-          path: ./runner/premises-runner
+          path: ./runner/cmd/premises-runner/premises-runner
           retention-days: 1
 
   test-controlpanel-frontend:
@@ -140,7 +140,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: control-panel-image
+          name: controlpanel-image
           path: image.tar
           retention-days: 1
 
@@ -158,7 +158,7 @@ jobs:
       - name: Download controlpanel Docker image
         uses: actions/download-artifact@v4
         with:
-          name: control-panel-image
+          name: controlpanel-image
       - name: Make directory for tools
         run: |
           mkdir bin
@@ -281,7 +281,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: control-panel-image
+          name: controlpanel-image
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
