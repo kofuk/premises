@@ -7,9 +7,9 @@ RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=bind,source=go.mod,target=go.mod \
     --mount=type=bind,source=go.sum,target=go.sum \
-    --mount=type=bind,source=./internal,target=./internal \
-    --mount=type=bind,source=./controlpanel/cmd,target=./controlpanel/cmd \
-    --mount=type=bind,source=./controlpanel/internal,target=./controlpanel/internal \
+    --mount=type=bind,source=./internal,target=internal \
+    --mount=type=bind,source=./controlpanel/cmd,target=controlpanel/cmd \
+    --mount=type=bind,source=./controlpanel/internal,target=controlpanel/internal \
     cd /build/controlpanel/cmd/pmctl && \
     CGO_ENABLED=0 go build -o /pmctl . && \
     cd /build/controlpanel/cmd/premises && \
@@ -18,16 +18,17 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 FROM node:22 AS frontend_build
 WORKDIR /build
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
-    --mount=type=bind,source=controlpanel/package.json,target=package.json \
-    --mount=type=bind,source=controlpanel/package-lock.json,target=package-lock.json \
+    --mount=type=bind,source=controlpanel/frontend/package.json,target=package.json \
+    --mount=type=bind,source=controlpanel/frontend/package-lock.json,target=package-lock.json \
     npm ci
-RUN --mount=type=bind,source=controlpanel/package.json,target=package.json \
-    --mount=type=bind,source=controlpanel/package-lock.json,target=package-lock.json \
-    --mount=type=bind,source=controlpanel/public,target=public \
-    --mount=type=bind,source=controlpanel/frontend,target=frontend \
-    --mount=type=bind,source=controlpanel/index.html,target=index.html \
-    --mount=type=bind,source=controlpanel/tsconfig.json,target=tsconfig.json \
-    --mount=type=bind,source=controlpanel/vite.config.ts,target=vite.config.ts \
+RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=bind,source=controlpanel/frontend/package.json,target=package.json \
+    --mount=type=bind,source=controlpanel/frontend/package-lock.json,target=package-lock.json \
+    --mount=type=bind,source=controlpanel/frontend/public,target=public \
+    --mount=type=bind,source=controlpanel/frontend/src,target=src \
+    --mount=type=bind,source=controlpanel/frontend/index.html,target=index.html \
+    --mount=type=bind,source=controlpanel/frontend/tsconfig.json,target=tsconfig.json \
+    --mount=type=bind,source=controlpanel/frontend/vite.config.ts,target=vite.config.ts \
     npm run build
 
 FROM scratch

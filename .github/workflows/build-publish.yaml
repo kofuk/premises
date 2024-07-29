@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./controlpanel
+        working-directory: ./controlpanel/frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -96,7 +96,7 @@ jobs:
         id: cache
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node-controlpanel-${{ hashFiles('controlpanel/package-lock.json') }}
+          key: ${{ runner.os }}-node-controlpanel-${{ hashFiles('controlpanel/frontend/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-controlpanel-
       - name: Install dependencies
@@ -106,7 +106,7 @@ jobs:
         if: ${{ steps.cache.outputs.cache-hit != 'true' && !startsWith(github.ref_name, 'dependabot/') }}
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node-controlpanel-${{ hashFiles('controlpanel/package-lock.json') }}
+          key: ${{ runner.os }}-node-controlpanel-${{ hashFiles('controlpanel/frontend/package-lock.json') }}
       - name: Check code formatted
         run: |
           npm run fmt:check

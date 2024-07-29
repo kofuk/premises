@@ -4,7 +4,7 @@
     "\\.(ts|tsx)": "ts-jest"
   },
   "moduleNameMapper": {
-    "^@/(.+)$": "<rootDir>/frontend/$1"
+    "^@/(.+)$": "<rootDir>/src/$1"
   },
   "setupFilesAfterEnv": ["./jest.setup.ts"]
 }

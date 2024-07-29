@@ -7,10 +7,10 @@
     "test:watch": "vitest",
     "build": "vite build",
     "start": "vite",
-    "fmt": "prettier --write 'frontend/**/*.{ts,tsx,json}' '*.{ts,js}'",
-    "fmt:check": "prettier --check 'frontend/**/*.{ts,tsx,json}' '*.{ts,js}'",
-    "lint": "eslint --fix frontend/ vite.config.ts test-setup.ts eslint.config.js",
-    "lint:check": "eslint frontend/ vite.config.ts test-setup.ts eslint.config.js"
+    "fmt": "prettier --write 'src/**/*.{ts,tsx,json}' '*.{ts,js}'",
+    "fmt:check": "prettier --check 'src/**/*.{ts,tsx,json}' '*.{ts,js}'",
+    "lint": "eslint --fix src/ vite.config.ts test-setup.ts eslint.config.js",
+    "lint:check": "eslint src/ vite.config.ts test-setup.ts eslint.config.js"
   },
   "repository": {
     "type": "git",
