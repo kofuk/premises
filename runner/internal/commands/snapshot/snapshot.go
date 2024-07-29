@@ -1,4 +1,4 @@
-package privileged
+package snapshot
 
 import (
 	"context"

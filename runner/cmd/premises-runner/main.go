@@ -12,11 +12,11 @@ import (
 	"github.com/kofuk/premises/runner/internal/commands/cli"
 	"github.com/kofuk/premises/runner/internal/commands/connector"
 	"github.com/kofuk/premises/runner/internal/commands/exteriord"
-	"github.com/kofuk/premises/runner/internal/commands/keepsystemutd"
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher"
-	"github.com/kofuk/premises/runner/internal/commands/privileged"
 	"github.com/kofuk/premises/runner/internal/commands/serversetup"
+	"github.com/kofuk/premises/runner/internal/commands/snapshot"
 	"github.com/kofuk/premises/runner/internal/commands/systemstat"
+	"github.com/kofuk/premises/runner/internal/commands/sysupdate"
 	"github.com/kofuk/premises/runner/internal/env"
 	"github.com/kofuk/premises/runner/internal/metadata"
 	"github.com/kofuk/premises/runner/internal/rpc"
@@ -125,7 +125,7 @@ func main() {
 				RequiresRoot: false,
 			},
 			"cli": {
-				Description: "CLI tools (rcon)",
+				Description: "CLI tools",
 				Run:         cli.Run,
 			},
 			"setup": {
@@ -138,8 +138,8 @@ func main() {
 				RequiresRoot: true,
 			},
 			"snapshot-helper": {
-				Description:  "Privileged snapshot helper",
-				Run:          privileged.Run,
+				Description:  "Snapshot helper",
+				Run:          snapshot.Run,
 				RequiresRoot: true,
 			},
 			"sysstat": {
@@ -149,7 +149,7 @@ func main() {
 			},
 			"update-packages": {
 				Description:  "Update system packages",
-				Run:          keepsystemutd.KeepSystemUpToDate,
+				Run:          sysupdate.Run,
 				RequiresRoot: true,
 			},
 			"version": {
