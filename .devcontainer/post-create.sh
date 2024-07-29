@@ -2,7 +2,7 @@
 set -euxo pipefail
 
 # Create .env if not exists
-[ -e controlpanel/.env ] || cp .devcontainer/env controlpanel/.env
+[ -e controlpanel/cmd/premises/.env ] || cp .devcontainer/env controlpanel/cmd/premises/.env
 
 # Install npm dependencies
 ( cd /workspace/premises/controlpanel && npm install ) &

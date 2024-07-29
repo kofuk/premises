@@ -40,7 +40,7 @@ type Handler struct {
 }
 
 func setupRoutes(h *Handler) {
-	if h.cfg.DebugMode {
+	if h.cfg.DevMode {
 		slog.Info("Proxying vite dev server")
 
 		remoteUrl, err := url.Parse("http://localhost:5173")

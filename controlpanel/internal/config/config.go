@@ -3,7 +3,7 @@ package config
 import "github.com/kelseyhightower/envconfig"
 
 type Config struct {
-	DebugMode             bool     `envconfig:"PREMISES_DEBUG"`
+	DevMode               bool     `envconfig:"PREMISES_DEV_MODE"`
 	Mode                  string   `envconfig:"PREMISES_MODE"`
 	ConohaUser            string   `envconfig:"PREMISES_CONOHA_USERNAME"`
 	ConohaPassword        string   `envconfig:"PREMISES_CONOHA_PASSWORD"`

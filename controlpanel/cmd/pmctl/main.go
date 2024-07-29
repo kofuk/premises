@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/kofuk/premises/controlpanel/pmctl/user"
+	"github.com/kofuk/premises/controlpanel/internal/user"
 	"github.com/spf13/cobra"
 )
 
