@@ -1,4 +1,4 @@
-import locale from "../../../controlpanel/frontend/i18n/en.json" with {
+import locale from "../../../controlpanel/frontend/src/i18n/en.json" with {
   type: "json",
 };
 
