@@ -138,7 +138,9 @@ type GetServerDetailInput struct {
 	ServerID string
 }
 
-type GetServerDetailOutput ServerDetail
+type GetServerDetailOutput struct {
+	Server ServerDetail `json:"server"`
+}
 
 func (c *Client) GetServerDetail(ctx context.Context, input GetServerDetailInput) (*GetServerDetailOutput, error) {
 	if err := c.updateToken(ctx); err != nil {
@@ -226,6 +228,8 @@ func (c *Client) StopServer(ctx context.Context, input StopServerInput) error {
 		return ErrorFrom(resp)
 	}
 
+	drainBody(resp.Body)
+
 	return nil
 }
 
@@ -252,6 +256,8 @@ func (c *Client) DeleteServer(ctx context.Context, input DeleteServerInput) erro
 	if resp.StatusCode != http.StatusNoContent {
 		return ErrorFrom(resp)
 	}
+
+	drainBody(resp.Body)
 
 	return nil
 }
