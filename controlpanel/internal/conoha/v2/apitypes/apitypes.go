@@ -24,3 +24,21 @@ type GetTokenOutput struct {
 		ExpiresAt string `json:"expires_at"`
 	} `json:"token"`
 }
+
+type BlockDeviceMapping struct {
+	UUID string `json:"uuid"`
+}
+
+type CreateServerInput struct {
+	Server struct {
+		FlavorID string `json:"flavorRef"`
+		UserData string `json:"user_data"`
+		MetaData struct {
+			InstanceNameTag string `json:"instance_name_tag"`
+		} `json:"metadata"`
+		SecurityGroups []struct {
+			Name string `json:"name"`
+		} `json:"security_groups"`
+		BlockDevices []BlockDeviceMapping `json:"block_device_mapping_v2"`
+	} `json:"server"`
+}

@@ -18,7 +18,6 @@ var (
 type Endpoints struct {
 	Identity string
 	Compute  string
-	Network  string
 	Volume   string
 }
 
