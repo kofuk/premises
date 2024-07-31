@@ -94,3 +94,7 @@ func newRequest(ctx context.Context, method, baseURL, relPath, token string, dat
 
 	return req, nil
 }
+
+func drainBody(body io.Reader) {
+	io.CopyN(io.Discard, body, 10*1024)
+}

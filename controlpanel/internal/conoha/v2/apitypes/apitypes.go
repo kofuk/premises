@@ -42,3 +42,9 @@ type CreateServerInput struct {
 		BlockDevices []BlockDeviceMapping `json:"block_device_mapping_v2"`
 	} `json:"server"`
 }
+
+type RenameVolumeInput struct {
+	Volume struct {
+		Name string `json:"name"`
+	} `json:"volume"`
+}
