@@ -1,4 +1,4 @@
-package conoha
+package startup
 
 import (
 	_ "embed"

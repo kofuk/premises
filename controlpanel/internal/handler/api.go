@@ -18,10 +18,10 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/securecookie"
 	"github.com/kofuk/premises/controlpanel/internal/config"
-	"github.com/kofuk/premises/controlpanel/internal/conoha"
 	"github.com/kofuk/premises/controlpanel/internal/db/model"
 	"github.com/kofuk/premises/controlpanel/internal/gameconfig"
 	"github.com/kofuk/premises/controlpanel/internal/monitor"
+	"github.com/kofuk/premises/controlpanel/internal/startup"
 	"github.com/kofuk/premises/controlpanel/internal/streaming"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
@@ -352,7 +352,7 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 	}
 
 	slog.Info("Generating startup script...")
-	startupScript, err := conoha.GenerateStartupScript(serverConfig)
+	startupScript, err := startup.GenerateStartupScript(serverConfig)
 	if err != nil {
 		slog.Error("Failed to generate startup script", slog.Any("error", err))
 
