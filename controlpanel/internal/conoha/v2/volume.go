@@ -12,24 +12,22 @@ const (
 	bootVolumeType = "c3j1-ds02-boot"
 )
 
-type Volume struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Status string `json:"status"`
-}
-
 type CreateBootVolumeInput struct {
 	Name    string
 	ImageID string
 }
 
 type CreateBootVolumeOutput struct {
-	Volume Volume `json:"volume"`
+	Volume struct {
+		ID     string `json:"id"`
+		Name   string `json:"name"`
+		Status string `json:"status"`
+	} `json:"volume"`
 }
 
 func (c *Client) CreateBootVolume(ctx context.Context, input CreateBootVolumeInput) (*CreateBootVolumeOutput, error) {
 	if err := c.updateToken(ctx); err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpCreateBootVolume, Err: err}
 	}
 
 	var apiInput apitypes.CreateBootVolumeInput
@@ -39,54 +37,57 @@ func (c *Client) CreateBootVolume(ctx context.Context, input CreateBootVolumeInp
 	apiInput.Volume.ImageID = input.ImageID
 	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Volume, "volumes", c.token, apiInput)
 	if err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpCreateBootVolume, Err: err}
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpCreateBootVolume, Err: err}
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusCreated {
-		return nil, ErrorFrom(resp)
+	if resp.StatusCode != http.StatusAccepted {
+		return nil, ClientError{Op: OpCreateBootVolume, Err: ErrorFrom(resp)}
 	}
 
 	var output CreateBootVolumeOutput
 	if err := json.NewDecoder(resp.Body).Decode(&output); err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpCreateBootVolume, Err: err}
 	}
 
 	return &output, nil
 }
 
 type ListVolumesOutput struct {
-	Volumes []Volume `json:"volumes"`
+	Volumes []struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"volumes"`
 }
 
 func (c *Client) ListVolumes(ctx context.Context) (*ListVolumesOutput, error) {
 	if err := c.updateToken(ctx); err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListVolumes, Err: err}
 	}
 
 	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Volume, "volumes", c.token, nil)
 	if err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListVolumes, Err: err}
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListVolumes, Err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, ErrorFrom(resp)
+		return nil, ClientError{Op: OpListVolumes, Err: ErrorFrom(resp)}
 	}
 
 	var output ListVolumesOutput
 	if err := json.NewDecoder(resp.Body).Decode(&output); err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListVolumes, Err: err}
 	}
 
 	return &output, nil
@@ -99,7 +100,7 @@ type RenameVolumeInput struct {
 
 func (c *Client) RenameVolume(ctx context.Context, input RenameVolumeInput) error {
 	if err := c.updateToken(ctx); err != nil {
-		return err
+		return ClientError{Op: OpRenameVolume, Err: err}
 	}
 
 	var apiInput apitypes.RenameVolumeInput
@@ -107,17 +108,17 @@ func (c *Client) RenameVolume(ctx context.Context, input RenameVolumeInput) erro
 
 	req, err := newRequest(ctx, http.MethodPut, c.endpoints.Volume, "volumes/"+input.VolumeID, c.token, apiInput)
 	if err != nil {
-		return err
+		return ClientError{Op: OpRenameVolume, Err: err}
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return ClientError{Op: OpRenameVolume, Err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return ErrorFrom(resp)
+		return ClientError{Op: OpRenameVolume, Err: ErrorFrom(resp)}
 	}
 
 	drainBody(resp.Body)
@@ -132,24 +133,24 @@ type SaveVolumeImageInput struct {
 
 func (c *Client) SaveVolumeImage(ctx context.Context, input SaveVolumeImageInput) error {
 	if err := c.updateToken(ctx); err != nil {
-		return err
+		return ClientError{Op: OpSaveVolumeImage, Err: err}
 	}
 
 	var apiInput apitypes.SaveVolumeImageInput
 	apiInput.V.ImageName = input.ImageName
 	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Volume, "volumes/"+input.VolumeID+"/action", c.token, apiInput)
 	if err != nil {
-		return err
+		return ClientError{Op: OpSaveVolumeImage, Err: err}
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return ClientError{Op: OpSaveVolumeImage, Err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusAccepted {
-		return ErrorFrom(resp)
+		return ClientError{Op: OpSaveVolumeImage, Err: ErrorFrom(resp)}
 	}
 
 	drainBody(resp.Body)

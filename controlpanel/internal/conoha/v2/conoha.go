@@ -37,6 +37,10 @@ type Client struct {
 }
 
 func NewClient(identity Identity, endpoints Endpoints, httpClient *http.Client) *Client {
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
+
 	return &Client{
 		identity:   identity,
 		endpoints:  endpoints,

@@ -53,22 +53,22 @@ func (c *Client) CreateServer(ctx context.Context, input CreateServerInput) (*Cr
 
 	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Compute, "servers", c.token, apiInput)
 	if err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpCreateServer, Err: err}
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpCreateServer, Err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusAccepted {
-		return nil, ErrorFrom(resp)
+		return nil, ClientError{Op: OpCreateServer, Err: ErrorFrom(resp)}
 	}
 
 	var output CreateServerOutput
 	if err := json.NewDecoder(resp.Body).Decode(&output); err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpCreateServer, Err: err}
 	}
 
 	return &output, nil
@@ -91,30 +91,31 @@ type ListFlavorDetailsOutput struct {
 
 func (c *Client) ListFlavorDetails(ctx context.Context) (*ListFlavorDetailsOutput, error) {
 	if err := c.updateToken(ctx); err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListFlavorDetails, Err: err}
 	}
 
 	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Compute, "flavors/detail", c.token, nil)
 	if err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListFlavorDetails, Err: err}
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListFlavorDetails, Err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, ErrorFrom(resp)
+		return nil, ClientError{Op: OpListFlavorDetails, Err: ErrorFrom(resp)}
 	}
 
 	var output ListFlavorDetailsOutput
 	if err := json.NewDecoder(resp.Body).Decode(&output); err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListFlavorDetails, Err: err}
 	}
 
 	output.Flavors = convertToAvailableFlavorList(output.Flavors)
+
 	return &output, nil
 }
 
@@ -144,27 +145,27 @@ type GetServerDetailOutput struct {
 
 func (c *Client) GetServerDetail(ctx context.Context, input GetServerDetailInput) (*GetServerDetailOutput, error) {
 	if err := c.updateToken(ctx); err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpGetServerDetail, Err: err}
 	}
 
 	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Compute, "servers/"+input.ServerID, c.token, nil)
 	if err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpGetServerDetail, Err: err}
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpGetServerDetail, Err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, ErrorFrom(resp)
+		return nil, ClientError{Op: OpGetServerDetail, Err: ErrorFrom(resp)}
 	}
 
 	var output GetServerDetailOutput
 	if err := json.NewDecoder(resp.Body).Decode(&output); err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpGetServerDetail, Err: err}
 	}
 
 	return &output, nil
@@ -176,27 +177,27 @@ type ListServerDetailsOutput struct {
 
 func (c *Client) ListServerDetails(ctx context.Context) (*ListServerDetailsOutput, error) {
 	if err := c.updateToken(ctx); err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListServerDetails, Err: err}
 	}
 
 	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Compute, "servers/detail", c.token, nil)
 	if err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListServerDetails, Err: err}
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListServerDetails, Err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, ErrorFrom(resp)
+		return nil, ClientError{Op: OpListServerDetails, Err: ErrorFrom(resp)}
 	}
 
 	var output ListServerDetailsOutput
 	if err := json.NewDecoder(resp.Body).Decode(&output); err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListServerDetails, Err: err}
 	}
 
 	return &output, nil
@@ -208,24 +209,24 @@ type StopServerInput struct {
 
 func (c *Client) StopServer(ctx context.Context, input StopServerInput) error {
 	if err := c.updateToken(ctx); err != nil {
-		return err
+		return ClientError{Op: OpStopServer, Err: err}
 	}
 
 	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Compute, "servers/"+input.ServerID+"/action", c.token, struct {
 		V *interface{} `json:"os-stop"`
 	}{})
 	if err != nil {
-		return err
+		return ClientError{Op: OpStopServer, Err: err}
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return ClientError{Op: OpStopServer, Err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusAccepted {
-		return ErrorFrom(resp)
+		return ClientError{Op: OpStopServer, Err: ErrorFrom(resp)}
 	}
 
 	drainBody(resp.Body)
@@ -239,22 +240,22 @@ type DeleteServerInput struct {
 
 func (c *Client) DeleteServer(ctx context.Context, input DeleteServerInput) error {
 	if err := c.updateToken(ctx); err != nil {
-		return err
+		return ClientError{Op: OpDeleteServer, Err: err}
 	}
 
 	req, err := newRequest(ctx, http.MethodDelete, c.endpoints.Compute, "servers/"+input.ServerID, c.token, nil)
 	if err != nil {
-		return err
+		return ClientError{Op: OpDeleteServer, Err: err}
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return ClientError{Op: OpDeleteServer, Err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
-		return ErrorFrom(resp)
+		return ClientError{Op: OpDeleteServer, Err: ErrorFrom(resp)}
 	}
 
 	drainBody(resp.Body)

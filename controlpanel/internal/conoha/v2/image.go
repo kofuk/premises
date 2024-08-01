@@ -18,12 +18,12 @@ type ListImagesOutput struct {
 
 func (c *Client) ListImages(ctx context.Context) (*ListImagesOutput, error) {
 	if err := c.updateToken(ctx); err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListImages, Err: err}
 	}
 
-	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Image, "images", c.token, nil)
+	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Image, "v2/images", c.token, nil)
 	if err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListImages, Err: err}
 	}
 
 	resp, err := c.httpClient.Do(req)
@@ -33,12 +33,12 @@ func (c *Client) ListImages(ctx context.Context) (*ListImagesOutput, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, ErrorFrom(resp)
+		return nil, ClientError{Op: OpListImages, Err: ErrorFrom(resp)}
 	}
 
 	var output ListImagesOutput
 	if err := json.NewDecoder(resp.Body).Decode(&output); err != nil {
-		return nil, err
+		return nil, ClientError{Op: OpListImages, Err: err}
 	}
 
 	return &output, nil
@@ -50,22 +50,22 @@ type DeleteImageInput struct {
 
 func (c *Client) DeleteImage(ctx context.Context, input DeleteImageInput) error {
 	if err := c.updateToken(ctx); err != nil {
-		return err
+		return ClientError{Op: OpDeleteImage, Err: err}
 	}
 
-	req, err := newRequest(ctx, http.MethodDelete, c.endpoints.Image, "images/"+input.ImageID, c.token, nil)
+	req, err := newRequest(ctx, http.MethodDelete, c.endpoints.Image, "v2/images/"+input.ImageID, c.token, nil)
 	if err != nil {
-		return err
+		return ClientError{Op: OpDeleteImage, Err: err}
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return ClientError{Op: OpDeleteImage, Err: err}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusNoContent {
-		return ErrorFrom(resp)
+		return ClientError{Op: OpDeleteImage, Err: ErrorFrom(resp)}
 	}
 
 	drainBody(resp.Body)
