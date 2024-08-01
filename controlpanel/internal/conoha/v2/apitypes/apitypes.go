@@ -43,8 +43,23 @@ type CreateServerInput struct {
 	} `json:"server"`
 }
 
+type CreateBootVolumeInput struct {
+	Volume struct {
+		Size       int    `json:"size"`
+		Name       string `json:"name"`
+		VolumeType string `json:"volume_type"`
+		ImageID    string `json:"imageRef"`
+	} `json:"volume"`
+}
+
 type RenameVolumeInput struct {
 	Volume struct {
 		Name string `json:"name"`
 	} `json:"volume"`
+}
+
+type SaveVolumeImageInput struct {
+	V struct {
+		ImageName string `json:"image_name"`
+	} `json:"os-volume_upload_image"`
 }
