@@ -18,6 +18,7 @@ var (
 type Endpoints struct {
 	Identity string
 	Compute  string
+	Image    string
 	Volume   string
 }
 
