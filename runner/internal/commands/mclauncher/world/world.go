@@ -91,6 +91,8 @@ func (w *WorldService) DownloadWorldData(config *runner.Config) error {
 	if err != nil {
 		return fmt.Errorf("unable to download %s: %w", config.GameConfig.World.GenerationId, err)
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unable to download %s: %s", config.GameConfig.World.GenerationId, resp.Status)
 	}
@@ -161,12 +163,13 @@ func (w *WorldService) doUploadWorldData(config *runner.Config) (string, error) 
 	if err != nil {
 		return "", err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", fmt.Errorf("upload failed: %s", resp.Status)
 	}
 
-	io.Copy(io.Discard, resp.Body)
+	io.CopyN(io.Discard, resp.Body, 10*1024)
 
 	slog.Info("Uploading world archive...Done")
 

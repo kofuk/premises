@@ -87,8 +87,10 @@ func downloadServerJar(url, savePath string) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
-		io.Copy(io.Discard, resp.Body)
+		io.CopyN(io.Discard, resp.Body, 10*1024)
 		return fmt.Errorf("download failed with status: %d", resp.StatusCode)
 	}
 

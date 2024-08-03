@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 )
 
@@ -57,18 +56,14 @@ func (lm *LauncherMeta) GetVersionInfo(ctx context.Context) ([]VersionInfo, erro
 	if err != nil {
 		return nil, err
 	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to retrieve launchermeta")
 	}
 
 	var meta launcherMetaData
-	if err := json.Unmarshal(data, &meta); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&meta); err != nil {
 		return nil, err
 	}
 
@@ -105,18 +100,14 @@ func (lm *LauncherMeta) GetServerInfo(ctx context.Context, version VersionInfo) 
 	if err != nil {
 		return nil, err
 	}
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("failed to get version metadata")
 	}
 
 	var versionMeta versionMetaResp
-	if err := json.Unmarshal(data, &versionMeta); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&versionMeta); err != nil {
 		return nil, err
 	}
 

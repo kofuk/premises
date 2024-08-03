@@ -53,6 +53,7 @@ func (xp *APITransport) Request(ctx context.Context, method string, url string, 
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	var respData web.GenericResponse
 	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
