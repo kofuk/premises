@@ -112,8 +112,8 @@ func startCron(config *config.Config) {
 	ctx, cancelFn := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancelFn()
 
-	cron := &cron.CronService{}
-	if err := cron.Run(ctx, config); err != nil {
+	cron := cron.NewCronService(config)
+	if err := cron.Run(ctx); err != nil {
 		slog.Error("Error in cron", slog.Any("error", err))
 		os.Exit(1)
 	}
