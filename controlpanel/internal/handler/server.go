@@ -46,7 +46,7 @@ func (s *GameServer) IsAvailable() bool {
 
 func findMatchingFlavor(flavors []conoha.Flavor, memSizeMB int) (string, error) {
 	for _, f := range flavors {
-		if f.RAM >= memSizeMB {
+		if f.RAM == memSizeMB {
 			return f.ID, nil
 		}
 	}
