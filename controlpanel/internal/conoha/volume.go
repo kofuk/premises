@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/kofuk/premises/controlpanel/internal/conoha/v2/apitypes"
+	"github.com/kofuk/premises/controlpanel/internal/conoha/apitypes"
 )
 
 const (
@@ -58,11 +58,13 @@ func (c *Client) CreateBootVolume(ctx context.Context, input CreateBootVolumeInp
 	return &output, nil
 }
 
+type Volume struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 type ListVolumesOutput struct {
-	Volumes []struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	} `json:"volumes"`
+	Volumes []Volume `json:"volumes"`
 }
 
 func (c *Client) ListVolumes(ctx context.Context) (*ListVolumesOutput, error) {

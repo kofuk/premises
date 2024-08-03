@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kofuk/premises/controlpanel/internal/conoha/v2/apitypes"
+	"github.com/kofuk/premises/controlpanel/internal/conoha/apitypes"
 )
 
 type GetTokenInput struct {

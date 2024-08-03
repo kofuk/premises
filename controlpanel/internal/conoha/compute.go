@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/kofuk/premises/controlpanel/internal/conoha/v2/apitypes"
+	"github.com/kofuk/premises/controlpanel/internal/conoha/apitypes"
 )
 
 func convertToAvailableFlavorList(flavors []Flavor) []Flavor {
