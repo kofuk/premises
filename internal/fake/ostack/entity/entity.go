@@ -84,33 +84,6 @@ type LaunchServerResp struct {
 	} `json:"server"`
 }
 
-type SecurityGroupRule struct {
-	SecurityGroupID string  `json:"security_group_id"`
-	Direction       string  `json:"direction"`
-	EtherType       string  `json:"ethertype"`
-	PortRangeMin    *string `json:"port_range_min"`
-	PortRangeMax    *string `json:"port_range_max"`
-	Protocol        *string `json:"protocol"`
-}
-
-type SecurityGroup struct {
-	ID                 string              `json:"id"`
-	Name               string              `json:"name"`
-	SecurityGroupRules []SecurityGroupRule `json:"security_group_rules"`
-}
-
-type ListSecurityGroupsResp struct {
-	SecurityGroups []SecurityGroup `json:"security_groups"`
-}
-
-type CreateSecurityGroupReq struct {
-	SecurityGroup SecurityGroup `json:"security_group"`
-}
-
-type CreateSecurityGroupRuleReq struct {
-	SecurityGroupRule SecurityGroupRule `json:"security_group_rule"`
-}
-
 type VolumeActionReq struct {
 	UploadImage struct {
 		ImageName string `json:"image_name"`
