@@ -2,6 +2,7 @@ package conoha
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -47,7 +48,7 @@ func (c *Client) CreateServer(ctx context.Context, input CreateServerInput) (*Cr
 
 	var apiInput apitypes.CreateServerInput
 	apiInput.Server.FlavorID = input.FlavorID
-	apiInput.Server.UserData = input.UserData
+	apiInput.Server.UserData = base64.RawStdEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(input.UserData))
 	apiInput.Server.MetaData.InstanceNameTag = input.NameTag
 	apiInput.Server.BlockDevices = []apitypes.BlockDeviceMapping{{UUID: input.RootVolumeID}}
 
