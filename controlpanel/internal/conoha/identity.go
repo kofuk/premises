@@ -12,7 +12,7 @@ import (
 type GetTokenInput struct {
 	User     string
 	Password string
-	TenandID string
+	TenantID string
 }
 
 type GetTokenOutput struct {
@@ -25,7 +25,7 @@ func (c *Client) CreateToken(ctx context.Context, input GetTokenInput) (*GetToke
 	apiInput.Auth.Identity.Methods = []string{"password"}
 	apiInput.Auth.Identity.Password.User.Name = c.identity.User
 	apiInput.Auth.Identity.Password.User.Password = c.identity.Password
-	apiInput.Auth.Scope.Project.ID = c.identity.TenandID
+	apiInput.Auth.Scope.Project.ID = c.identity.TenantID
 
 	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Identity, "auth/tokens", "", apiInput)
 	if err != nil {

@@ -24,7 +24,7 @@ func NewGameServer(cfg *config.Config, h *Handler) *GameServer {
 	identity := conoha.Identity{
 		User:     cfg.ConohaUser,
 		Password: cfg.ConohaPassword,
-		TenandID: cfg.ConohaTenantID,
+		TenantID: cfg.ConohaTenantID,
 	}
 	endpoints := conoha.Endpoints{
 		Identity: cfg.ConohaIdentityService,
