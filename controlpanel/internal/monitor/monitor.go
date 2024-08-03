@@ -46,7 +46,7 @@ func AttachRunner(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueSt
 	identity := conoha.Identity{
 		User:     cfg.ConohaUser,
 		Password: cfg.ConohaPassword,
-		TenandID: cfg.ConohaTenantID,
+		TenantID: cfg.ConohaTenantID,
 	}
 	endpoints := conoha.Endpoints{
 		Identity: cfg.ConohaIdentityService,

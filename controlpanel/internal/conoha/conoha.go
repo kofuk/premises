@@ -25,7 +25,7 @@ type Endpoints struct {
 type Identity struct {
 	User     string
 	Password string
-	TenandID string
+	TenantID string
 }
 
 type Client struct {
@@ -56,7 +56,7 @@ func (c *Client) updateToken(ctx context.Context) error {
 	token, err := c.CreateToken(ctx, GetTokenInput{
 		User:     c.identity.User,
 		Password: c.identity.Password,
-		TenandID: c.identity.TenandID,
+		TenantID: c.identity.TenantID,
 	})
 	if err != nil {
 		return err
