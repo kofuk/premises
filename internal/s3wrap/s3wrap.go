@@ -126,7 +126,7 @@ type Object struct {
 }
 
 func (client *Client) GetObject(ctx context.Context, bucket, key string) (*Object, error) {
-	resp, err := client.s3.GetObject(context.Background(), &s3.GetObjectInput{
+	resp, err := client.s3.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
 	})
@@ -141,7 +141,7 @@ func (client *Client) GetObject(ctx context.Context, bucket, key string) (*Objec
 }
 
 func (client *Client) PutObject(ctx context.Context, bucket, key string, body io.ReadSeeker, size int64) error {
-	if _, err := client.s3.PutObject(context.Background(), &s3.PutObjectInput{
+	if _, err := client.s3.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
 		Body:   body,
