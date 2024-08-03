@@ -12,6 +12,7 @@ type Config struct {
 	ConohaComputeService  string   `envconfig:"PREMISES_CONOHA_COMPUTE_SERVICE"`
 	ConohaNetworkService  string   `envconfig:"PREMISES_CONOHA_NETWORK_SERVICE"`
 	ConohaVolumeService   string   `envconfig:"PREMISES_CONOHA_VOLUME_SERVICE"`
+	ConohaImageService    string   `envconfig:"PREMISES_CONOHA_IMAGE_SERVICE"`
 	ConohaNameTag         string   `envconfig:"PREMISES_CONOHA_NAME_TAG"`
 	S3Bucket              string   `envconfig:"PREMISES_S3_BUCKET"`
 	S3ForcePathStyle      bool     `envconfig:"PREMISES_S3_FORCE_PATH_STYLE"`

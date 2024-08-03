@@ -43,25 +43,56 @@ func AttachRunner(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueSt
 
 	slog.Debug("Updating runner ID")
 
-	token, _, err := conoha.GetToken(ctx, cfg)
+	identity := conoha.Identity{
+		User:     cfg.ConohaUser,
+		Password: cfg.ConohaPassword,
+		TenandID: cfg.ConohaTenantID,
+	}
+	endpoints := conoha.Endpoints{
+		Identity: cfg.ConohaIdentityService,
+		Compute:  cfg.ConohaComputeService,
+		Image:    cfg.ConohaImageService,
+		Volume:   cfg.ConohaVolumeService,
+	}
+	client := conoha.NewClient(identity, endpoints, nil)
+
+	servers, err := client.ListServerDetails(ctx)
 	if err != nil {
 		return err
 	}
 
-	vm, err := conoha.FindVM(ctx, cfg, token, conoha.FindByIPAddr(ipv4Addr))
-	if err != nil {
+	var matchingServer *conoha.ServerDetail
+out:
+	for _, server := range servers.Servers {
+		for _, addresses := range server.Addresses {
+			for _, addr := range addresses {
+				if addr.Version != 4 {
+					continue
+				}
+				if addr.Addr == ipv4Addr {
+					matchingServer = &server
+					break out
+				}
+			}
+		}
+	}
+
+	if matchingServer == nil {
+		return errors.New("no matching server")
+	}
+
+	if err := cache.Set(ctx, "runner-id:default", matchingServer.ID, -1); err != nil {
 		return err
 	}
 
-	if err := cache.Set(ctx, "runner-id:default", vm.ID, -1); err != nil {
-		return err
-	}
-
-	if len(vm.Volumes) == 0 {
+	if len(matchingServer.Volumes) == 0 {
 		return errors.New("no volume attached to the VM")
 	}
 
-	if err := conoha.RenameVolume(ctx, cfg, token, vm.Volumes[0].ID, cfg.ConohaNameTag); err != nil {
+	err = client.RenameVolume(ctx, conoha.RenameVolumeInput{
+		VolumeID: matchingServer.Volumes[0].ID,
+	})
+	if err != nil {
 		return err
 	}
 
