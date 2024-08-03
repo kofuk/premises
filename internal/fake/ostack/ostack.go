@@ -12,7 +12,6 @@ import (
 	"time"
 
 	docker "github.com/docker/docker/client"
-	"github.com/google/uuid"
 	"github.com/kofuk/premises/internal/fake/ostack/dockerstack"
 	"github.com/kofuk/premises/internal/fake/ostack/entity"
 	"github.com/labstack/echo/v4"
@@ -37,7 +36,6 @@ type Ostack struct {
 	user        string
 	password    string
 	token       string
-	secGroups   map[string]entity.SecurityGroup
 	volumeNames map[string]string
 }
 
@@ -121,18 +119,6 @@ func (o *Ostack) ServeCreateServer(c echo.Context) error {
 	if err := c.Bind(&req); err != nil {
 		slog.Error(err.Error())
 		return c.JSON(http.StatusBadRequest, nil)
-	}
-
-outer:
-	for _, rsg := range req.Server.SecurityGroups {
-		for _, sg := range o.secGroups {
-			if rsg.Name == sg.Name {
-				continue outer
-			}
-
-			slog.Error("Unknown security group")
-			return c.JSON(http.StatusBadRequest, nil)
-		}
 	}
 
 	// Validate flavorRef
@@ -255,77 +241,6 @@ func (o *Ostack) ServeUpdateVolume(c echo.Context) error {
 	return c.JSON(http.StatusOK, nil)
 }
 
-func (o *Ostack) ServeListSecurityGroups(c echo.Context) error {
-	o.m.Lock()
-	defer o.m.Unlock()
-
-	var result entity.ListSecurityGroupsResp
-	result.SecurityGroups = make([]entity.SecurityGroup, 0)
-	for _, sg := range o.secGroups {
-		result.SecurityGroups = append(result.SecurityGroups, sg)
-	}
-	return c.JSON(http.StatusOK, result)
-}
-
-func (o *Ostack) ServeCreateSecurityGroup(c echo.Context) error {
-	o.m.Lock()
-	defer o.m.Unlock()
-
-	var req entity.CreateSecurityGroupReq
-	if err := c.Bind(&req); err != nil {
-		slog.Error(err.Error())
-		return c.JSON(http.StatusBadRequest, nil)
-	}
-
-	id := uuid.NewString()
-
-	sg := req.SecurityGroup
-	sg.ID = id
-	sg.SecurityGroupRules = append(sg.SecurityGroupRules, entity.SecurityGroupRule{
-		SecurityGroupID: id,
-		Direction:       "egress",
-		EtherType:       "IPv4",
-		PortRangeMin:    nil,
-		PortRangeMax:    nil,
-		Protocol:        nil,
-	})
-	sg.SecurityGroupRules = append(sg.SecurityGroupRules, entity.SecurityGroupRule{
-		SecurityGroupID: id,
-		Direction:       "egress",
-		EtherType:       "IPv6",
-		PortRangeMin:    nil,
-		PortRangeMax:    nil,
-		Protocol:        nil,
-	})
-
-	o.secGroups[id] = sg
-
-	return c.JSON(http.StatusCreated, entity.CreateSecurityGroupReq{
-		SecurityGroup: sg,
-	})
-}
-
-func (o *Ostack) ServeCreateSecurityGroupRule(c echo.Context) error {
-	o.m.Lock()
-	defer o.m.Unlock()
-
-	var req entity.CreateSecurityGroupRuleReq
-	if err := c.Bind(&req); err != nil {
-		slog.Error(err.Error())
-		return c.JSON(http.StatusBadRequest, nil)
-	}
-
-	sg, ok := o.secGroups[req.SecurityGroupRule.SecurityGroupID]
-	if !ok {
-		slog.Error("Security group not found")
-		return c.JSON(http.StatusNotFound, nil)
-	}
-	sg.SecurityGroupRules = append(sg.SecurityGroupRules, req.SecurityGroupRule)
-	o.secGroups[req.SecurityGroupRule.SecurityGroupID] = sg
-
-	return c.JSON(http.StatusCreated, req)
-}
-
 func (o *Ostack) setupRoutes() {
 	o.r.POST("/identity/v3/auth/tokens", o.ServeGetToken)
 	o.r.GET("/health", o.ServeGetHealth)
@@ -345,9 +260,6 @@ func (o *Ostack) setupRoutes() {
 	needsAuthEndpoint.POST("/compute/v2.1/servers/:server/action", o.ServeServerAction)
 	needsAuthEndpoint.DELETE("/compute/v2.1/servers/:server", o.ServeDeleteServer)
 	needsAuthEndpoint.GET("/compute/v2.1/flavors/detail", o.ServeListFlavors)
-	needsAuthEndpoint.GET("/network/v2.0/security-groups", o.ServeListSecurityGroups)
-	needsAuthEndpoint.POST("/network/v2.0/security-groups", o.ServeCreateSecurityGroup)
-	needsAuthEndpoint.POST("/network/v2.0/security-group-rules", o.ServeCreateSecurityGroupRule)
 	needsAuthEndpoint.GET("/volume/v3/volumes", o.ServeListVolumes)
 	needsAuthEndpoint.PUT("/volume/v3/volumes/:volume", o.ServeUpdateVolume)
 }
@@ -365,7 +277,6 @@ func NewOstack(options ...OstackOption) (*Ostack, error) {
 	ostack := &Ostack{
 		r:           engine,
 		docker:      docker,
-		secGroups:   make(map[string]entity.SecurityGroup),
 		volumeNames: make(map[string]string),
 	}
 
