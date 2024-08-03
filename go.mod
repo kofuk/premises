@@ -7,6 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.30.3
 	github.com/aws/aws-sdk-go-v2/config v1.27.27
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.58.2
+	github.com/aws/smithy-go v1.20.3
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff
 	github.com/docker/docker v27.1.1+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
@@ -50,7 +51,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.22.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.3 // indirect
-	github.com/aws/smithy-go v1.20.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

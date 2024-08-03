@@ -2,6 +2,7 @@ package s3wrap
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/aws/smithy-go"
 )
 
 type Client struct {
@@ -87,7 +89,8 @@ func (client *Client) ListObjects(ctx context.Context, bucket string, opts ...Li
 		continuationToken = resp.NextContinuationToken
 		for _, obj := range resp.Contents {
 			if strings.HasSuffix(*obj.Key, "/") {
-				// Quirk: GCS's XML API returns directries as a object. We'll filter them out.
+				// Quirk: In some situation, GCS automatically create empty file indicates a directory.
+				// We'll skip these entries.
 				continue
 			}
 
@@ -108,16 +111,38 @@ func (client *Client) DeleteObjects(ctx context.Context, bucket string, keys []s
 			Key: &key,
 		})
 	}
-	if _, err := client.s3.DeleteObjects(context.Background(), &s3.DeleteObjectsInput{
+
+	if _, err := client.s3.DeleteObjects(ctx, &s3.DeleteObjectsInput{
 		Bucket: &bucket,
 		Delete: &types.Delete{
 			Objects: objectIds,
 		},
 	}); err != nil {
+		// If ErrorCode is "NotImplemented", it means the storage provider does not support bulk delete.
+		// In such case, we'll try to delete objects one by one.
+		var ae smithy.APIError
+		if errors.As(err, &ae) {
+			if ae.ErrorCode() == "NotImplemented" {
+				goto fallback
+			}
+		}
 		return err
+	} else {
+		return nil
 	}
 
-	return nil
+fallback:
+	var errs []error
+	for _, key := range keys {
+		if _, err := client.s3.DeleteObject(ctx, &s3.DeleteObjectInput{
+			Bucket: &bucket,
+			Key:    &key,
+		}); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errors.Join(errs...)
 }
 
 type Object struct {
