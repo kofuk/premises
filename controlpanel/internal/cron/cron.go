@@ -84,6 +84,17 @@ func (cr *CronService) runSaveStorageJob() error {
 }
 
 func (cr *CronService) runCreateStorageJob() error {
+	volumes, err := cr.conoha.ListVolumes(context.Background())
+	if err != nil {
+		return err
+	}
+	for _, v := range volumes.Volumes {
+		if v.Name == cr.nameTag {
+			slog.Info("Volume already exists. Skip creating a new volume.")
+			return nil
+		}
+	}
+
 	images, err := cr.conoha.ListImages(context.Background())
 	if err != nil {
 		return err
@@ -99,6 +110,8 @@ func (cr *CronService) runCreateStorageJob() error {
 
 	if image == nil {
 		return errors.New("image not found")
+	} else if image.Status != "active" {
+		return errors.New("image is not active")
 	}
 
 	_, err = cr.conoha.CreateBootVolume(context.Background(), conoha.CreateBootVolumeInput{
@@ -128,9 +141,9 @@ func (cr *CronService) Run(ctx context.Context) error {
 	// Save existing storage data to image service.
 	c.AddFunc("30 14 * * 0", withDelay(cr.runSaveStorageJob))
 
-	// 09:00 on Monday (JST)
+	// Every 1 hour.
 	// Create a new storage using saved image.
-	c.AddFunc("0 0 * * 1", withDelay(cr.runCreateStorageJob))
+	c.AddFunc("45 * * * *", withDelay(cr.runCreateStorageJob))
 
 	c.Start()
 
