@@ -274,6 +274,20 @@ func NewOstack(options ...OstackOption) (*Ostack, error) {
 	engine.Use(middleware.Logger())
 	engine.HideBanner = true
 
+	origErrHandler := engine.HTTPErrorHandler
+	engine.HTTPErrorHandler = func(err error, c echo.Context) {
+		if err == echo.ErrNotFound {
+			c.JSON(http.StatusNotFound, map[string]interface{}{
+				"code":  http.StatusNotFound,
+				"error": "Specified resource not found or not implemented",
+			})
+		} else {
+			if origErrHandler != nil {
+				origErrHandler(err, c)
+			}
+		}
+	}
+
 	ostack := &Ostack{
 		r:           engine,
 		docker:      docker,
