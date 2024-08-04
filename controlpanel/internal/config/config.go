@@ -10,7 +10,6 @@ type Config struct {
 	ConohaTenantID        string   `envconfig:"PREMISES_CONOHA_TENANT_ID"`
 	ConohaIdentityService string   `envconfig:"PREMISES_CONOHA_IDENTITY_SERVICE"`
 	ConohaComputeService  string   `envconfig:"PREMISES_CONOHA_COMPUTE_SERVICE"`
-	ConohaNetworkService  string   `envconfig:"PREMISES_CONOHA_NETWORK_SERVICE"`
 	ConohaVolumeService   string   `envconfig:"PREMISES_CONOHA_VOLUME_SERVICE"`
 	ConohaImageService    string   `envconfig:"PREMISES_CONOHA_IMAGE_SERVICE"`
 	ConohaNameTag         string   `envconfig:"PREMISES_CONOHA_NAME_TAG"`
@@ -30,11 +29,6 @@ type Config struct {
 	ProxyBackendAddr      string   `envconfig:"PREMISES_PROXY_BACKEND_ADDRESS"`
 	GameDomain            string   `envconfig:"PREMISES_GAME_DOMAIN"`
 	IconURL               string   `envconfig:"PREMISES_ICON_URL"`
-}
-
-type ServerConfig struct {
-	Name      string `json:"name"`
-	IsVanilla bool   `json:"isVanilla"`
 }
 
 func LoadConfig() (*Config, error) {

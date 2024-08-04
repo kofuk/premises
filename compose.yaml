@@ -4,8 +4,8 @@ x-common-settings: &settings
   PREMISES_CONOHA_TENANT_ID:
   PREMISES_CONOHA_IDENTITY_SERVICE:
   PREMISES_CONOHA_COMPUTE_SERVICE:
-  PREMISES_CONOHA_NETWORK_SERVICE:
   PREMISES_CONOHA_VOLUME_SERVICE:
+  PREMISES_CONOHA_IMAGE_SERVICE:
   PREMISES_CONOHA_NAME_TAG:
   PREMISES_S3_BUCKET:
   PREMISES_S3_FORCE_PATH_STYLE:
@@ -28,7 +28,7 @@ x-common-settings: &settings
 
 services:
   web:
-    image: 'ghcr.io/kofuk/premises:latest'
+    image: ghcr.io/kofuk/premises:latest
     environment:
       <<: *settings
       PREMISES_MODE: web
@@ -42,7 +42,7 @@ services:
     ports:
       - '8000:8000'
   proxy:
-    image: 'ghcr.io/kofuk/premises:latest'
+    image: ghcr.io/kofuk/premises:latest
     environment:
       <<: *settings
       PREMISES_MODE: proxy
@@ -52,13 +52,13 @@ services:
       - '25530:25530'
       - '25565:25565'
   cron:
-    image: 'ghcr.io/kofuk/premises:latest'
+    image: ghcr.io/kofuk/premises:latest
     environment:
       <<: *settings
       PREMISES_MODE: cron
     read_only: true
   redis:
-    image: 'redis:7.2'
+    image: redis:7.2
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 1s
@@ -68,11 +68,11 @@ services:
     volumes:
       - redis:/data
   postgres:
-    image: 'postgres:16'
+    image: postgres:16
     environment:
-      - POSTGRES_USER=premises
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=premises
+      POSTGRES_USER: premises
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: premises
     restart: always
     healthcheck:
       test: ["CMD", "pg_isready", "-Upremises"]
