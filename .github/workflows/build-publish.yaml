@@ -219,6 +219,7 @@ jobs:
             --network host \
             -e PREMISES_MODE=proxy \
             -e PREMISES_REDIS_ADDRESS=localhost:6379 \
+            --read-only \
             -d \
             ghcr.io/kofuk/premises:latest
       - name: Build base image for ostack-fake
