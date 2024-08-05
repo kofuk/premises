@@ -32,7 +32,8 @@ func NewCronService(config *config.Config) *CronService {
 	conoha := conoha.NewClient(identity, endpoints, nil)
 
 	return &CronService{
-		conoha: conoha,
+		conoha:  conoha,
+		nameTag: config.ConohaNameTag,
 	}
 }
 
