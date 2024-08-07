@@ -1,9 +1,9 @@
 import react from '@vitejs/plugin-react';
 import checker from 'vite-plugin-checker';
 import tsconfigPaths from 'vite-tsconfig-paths';
-import {defineConfig} from 'vitest/config';
+import {UserConfig} from 'vitest/config';
 
-export default defineConfig({
+export default {
   server: {
     open: false,
     watch: {
@@ -19,4 +19,4 @@ export default defineConfig({
     setupFiles: ['./test-setup.ts']
   },
   plugins: [react(), tsconfigPaths(), checker({typescript: true})]
-});
+} satisfies UserConfig;

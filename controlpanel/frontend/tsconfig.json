@@ -1,16 +1,15 @@
 {
   "compilerOptions": {
-    "target": "es2016",
+    "target": "ES2023",
     "jsx": "react-jsx",
     "module": "esnext",
-    "moduleResolution": "node",
-    "baseUrl": "./",
+    "moduleResolution": "bundler",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
-    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
+    "isolatedModules": true,
     "skipLibCheck": true,
     "resolveJsonModule": true
   }
