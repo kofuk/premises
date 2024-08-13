@@ -302,7 +302,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 	}
 
 out:
-	if err := h.world.Prune(ctx, 5); err != nil {
+	if err := h.world.Prune(ctx, 3); err != nil {
 		slog.Error("Failed to prune worlds", slog.Any("error", err))
 	}
 
