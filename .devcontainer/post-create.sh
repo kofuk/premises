@@ -14,8 +14,8 @@ p2=$!
 (
     eval $(grep -F = controlpanel/cmd/premises/.env | sed 's/^/export /')
 
-    ( cd controlpanel; PREMISES_MODE=web go run . migrate )
-    ( cd controlpanel/pmctl; go run . user add -u user1 -p password1 --initialized )
+    ( cd controlpanel/cmd/premises; PREMISES_MODE=web go run . migrate )
+    ( cd controlpanel/cmd/pmctl; go run . user add -u user1 -p password1 --initialized )
 ) &
 p3=$!
 
