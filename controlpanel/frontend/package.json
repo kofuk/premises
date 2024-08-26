@@ -59,7 +59,7 @@
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-promise": "^7.1.0",
     "eslint-plugin-react": "^7.35.0",
-    "nock": "^13.5.4",
+    "nock": "^13.5.5",
     "node-fetch": "^3.3.2",
     "prettier": "^3.3.3",
     "typescript": "^5.5.4",
