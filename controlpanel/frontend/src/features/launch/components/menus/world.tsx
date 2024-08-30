@@ -88,7 +88,7 @@ export const create = (): MenuItem => {
     title: t('launch.world'),
     ui: (
       <Box>
-        <RadioGroup onChange={handleChange} value={worldSource}>
+        <RadioGroup onChange={handleChange} row value={worldSource}>
           <FormControlLabel control={<Radio />} label={t('launch.world.load_existing')} value={WorldLocation.Backups} />
           <FormControlLabel control={<Radio />} label={t('launch.world.create_new')} value={WorldLocation.NewWorld} />
         </RadioGroup>
