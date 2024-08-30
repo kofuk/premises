@@ -5,6 +5,7 @@ import useSWRImmutable from 'swr/immutable';
 import {
   ConfigAndValidity,
   CreateWorldDownloadLinkReq,
+  CreateWorldUploadLinkReq,
   DelegatedURL,
   MCVersion,
   PasswordCredential,
@@ -62,7 +63,7 @@ export const updateConfig = declareApi<PendingConfig, ConfigAndValidity>('/api/c
 export const launch = declareApi<null, null>('/api/launch', 'post');
 export const reconfigure = declareApi<null, null>('/api/reconfigure', 'post');
 export const createWorldDownloadLink = declareApi<CreateWorldDownloadLinkReq, DelegatedURL>('/api/world-link/download', 'post');
-export const createWorldUploadLink = declareApi<CreateWorldDownloadLinkReq, DelegatedURL>('/api/world-link/upload', 'post');
+export const createWorldUploadLink = declareApi<CreateWorldUploadLinkReq, DelegatedURL>('/api/world-link/upload', 'post');
 
 export type ImmutableUseResponse<T> = {
   data: T | undefined;

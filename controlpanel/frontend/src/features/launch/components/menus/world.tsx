@@ -1,6 +1,6 @@
 import {useTranslation} from 'react-i18next';
 
-import {Alert, Box, FormControlLabel, Radio, RadioGroup, Stack} from '@mui/material';
+import {Box, FormControlLabel, Radio, RadioGroup, Stack} from '@mui/material';
 
 import {useLaunchConfig} from '../launch-config';
 import {MenuItem} from '../menu-container';
@@ -18,15 +18,9 @@ export enum WorldLocation {
 }
 
 const SavedWorld = ({name, setName, gen, setGen}: {name: string; setName: (name: string) => void; gen: string; setGen: (gen: string) => void}) => {
-  const [t] = useTranslation();
-
-  const {data: savedWorlds, isLoading} = useWorlds();
+  const {data: savedWorlds, isLoading, mutate} = useWorlds();
   if (isLoading) {
     return <Loading compact />;
-  }
-
-  if (!savedWorlds) {
-    return <Alert severity="error">{t('launch.world.no_world')}</Alert>;
   }
 
   return (
@@ -37,6 +31,7 @@ const SavedWorld = ({name, setName, gen, setGen}: {name: string; setName: (name:
             setName(selection.worldName);
             setGen(selection.generationId);
           }}
+          refresh={() => mutate()}
           selection={{worldName: name, generationId: gen}}
           worlds={savedWorlds}
         />
