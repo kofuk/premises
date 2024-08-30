@@ -11,7 +11,7 @@ $ devcontainer open
 $ ./launch_all.sh
 ```
 
-Initial user's name and password is `user1/password1`.
+Initial user's name and password is `admin/password`.
 
 ## Run ControlPanel locally, runner on cloud
 

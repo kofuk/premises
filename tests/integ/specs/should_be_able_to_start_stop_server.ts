@@ -6,7 +6,7 @@ import { usingFakeMinecraftServer } from "../lib/env.ts";
 import { getState } from "../lib/mcproto.ts";
 
 console.log("Login");
-const cookie = await login("user1", "password1");
+const cookie = await login("admin", "password");
 
 const worldName = `test-${Date.now()}`;
 
