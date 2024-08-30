@@ -26,7 +26,7 @@ const getWorldLabel = (worldGen: WorldGeneration): string => {
 };
 
 const WorldExplorer = ({worlds, selection, onChange}: Props) => {
-  const handleSelectedItemsChange = (event: React.SyntheticEvent, id: string | null) => {
+  const handleSelectedItemsChange = (_event: React.SyntheticEvent, id: string | null) => {
     if (!id || !onChange) {
       return;
     }
