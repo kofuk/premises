@@ -6,7 +6,7 @@ import {Download as DownloadIcon} from '@mui/icons-material';
 import {IconButton} from '@mui/material';
 import {SimpleTreeView, TreeItem} from '@mui/x-tree-view';
 
-import {APIError, createWorldLink} from '@/api';
+import {APIError, createWorldDownloadLink} from '@/api';
 import {World, WorldGeneration} from '@/api/entities';
 
 type Selection = {
@@ -48,7 +48,7 @@ const WorldExplorer = ({worlds, selection, onChange}: Props) => {
 
   const handleDownload = async (generationId: string) => {
     try {
-      const {url} = await createWorldLink({id: generationId});
+      const {url} = await createWorldDownloadLink({id: generationId});
 
       const a = document.createElement('a');
       a.href = url;

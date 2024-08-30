@@ -75,8 +75,13 @@ export type ConfigAndValidity = {
   config: PendingConfig;
 };
 
-export type CreateWorldLinkReq = {
+export type CreateWorldDownloadLinkReq = {
   id: string;
+};
+
+export type CreateWorldUploadLinkReq = {
+  worldName: string;
+  mimeType: string;
 };
 
 export type DelegatedURL = {

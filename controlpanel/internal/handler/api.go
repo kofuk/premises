@@ -770,7 +770,7 @@ func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiCreateWorldLink(c echo.Context) error {
+func (h *Handler) handleApiCreateWorldDownloadLink(c echo.Context) error {
 	var req web.CreateWorldLinkReq
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -780,6 +780,55 @@ func (h *Handler) handleApiCreateWorldLink(c echo.Context) error {
 	}
 
 	url, err := h.world.GetPresignedGetURL(c.Request().Context(), req.ID)
+	if err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.DelegatedURL]{
+		Success: true,
+		Data: web.DelegatedURL{
+			URL: url,
+		},
+	})
+}
+
+func (h *Handler) handleApiCreateWorldUploadLink(c echo.Context) error {
+	var req web.CreateWorldUploadLinkReq
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	if strings.ContainsAny(req.WorldName, "@/\\") {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	ext := ""
+	switch req.MimeType {
+	case "application/zip":
+		ext = ".zip"
+	case "application/x-gzip":
+		ext = ".tar.gz"
+	case "application/zstd":
+		ext = ".tar.zst"
+	default:
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	fileName := fmt.Sprintf("%s/user_uploaded_world%s", req.WorldName, ext)
+
+	url, err := h.world.GetPresignedPutURL(c.Request().Context(), fileName)
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
@@ -1079,7 +1128,8 @@ func (h *Handler) setupApiRoutes(group *echo.Group) {
 	needsAuth.GET("/worldinfo", h.handleApiWorldInfo)
 	needsAuth.GET("/config", h.handleApiGetConfig)
 	needsAuth.PUT("/config", h.handleApiUpdateConfig)
-	needsAuth.POST("/world-link", h.handleApiCreateWorldLink)
+	needsAuth.POST("/world-link/download", h.handleApiCreateWorldDownloadLink)
+	needsAuth.POST("/world-link/upload", h.handleApiCreateWorldUploadLink)
 	setupApiQuickUndoRoutes(h, needsAuth.Group("/quickundo"))
 	setupApiUsersRoutes(h, needsAuth.Group("/users"))
 }

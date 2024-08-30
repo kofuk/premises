@@ -110,6 +110,11 @@ type CreateWorldLinkReq struct {
 	ID string `json:"id"`
 }
 
+type CreateWorldUploadLinkReq struct {
+	WorldName string `json:"worldName"`
+	MimeType  string `json:"mimeType"`
+}
+
 type DelegatedURL struct {
 	URL string `json:"url"`
 }
