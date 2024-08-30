@@ -770,6 +770,31 @@ func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 	})
 }
 
+func (h *Handler) handleApiCreateWorldLink(c echo.Context) error {
+	var req web.CreateWorldLinkReq
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	url, err := h.world.GetPresignedGetURL(c.Request().Context(), req.ID)
+	if err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.DelegatedURL]{
+		Success: true,
+		Data: web.DelegatedURL{
+			URL: url,
+		},
+	})
+}
+
 func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
 	session, err := session.Get("session", c)
 	if err != nil {
@@ -1054,6 +1079,7 @@ func (h *Handler) setupApiRoutes(group *echo.Group) {
 	needsAuth.GET("/worldinfo", h.handleApiWorldInfo)
 	needsAuth.GET("/config", h.handleApiGetConfig)
 	needsAuth.PUT("/config", h.handleApiUpdateConfig)
+	needsAuth.POST("/world-link", h.handleApiCreateWorldLink)
 	setupApiQuickUndoRoutes(h, needsAuth.Group("/quickundo"))
 	setupApiUsersRoutes(h, needsAuth.Group("/users"))
 }

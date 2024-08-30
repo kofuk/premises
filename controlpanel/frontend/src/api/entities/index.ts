@@ -74,3 +74,11 @@ export type ConfigAndValidity = {
   isValid: boolean;
   config: PendingConfig;
 };
+
+export type CreateWorldLinkReq = {
+  id: string;
+};
+
+export type DelegatedURL = {
+  url: string;
+};

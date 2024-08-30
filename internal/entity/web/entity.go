@@ -106,6 +106,14 @@ type CreateConfigReq struct {
 	ConfigShareId *string `json:"configShareId"`
 }
 
+type CreateWorldLinkReq struct {
+	ID string `json:"id"`
+}
+
+type DelegatedURL struct {
+	URL string `json:"url"`
+}
+
 type PageCode int
 
 const (

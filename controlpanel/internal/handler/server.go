@@ -13,11 +13,9 @@ import (
 )
 
 type GameServer struct {
-	cfg     *config.Config
-	conoha  *conoha.Client
-	token   string
-	expires string
-	h       *Handler
+	cfg    *config.Config
+	conoha *conoha.Client
+	h      *Handler
 }
 
 func NewGameServer(cfg *config.Config, h *Handler) *GameServer {
