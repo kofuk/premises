@@ -1,12 +1,13 @@
 import React from 'react';
 
+import {useSnackbar} from 'notistack';
+
 import {Download as DownloadIcon} from '@mui/icons-material';
 import {IconButton} from '@mui/material';
 import {SimpleTreeView, TreeItem} from '@mui/x-tree-view';
 
-import {World, WorldGeneration} from '@/api/entities';
 import {APIError, createWorldLink} from '@/api';
-import {useSnackbar} from 'notistack';
+import {World, WorldGeneration} from '@/api/entities';
 
 type Selection = {
   worldName: string;
