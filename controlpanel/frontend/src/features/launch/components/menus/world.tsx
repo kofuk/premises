@@ -60,7 +60,10 @@ const SavedWorld = ({name, setName, gen, setGen}: {name: string; setName: (name:
 
 const NewWorld = ({name, setName}: {name: string; setName: (name: string) => void}) => {
   const [t] = useTranslation();
-  return <SaveInput fullWidth initValue={name} label={t('launch.world.name')} onSave={setName} type="text" unsuitableForPasswordAutoFill />;
+  const handleSaveName = (name: string) => {
+    setName(name.replaceAll(/[-@]/g, '-'));
+  };
+  return <SaveInput fullWidth initValue={name} label={t('launch.world.name')} onSave={handleSaveName} type="text" unsuitableForPasswordAutoFill />;
 };
 
 export const create = (): MenuItem => {
