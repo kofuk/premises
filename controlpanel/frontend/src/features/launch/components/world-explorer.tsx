@@ -4,7 +4,14 @@ import {useSnackbar} from 'notistack';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 
-import {Download as DownloadIcon, Refresh as RefreshIcon, Upload as UploadIcon} from '@mui/icons-material';
+import {
+  Download as DownloadIcon,
+  Folder as FolderIcon,
+  FolderOpen as FolderOpenIcon,
+  Refresh as RefreshIcon,
+  Upload as UploadIcon,
+  Public as WorldIcon
+} from '@mui/icons-material';
 import {LoadingButton} from '@mui/lab';
 import {ButtonGroup, IconButton, Stack, TextField} from '@mui/material';
 import {SimpleTreeView, TreeItem} from '@mui/x-tree-view';
@@ -171,7 +178,16 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
           </IconButton>
         )}
       </Stack>
-      <SimpleTreeView checkboxSelection={true} onSelectedItemsChange={handleSelectedItemsChange} selectedItems={selectedItems}>
+      <SimpleTreeView
+        checkboxSelection={true}
+        onSelectedItemsChange={handleSelectedItemsChange}
+        selectedItems={selectedItems}
+        slots={{
+          expandIcon: FolderIcon,
+          collapseIcon: FolderOpenIcon,
+          endIcon: WorldIcon
+        }}
+      >
         {items}
       </SimpleTreeView>
     </Stack>
