@@ -17,6 +17,7 @@ import {
 
 import {useLaunchConfig} from '../launch-config';
 import {MenuItem} from '../menu-container';
+import WorldExplorer from '../world-explorer';
 
 import {valueLabel} from './common';
 
@@ -37,60 +38,21 @@ const SavedWorld = ({name, setName, gen, setGen}: {name: string; setName: (name:
     return <Loading compact />;
   }
 
-  if (!savedWorlds || savedWorlds.length === 0) {
+  if (!savedWorlds) {
     return <Alert severity="error">{t('launch.world.no_world')}</Alert>;
   }
 
-  const handleChangeWorld = (event: SelectChangeEvent) => {
-    const name = event.target.value;
-    setName(name);
-    setGen('@/latest');
-  };
-
-  const handleChangeGen: (event: SelectChangeEvent) => void = (event: SelectChangeEvent) => {
-    setGen(event.target.value);
-  };
-
-  const selectedWorld = savedWorlds!.find((e) => e.worldName === name);
-
   return (
     <Stack spacing={1}>
-      <FormControl fullWidth>
-        <InputLabel>{t('launch.world.select')}</InputLabel>
-        <Select label={t('launch.world.select')} onChange={handleChangeWorld} value={name}>
-          {savedWorlds?.map((e) => (
-            <MUIMenuItem key={e.worldName} value={e.worldName}>
-              {e.worldName}
-            </MUIMenuItem>
-          ))}
-        </Select>
-      </FormControl>
-      <FormControlLabel
-        control={
-          <Switch
-            checked={gen === '@/latest'}
-            onChange={(e) => setGen(!selectedWorld || e.target.checked ? '@/latest' : selectedWorld!.generations[0].id)}
-          />
-        }
-        label={t('launch.world.use_latest_world')}
-      />
-      {selectedWorld && gen !== '@/latest' && (
-        <FormControl fullWidth>
-          <InputLabel>{t('launch.world.world_generation')}</InputLabel>
-          <Select label={t('launch.world.world_generation')} onChange={handleChangeGen} value={gen}>
-            {selectedWorld.generations.map((e) => {
-              const dateTime = new Date(e.timestamp);
-              const label = e.gen.match(/[0-9]+-[0-9]+-[0-9]+ [0-9]+:[0-9]+:[0-9]+/)
-                ? dateTime.toLocaleString()
-                : `${e.gen} (${dateTime.toLocaleString()})`;
-              return (
-                <MUIMenuItem key={e.gen} value={e.id}>
-                  {label}
-                </MUIMenuItem>
-              );
-            })}
-          </Select>
-        </FormControl>
+      {savedWorlds && (
+        <WorldExplorer
+          worlds={savedWorlds}
+          selection={{worldName: name, generationId: gen}}
+          onChange={(selection) => {
+            setName(selection.worldName);
+            setGen(selection.generationId);
+          }}
+        />
       )}
     </Stack>
   );
