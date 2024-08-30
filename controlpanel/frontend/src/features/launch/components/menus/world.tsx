@@ -1,19 +1,6 @@
 import {useTranslation} from 'react-i18next';
 
-import {
-  Alert,
-  Box,
-  FormControl,
-  FormControlLabel,
-  InputLabel,
-  MenuItem as MUIMenuItem,
-  Radio,
-  RadioGroup,
-  Select,
-  SelectChangeEvent,
-  Stack,
-  Switch
-} from '@mui/material';
+import {Alert, Box, FormControlLabel, Radio, RadioGroup, Stack} from '@mui/material';
 
 import {useLaunchConfig} from '../launch-config';
 import {MenuItem} from '../menu-container';
@@ -46,12 +33,12 @@ const SavedWorld = ({name, setName, gen, setGen}: {name: string; setName: (name:
     <Stack spacing={1}>
       {savedWorlds && (
         <WorldExplorer
-          worlds={savedWorlds}
-          selection={{worldName: name, generationId: gen}}
           onChange={(selection) => {
             setName(selection.worldName);
             setGen(selection.generationId);
           }}
+          selection={{worldName: name, generationId: gen}}
+          worlds={savedWorlds}
         />
       )}
     </Stack>

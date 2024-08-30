@@ -1,7 +1,8 @@
+import React from 'react';
+
 import {SimpleTreeView, TreeItem} from '@mui/x-tree-view';
 
 import {World, WorldGeneration} from '@/api/entities';
-import React from 'react';
 
 type Selection = {
   worldName: string;
@@ -34,21 +35,21 @@ const WorldExplorer = ({worlds, selection, onChange}: Props) => {
       const [worldName] = id.split('/');
       onChange({worldName, generationId: id});
     } else {
-        onChange({worldName: id, generationId: '@/latest'});
+      onChange({worldName: id, generationId: '@/latest'});
     }
   };
 
   const items = worlds.map((world) => (
     <TreeItem key={world.worldName} itemId={world.worldName} label={world.worldName}>
       {world.generations.map((gen) => (
-        <TreeItem itemId={gen.id} key={gen.id} label={getWorldLabel(gen)} />
+        <TreeItem key={gen.id} itemId={gen.id} label={getWorldLabel(gen)} />
       ))}
     </TreeItem>
   ));
   const selectedItems = selection && (selection.generationId === '@/latest' ? selection.worldName : selection.generationId);
 
   return (
-    <SimpleTreeView checkboxSelection={true} selectedItems={selectedItems} onSelectedItemsChange={handleSelectedItemsChange}>
+    <SimpleTreeView checkboxSelection={true} onSelectedItemsChange={handleSelectedItemsChange} selectedItems={selectedItems}>
       {items}
     </SimpleTreeView>
   );
