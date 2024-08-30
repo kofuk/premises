@@ -578,7 +578,7 @@ func (h *Handler) handleApiListWorlds(c echo.Context) error {
 		})
 	}
 
-	if _, err := h.redis.Set(c.Request().Context(), CacheKeyWorlds, jsonResp, time.Minute).Result(); err != nil {
+	if _, err := h.redis.Set(c.Request().Context(), CacheKeyWorlds, jsonResp, 5*time.Second).Result(); err != nil {
 		slog.Error("Failed to store backup list", slog.Any("error", err))
 	}
 
