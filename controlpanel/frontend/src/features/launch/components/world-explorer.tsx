@@ -1,8 +1,12 @@
 import React from 'react';
 
+import {Download as DownloadIcon} from '@mui/icons-material';
+import {IconButton} from '@mui/material';
 import {SimpleTreeView, TreeItem} from '@mui/x-tree-view';
 
 import {World, WorldGeneration} from '@/api/entities';
+import {APIError, createWorldLink} from '@/api';
+import {useSnackbar} from 'notistack';
 
 type Selection = {
   worldName: string;
@@ -39,10 +43,48 @@ const WorldExplorer = ({worlds, selection, onChange}: Props) => {
     }
   };
 
+  const {enqueueSnackbar} = useSnackbar();
+
+  const handleDownload = async (generationId: string) => {
+    try {
+      const {url} = await createWorldLink({id: generationId});
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      // `download` attribute for cross-origin URLs will be blocked in the most browsers, but it's not a problem for us.
+      a.download = '';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err) {
+      if (err instanceof APIError) {
+        enqueueSnackbar(err.message, {variant: 'error'});
+      }
+    }
+  };
+
   const items = worlds.map((world) => (
     <TreeItem key={world.worldName} itemId={world.worldName} label={world.worldName}>
       {world.generations.map((gen) => (
-        <TreeItem key={gen.id} itemId={gen.id} label={getWorldLabel(gen)} />
+        <TreeItem
+          key={gen.id}
+          itemId={gen.id}
+          label={
+            <>
+              {getWorldLabel(gen)}
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload(gen.id);
+                }}
+              >
+                <DownloadIcon />
+              </IconButton>
+            </>
+          }
+        />
       ))}
     </TreeItem>
   ));
