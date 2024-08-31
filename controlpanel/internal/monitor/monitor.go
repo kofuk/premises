@@ -120,7 +120,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmService *streaming.St
 			return errors.New("invalid event message: has no Status")
 		}
 
-		strmService.PublishEvent2(
+		strmService.PublishEvent(
 			ctx,
 			streaming.NewStandardMessageWithProgress(event.Status.EventCode, event.Status.Progress, GetPageCodeByEventCode(event.Status.EventCode)),
 		)
@@ -130,7 +130,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmService *streaming.St
 			return errors.New("invalid event message: has no Sysstat")
 		}
 
-		strmService.PublishEvent2(
+		strmService.PublishEvent(
 			ctx,
 			streaming.NewSysstatMessage(event.Sysstat.CPUUsage, event.Sysstat.Time),
 		)
@@ -140,7 +140,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmService *streaming.St
 			return errors.New("invalid event message: has no Info")
 		}
 
-		strmService.PublishEvent2(
+		strmService.PublishEvent(
 			ctx,
 			streaming.NewInfoMessage(event.Info.InfoCode, event.Info.IsError),
 		)

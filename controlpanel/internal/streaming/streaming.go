@@ -28,13 +28,13 @@ const (
 	NotifyMessage  MessageType = "notify"
 )
 
-type Message2 struct {
+type Message struct {
 	Type MessageType
 	Body any
 }
 
-func NewStandardMessage(eventCode entity.EventCode, pageCode web.PageCode) Message2 {
-	return Message2{
+func NewStandardMessage(eventCode entity.EventCode, pageCode web.PageCode) Message {
+	return Message{
 		Type: EventMessage,
 		Body: web.StandardMessage{
 			EventCode: eventCode,
@@ -43,32 +43,32 @@ func NewStandardMessage(eventCode entity.EventCode, pageCode web.PageCode) Messa
 	}
 }
 
-func NewStandardMessageWithProgress(eventCode entity.EventCode, progress int, pageCode web.PageCode) Message2 {
+func NewStandardMessageWithProgress(eventCode entity.EventCode, progress int, pageCode web.PageCode) Message {
 	msg := web.StandardMessage{
 		EventCode: eventCode,
 		PageCode:  pageCode,
 	}
 	msg.Extra.Progress = progress
-	return Message2{
+	return Message{
 		Type: EventMessage,
 		Body: msg,
 	}
 }
 
-func NewStandardMessageWithTextData(eventCode entity.EventCode, textData string, pageCode web.PageCode) Message2 {
+func NewStandardMessageWithTextData(eventCode entity.EventCode, textData string, pageCode web.PageCode) Message {
 	msg := web.StandardMessage{
 		EventCode: eventCode,
 		PageCode:  pageCode,
 	}
 	msg.Extra.TextData = textData
-	return Message2{
+	return Message{
 		Type: EventMessage,
 		Body: msg,
 	}
 }
 
-func NewInfoMessage(infoCode entity.InfoCode, isError bool) Message2 {
-	return Message2{
+func NewInfoMessage(infoCode entity.InfoCode, isError bool) Message {
+	return Message{
 		Type: NotifyMessage,
 		Body: web.InfoMessage{
 			InfoCode: infoCode,
@@ -77,8 +77,8 @@ func NewInfoMessage(infoCode entity.InfoCode, isError bool) Message2 {
 	}
 }
 
-func NewSysstatMessage(cpuUsage float64, time int64) Message2 {
-	return Message2{
+func NewSysstatMessage(cpuUsage float64, time int64) Message {
+	return Message{
 		Type: SysstatMessage,
 		Body: web.SysstatMessage{
 			CPUUsage: cpuUsage,
@@ -87,7 +87,7 @@ func NewSysstatMessage(cpuUsage float64, time int64) Message2 {
 	}
 }
 
-func (s *StreamingService) publishEvent2(ctx context.Context, message Message2) error {
+func (s *StreamingService) publishEvent(ctx context.Context, message Message) error {
 	switch message.Type {
 	case EventMessage:
 		body, err := json.Marshal(message.Body)
@@ -124,8 +124,8 @@ func (s *StreamingService) publishEvent2(ctx context.Context, message Message2) 
 	return nil
 }
 
-func (s *StreamingService) PublishEvent2(ctx context.Context, message Message2) {
-	if err := s.publishEvent2(ctx, message); err != nil {
+func (s *StreamingService) PublishEvent(ctx context.Context, message Message) {
+	if err := s.publishEvent(ctx, message); err != nil {
 		slog.Error("Failed to publish event: %v", slog.Any("error", err))
 	}
 }
@@ -140,8 +140,8 @@ func (s *Subscription) Close() error {
 	return s.subscription.Close()
 }
 
-func (s *Subscription) Channel() chan Message2 {
-	outChannel := make(chan Message2)
+func (s *Subscription) Channel() chan Message {
+	outChannel := make(chan Message)
 
 	go func() {
 		defer close(outChannel)
@@ -149,7 +149,7 @@ func (s *Subscription) Channel() chan Message2 {
 		channel := s.subscription.Channel()
 
 		for msg := range channel {
-			var outMsg Message2
+			var outMsg Message
 			if err := json.Unmarshal([]byte(msg.Payload), &outMsg); err != nil {
 				continue
 			}
@@ -161,7 +161,7 @@ func (s *Subscription) Channel() chan Message2 {
 	return outChannel
 }
 
-func (s *StreamingService) SubscribeEvent2(ctx context.Context) (*Subscription, error) {
+func (s *StreamingService) SubscribeEvent(ctx context.Context) (*Subscription, error) {
 	currentState, err := s.redis.Get(ctx, "current-state").Result()
 	if err != nil && err != redis.Nil {
 		return nil, err
@@ -185,7 +185,7 @@ func (s *StreamingService) SubscribeEvent2(ctx context.Context) (*Subscription, 
 	}, nil
 }
 
-func (s *StreamingService) ClearSysstat2(ctx context.Context) error {
+func (s *StreamingService) ClearSysstat(ctx context.Context) error {
 	if _, err := s.redis.Del(ctx, "sysstat-history").Result(); err != nil {
 		return err
 	}

@@ -106,7 +106,7 @@ func (h *Handler) handleStream(c echo.Context) error {
 		return nil
 	}
 
-	subscription, err := h.Streaming.SubscribeEvent2(c.Request().Context())
+	subscription, err := h.Streaming.SubscribeEvent(c.Request().Context())
 	if err != nil {
 		slog.Error("Failed to connect to stream", slog.Any("error", err))
 		return c.String(http.StatusInternalServerError, "")
@@ -218,7 +218,7 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, authKey string) {
 	defer h.releaseServerLock(context.TODO())
 
-	h.Streaming.PublishEvent2(
+	h.Streaming.PublishEvent(
 		ctx,
 		streaming.NewStandardMessage(entity.EventStopRunner, web.PageLoading),
 	)
@@ -229,7 +229,7 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 			goto out
 		}
 
-		h.Streaming.PublishEvent2(
+		h.Streaming.PublishEvent(
 			ctx,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		)
@@ -237,25 +237,25 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 	}
 
 	if !gameServer.StopVM(ctx, id) {
-		h.Streaming.PublishEvent2(
+		h.Streaming.PublishEvent(
 			ctx,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		)
 		return
 	}
 
-	h.Streaming.PublishEvent2(
+	h.Streaming.PublishEvent(
 		ctx,
 		streaming.NewStandardMessageWithProgress(entity.EventStopRunner, 40, web.PageLoading),
 	)
 
-	h.Streaming.PublishEvent2(
+	h.Streaming.PublishEvent(
 		ctx,
 		streaming.NewStandardMessageWithProgress(entity.EventStopRunner, 80, web.PageLoading),
 	)
 
 	if !gameServer.DeleteVM(ctx, id) {
-		h.Streaming.PublishEvent2(
+		h.Streaming.PublishEvent(
 			ctx,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		)
@@ -272,12 +272,12 @@ out:
 		return
 	}
 
-	h.Streaming.PublishEvent2(
+	h.Streaming.PublishEvent(
 		ctx,
 		streaming.NewStandardMessage(entity.EventStopped, web.PageLaunch),
 	)
 
-	if err := h.Streaming.ClearSysstat2(ctx); err != nil {
+	if err := h.Streaming.ClearSysstat(ctx); err != nil {
 		slog.Error("Unable to clear sysstat history", slog.Any("error", err))
 	}
 }
@@ -286,7 +286,7 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 	if err := h.KVS.Set(ctx, fmt.Sprintf("runner:%s", serverConfig.AuthKey), "default", -1); err != nil {
 		slog.Error("Failed to save runner id", slog.Any("error", err))
 
-		h.Streaming.PublishEvent2(
+		h.Streaming.PublishEvent(
 			ctx,
 			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
 		)
@@ -295,7 +295,7 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 		return
 	}
 
-	h.Streaming.PublishEvent2(
+	h.Streaming.PublishEvent(
 		ctx,
 		streaming.NewStandardMessage(entity.EventCreateRunner, web.PageLoading),
 	)
@@ -305,7 +305,7 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 	if err != nil {
 		slog.Error("Failed to generate startup script", slog.Any("error", err))
 
-		h.Streaming.PublishEvent2(
+		h.Streaming.PublishEvent(
 			ctx,
 			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
 		)
@@ -322,7 +322,7 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 				return
 			}
 
-			h.Streaming.PublishEvent2(
+			h.Streaming.PublishEvent(
 				ctx,
 				streaming.NewStandardMessageWithProgress(entity.EventCreateRunner, 50, web.PageLoading),
 			)
@@ -336,7 +336,7 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 	encoder := base32.StdEncoding.WithPadding(base32.NoPadding)
 	authCode := encoder.EncodeToString(securecookie.GenerateRandomKey(10))
 
-	h.Streaming.PublishEvent2(
+	h.Streaming.PublishEvent(
 		ctx,
 		streaming.NewStandardMessageWithTextData(entity.EventManualSetup, authCode, web.PageManualSetup),
 	)
