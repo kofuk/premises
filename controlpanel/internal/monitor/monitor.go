@@ -100,10 +100,6 @@ out:
 }
 
 func HandleEvent(ctx context.Context, runnerId string, strmService *streaming.StreamingService, cfg *config.Config, kvs *kvs.KeyValueStore, event *runner.Event) error {
-	stdStream := strmService.GetStream(streaming.StandardStream)
-	infoStream := strmService.GetStream(streaming.InfoStream)
-	sysstatStream := strmService.GetStream(streaming.SysstatStream)
-
 	switch event.Type {
 	case runner.EventHello:
 		if event.Hello == nil {
@@ -126,7 +122,6 @@ func HandleEvent(ctx context.Context, runnerId string, strmService *streaming.St
 
 		strmService.PublishEvent2(
 			ctx,
-			stdStream,
 			streaming.NewStandardMessageWithProgress(event.Status.EventCode, event.Status.Progress, GetPageCodeByEventCode(event.Status.EventCode)),
 		)
 
@@ -137,7 +132,6 @@ func HandleEvent(ctx context.Context, runnerId string, strmService *streaming.St
 
 		strmService.PublishEvent2(
 			ctx,
-			sysstatStream,
 			streaming.NewSysstatMessage(event.Sysstat.CPUUsage, event.Sysstat.Time),
 		)
 
@@ -148,7 +142,6 @@ func HandleEvent(ctx context.Context, runnerId string, strmService *streaming.St
 
 		strmService.PublishEvent2(
 			ctx,
-			infoStream,
 			streaming.NewInfoMessage(event.Info.InfoCode, event.Info.IsError),
 		)
 

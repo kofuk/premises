@@ -152,106 +152,6 @@ out:
 	return nil
 }
 
-func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName string) func(c echo.Context) error {
-	return func(c echo.Context) error {
-		session, err := session.Get("session", c)
-		if err != nil {
-			return c.JSON(http.StatusOK, web.ErrorResponse{
-				Success:   false,
-				ErrorCode: entity.ErrInternal,
-			})
-		}
-
-		userID := session.Values["user_id"].(uint)
-
-		ticker := time.NewTicker(5 * time.Second)
-		defer ticker.Stop()
-
-		jsonRequested := c.Request().Header.Get("Accept") == "application/ld+json"
-
-		writeEvent := func(message []byte) error {
-			var partial struct {
-				Actor int `json:"actor"`
-			}
-			json.Unmarshal(message, &partial)
-
-			if partial.Actor != 0 && partial.Actor != int(userID) {
-				// Skip delivering messages that were triggered by other users.
-				return nil
-			}
-
-			writer := bufio.NewWriter(c.Response().Writer)
-
-			if jsonRequested {
-				writer.Write(message)
-				writer.WriteRune('\n')
-			} else {
-				writer.WriteString("event: " + eventName + "\n")
-				writer.WriteString("data: ")
-				writer.Write(message)
-				writer.WriteString("\n\n")
-			}
-			writer.Flush()
-
-			if flusher, ok := c.Response().Writer.(http.Flusher); ok {
-				flusher.Flush()
-			}
-			return nil
-		}
-
-		subscription, statusHistory, err := h.Streaming.SubscribeEvent(c.Request().Context(), stream)
-		if err != nil {
-			slog.Error("Failed to connect to stream", slog.Any("error", err))
-			return c.String(http.StatusInternalServerError, "")
-		}
-		defer subscription.Close()
-
-		if !jsonRequested {
-			c.Response().Header().Set("Content-Type", "text/event-stream")
-			c.Response().Header().Set("X-Accel-Buffering", "no")
-		}
-		c.Response().Header().Set("Cache-Control", "no-store")
-
-		for _, entry := range statusHistory {
-			if err := writeEvent(entry); err != nil {
-				slog.Error("Failed to write data", slog.Any("error", err))
-				return err
-			}
-		}
-
-		if jsonRequested {
-			return nil
-		}
-
-		eventChannel := subscription.Channel()
-
-	out:
-		for {
-			select {
-			case status := <-eventChannel:
-				if err := writeEvent([]byte(status.Payload)); err != nil {
-					slog.Error("Failed to write server-sent event", slog.Any("error", err))
-					break out
-				}
-
-			case <-ticker.C:
-				if _, err := c.Response().Writer.Write([]byte(": uhaha\n")); err != nil {
-					slog.Error("Failed to write keep-alive message", slog.Any("error", err))
-					break out
-				}
-				if flusher, ok := c.Response().Writer.(http.Flusher); ok {
-					flusher.Flush()
-				}
-
-			case <-c.Request().Context().Done():
-				break out
-			}
-		}
-
-		return nil
-	}
-}
-
 func isValidMemSize(memSize int) bool {
 	return memSize == 1 || memSize == 2 || memSize == 4 || memSize == 8 || memSize == 16 || memSize == 32 || memSize == 64
 }
@@ -318,12 +218,8 @@ func (h *Handler) createConfigFromPostData(ctx context.Context, config web.Pendi
 func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, authKey string) {
 	defer h.releaseServerLock(context.TODO())
 
-	stdStream := h.Streaming.GetStream(streaming.StandardStream)
-	infoStream := h.Streaming.GetStream(streaming.InfoStream)
-
 	h.Streaming.PublishEvent2(
 		ctx,
-		stdStream,
 		streaming.NewStandardMessage(entity.EventStopRunner, web.PageLoading),
 	)
 
@@ -335,7 +231,6 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 
 		h.Streaming.PublishEvent2(
 			ctx,
-			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		)
 		return
@@ -344,7 +239,6 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 	if !gameServer.StopVM(ctx, id) {
 		h.Streaming.PublishEvent2(
 			ctx,
-			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		)
 		return
@@ -352,20 +246,17 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 
 	h.Streaming.PublishEvent2(
 		ctx,
-		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EventStopRunner, 40, web.PageLoading),
 	)
 
 	h.Streaming.PublishEvent2(
 		ctx,
-		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EventStopRunner, 80, web.PageLoading),
 	)
 
 	if !gameServer.DeleteVM(ctx, id) {
 		h.Streaming.PublishEvent2(
 			ctx,
-			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
 		)
 		return
@@ -383,7 +274,6 @@ out:
 
 	h.Streaming.PublishEvent2(
 		ctx,
-		stdStream,
 		streaming.NewStandardMessage(entity.EventStopped, web.PageLaunch),
 	)
 
@@ -393,15 +283,11 @@ out:
 }
 
 func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config, gameServer *GameServer, memSizeGB int) {
-	stdStream := h.Streaming.GetStream(streaming.StandardStream)
-	infoStream := h.Streaming.GetStream(streaming.InfoStream)
-
 	if err := h.KVS.Set(ctx, fmt.Sprintf("runner:%s", serverConfig.AuthKey), "default", -1); err != nil {
 		slog.Error("Failed to save runner id", slog.Any("error", err))
 
 		h.Streaming.PublishEvent2(
 			ctx,
-			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
 		)
 
@@ -411,7 +297,6 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 
 	h.Streaming.PublishEvent2(
 		ctx,
-		stdStream,
 		streaming.NewStandardMessage(entity.EventCreateRunner, web.PageLoading),
 	)
 
@@ -422,7 +307,6 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 
 		h.Streaming.PublishEvent2(
 			ctx,
-			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
 		)
 
@@ -440,7 +324,6 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 
 			h.Streaming.PublishEvent2(
 				ctx,
-				stdStream,
 				streaming.NewStandardMessageWithProgress(entity.EventCreateRunner, 50, web.PageLoading),
 			)
 
@@ -455,7 +338,6 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 
 	h.Streaming.PublishEvent2(
 		ctx,
-		stdStream,
 		streaming.NewStandardMessageWithTextData(entity.EventManualSetup, authCode, web.PageManualSetup),
 	)
 
@@ -1175,9 +1057,6 @@ func (h *Handler) setupApiRoutes(group *echo.Group) {
 	needsAuth := group.Group("")
 	needsAuth.Use(h.middlewareSessionCheck)
 	needsAuth.GET("/streaming", h.handleStream)
-	needsAuth.GET("/streaming/events", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.StandardStream), "statuschanged"))
-	needsAuth.GET("/streaming/info", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.InfoStream), "notify"))
-	needsAuth.GET("/streaming/sysstat", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.SysstatStream), "systemstat"))
 	needsAuth.POST("/launch", h.handleApiLaunch)
 	needsAuth.POST("/reconfigure", h.handleApiReconfigure)
 	needsAuth.POST("/stop", h.handleApiStop)
