@@ -70,6 +70,88 @@ func (h *Handler) handleApiSessionData(c echo.Context) error {
 	})
 }
 
+func (h *Handler) handleStream(c echo.Context) error {
+	session, err := session.Get("session", c)
+	if err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	userID := session.Values["user_id"].(uint)
+
+	writeEvent := func(eventName string, message []byte) error {
+		var partial struct {
+			Actor int `json:"actor"`
+		}
+		json.Unmarshal(message, &partial)
+
+		if partial.Actor != 0 && partial.Actor != int(userID) {
+			// Skip delivering messages that were triggered by other users.
+			return nil
+		}
+
+		writer := bufio.NewWriter(c.Response().Writer)
+
+		writer.WriteString("event: " + eventName + "\n")
+		writer.WriteString("data: ")
+		writer.Write(message)
+		writer.WriteString("\n\n")
+		writer.Flush()
+
+		if flusher, ok := c.Response().Writer.(http.Flusher); ok {
+			flusher.Flush()
+		}
+		return nil
+	}
+
+	subscription, err := h.Streaming.SubscribeEvent2(c.Request().Context())
+	if err != nil {
+		slog.Error("Failed to connect to stream", slog.Any("error", err))
+		return c.String(http.StatusInternalServerError, "")
+	}
+	defer subscription.Close()
+
+	c.Response().Header().Set("Content-Type", "text/event-stream")
+	c.Response().Header().Set("X-Accel-Buffering", "no")
+	c.Response().Header().Set("Cache-Control", "no-store")
+
+	if err := writeEvent(string(streaming.EventMessage), subscription.CurrentState); err != nil {
+		slog.Error("Failed to write data", slog.Any("error", err))
+		return err
+	}
+
+	for _, entry := range subscription.SysstatHistory {
+		if err := writeEvent(string(streaming.SysstatMessage), entry); err != nil {
+			slog.Error("Failed to write data", slog.Any("error", err))
+			return err
+		}
+	}
+
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	eventChannel := subscription.Channel()
+
+out:
+	for {
+		select {
+		case status := <-eventChannel:
+			body, _ := json.Marshal(status.Body)
+			if err := writeEvent(string(status.Type), body); err != nil {
+				slog.Error("Failed to write server-sent event", slog.Any("error", err))
+				break out
+			}
+
+		case <-c.Request().Context().Done():
+			goto out
+		}
+	}
+
+	return nil
+}
+
 func (h *Handler) createStreamingEndpoint(stream *streaming.Stream, eventName string) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		session, err := session.Get("session", c)
@@ -239,13 +321,11 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 	stdStream := h.Streaming.GetStream(streaming.StandardStream)
 	infoStream := h.Streaming.GetStream(streaming.InfoStream)
 
-	if err := h.Streaming.PublishEvent(
+	h.Streaming.PublishEvent2(
 		ctx,
 		stdStream,
 		streaming.NewStandardMessage(entity.EventStopRunner, web.PageLoading),
-	); err != nil {
-		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-	}
+	)
 
 	var id string
 	if err := h.KVS.Get(ctx, "runner-id:default", &id); err != nil || !gameServer.IsAvailable() {
@@ -253,51 +333,41 @@ func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, au
 			goto out
 		}
 
-		if err := h.Streaming.PublishEvent(
+		h.Streaming.PublishEvent2(
 			ctx,
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
-		); err != nil {
-			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-		}
+		)
 		return
 	}
 
 	if !gameServer.StopVM(ctx, id) {
-		if err := h.Streaming.PublishEvent(
+		h.Streaming.PublishEvent2(
 			ctx,
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
-		); err != nil {
-			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-		}
+		)
 		return
 	}
 
-	if err := h.Streaming.PublishEvent(
+	h.Streaming.PublishEvent2(
 		ctx,
 		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EventStopRunner, 40, web.PageLoading),
-	); err != nil {
-		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-	}
+	)
 
-	if err := h.Streaming.PublishEvent(
+	h.Streaming.PublishEvent2(
 		ctx,
 		stdStream,
 		streaming.NewStandardMessageWithProgress(entity.EventStopRunner, 80, web.PageLoading),
-	); err != nil {
-		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-	}
+	)
 
 	if !gameServer.DeleteVM(ctx, id) {
-		if err := h.Streaming.PublishEvent(
+		h.Streaming.PublishEvent2(
 			ctx,
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
-		); err != nil {
-			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-		}
+		)
 		return
 	}
 
@@ -311,15 +381,13 @@ out:
 		return
 	}
 
-	if err := h.Streaming.PublishEvent(
+	h.Streaming.PublishEvent2(
 		ctx,
 		stdStream,
 		streaming.NewStandardMessage(entity.EventStopped, web.PageLaunch),
-	); err != nil {
-		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-	}
+	)
 
-	if err := h.Streaming.ClearHistory(ctx, h.Streaming.GetStream(streaming.SysstatStream)); err != nil {
+	if err := h.Streaming.ClearSysstat2(ctx); err != nil {
 		slog.Error("Unable to clear sysstat history", slog.Any("error", err))
 	}
 }
@@ -331,38 +399,32 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 	if err := h.KVS.Set(ctx, fmt.Sprintf("runner:%s", serverConfig.AuthKey), "default", -1); err != nil {
 		slog.Error("Failed to save runner id", slog.Any("error", err))
 
-		if err := h.Streaming.PublishEvent(
+		h.Streaming.PublishEvent2(
 			ctx,
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
-		); err != nil {
-			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-		}
+		)
 
 		h.releaseServerLock(context.TODO())
 		return
 	}
 
-	if err := h.Streaming.PublishEvent(
+	h.Streaming.PublishEvent2(
 		ctx,
 		stdStream,
 		streaming.NewStandardMessage(entity.EventCreateRunner, web.PageLoading),
-	); err != nil {
-		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-	}
+	)
 
 	slog.Info("Generating startup script...")
 	startupScript, err := startup.GenerateStartupScript(serverConfig)
 	if err != nil {
 		slog.Error("Failed to generate startup script", slog.Any("error", err))
 
-		if err := h.Streaming.PublishEvent(
+		h.Streaming.PublishEvent2(
 			ctx,
 			infoStream,
 			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
-		); err != nil {
-			slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-		}
+		)
 
 		h.releaseServerLock(context.TODO())
 		return
@@ -376,13 +438,11 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 				return
 			}
 
-			if err := h.Streaming.PublishEvent(
+			h.Streaming.PublishEvent2(
 				ctx,
 				stdStream,
 				streaming.NewStandardMessageWithProgress(entity.EventCreateRunner, 50, web.PageLoading),
-			); err != nil {
-				slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-			}
+			)
 
 			return
 		}
@@ -393,13 +453,11 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 	encoder := base32.StdEncoding.WithPadding(base32.NoPadding)
 	authCode := encoder.EncodeToString(securecookie.GenerateRandomKey(10))
 
-	if err := h.Streaming.PublishEvent(
+	h.Streaming.PublishEvent2(
 		ctx,
 		stdStream,
 		streaming.NewStandardMessageWithTextData(entity.EventManualSetup, authCode, web.PageManualSetup),
-	); err != nil {
-		slog.Error("Failed to write status data to Redis channel", slog.Any("error", err))
-	}
+	)
 
 	if err := h.KVS.Set(ctx, fmt.Sprintf("startup:%s", authCode), string(startupScript), time.Hour); err != nil {
 		slog.Error("Failed to set startup script", slog.Any("error", err))
@@ -1116,6 +1174,7 @@ func (h *Handler) setupApiRoutes(group *echo.Group) {
 	group.GET("/session-data", h.handleApiSessionData)
 	needsAuth := group.Group("")
 	needsAuth.Use(h.middlewareSessionCheck)
+	needsAuth.GET("/streaming", h.handleStream)
 	needsAuth.GET("/streaming/events", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.StandardStream), "statuschanged"))
 	needsAuth.GET("/streaming/info", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.InfoStream), "notify"))
 	needsAuth.GET("/streaming/sysstat", h.createStreamingEndpoint(h.Streaming.GetStream(streaming.SysstatStream), "systemstat"))
