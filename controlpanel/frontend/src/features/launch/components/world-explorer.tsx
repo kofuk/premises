@@ -13,7 +13,7 @@ import {
   Public as WorldIcon
 } from '@mui/icons-material';
 import {LoadingButton} from '@mui/lab';
-import {ButtonGroup, ToggleButton, IconButton, Stack, TextField, colors} from '@mui/material';
+import {ButtonGroup, IconButton, Stack, TextField, colors} from '@mui/material';
 import {SimpleTreeView, TreeItem} from '@mui/x-tree-view';
 
 import {APIError, createWorldDownloadLink, createWorldUploadLink} from '@/api';
@@ -150,11 +150,11 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
                 defaultValue={selection?.worldName}
                 disabled={isUploading}
                 label={t('launch.world.name')}
-                variant="outlined"
                 sx={{
                   '& .MuiInputBase-input': {height: 6},
                   '& .MuiInputLabel-root[data-shrink=false]': {fontSize: 12, transform: 'translate(14px, 12px) scale(1)'}
                 }}
+                variant="outlined"
                 {...register('worldName', {
                   required: true,
                   validate: (val: string) => !val.includes('/') && !val.includes('\\') && !val.includes('@')
@@ -178,8 +178,8 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
         </Stack>
       </Stack>
       <SimpleTreeView
-        onSelectedItemsChange={handleSelectedItemsChange}
         checkboxSelection={true}
+        onSelectedItemsChange={handleSelectedItemsChange}
         selectedItems={selectedItems}
         slots={{
           expandIcon: FolderIcon,
