@@ -8,34 +8,26 @@ import {useRunnerStatus} from '@/utils/runner-status';
 const StatusCollector = () => {
   const [t] = useTranslation();
 
-  const {updateStatus} = useRunnerStatus();
-
-  useEffect(() => {
-    const eventSource = new EventSource('/api/streaming/events');
-    eventSource.addEventListener('error', () => {
-      updateStatus(0);
-    });
-    eventSource.addEventListener('statuschanged', (ev: MessageEvent) => {
-      const event = JSON.parse(ev.data);
-      updateStatus(event.eventCode, event.extra, event.pageCode);
-    });
-
-    return () => {
-      eventSource.close();
-    };
-  }, []);
-
+  const {updateStatus, updateCpuUsage} = useRunnerStatus();
   const {enqueueSnackbar} = useSnackbar();
 
   useEffect(() => {
-    const eventSource = new EventSource('/api/streaming/info');
+    const eventSource = new EventSource('/api/streaming');
     eventSource.addEventListener('error', () => {
-      enqueueSnackbar(t('navbar.reconnecting'), {variant: 'error'});
+      updateStatus(0);
+    });
+    eventSource.addEventListener('event', (ev: MessageEvent) => {
+      const event = JSON.parse(ev.data);
+      updateStatus(event.eventCode, event.extra, event.pageCode);
     });
     eventSource.addEventListener('notify', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);
       const variant = event.isError ? 'error' : 'success';
       enqueueSnackbar(t(`info.code_${event.infoCode}`), {variant});
+    });
+    eventSource.addEventListener('sysstat', (ev: MessageEvent) => {
+      const event = JSON.parse(ev.data);
+      updateCpuUsage(event);
     });
 
     return () => {
