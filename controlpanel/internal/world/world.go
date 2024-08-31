@@ -106,11 +106,19 @@ func (ws *WorldService) GetLatestWorldKey(ctx context.Context, world string) (st
 }
 
 func (ws *WorldService) GetPresignedGetURL(ctx context.Context, id string) (string, error) {
-	return ws.s3.GetPresignedGetURL(ctx, ws.bucket, id, 5*time.Minute)
+	return ws.GetPresignedGetURLWithLifetime(ctx, id, 5*time.Minute)
+}
+
+func (ws *WorldService) GetPresignedGetURLWithLifetime(ctx context.Context, id string, dur time.Duration) (string, error) {
+	return ws.s3.GetPresignedGetURL(ctx, ws.bucket, id, dur)
 }
 
 func (ws *WorldService) GetPresignedPutURL(ctx context.Context, id string) (string, error) {
-	return ws.s3.GetPresignedPutURL(ctx, ws.bucket, id, 5*time.Minute)
+	return ws.GetPresignedPutURLWithLifetime(ctx, id, 5*time.Minute)
+}
+
+func (ws *WorldService) GetPresignedPutURLWithLifetime(ctx context.Context, id string, dur time.Duration) (string, error) {
+	return ws.s3.GetPresignedPutURL(ctx, ws.bucket, id, dur)
 }
 
 func groupByPrefix(objs []s3wrap.ObjectMetaData) map[string][]s3wrap.ObjectMetaData {

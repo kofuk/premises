@@ -779,7 +779,7 @@ func (h *Handler) handleApiCreateWorldDownloadLink(c echo.Context) error {
 		})
 	}
 
-	url, err := h.world.GetPresignedGetURL(c.Request().Context(), req.ID)
+	url, err := h.world.GetPresignedGetURLWithLifetime(c.Request().Context(), req.ID, time.Minute)
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
@@ -828,7 +828,7 @@ func (h *Handler) handleApiCreateWorldUploadLink(c echo.Context) error {
 
 	fileName := fmt.Sprintf("%s/user_uploaded_world%s", req.WorldName, ext)
 
-	url, err := h.world.GetPresignedPutURL(c.Request().Context(), fileName)
+	url, err := h.world.GetPresignedPutURLWithLifetime(c.Request().Context(), fileName, time.Minute)
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
