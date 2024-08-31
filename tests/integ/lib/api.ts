@@ -94,7 +94,7 @@ export const streamEvent = async (
   cookie: string,
 ): Promise<any> => {
   const response = await request(`GET ${path}`, cookie, null, {
-    accept: "application/ld+json",
+    accept: "application/json",
   }).then((response) => response.json());
   return response;
 };
