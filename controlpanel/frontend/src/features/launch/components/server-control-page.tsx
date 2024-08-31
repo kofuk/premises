@@ -1,5 +1,3 @@
-import {useEffect, useState} from 'react';
-
 import {useTranslation} from 'react-i18next';
 import {Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts';
 
@@ -12,25 +10,12 @@ import Reconfigure from './reconfigure';
 import SystemInfo from './system-info';
 import WorldInfo from './world-info';
 
+import {useRunnerStatus} from '@/utils/runner-status';
+
 const ServerControlPane = () => {
   const [t] = useTranslation();
 
-  const [cpuUsage, setCpuUsage] = useState(
-    [...Array(100)].map((_) => {
-      return {cpuUsage: 0, time: 0};
-    })
-  );
-
-  useEffect(() => {
-    const eventSource = new EventSource('/api/streaming/sysstat');
-    eventSource.addEventListener('systemstat', (ev: MessageEvent) => {
-      const event = JSON.parse(ev.data);
-      setCpuUsage((current) => [...current.slice(1, 100), event]);
-    });
-    return () => {
-      eventSource.close();
-    };
-  }, []);
+  const {cpuUsage} = useRunnerStatus();
 
   return (
     <Card sx={{p: 2, mt: 6}} variant="outlined">
