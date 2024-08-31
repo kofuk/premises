@@ -8,14 +8,14 @@ export const waitServerLaunched = async (cookie: string) => {
     console.log(".");
     await new Promise((resolve) => setTimeout(resolve, 10 * 1000));
 
-    const { pageCode } = await streamEvent("/api/streaming/events", cookie);
+    const { pageCode } = await streamEvent("/api/streaming", cookie);
     if (pageCode === codes.PAGE.RUNNING) {
       break;
     } else if (pageCode === codes.PAGE.MANUAL_SETUP) {
       throw new Error("Unexpected page");
     }
   }
-  const { pageCode } = await streamEvent("/api/streaming/events", cookie);
+  const { pageCode } = await streamEvent("/api/streaming", cookie);
   assertEquals(pageCode, codes.PAGE.RUNNING);
 
   // It takes some time to initialize world info data.
@@ -78,7 +78,7 @@ export const stopServer = async (cookie: string): Promise<void> => {
     console.log(".");
     await new Promise((resolve) => setTimeout(resolve, 10 * 1000));
 
-    const { pageCode } = await streamEvent("/api/streaming/events", cookie);
+    const { pageCode } = await streamEvent("/api/streaming", cookie);
     if (pageCode === codes.PAGE.LAUNCH) {
       break;
     } else if (pageCode === codes.PAGE.MANUAL_SETUP) {

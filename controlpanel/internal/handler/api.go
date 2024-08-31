@@ -71,6 +71,8 @@ func (h *Handler) handleApiSessionData(c echo.Context) error {
 }
 
 func (h *Handler) handleStream(c echo.Context) error {
+	jsonMode := c.Request().Header.Get("Accept") == "application/json"
+
 	session, err := session.Get("session", c)
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -82,6 +84,11 @@ func (h *Handler) handleStream(c echo.Context) error {
 	userID := session.Values["user_id"].(uint)
 
 	writeEvent := func(eventName string, message []byte) error {
+		if jsonMode {
+			c.JSONBlob(http.StatusOK, message)
+			return nil
+		}
+
 		var partial struct {
 			Actor int `json:"actor"`
 		}
@@ -113,13 +120,20 @@ func (h *Handler) handleStream(c echo.Context) error {
 	}
 	defer subscription.Close()
 
-	c.Response().Header().Set("Content-Type", "text/event-stream")
-	c.Response().Header().Set("X-Accel-Buffering", "no")
-	c.Response().Header().Set("Cache-Control", "no-store")
+	if !jsonMode {
+		c.Response().Header().Set("Content-Type", "text/event-stream")
+		c.Response().Header().Set("X-Accel-Buffering", "no")
+		c.Response().Header().Set("Cache-Control", "no-store")
+	}
 
 	if err := writeEvent(string(streaming.EventMessage), subscription.CurrentState); err != nil {
 		slog.Error("Failed to write data", slog.Any("error", err))
 		return err
+	}
+
+	if jsonMode {
+		// If it is a JSON mode, we only send the current state and exit.
+		return nil
 	}
 
 	for _, entry := range subscription.SysstatHistory {
