@@ -99,10 +99,10 @@ out:
 	return nil
 }
 
-func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.StreamingService, cfg *config.Config, kvs *kvs.KeyValueStore, event *runner.Event) error {
-	stdStream := strmProvider.GetStream(streaming.StandardStream)
-	infoStream := strmProvider.GetStream(streaming.InfoStream)
-	sysstatStream := strmProvider.GetStream(streaming.SysstatStream)
+func HandleEvent(ctx context.Context, runnerId string, strmService *streaming.StreamingService, cfg *config.Config, kvs *kvs.KeyValueStore, event *runner.Event) error {
+	stdStream := strmService.GetStream(streaming.StandardStream)
+	infoStream := strmService.GetStream(streaming.InfoStream)
+	sysstatStream := strmService.GetStream(streaming.SysstatStream)
 
 	switch event.Type {
 	case runner.EventHello:
@@ -124,39 +124,33 @@ func HandleEvent(ctx context.Context, runnerId string, strmProvider *streaming.S
 			return errors.New("invalid event message: has no Status")
 		}
 
-		if err := strmProvider.PublishEvent(
+		strmService.PublishEvent2(
 			ctx,
 			stdStream,
 			streaming.NewStandardMessageWithProgress(event.Status.EventCode, event.Status.Progress, GetPageCodeByEventCode(event.Status.EventCode)),
-		); err != nil {
-			return err
-		}
+		)
 
 	case runner.EventSysstat:
 		if event.Sysstat == nil {
 			return errors.New("invalid event message: has no Sysstat")
 		}
 
-		if err := strmProvider.PublishEvent(
+		strmService.PublishEvent2(
 			ctx,
 			sysstatStream,
 			streaming.NewSysstatMessage(event.Sysstat.CPUUsage, event.Sysstat.Time),
-		); err != nil {
-			return err
-		}
+		)
 
 	case runner.EventInfo:
 		if event.Info == nil {
 			return errors.New("invalid event message: has no Info")
 		}
 
-		if err := strmProvider.PublishEvent(
+		strmService.PublishEvent2(
 			ctx,
 			infoStream,
 			streaming.NewInfoMessage(event.Info.InfoCode, event.Info.IsError),
-		); err != nil {
-			return err
-		}
+		)
 
 	case runner.EventStarted:
 		if event.Started == nil {
