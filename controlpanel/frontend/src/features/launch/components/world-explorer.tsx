@@ -13,7 +13,7 @@ import {
   Public as WorldIcon
 } from '@mui/icons-material';
 import {LoadingButton} from '@mui/lab';
-import {ButtonGroup, IconButton, Stack, TextField} from '@mui/material';
+import {ButtonGroup, ToggleButton, IconButton, Stack, TextField, colors} from '@mui/material';
 import {SimpleTreeView, TreeItem} from '@mui/x-tree-view';
 
 import {APIError, createWorldDownloadLink, createWorldUploadLink} from '@/api';
@@ -141,27 +141,20 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
   };
 
   return (
-    <Stack spacing={0}>
-      <Stack alignSelf="end" direction="row">
-        {refresh && (
-          <IconButton onClick={refresh}>
-            <RefreshIcon />
-          </IconButton>
-        )}
-        {uploadMode ? (
+    <Stack spacing={0.5}>
+      <Stack alignSelf="end" direction="row" spacing={1}>
+        {uploadMode && (
           <form onSubmit={handleSubmit(handleUpload)}>
             <ButtonGroup>
               <TextField
                 defaultValue={selection?.worldName}
                 disabled={isUploading}
                 label={t('launch.world.name')}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    e.stopPropagation();
-                    setUploadMode(false);
-                  }
-                }}
                 variant="outlined"
+                sx={{
+                  '& .MuiInputBase-input': {height: 6},
+                  '& .MuiInputLabel-root[data-shrink=false]': {fontSize: 12, transform: 'translate(14px, 12px) scale(1)'}
+                }}
                 {...register('worldName', {
                   required: true,
                   validate: (val: string) => !val.includes('/') && !val.includes('\\') && !val.includes('@')
@@ -172,15 +165,21 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
               </LoadingButton>
             </ButtonGroup>
           </form>
-        ) : (
-          <IconButton onClick={() => setUploadMode(true)}>
+        )}
+        <Stack alignSelf="end" direction="row" sx={{backgroundColor: colors.blue[100], px: 2, borderRadius: '50vh'}}>
+          {refresh && (
+            <IconButton onClick={refresh}>
+              <RefreshIcon />
+            </IconButton>
+          )}
+          <IconButton onClick={() => setUploadMode(!uploadMode)}>
             <UploadIcon />
           </IconButton>
-        )}
+        </Stack>
       </Stack>
       <SimpleTreeView
-        checkboxSelection={true}
         onSelectedItemsChange={handleSelectedItemsChange}
+        checkboxSelection={true}
         selectedItems={selectedItems}
         slots={{
           expandIcon: FolderIcon,

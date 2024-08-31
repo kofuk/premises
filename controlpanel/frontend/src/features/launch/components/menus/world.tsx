@@ -78,6 +78,9 @@ export const create = (): MenuItem => {
     }
 
     if (config.worldSource === WorldLocation.Backups) {
+      if (config.backupGen === '@/latest') {
+        return t('launch.world.summary_existing_latest', {name: config.worldName});
+      }
       return t('launch.world.summary_existing', {name: config.worldName});
     } else {
       return t('launch.world.summary_new', {name: config.worldName});
