@@ -18,6 +18,7 @@ import {SimpleTreeView, TreeItem} from '@mui/x-tree-view';
 
 import {APIError, createWorldDownloadLink, createWorldUploadLink} from '@/api';
 import {World, WorldGeneration} from '@/api/entities';
+import {useAuth} from '@/utils/auth';
 
 type Selection = {
   worldName: string;
@@ -44,6 +45,8 @@ const getWorldLabel = (worldGen: WorldGeneration): string => {
 const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
   const [t] = useTranslation();
 
+  const {accessToken} = useAuth();
+
   const handleSelectedItemsChange = (_event: React.SyntheticEvent, id: string | null) => {
     if (!id || !onChange) {
       return;
@@ -61,7 +64,7 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
 
   const handleDownload = async (generationId: string) => {
     try {
-      const {url} = await createWorldDownloadLink({id: generationId});
+      const {url} = await createWorldDownloadLink(accessToken, {id: generationId});
 
       const a = document.createElement('a');
       a.href = url;
@@ -121,7 +124,7 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
       }
 
       try {
-        const {url} = await createWorldUploadLink({worldName, mimeType: file.type});
+        const {url} = await createWorldUploadLink(accessToken, {worldName, mimeType: file.type});
         await fetch(url, {
           method: 'PUT',
           body: file

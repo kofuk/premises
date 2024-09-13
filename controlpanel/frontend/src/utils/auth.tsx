@@ -19,7 +19,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType>(null!);
 
 export const AuthProvider = ({children}: {children: ReactNode}) => {
-  const {data: session, error, isLoading, mutate} = useSessionData();
+  const {data: session, error, isLoading, mutate} = useSessionData(null);
   if (isLoading) {
     return <Loading />;
   }
@@ -28,7 +28,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
   }
 
   const login = async (userName: string, password: string): Promise<LoginResult> => {
-    const resp = await apiLogin({userName, password});
+    const resp = await apiLogin(null, {userName, password});
     if (resp.needsChangePassword) {
       return LoginResult.NeedsChangePassword;
     }

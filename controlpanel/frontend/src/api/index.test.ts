@@ -26,7 +26,7 @@ describe('api', () => {
       bar: string;
     };
 
-    const resp = await api<Req, Resp>('/api/test', 'post', {foo: 'foo'});
+    const resp = await api<Req, Resp>('/api/test', 'post', 'xxxx', {foo: 'foo'});
     expect(resp.bar).toEqual('bar');
   });
 
@@ -37,6 +37,6 @@ describe('api', () => {
       reason: 'test'
     });
 
-    expect(api<null, null>('/api/test', 'get')).rejects.toThrow(APIError);
+    expect(api<null, null>('/api/test', 'xxxx', 'get')).rejects.toThrow(APIError);
   });
 });

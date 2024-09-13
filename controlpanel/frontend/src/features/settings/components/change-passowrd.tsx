@@ -10,9 +10,12 @@ import {Box} from '@mui/system';
 
 import {changePassword} from '@/api';
 import LoadingButtonWithResult from '@/components/loading-button-with-result';
+import {useAuth} from '@/utils/auth';
 
 const ChangePassword = () => {
   const [t] = useTranslation();
+
+  const {accessToken} = useAuth();
 
   const {register, handleSubmit, formState, watch} = useForm();
   const [submitting, setSubmitting] = useState(false);
@@ -24,7 +27,7 @@ const ChangePassword = () => {
       setSubmitting(true);
       setSuccess(false);
       try {
-        await changePassword({password: currentPassword, newPassword});
+        await changePassword(accessToken, {password: currentPassword, newPassword});
         setSuccess(true);
       } catch (err: any) {
         console.error(err);

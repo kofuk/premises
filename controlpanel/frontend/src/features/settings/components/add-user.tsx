@@ -9,9 +9,12 @@ import {Box, Paper, Stack, TextField, Typography} from '@mui/material';
 
 import {APIError, addUser} from '@/api';
 import LoadingButtonWithResult from '@/components/loading-button-with-result';
+import {useAuth} from '@/utils/auth';
 
 const AddUser = () => {
   const [t] = useTranslation();
+
+  const {accessToken} = useAuth();
 
   const {enqueueSnackbar} = useSnackbar();
 
@@ -25,7 +28,7 @@ const AddUser = () => {
     setSuccess(false);
 
     try {
-      await addUser({userName, password});
+      await addUser(accessToken, {userName, password});
       setSuccess(true);
     } catch (err: unknown) {
       console.error(err);
