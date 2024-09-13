@@ -82,8 +82,8 @@ func (h *Handler) handleStream(c echo.Context) error {
 	if !jsonMode {
 		c.Response().Header().Set("Content-Type", "text/event-stream")
 		c.Response().Header().Set("X-Accel-Buffering", "no")
-		c.Response().Header().Set("Cache-Control", "no-store")
 	}
+	c.Response().Header().Set("Cache-Control", "no-store")
 
 	if err := writeEvent(string(streaming.EventMessage), subscription.CurrentState); err != nil {
 		slog.Error("Failed to write data", slog.Any("error", err))
@@ -952,6 +952,10 @@ func setupApiUsersRoutes(h *Handler, group *echo.Group) {
 func (h *Handler) accessTokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		authorization := c.Request().Header.Get("Authorization")
+		if authorization == "" {
+			authorization = c.Request().URL.Query().Get("x-auth")
+		}
+
 		if !strings.HasPrefix(authorization, "Bearer ") {
 			return c.JSON(http.StatusOK, web.ErrorResponse{
 				Success:   false,
