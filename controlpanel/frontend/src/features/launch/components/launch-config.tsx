@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import {launch as apiLaunch, reconfigure as apiReconfigure, updateConfig as apiUpdateConfig, getConfig} from '@/api';
 import {PendingConfig} from '@/api/entities';
 import Loading from '@/components/loading';
+import {useAuth} from '@/utils/auth';
 
 type ConfigContextType = {
   config: PendingConfig;
@@ -17,7 +18,9 @@ type ConfigContextType = {
 const ConfigContext = createContext<ConfigContextType>(null!);
 
 export const ConfigProvider = ({children}: {children: ReactNode}) => {
-  const {data, mutate, error, isLoading} = useSWR('/api/config', async () => await getConfig());
+  const {accessToken} = useAuth();
+
+  const {data, mutate, error, isLoading} = useSWR('/api/config', async () => await getConfig(accessToken));
   if (isLoading || error) {
     // TODO: Proper error handling
     return <Loading />;
@@ -26,15 +29,15 @@ export const ConfigProvider = ({children}: {children: ReactNode}) => {
   const {isValid, config: remoteConfig} = data!;
 
   const updateConfig = async (config: PendingConfig): Promise<void> => {
-    await mutate(apiUpdateConfig(config));
+    await mutate(apiUpdateConfig(accessToken, config));
   };
 
   const launch = async (): Promise<void> => {
-    await apiLaunch();
+    await apiLaunch(accessToken);
   };
 
   const reconfigure = async (): Promise<void> => {
-    await apiReconfigure();
+    await apiReconfigure(accessToken);
   };
 
   const value = {

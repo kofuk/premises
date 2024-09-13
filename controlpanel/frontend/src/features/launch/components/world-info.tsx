@@ -9,9 +9,12 @@ import {APIError, getWorldInfo} from '@/api';
 import {WorldInfo as WorldInfoEntity} from '@/api/entities';
 import CopyableListItem from '@/components/copyable-list-item';
 import DelayedSkeleton from '@/components/delayed-skeleton';
+import {useAuth} from '@/utils/auth';
 
 const WorldInfo = () => {
   const [t] = useTranslation();
+
+  const {accessToken} = useAuth();
 
   const [worldInfo, setWorldInfo] = useState<WorldInfoEntity | null>(null);
   const {enqueueSnackbar} = useSnackbar();
@@ -19,7 +22,7 @@ const WorldInfo = () => {
   useEffect(() => {
     (async () => {
       try {
-        setWorldInfo(await getWorldInfo());
+        setWorldInfo(await getWorldInfo(accessToken));
       } catch (err) {
         if (err instanceof APIError) {
           enqueueSnackbar(err.message, {variant: 'error'});

@@ -7,9 +7,11 @@ import {Button, ButtonGroup, ClickAwayListener, FormControl, Grow, InputLabel, M
 import {Box} from '@mui/system';
 
 import {takeQuickSnapshot, undoQuickSnapshot} from '@/api';
+import {useAuth} from '@/utils/auth';
 
 const QuickUndo = () => {
   const [t] = useTranslation();
+  const {accessToken} = useAuth();
   const [selectedSlot, setSelectedSlot] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement>(null);
@@ -24,7 +26,7 @@ const QuickUndo = () => {
 
     (async () => {
       try {
-        await options[menuIndex].handler({slot: selectedSlot});
+        await options[menuIndex].handler(accessToken, {slot: selectedSlot});
       } finally {
         setConfirming(false);
       }

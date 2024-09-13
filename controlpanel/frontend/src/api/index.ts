@@ -23,12 +23,18 @@ const domain = process.env.NODE_ENV === 'test' ? 'http://localhost' : '';
 
 export class APIError extends Error {}
 
-const api = async <T, U>(endpoint: string, method: string = 'get', body?: T) => {
+const api = async <T, U>(endpoint: string, method: string = 'get', accessToken: string | null, body?: T) => {
   const options = {method} as any;
   if (body) {
     options.body = JSON.stringify(body);
     options.headers = {
       'Content-Type': 'application/json'
+    };
+  }
+  if (accessToken) {
+    options.headers = {
+      ...options.headers,
+      Authorization: `Bearer ${accessToken}`
     };
   }
 
@@ -45,8 +51,8 @@ export default api;
 
 const declareApi =
   <T, U>(endpoint: string, method: string = 'get') =>
-  (body?: T) =>
-    api<T, U>(endpoint, method, body);
+  (accessToken: string | null, body?: T) =>
+    api<T, U>(endpoint, method, accessToken, body);
 
 export const login = declareApi<PasswordCredential, SessionState>('/login', 'post');
 export const getSessionData = declareApi<null, SessionData>('/session-data');
@@ -75,8 +81,8 @@ export type MutableUseResponse<T> = ImmutableUseResponse<T> & {
   mutate: KeyedMutator<T>;
 };
 
-export const useSessionData = (): MutableUseResponse<SessionData> => {
-  const {data, error, mutate, isLoading} = useSWR('/session-data', () => getSessionData());
+export const useSessionData = (accessToken: string | null): MutableUseResponse<SessionData> => {
+  const {data, error, mutate, isLoading} = useSWR('/session-data', () => getSessionData(accessToken));
   return {
     data,
     error,
@@ -85,8 +91,8 @@ export const useSessionData = (): MutableUseResponse<SessionData> => {
   };
 };
 
-export const useWorlds = (): MutableUseResponse<World[]> => {
-  const {data, error, isLoading, mutate} = useSWR('/api/worlds', () => listWorlds());
+export const useWorlds = (accessToken: string | null): MutableUseResponse<World[]> => {
+  const {data, error, isLoading, mutate} = useSWR('/api/worlds', () => listWorlds(accessToken));
   return {
     data,
     error,
@@ -95,8 +101,8 @@ export const useWorlds = (): MutableUseResponse<World[]> => {
   };
 };
 
-export const useMCVersions = (): ImmutableUseResponse<MCVersion[]> => {
-  const {data, error, isLoading} = useSWRImmutable('/api/mcversions', () => getMCVersions());
+export const useMCVersions = (accessToken: string | null): ImmutableUseResponse<MCVersion[]> => {
+  const {data, error, isLoading} = useSWRImmutable('/api/mcversions', () => getMCVersions(accessToken));
   return {
     data,
     error,

@@ -11,6 +11,7 @@ import {valueLabel} from './common';
 import {useWorlds} from '@/api';
 import Loading from '@/components/loading';
 import SaveInput from '@/components/save-input';
+import {useAuth} from '@/utils/auth';
 
 export enum WorldLocation {
   Backups = 'backups',
@@ -18,7 +19,9 @@ export enum WorldLocation {
 }
 
 const SavedWorld = ({name, setName, gen, setGen}: {name: string; setName: (name: string) => void; gen: string; setGen: (gen: string) => void}) => {
-  const {data: savedWorlds, isLoading, mutate} = useWorlds();
+  const {accessToken} = useAuth();
+
+  const {data: savedWorlds, isLoading, mutate} = useWorlds(accessToken);
   if (isLoading) {
     return <Loading compact />;
   }

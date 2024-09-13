@@ -12,10 +12,13 @@ import {valueLabel} from './common';
 
 import {useMCVersions} from '@/api';
 import Loading from '@/components/loading';
+import {useAuth} from '@/utils/auth';
 
 export const create = (): MenuItem => {
   const [t] = useTranslation();
   const {config, updateConfig} = useLaunchConfig();
+
+  const {accessToken} = useAuth();
 
   const serverVersion = config.serverVersion || '';
   const guessServerVersion = !!config.guessServerVersion;
@@ -37,7 +40,7 @@ export const create = (): MenuItem => {
   const [showAlpha, setShowAlpha] = useState(false);
   const [showBeta, setShowBeta] = useState(false);
 
-  const {data: mcVersions, isLoading} = useMCVersions();
+  const {data: mcVersions, isLoading} = useMCVersions(accessToken);
   const versions =
     mcVersions &&
     mcVersions
