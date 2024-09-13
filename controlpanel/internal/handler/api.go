@@ -17,6 +17,7 @@ import (
 	"dario.cat/mergo"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/securecookie"
+	"github.com/kofuk/premises/controlpanel/internal/auth"
 	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/controlpanel/internal/db/model"
 	"github.com/kofuk/premises/controlpanel/internal/gameconfig"
@@ -26,7 +27,6 @@ import (
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/internal/entity/web"
-	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -37,51 +37,10 @@ const (
 	CacheKeySystemInfoPrefix = "system-info"
 )
 
-func (h *Handler) handleApiSessionData(c echo.Context) error {
-	session, err := session.Get("session", c)
-	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInternal,
-		})
-	}
-
-	userID, ok := session.Values["user_id"].(uint)
-
-	sessionData := web.SessionData{
-		LoggedIn: ok,
-	}
-
-	if ok {
-		var userName string
-		if err := h.db.NewSelect().Model((*model.User)(nil)).Column("name").Where("id = ? AND deleted_at IS NULL", userID).Scan(c.Request().Context(), &userName); err != nil {
-			slog.Error("User not found", slog.Any("error", err))
-			return c.JSON(http.StatusOK, web.ErrorResponse{
-				Success:   false,
-				ErrorCode: entity.ErrInternal,
-			})
-		}
-		sessionData.UserName = userName
-	}
-
-	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.SessionData]{
-		Success: true,
-		Data:    sessionData,
-	})
-}
-
 func (h *Handler) handleStream(c echo.Context) error {
 	jsonMode := c.Request().Header.Get("Accept") == "application/json"
 
-	session, err := session.Get("session", c)
-	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInternal,
-		})
-	}
-
-	userID := session.Values["user_id"].(uint)
+	userID := c.Get("access_token").(*auth.Token).UserID
 
 	writeEvent := func(eventName string, message []byte) error {
 		if jsonMode {
@@ -799,15 +758,7 @@ func (h *Handler) handleApiCreateWorldUploadLink(c echo.Context) error {
 }
 
 func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
-	session, err := session.Get("session", c)
-	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInternal,
-		})
-	}
-
-	userID := session.Values["user_id"].(uint)
+	userID := c.Get("access_token").(*auth.Token).UserID
 
 	var config web.SnapshotConfiguration
 	if err := c.Bind(&config); err != nil {
@@ -844,15 +795,7 @@ func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
 }
 
 func (h *Handler) handleApiQuickUndoUndo(c echo.Context) error {
-	session, err := session.Get("session", c)
-	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInternal,
-		})
-	}
-
-	userID := session.Values["user_id"].(uint)
+	userID := c.Get("access_token").(*auth.Token).UserID
 
 	var config web.SnapshotConfiguration
 	if err := c.Bind(&config); err != nil {
@@ -894,21 +837,7 @@ func setupApiQuickUndoRoutes(h *Handler, group *echo.Group) {
 }
 
 func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
-	session, err := session.Get("session", c)
-	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInternal,
-		})
-	}
-
-	userID, ok := session.Values["user_id"].(uint)
-	if !ok {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInternal,
-		})
-	}
+	userID := c.Get("access_token").(*auth.Token).UserID
 
 	var req web.UpdatePassword
 	if err := c.Bind(&req); err != nil {
@@ -963,21 +892,7 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 }
 
 func (h *Handler) handleApiUsersAdd(c echo.Context) error {
-	session, err := session.Get("session", c)
-	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInternal,
-		})
-	}
-
-	userID, ok := session.Values["user_id"].(uint)
-	if !ok {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInternal,
-		})
-	}
+	userID := c.Get("access_token").(*auth.Token).UserID
 
 	var req web.PasswordCredential
 	if err := c.Bind(&req); err != nil {
@@ -1034,42 +949,34 @@ func setupApiUsersRoutes(h *Handler, group *echo.Group) {
 	group.POST("/add", h.handleApiUsersAdd)
 }
 
-func (h *Handler) middlewareSessionCheck(next echo.HandlerFunc) echo.HandlerFunc {
+func (h *Handler) accessTokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// 1. Verify that the request is sent from allowed origin (if needed).
-		if c.Request().Method == http.MethodPost || (c.Request().Method == http.MethodGet && c.Request().Header.Get("Upgrade") == "WebSocket") {
-			if c.Request().Header.Get("Origin") != h.cfg.Origin {
-				slog.Error("origin not allowed", slog.String("origin", c.Request().Header.Get("Origin")))
-				return c.JSON(http.StatusOK, web.ErrorResponse{
-					Success:   false,
-					ErrorCode: entity.ErrBadRequest,
-				})
-			}
-		}
-
-		// 2. Verify that the client is logged in.
-		session, err := session.Get("session", c)
-		if err != nil {
-			return c.JSON(http.StatusOK, web.ErrorResponse{
-				Success:   false,
-				ErrorCode: entity.ErrInternal,
-			})
-		}
-
-		if _, ok := session.Values["user_id"]; !ok {
+		authorization := c.Request().Header.Get("Authorization")
+		if !strings.HasPrefix(authorization, "Bearer ") {
 			return c.JSON(http.StatusOK, web.ErrorResponse{
 				Success:   false,
 				ErrorCode: entity.ErrRequiresAuth,
 			})
 		}
+
+		accessToken := strings.TrimPrefix(authorization, "Bearer ")
+
+		if token, err := h.authService.Get(c.Request().Context(), accessToken); err != nil {
+			return c.JSON(http.StatusOK, web.ErrorResponse{
+				Success:   false,
+				ErrorCode: entity.ErrRequiresAuth,
+			})
+		} else {
+			c.Set("access_token", token)
+		}
+
 		return next(c)
 	}
 }
 
 func (h *Handler) setupApiRoutes(group *echo.Group) {
-	group.GET("/session-data", h.handleApiSessionData)
 	needsAuth := group.Group("")
-	needsAuth.Use(h.middlewareSessionCheck)
+	needsAuth.Use(h.accessTokenMiddleware)
 	needsAuth.GET("/streaming", h.handleStream)
 	needsAuth.POST("/launch", h.handleApiLaunch)
 	needsAuth.POST("/reconfigure", h.handleApiReconfigure)

@@ -3,8 +3,12 @@ package handler
 import (
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 
+	"github.com/boj/redistore"
+	"github.com/gorilla/sessions"
+	"github.com/kofuk/premises/controlpanel/internal/auth"
 	"github.com/kofuk/premises/controlpanel/internal/db/model"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/web"
@@ -14,10 +18,6 @@ import (
 )
 
 func (h *Handler) handleLogin(c echo.Context) error {
-	if c.Request().Header.Get("Origin") != h.cfg.Origin {
-		return c.String(http.StatusBadGateway, "")
-	}
-
 	var cred web.PasswordCredential
 	if err := c.Bind(&cred); err != nil {
 		slog.Error("Failed to bind data", slog.Any("error", err))
@@ -62,7 +62,15 @@ func (h *Handler) handleLogin(c echo.Context) error {
 		})
 	}
 
-	session.Values["user_id"] = user.ID
+	token, err := h.authService.CreateToken(c.Request().Context(), user.ID, []auth.Scope{auth.AdminScope})
+	if err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	session.Values["access_token"] = token.Token
 	session.Save(c.Request(), c.Response())
 
 	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.SessionState]{
@@ -81,7 +89,17 @@ func (h *Handler) handleLogout(c echo.Context) error {
 			ErrorCode: entity.ErrInternal,
 		})
 	}
-	delete(session.Values, "user_id")
+
+	accessToken := session.Values["access_token"].(string)
+
+	if err := h.authService.RevokeToken(c.Request().Context(), accessToken); err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	delete(session.Values, "access_token")
 	session.Save(c.Request(), c.Response())
 
 	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
@@ -103,10 +121,6 @@ func isAllowedPassword(password string) bool {
 }
 
 func (h *Handler) handleLoginResetPassword(c echo.Context) error {
-	if c.Request().Header.Get("Origin") != h.cfg.Origin {
-		return c.String(http.StatusBadGateway, "")
-	}
-
 	session, err := session.Get("session", c)
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -166,8 +180,67 @@ func (h *Handler) handleLoginResetPassword(c echo.Context) error {
 	})
 }
 
+func (h *Handler) handleSessionData(c echo.Context) error {
+	session, err := session.Get("session", c)
+	if err != nil {
+		return c.JSON(http.StatusOK, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	sessionData := web.SessionData{}
+
+	accessToken, ok := session.Values["access_token"].(string)
+	if !ok {
+		sessionData.LoggedIn = false
+	} else {
+		token, err := h.authService.Get(c.Request().Context(), accessToken)
+		if err == nil {
+			sessionData.LoggedIn = true
+			sessionData.AccessToken = token.Token
+		}
+	}
+
+	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.SessionData]{
+		Success: true,
+		Data:    sessionData,
+	})
+}
+
 func (h *Handler) setupRootRoutes(group *echo.Group) {
+	store, err := redistore.NewRediStore(4, "tcp", h.cfg.RedisAddress, h.cfg.RedisPassword, []byte(h.cfg.Secret))
+	if err != nil {
+		slog.Error("Failed to initialize Redis session store", slog.Any("error", err))
+		os.Exit(1)
+	}
+	store.Options = &sessions.Options{
+		MaxAge:   60 * 60 * 24 * 30,
+		Secure:   true,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	}
+	store.SetKeyPrefix("session:")
+
+	group.Use(session.Middleware(store))
+	group.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			// Verify that the request is sent from allowed origin (if needed).
+			if c.Request().Method == http.MethodPost {
+				if c.Request().Header.Get("Origin") != h.cfg.Origin {
+					slog.Error("origin not allowed", slog.String("origin", c.Request().Header.Get("Origin")))
+					return c.JSON(http.StatusOK, web.ErrorResponse{
+						Success:   false,
+						ErrorCode: entity.ErrBadRequest,
+					})
+				}
+			}
+
+			return next(c)
+		}
+	})
 	group.POST("/login", h.handleLogin)
 	group.POST("/logout", h.handleLogout)
+	group.GET("/session-data", h.handleSessionData)
 	group.POST("/login/reset-password", h.handleLoginResetPassword)
 }

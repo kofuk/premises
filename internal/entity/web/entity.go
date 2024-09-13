@@ -27,8 +27,8 @@ type SessionState struct {
 }
 
 type SessionData struct {
-	LoggedIn bool   `json:"loggedIn"`
-	UserName string `json:"userName"`
+	LoggedIn    bool   `json:"loggedIn"`
+	AccessToken string `json:"accessToken"`
 }
 
 type MCVersion struct {

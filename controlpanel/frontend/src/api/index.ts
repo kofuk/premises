@@ -49,7 +49,7 @@ const declareApi =
     api<T, U>(endpoint, method, body);
 
 export const login = declareApi<PasswordCredential, SessionState>('/login', 'post');
-export const getSessionData = declareApi<null, SessionData>('/api/session-data');
+export const getSessionData = declareApi<null, SessionData>('/session-data');
 export const listWorlds = declareApi<null, World[]>('/api/worlds');
 export const getMCVersions = declareApi<null, MCVersion[]>('/api/mcversions');
 export const changePassword = declareApi<UpdatePassword, null>('/api/users/change-password', 'post');
@@ -76,7 +76,7 @@ export type MutableUseResponse<T> = ImmutableUseResponse<T> & {
 };
 
 export const useSessionData = (): MutableUseResponse<SessionData> => {
-  const {data, error, mutate, isLoading} = useSWR('/api/session-data', () => getSessionData());
+  const {data, error, mutate, isLoading} = useSWR('/session-data', () => getSessionData());
   return {
     data,
     error,
