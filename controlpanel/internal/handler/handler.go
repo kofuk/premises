@@ -8,9 +8,8 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/boj/redistore"
 	"github.com/go-redis/redis/v8"
-	"github.com/gorilla/sessions"
+	"github.com/kofuk/premises/controlpanel/internal/auth"
 	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/controlpanel/internal/kvs"
 	"github.com/kofuk/premises/controlpanel/internal/longpoll"
@@ -19,7 +18,6 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/world"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/web"
-	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/uptrace/bun"
@@ -37,6 +35,7 @@ type Handler struct {
 	Streaming    *streaming.StreamingService
 	world        *world.WorldService
 	runnerAction *longpoll.PollableActionService
+	authService  *auth.AuthService
 }
 
 func setupRoutes(h *Handler) {
@@ -87,22 +86,6 @@ func setupRoutes(h *Handler) {
 	h.setupRunnerRoutes(h.engine.Group("/_"))
 }
 
-func setupSessions(h *Handler) {
-	store, err := redistore.NewRediStore(4, "tcp", h.cfg.RedisAddress, h.cfg.RedisPassword, []byte(h.cfg.Secret))
-	if err != nil {
-		slog.Error("Failed to initialize Redis session store", slog.Any("error", err))
-		os.Exit(1)
-	}
-	store.Options = &sessions.Options{
-		MaxAge:   60 * 60 * 24 * 30,
-		Secure:   true,
-		HttpOnly: true,
-		SameSite: http.SameSiteStrictMode,
-	}
-	store.SetKeyPrefix("session:")
-	h.engine.Use(session.Middleware(store))
-}
-
 func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Client, longpoll *longpoll.PollableActionService, kvs kvs.KeyValueStore) (*Handler, error) {
 	engine := echo.New()
 	engine.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
@@ -136,12 +119,11 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 		Streaming:    streaming.New(redis),
 		world:        worldService,
 		runnerAction: longpoll,
+		authService:  auth.New(kvs),
 	}
 	h.GameServer = NewGameServer(cfg, h)
 
 	h.MCVersions = mcversions.New(h.KVS)
-
-	setupSessions(h)
 
 	setupRoutes(h)
 

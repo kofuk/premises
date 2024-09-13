@@ -1,6 +1,6 @@
 export type SessionData = {
   loggedIn: boolean;
-  userName: string;
+  accessToken: string;
 };
 
 export type WorldGeneration = {

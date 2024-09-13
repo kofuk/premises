@@ -10,7 +10,7 @@ export enum LoginResult {
 
 type AuthContextType = {
   loggedIn: boolean;
-  userName: string | null;
+  accessToken: string;
   login: (userName: string, password: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
   initializePassword: (username: string, newPassword: string) => Promise<void>;
@@ -68,7 +68,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
 
   const value = {
     loggedIn: !!session && session.loggedIn,
-    userName: (session && session.userName) || null,
+    accessToken: session?.accessToken ?? '',
     login,
     logout,
     initializePassword

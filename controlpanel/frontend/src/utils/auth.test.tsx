@@ -12,17 +12,17 @@ describe('AuthProvider', () => {
         success: true,
         data: {
           loggedIn: true,
-          userName: 'hoge'
+          accessToken: 'hoge'
         }
       });
 
     const InnerComponent = () => {
-      const {loggedIn, userName} = useAuth();
+      const {loggedIn, accessToken} = useAuth();
       return (
         <div>
           <h1>MAIN</h1>
           <span>{`loggedIn=${loggedIn}`}</span>
-          <span>{`userName=${userName}`}</span>
+          <span>{`accessToken=${accessToken}`}</span>
         </div>
       );
     };
@@ -38,6 +38,6 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(screen.getByText('MAIN')).toBeInTheDocument());
 
     expect(screen.getByText('loggedIn=true')).toBeInTheDocument();
-    expect(screen.getByText('userName=hoge')).toBeInTheDocument();
+    expect(screen.getByText('accessToken=hoge')).toBeInTheDocument();
   });
 });
