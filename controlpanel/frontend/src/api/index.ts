@@ -68,6 +68,7 @@ export const getConfig = declareApi<null, ConfigAndValidity>('/api/config');
 export const updateConfig = declareApi<PendingConfig, ConfigAndValidity>('/api/config', 'put');
 export const launch = declareApi<null, null>('/api/launch', 'post');
 export const reconfigure = declareApi<null, null>('/api/reconfigure', 'post');
+export const stop = declareApi<null, null>('/api/stop', 'post');
 export const createWorldDownloadLink = declareApi<CreateWorldDownloadLinkReq, DelegatedURL>('/api/world-link/download', 'post');
 export const createWorldUploadLink = declareApi<CreateWorldUploadLinkReq, DelegatedURL>('/api/world-link/upload', 'post');
 

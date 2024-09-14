@@ -10,10 +10,14 @@ import Reconfigure from './reconfigure';
 import SystemInfo from './system-info';
 import WorldInfo from './world-info';
 
+import {stop} from '@/api';
+import {useAuth} from '@/utils/auth';
 import {useRunnerStatus} from '@/utils/runner-status';
 
 const ServerControlPane = () => {
   const [t] = useTranslation();
+
+  const {accessToken} = useAuth();
 
   const {cpuUsage} = useRunnerStatus();
 
@@ -53,7 +57,7 @@ const ServerControlPane = () => {
             <Box sx={{textAlign: 'end'}}>
               <Button
                 onClick={() => {
-                  fetch('/api/stop', {method: 'post'});
+                  stop(accessToken);
                 }}
                 startIcon={<StopIcon />}
                 variant="contained"

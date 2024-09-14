@@ -6,15 +6,15 @@ import { usingFakeMinecraftServer } from "../lib/env.ts";
 import { getState } from "../lib/mcproto.ts";
 
 console.log("Login");
-const cookie = await login("admin", "password");
+const accessToken = await login("admin", "password");
 
 const worldName = `test-${Date.now()}`;
 
 console.log("Launch server");
-await launchNewWorld(cookie, worldName);
+await launchNewWorld(accessToken, worldName);
 
 console.log("Check launched world");
-const worldInfo = await api("GET /api/worldinfo", cookie);
+const worldInfo = await api("GET /api/worldinfo", accessToken);
 assertEquals(worldInfo["version"], "1.20.1");
 assertEquals(worldInfo["worldName"], worldName);
 
@@ -25,6 +25,6 @@ if (usingFakeMinecraftServer()) {
 }
 
 console.log("Stop server");
-await stopServer(cookie);
+await stopServer(accessToken);
 
 console.log("Success");
