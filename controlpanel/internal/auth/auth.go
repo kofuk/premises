@@ -13,7 +13,7 @@ type Scope string
 
 const (
 	NoScope    Scope = ""
-	AdminScope Scope = "admin"
+	ScopeAdmin Scope = "admin"
 )
 
 type AuthService struct {
@@ -25,6 +25,16 @@ type Token struct {
 	UserID    uint      `json:"userID"`
 	Scopes    []Scope   `json:"scopes"`
 	CreatedAt time.Time `json:"createdAt"`
+	scopeMap  map[Scope]struct{}
+}
+
+func (t *Token) HasScope(scope Scope) bool {
+	if scope == NoScope {
+		return true
+	}
+
+	_, isAdminScope := t.scopeMap[ScopeAdmin]
+	return isAdminScope
 }
 
 func New(kvs kvs.KeyValueStore) *AuthService {
@@ -54,28 +64,17 @@ func (a *AuthService) Get(ctx context.Context, token string) (*Token, error) {
 		return nil, err
 	}
 
+	t.scopeMap = make(map[Scope]struct{})
+	for _, scope := range t.Scopes {
+		if scope == NoScope {
+			continue
+		}
+		t.scopeMap[scope] = struct{}{}
+	}
+
 	return &t, nil
 }
 
 func (a *AuthService) RevokeToken(ctx context.Context, token string) error {
 	return a.kvs.Del(ctx, "token:"+token)
-}
-
-func (a *AuthService) IsGranted(ctx context.Context, token string, scope Scope) (bool, error) {
-	var t Token
-	if err := a.kvs.Get(ctx, "token:"+token, &t); err != nil {
-		return false, err
-	}
-
-	if scope == NoScope {
-		return true, nil
-	}
-
-	for _, s := range t.Scopes {
-		if s == scope {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }

@@ -62,7 +62,7 @@ func (h *Handler) handleLogin(c echo.Context) error {
 		})
 	}
 
-	token, err := h.authService.CreateToken(c.Request().Context(), user.ID, []auth.Scope{auth.AdminScope})
+	token, err := h.authService.CreateToken(c.Request().Context(), user.ID, []auth.Scope{auth.ScopeAdmin})
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,

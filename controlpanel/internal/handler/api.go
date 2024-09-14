@@ -832,8 +832,8 @@ func (h *Handler) handleApiQuickUndoUndo(c echo.Context) error {
 }
 
 func setupApiQuickUndoRoutes(h *Handler, group *echo.Group) {
-	group.POST("/snapshot", h.handleApiQuickUndoSnapshot)
-	group.POST("/undo", h.handleApiQuickUndoUndo)
+	group.POST("/snapshot", h.handleApiQuickUndoSnapshot, scope(auth.ScopeAdmin))
+	group.POST("/undo", h.handleApiQuickUndoUndo, scope(auth.ScopeAdmin))
 }
 
 func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
@@ -945,8 +945,8 @@ func (h *Handler) handleApiUsersAdd(c echo.Context) error {
 }
 
 func setupApiUsersRoutes(h *Handler, group *echo.Group) {
-	group.POST("/change-password", h.handleApiUsersChangePassword)
-	group.POST("/add", h.handleApiUsersAdd)
+	group.POST("/change-password", h.handleApiUsersChangePassword, scope(auth.ScopeAdmin))
+	group.POST("/add", h.handleApiUsersAdd, scope(auth.ScopeAdmin))
 }
 
 func (h *Handler) accessTokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
@@ -978,21 +978,40 @@ func (h *Handler) accessTokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc 
 	}
 }
 
+func scope(scopes ...auth.Scope) func(echo.HandlerFunc) echo.HandlerFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			token := c.Get("access_token").(*auth.Token)
+
+			for _, scope := range scopes {
+				if !token.HasScope(scope) {
+					return c.JSON(http.StatusForbidden, web.ErrorResponse{
+						Success:   false,
+						ErrorCode: entity.ErrCredential,
+					})
+				}
+			}
+
+			return next(c)
+		}
+	}
+}
+
 func (h *Handler) setupApiRoutes(group *echo.Group) {
 	needsAuth := group.Group("")
 	needsAuth.Use(h.accessTokenMiddleware)
-	needsAuth.GET("/streaming", h.handleStream)
-	needsAuth.POST("/launch", h.handleApiLaunch)
-	needsAuth.POST("/reconfigure", h.handleApiReconfigure)
-	needsAuth.POST("/stop", h.handleApiStop)
-	needsAuth.GET("/worlds", h.handleApiListWorlds)
-	needsAuth.GET("/mcversions", h.handleApiMcversions)
-	needsAuth.GET("/systeminfo", h.handleApiSystemInfo)
-	needsAuth.GET("/worldinfo", h.handleApiWorldInfo)
-	needsAuth.GET("/config", h.handleApiGetConfig)
-	needsAuth.PUT("/config", h.handleApiUpdateConfig)
-	needsAuth.POST("/world-link/download", h.handleApiCreateWorldDownloadLink)
-	needsAuth.POST("/world-link/upload", h.handleApiCreateWorldUploadLink)
+	needsAuth.GET("/streaming", h.handleStream, scope(auth.ScopeAdmin))
+	needsAuth.POST("/launch", h.handleApiLaunch, scope(auth.ScopeAdmin))
+	needsAuth.POST("/reconfigure", h.handleApiReconfigure, scope(auth.ScopeAdmin))
+	needsAuth.POST("/stop", h.handleApiStop, scope(auth.ScopeAdmin))
+	needsAuth.GET("/worlds", h.handleApiListWorlds, scope(auth.ScopeAdmin))
+	needsAuth.GET("/mcversions", h.handleApiMcversions, scope(auth.ScopeAdmin))
+	needsAuth.GET("/systeminfo", h.handleApiSystemInfo, scope(auth.ScopeAdmin))
+	needsAuth.GET("/worldinfo", h.handleApiWorldInfo, scope(auth.ScopeAdmin))
+	needsAuth.GET("/config", h.handleApiGetConfig, scope(auth.ScopeAdmin))
+	needsAuth.PUT("/config", h.handleApiUpdateConfig, scope(auth.ScopeAdmin))
+	needsAuth.POST("/world-link/download", h.handleApiCreateWorldDownloadLink, scope(auth.ScopeAdmin))
+	needsAuth.POST("/world-link/upload", h.handleApiCreateWorldUploadLink, scope(auth.ScopeAdmin))
 	setupApiQuickUndoRoutes(h, needsAuth.Group("/quickundo"))
 	setupApiUsersRoutes(h, needsAuth.Group("/users"))
 }
