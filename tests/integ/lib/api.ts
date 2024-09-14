@@ -12,7 +12,7 @@ type ApiResponse = {
 
 const request = async (
   methodAndPath: string,
-  cookie?: string | null,
+  accessToken?: string | null,
   body?: URLSearchParams | any | null,
   options?: {
     accept: string;
@@ -20,25 +20,20 @@ const request = async (
 ): Promise<Response> => {
   let bodyStr;
 
-  let contentType = "application/json";
-  if (body && body instanceof URLSearchParams) {
-    contentType = "application/x-www-form-urlencoded";
-    bodyStr = body.toString();
-  } else if (body) {
+  if (body) {
     bodyStr = JSON.stringify(body);
   }
 
   const [method, path] = methodAndPath.split(" ");
 
   const headers = new Headers();
-  if (cookie) {
-    headers.set("Cookie", cookie);
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
   }
   if (options?.accept) {
     headers.set("Accept", options.accept);
   }
-  headers.set("Origin", TARGET_HOST);
-  headers.set("Content-Type", contentType);
+  headers.set("Content-Type", "application/json");
 
   return await fetch(`${TARGET_HOST}${path}`, {
     method: method,
@@ -49,12 +44,13 @@ const request = async (
 
 const api = async (
   methodAndPath: string,
-  cookie?: string,
+  accessToken?: string,
   body?: URLSearchParams | any,
 ): Promise<any> => {
-  const response: ApiResponse = await request(methodAndPath, cookie, body).then(
-    (response) => response.json(),
-  );
+  const response: ApiResponse = await request(methodAndPath, accessToken, body)
+    .then(
+      (response) => response.json(),
+    );
 
   if (!response.success) {
     throw new Error(
@@ -70,30 +66,41 @@ export const login = async (
   userName: string,
   password: string,
 ): Promise<string> => {
-  const rawResponse = await request(
-    "POST /login",
-    null,
-    { userName, password },
-  );
-
-  const response: ApiResponse = await rawResponse.json();
-  if (!response.success) {
-    throw Error(`Login error: ${codes.error(response.errorCode!)}`);
-  }
-
+  const rawResponse = await fetch(`${TARGET_HOST}/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Origin": TARGET_HOST,
+    },
+    body: JSON.stringify({ userName, password }),
+  });
   const cookie = rawResponse.headers.get("Set-Cookie");
   if (cookie === null) {
     throw Error(`Session cookie is not set`);
   }
 
-  return cookie;
+  const loginResponse = await rawResponse.json();
+  if (!loginResponse.success) {
+    throw Error(`Login error: ${codes.error(loginResponse.errorCode!)}`);
+  }
+
+  const sessionData = await fetch(`${TARGET_HOST}/session-data`, {
+    headers: {
+      cookie,
+    },
+  }).then((response) => response.json());
+  if (!sessionData.success) {
+    throw Error(`Login failed: ${codes.error(loginResponse.errorCode!)}`);
+  }
+
+  return sessionData.data.accessToken;
 };
 
 export const streamEvent = async (
   path: string,
-  cookie: string,
+  accessToken: string,
 ): Promise<any> => {
-  const response = await request(`GET ${path}`, cookie, null, {
+  const response = await request(`GET ${path}`, accessToken, null, {
     accept: "application/json",
   }).then((response) => response.json());
   return response;
