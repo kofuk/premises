@@ -14,7 +14,7 @@ console.log("Launch server");
 await launchNewWorld(accessToken, worldName);
 
 console.log("Check launched world");
-const worldInfo = await api("GET /api/worldinfo", accessToken);
+const worldInfo = await api("GET /api/v1/worldinfo", accessToken);
 assertEquals(worldInfo["version"], "1.20.1");
 assertEquals(worldInfo["worldName"], worldName);
 

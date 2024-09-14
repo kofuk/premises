@@ -239,8 +239,8 @@ func (h *Handler) setupRootRoutes(group *echo.Group) {
 			return next(c)
 		}
 	})
-	group.POST("/login", h.handleLogin)
-	group.POST("/logout", h.handleLogout)
-	group.GET("/session-data", h.handleSessionData)
-	group.POST("/login/reset-password", h.handleLoginResetPassword)
+	group.POST("/api/internal/login", h.handleLogin)
+	group.POST("/api/internal/logout", h.handleLogout)
+	group.GET("/api/internal/session-data", h.handleSessionData)
+	group.POST("/api/internal/login/reset-password", h.handleLoginResetPassword)
 }

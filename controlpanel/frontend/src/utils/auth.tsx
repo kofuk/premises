@@ -39,7 +39,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
   };
 
   const logout = async () => {
-    const resp = await fetch('/logout', {method: 'POST'}).then((resp) => resp.json());
+    const resp = await fetch('/api/internal/logout', {method: 'POST'}).then((resp) => resp.json());
     if (!resp['success']) {
       throw new Error(resp['reason']);
     }
@@ -51,7 +51,7 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
     params.append('username', username);
     params.append('password', newPassword);
 
-    const resp = await fetch('/login/reset-password', {
+    const resp = await fetch('/api/internal/login/reset-password', {
       method: 'post',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'

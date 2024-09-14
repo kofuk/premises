@@ -6,23 +6,23 @@ import { usingFakeMinecraftServer } from "../lib/env.ts";
 import { getState } from "../lib/mcproto.ts";
 
 console.log("Login");
-const cookie = await login("admin", "password");
+const accessToken = await login("admin", "password");
 
 const worldName = `test-${Date.now()}`;
 
 console.log("Launch server");
-await initConfig(cookie, worldName);
+await initConfig(accessToken, worldName);
 
-await api("PUT /api/config", cookie, {
+await api("PUT /api/v1/config", accessToken, {
   serverPropOverride: {
     "initial-enabled-packs": "vanilla,update_1_21",
   },
 });
-await api("POST /api/launch", cookie);
+await api("POST /api/v1/launch", accessToken);
 
-await waitServerLaunched(cookie);
+await waitServerLaunched(accessToken);
 
-const worldInfo = await api("GET /api/worldinfo", cookie);
+const worldInfo = await api("GET /api/v1/worldinfo", accessToken);
 assertEquals(worldInfo["version"], "1.20.1");
 assertEquals(worldInfo["worldName"], worldName);
 
@@ -35,6 +35,6 @@ if (usingFakeMinecraftServer()) {
 }
 
 console.log("Stop server");
-await stopServer(cookie);
+await stopServer(accessToken);
 
 console.log("Success");

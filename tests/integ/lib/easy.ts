@@ -8,14 +8,14 @@ export const waitServerLaunched = async (cookie: string) => {
     console.log(".");
     await new Promise((resolve) => setTimeout(resolve, 10 * 1000));
 
-    const { pageCode } = await streamEvent("/api/streaming", cookie);
+    const { pageCode } = await streamEvent("/api/v1/streaming", cookie);
     if (pageCode === codes.PAGE.RUNNING) {
       break;
     } else if (pageCode === codes.PAGE.MANUAL_SETUP) {
       throw new Error("Unexpected page");
     }
   }
-  const { pageCode } = await streamEvent("/api/streaming", cookie);
+  const { pageCode } = await streamEvent("/api/v1/streaming", cookie);
   assertEquals(pageCode, codes.PAGE.RUNNING);
 
   // It takes some time to initialize world info data.
@@ -35,8 +35,8 @@ export const initConfig = async (
   cookie: string,
   worldName: string,
 ): Promise<void> => {
-  await api("GET /api/config", cookie);
-  await api("PUT /api/config", cookie, {
+  await api("GET /api/v1/config", cookie);
+  await api("PUT /api/v1/config", cookie, {
     machineType: "2g",
     serverVersion: "1.20.1",
     guessServerVersion: true,
@@ -51,7 +51,7 @@ export const launchNewWorld = async (
   worldName: string,
 ): Promise<void> => {
   await initConfig(cookie, worldName);
-  await api("POST /api/launch", cookie);
+  await api("POST /api/v1/launch", cookie);
 
   await waitServerLaunched(cookie);
 };
@@ -61,24 +61,24 @@ export const launchExistingWorld = async (
   worldName: string,
 ): Promise<void> => {
   await initConfig(cookie, worldName);
-  await api("PUT /api/config", cookie, {
+  await api("PUT /api/v1/config", cookie, {
     worldSource: "backups",
     worldName,
     backupGen: "@/latest",
   });
-  await api("POST /api/launch", cookie);
+  await api("POST /api/v1/launch", cookie);
 
   await waitServerLaunched(cookie);
 };
 
 export const stopServer = async (cookie: string): Promise<void> => {
-  await api("POST /api/stop", cookie);
+  await api("POST /api/v1/stop", cookie);
 
   for (let i = 0; i < 18; i++) {
     console.log(".");
     await new Promise((resolve) => setTimeout(resolve, 10 * 1000));
 
-    const { pageCode } = await streamEvent("/api/streaming", cookie);
+    const { pageCode } = await streamEvent("/api/v1/streaming", cookie);
     if (pageCode === codes.PAGE.LAUNCH) {
       break;
     } else if (pageCode === codes.PAGE.MANUAL_SETUP) {
