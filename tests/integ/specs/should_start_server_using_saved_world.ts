@@ -13,14 +13,14 @@ import { usingFakeMinecraftServer } from "../lib/env.ts";
 import { getState } from "../lib/mcproto.ts";
 
 console.log("Login");
-const cookie = await login("admin", "password");
+const accessToken = await login("admin", "password");
 
 const worldName = `test-${Date.now()}`;
 
 console.log("Launch server");
-await launchNewWorld(cookie, worldName);
+await launchNewWorld(accessToken, worldName);
 
-const worldInfo = await api("GET /api/worldinfo", cookie);
+const worldInfo = await api("GET /api/v1/worldinfo", accessToken);
 assertEquals(worldInfo["version"], "1.20.1");
 assertEquals(worldInfo["worldName"], worldName);
 
@@ -33,18 +33,18 @@ if (usingFakeMinecraftServer()) {
 }
 
 console.log("Stop server");
-await stopServer(cookie);
+await stopServer(accessToken);
 
 console.log("Launch server with another world (to purge cache)");
-await launchNewWorld(cookie, `test-${Date.now()}`);
+await launchNewWorld(accessToken, `test-${Date.now()}`);
 if (usingFakeMinecraftServer()) {
   const state = await getState();
   assertNotEquals(state.serverState!.worldVersionPrev, worldVersion);
 }
-await stopServer(cookie);
+await stopServer(accessToken);
 
 console.log("Relaunch server");
-await launchExistingWorld(cookie, worldName);
+await launchExistingWorld(accessToken, worldName);
 
 if (usingFakeMinecraftServer()) {
   const state = await getState();
@@ -52,6 +52,6 @@ if (usingFakeMinecraftServer()) {
 }
 
 console.log("Stop server");
-await stopServer(cookie);
+await stopServer(accessToken);
 
 console.log("Success");

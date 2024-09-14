@@ -18,7 +18,7 @@ const StatusCollector = () => {
     const params = new URLSearchParams();
     params.set('x-auth', `Bearer ${accessToken}`);
 
-    const eventSource = new EventSource(`/api/streaming?${params.toString()}`);
+    const eventSource = new EventSource(`/api/v1/streaming?${params.toString()}`);
     eventSource.addEventListener('error', () => {
       updateStatus(0);
     });

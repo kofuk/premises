@@ -7,7 +7,7 @@ import '@testing-library/jest-dom';
 describe('AuthProvider', () => {
   it('renders component after initialized', async () => {
     nock('http://localhost')
-      .get('/session-data')
+      .get('/api/internal/session-data')
       .reply(200, {
         success: true,
         data: {

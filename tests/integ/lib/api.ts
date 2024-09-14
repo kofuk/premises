@@ -66,7 +66,7 @@ export const login = async (
   userName: string,
   password: string,
 ): Promise<string> => {
-  const rawResponse = await fetch(`${TARGET_HOST}/login`, {
+  const rawResponse = await fetch(`${TARGET_HOST}/api/internal/login`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -84,7 +84,7 @@ export const login = async (
     throw Error(`Login error: ${codes.error(loginResponse.errorCode!)}`);
   }
 
-  const sessionData = await fetch(`${TARGET_HOST}/session-data`, {
+  const sessionData = await fetch(`${TARGET_HOST}/api/internal/session-data`, {
     headers: {
       cookie,
     },

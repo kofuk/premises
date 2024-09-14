@@ -54,23 +54,23 @@ const declareApi =
   (accessToken: string | null, body?: T) =>
     api<T, U>(endpoint, method, accessToken, body);
 
-export const login = declareApi<PasswordCredential, SessionState>('/login', 'post');
-export const getSessionData = declareApi<null, SessionData>('/session-data');
-export const listWorlds = declareApi<null, World[]>('/api/worlds');
-export const getMCVersions = declareApi<null, MCVersion[]>('/api/mcversions');
-export const changePassword = declareApi<UpdatePassword, null>('/api/users/change-password', 'post');
-export const addUser = declareApi<PasswordCredential, null>('/api/users/add', 'post');
-export const getSystemInfo = declareApi<null, SystemInfo>('/api/systeminfo');
-export const getWorldInfo = declareApi<null, WorldInfo>('/api/worldinfo');
-export const takeQuickSnapshot = declareApi<SnapshotConfiguration, null>('/api/quickundo/snapshot', 'post');
-export const undoQuickSnapshot = declareApi<SnapshotConfiguration, null>('/api/quickundo/undo', 'post');
-export const getConfig = declareApi<null, ConfigAndValidity>('/api/config');
-export const updateConfig = declareApi<PendingConfig, ConfigAndValidity>('/api/config', 'put');
-export const launch = declareApi<null, null>('/api/launch', 'post');
-export const reconfigure = declareApi<null, null>('/api/reconfigure', 'post');
-export const stop = declareApi<null, null>('/api/stop', 'post');
-export const createWorldDownloadLink = declareApi<CreateWorldDownloadLinkReq, DelegatedURL>('/api/world-link/download', 'post');
-export const createWorldUploadLink = declareApi<CreateWorldUploadLinkReq, DelegatedURL>('/api/world-link/upload', 'post');
+export const login = declareApi<PasswordCredential, SessionState>('/api/internal/login', 'post');
+export const getSessionData = declareApi<null, SessionData>('/api/internal/session-data');
+export const listWorlds = declareApi<null, World[]>('/api/v1/worlds');
+export const getMCVersions = declareApi<null, MCVersion[]>('/api/v1/mcversions');
+export const changePassword = declareApi<UpdatePassword, null>('/api/v1/users/change-password', 'post');
+export const addUser = declareApi<PasswordCredential, null>('/api/v1/users/add', 'post');
+export const getSystemInfo = declareApi<null, SystemInfo>('/api/v1/systeminfo');
+export const getWorldInfo = declareApi<null, WorldInfo>('/api/v1/worldinfo');
+export const takeQuickSnapshot = declareApi<SnapshotConfiguration, null>('/api/v1/quickundo/snapshot', 'post');
+export const undoQuickSnapshot = declareApi<SnapshotConfiguration, null>('/api/v1/quickundo/undo', 'post');
+export const getConfig = declareApi<null, ConfigAndValidity>('/api/v1/config');
+export const updateConfig = declareApi<PendingConfig, ConfigAndValidity>('/api/v1/config', 'put');
+export const launch = declareApi<null, null>('/api/v1/launch', 'post');
+export const reconfigure = declareApi<null, null>('/api/v1/reconfigure', 'post');
+export const stop = declareApi<null, null>('/api/v1/stop', 'post');
+export const createWorldDownloadLink = declareApi<CreateWorldDownloadLinkReq, DelegatedURL>('/api/v1/world-link/download', 'post');
+export const createWorldUploadLink = declareApi<CreateWorldUploadLinkReq, DelegatedURL>('/api/v1/world-link/upload', 'post');
 
 export type ImmutableUseResponse<T> = {
   data: T | undefined;
