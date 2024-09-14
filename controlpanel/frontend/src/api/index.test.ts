@@ -37,6 +37,6 @@ describe('api', () => {
       reason: 'test'
     });
 
-    expect(api<null, null>('/api/test', 'xxxx', 'get')).rejects.toThrow(APIError);
+    expect(api<null, null>('/api/test', 'get', 'xxxx')).rejects.toThrow(APIError);
   });
 });
