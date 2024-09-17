@@ -90,6 +90,21 @@ export default [
         }
       ],
       ...promise.configs['recommended'].rules
+    },
+    settings: {
+      'import/parsers': {
+        espree: ['.js', '.cjs', '.mjs', '.jsx']
+      },
+      'import/resolver': {
+        typescript: true,
+        node: true
+      }
+    },
+    languageOptions: {
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module'
+      }
     }
   }
 ];
