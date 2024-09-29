@@ -9,7 +9,7 @@ services:
       - external_network
       - internal_network
   redis:
-    image: redis:7.2
+    image: valkey/valkey:8
     networks:
       - internal_network
   postgres:
