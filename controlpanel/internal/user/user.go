@@ -109,7 +109,7 @@ func createClient() *bun.DB {
 	password := os.Getenv("PREMISES_POSTGRES_PASSWORD")
 	database := os.Getenv("PREMISES_POSTGRES_DB")
 
-	if addr == "" || user == "" || password == "" || database == "" {
+	if addr == "" || user == "" || database == "" {
 		fmt.Fprintln(os.Stderr, "Database configuration is missing")
 		os.Exit(1)
 	}

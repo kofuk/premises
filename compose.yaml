@@ -21,7 +21,6 @@ x-common-settings: &settings
   PREMISES_REDIS_PASSWORD: ''
   PREMISES_POSTGRES_ADDRESS: postgres:5432
   PREMISES_POSTGRES_USER: premises
-  PREMISES_POSTGRES_PASSWORD: password
   PREMISES_POSTGRES_DB: premises
   PREMISES_GAME_DOMAIN:
   PREMISES_ICON_URL:
@@ -71,8 +70,8 @@ services:
     image: postgres:16
     environment:
       POSTGRES_USER: premises
-      POSTGRES_PASSWORD: password
       POSTGRES_DB: premises
+      POSTGRES_HOST_AUTH_METHOD: trust
     restart: always
     healthcheck:
       test: ["CMD", "pg_isready", "-Upremises"]
