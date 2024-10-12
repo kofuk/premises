@@ -118,7 +118,7 @@ out:
 			}
 
 		case <-c.Request().Context().Done():
-			goto out
+			break out
 		}
 	}
 
