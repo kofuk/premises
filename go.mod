@@ -6,7 +6,7 @@ require (
 	dario.cat/mergo v1.0.1
 	github.com/aws/aws-sdk-go-v2 v1.32.2
 	github.com/aws/aws-sdk-go-v2/config v1.28.0
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.66.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.66.1
 	github.com/aws/smithy-go v1.22.0
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff
 	github.com/docker/docker v27.3.1+incompatible
