@@ -25,8 +25,8 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/ulikunitz/xz v0.5.12
-	github.com/uptrace/bun v1.2.3
-	github.com/uptrace/bun/dialect/pgdialect v1.2.3
+	github.com/uptrace/bun v1.2.5
+	github.com/uptrace/bun/dialect/pgdialect v1.2.5
 	github.com/uptrace/bun/driver/pgdriver v1.2.3
 	github.com/uptrace/bun/extra/bundebug v1.2.3
 	golang.org/x/crypto v0.28.0
