@@ -27,7 +27,7 @@ require (
 	github.com/ulikunitz/xz v0.5.12
 	github.com/uptrace/bun v1.2.5
 	github.com/uptrace/bun/dialect/pgdialect v1.2.5
-	github.com/uptrace/bun/driver/pgdriver v1.2.3
+	github.com/uptrace/bun/driver/pgdriver v1.2.5
 	github.com/uptrace/bun/extra/bundebug v1.2.5
 	golang.org/x/crypto v0.28.0
 	golang.org/x/exp v0.0.0-20240823005443-9b4947da3948
@@ -102,5 +102,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
-	mellium.im/sasl v0.3.1 // indirect
+	mellium.im/sasl v0.3.2 // indirect
 )
