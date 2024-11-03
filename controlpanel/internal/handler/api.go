@@ -85,7 +85,7 @@ func (h *Handler) handleStream(c echo.Context) error {
 	}
 	c.Response().Header().Set("Cache-Control", "no-store")
 
-	if err := writeEvent(string(streaming.EventMessage), subscription.CurrentState); err != nil {
+	if err := writeEvent(streaming.EventMessage.String(), subscription.CurrentState); err != nil {
 		slog.Error("Failed to write data", slog.Any("error", err))
 		return err
 	}
@@ -96,7 +96,7 @@ func (h *Handler) handleStream(c echo.Context) error {
 	}
 
 	for _, entry := range subscription.SysstatHistory {
-		if err := writeEvent(string(streaming.SysstatMessage), entry); err != nil {
+		if err := writeEvent(streaming.SysstatMessage.String(), entry); err != nil {
 			slog.Error("Failed to write data", slog.Any("error", err))
 			return err
 		}
@@ -112,7 +112,7 @@ out:
 		select {
 		case status := <-eventChannel:
 			body, _ := json.Marshal(status.Body)
-			if err := writeEvent(string(status.Type), body); err != nil {
+			if err := writeEvent(status.Type.String(), body); err != nil {
 				slog.Error("Failed to write server-sent event", slog.Any("error", err))
 				break out
 			}

@@ -20,13 +20,26 @@ func New(redis *redis.Client) *StreamingService {
 	}
 }
 
-type MessageType string
+type MessageType int
 
 const (
-	EventMessage   MessageType = "event"
-	SysstatMessage MessageType = "sysstat"
-	NotifyMessage  MessageType = "notify"
+	EventMessage MessageType = iota
+	SysstatMessage
+	NotifyMessage
 )
+
+func (m MessageType) String() string {
+	switch m {
+	case EventMessage:
+		return "event"
+	case SysstatMessage:
+		return "sysstat"
+	case NotifyMessage:
+		return "notify"
+	default:
+		return "<unknown>"
+	}
+}
 
 type Message struct {
 	Type MessageType
