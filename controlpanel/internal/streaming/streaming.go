@@ -166,6 +166,13 @@ func (s *StreamingService) SubscribeEvent(ctx context.Context) (*Subscription, e
 	if err != nil && err != redis.Nil {
 		return nil, err
 	}
+	if currentState == "" {
+		defState, _ := json.Marshal(web.StandardMessage{
+			EventCode: entity.EventStopped,
+			PageCode:  web.PageLaunch,
+		})
+		currentState = string(defState)
+	}
 
 	sysstatHistory, err := s.redis.LRange(ctx, "sysstat-history", 0, -1).Result()
 	if err != nil && err != redis.Nil {
