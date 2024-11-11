@@ -24,9 +24,7 @@ spec:
         - name: migration
           image: {{ .Values.image }}
           command:
-          {{- range .Values.services.web.migrationCommand }}
-          - {{ . }}
-          {{- end }}
+            {{- toYaml .Values.services.web.migrationCommand | nindent 12 }}
           resources:
             {{- toYaml .Values.services.web.resources | nindent 12 }}
           env:
