@@ -157,7 +157,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
         with:
-          deno-version: v1.x
+          deno-version: v2.x
       - name: Download controlpanel Docker image
         uses: actions/download-artifact@v4
         with:
@@ -234,7 +234,7 @@ jobs:
           export USING_MCSERVER_FAKE='yes'
 
           cd tests/integ
-          ./run_all_tests.sh
+          ./run_test.sh
 
   publish-binaries:
     runs-on: ubuntu-latest
