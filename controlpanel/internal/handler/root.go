@@ -208,6 +208,23 @@ func (h *Handler) handleSessionData(c echo.Context) error {
 	})
 }
 
+func (h *Handler) handleHealth(c echo.Context) error {
+	_, err := h.redis.Ping(c.Request().Context()).Result()
+	if err != nil {
+		slog.Error("Can't connect to Redis", slog.Any("error", err))
+		return c.String(http.StatusInternalServerError, "error")
+	}
+
+	row, err := h.db.QueryContext(c.Request().Context(), "SELECT 1")
+	if err != nil {
+		slog.Error("Can't connect to PostgreSQL", slog.Any("error", err))
+		return c.String(http.StatusInternalServerError, "error")
+	}
+	row.Close()
+
+	return c.String(http.StatusOK, "ok")
+}
+
 func (h *Handler) setupRootRoutes(group *echo.Group) {
 	store, err := redistore.NewRediStore(4, "tcp", h.cfg.RedisAddress, h.cfg.RedisPassword, []byte(h.cfg.Secret))
 	if err != nil {
@@ -243,4 +260,5 @@ func (h *Handler) setupRootRoutes(group *echo.Group) {
 	group.POST("/api/internal/logout", h.handleLogout)
 	group.GET("/api/internal/session-data", h.handleSessionData)
 	group.POST("/api/internal/login/reset-password", h.handleLoginResetPassword)
+	group.GET("/health", h.handleHealth)
 }
