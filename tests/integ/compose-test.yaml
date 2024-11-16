@@ -3,16 +3,19 @@ x-overrides: &overrides
 
 services:
   web:
+    image: ghcr.io/kofuk/premises:latest
     environment:
       <<: *overrides
     extra_hosts:
       - host.docker.internal:host-gateway
   proxy:
+    image: ghcr.io/kofuk/premises:latest
     profiles:
       - disable
     environment:
       <<: *overrides
   cron:
+    image: ghcr.io/kofuk/premises:latest
     environment:
       <<: *overrides
     extra_hosts:
