@@ -1,0 +1,36 @@
+---
+# web
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "premises.fullname" . }}-web
+  labels:
+    {{- include "premises.labels" . | nindent 4 }}
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8000
+  selector:
+    {{- include "premises.selectorLabels" . | nindent 4 }}
+{{- if .Values.services.proxy.enableService }}
+---
+# proxy
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "premises.fullname" . }}-proxy
+  labels:
+    {{- include "premises.labels" . | nindent 4 }}
+spec:
+  type: LoadBalancer
+  ports:
+    - name: proxy-backend
+      protocol: TCP
+      port: 25530
+    - name: minecraft
+      protocol: TCP
+      port: 25565
+  selector:
+    {{- include "premises.selectorLabels" . | nindent 4 }}
+{{- end }}
