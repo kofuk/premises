@@ -1,3 +1,4 @@
+---
 {{- if .Values.ingress.enabled -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -31,4 +32,10 @@ spec:
                 name: {{ include "premises.fullname" $ }}
                 port:
                   number: 8000
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.domain | quote }}
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
 {{- end }}
