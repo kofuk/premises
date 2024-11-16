@@ -1,5 +1,7 @@
 domain: 'premises.local'
-image: ghcr.io/kofuk/premises:0.1.0
+image: ghcr.io/kofuk/premises:0.1.1
+
+fullNameOverride: ''
 
 services:
   web:
@@ -16,6 +18,7 @@ services:
     annotations: {}
     envFrom: []
     resources: {}
+    enableService: true
 
   cron:
     annotations: {}
@@ -23,8 +26,9 @@ services:
     resources: {}
 
 ingress:
-  enabled: false
+  enabled: true
   annotations: {}
   ingressClassName: ''
   tls:
-    enabled: false
+    enabled: true
+    secretName: premises-cert

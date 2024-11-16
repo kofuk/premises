@@ -47,3 +47,69 @@ spec:
             {{- toYaml .Values.services.web.envFrom | nindent 12 }}
 ---
 # proxy
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "premises.fullname" . }}-proxy
+  labels:
+    {{- include "premises.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.services.proxy.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "premises.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.services.proxy.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "premises.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: proxy
+          image: {{ .Values.image }}
+          ports:
+            - name: proxy-backend
+              containerPort: 25530
+            - name: minecraft
+              containerPort: 25565
+          resources:
+            {{- toYaml .Values.services.proxy.resources | nindent 12 }}
+          env:
+            - name: PREMISES_MODE
+              value: proxy
+          envFrom:
+            {{- toYaml .Values.services.proxy.envFrom | nindent 12 }}
+---
+# cron
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "premises.fullname" . }}-cron
+  labels:
+    {{- include "premises.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "premises.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.services.proxy.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "premises.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: proxy
+          image: {{ .Values.image }}
+          resources:
+            {{- toYaml .Values.services.proxy.resources | nindent 12 }}
+          env:
+            - name: PREMISES_MODE
+              value: cron
+          envFrom:
+            {{- toYaml .Values.services.proxy.envFrom | nindent 12 }}
