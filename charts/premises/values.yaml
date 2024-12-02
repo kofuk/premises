@@ -1,0 +1,34 @@
+domain: 'premises.local'
+image: ghcr.io/kofuk/premises:0.1.1
+
+fullNameOverride: ''
+
+services:
+  web:
+    replicaCount: 1
+    annotations: {}
+    envFrom: []
+    resources: {}
+    migrationCommand:
+      - /premises
+      - migrate
+
+  proxy:
+    replicaCount: 1
+    annotations: {}
+    envFrom: []
+    resources: {}
+    enableService: true
+
+  cron:
+    annotations: {}
+    envFrom: []
+    resources: {}
+
+ingress:
+  enabled: true
+  annotations: {}
+  ingressClassName: ''
+  tls:
+    enabled: true
+    secretName: premises-cert
