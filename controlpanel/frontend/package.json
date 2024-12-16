@@ -39,7 +39,7 @@
     "react-helmet-async": "^2.0.5",
     "react-hook-form": "^7.53.2",
     "react-i18next": "^15.1.0",
-    "react-router-dom": "^7.0.1",
+    "react-router-dom": "^7.0.2",
     "react-transition-group": "^4.4.5",
     "recharts": "^2.13.3",
     "swr": "^2.2.5"
