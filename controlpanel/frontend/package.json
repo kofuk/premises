@@ -28,7 +28,7 @@
     "@emotion/styled": "^11.14.0",
     "@fontsource/roboto": "^5.1.0",
     "@mui/icons-material": "^5.16.9",
-    "@mui/lab": "^5.0.0-alpha.173",
+    "@mui/lab": "^5.0.0-alpha.175",
     "@mui/material": "^5.16.11",
     "@mui/x-tree-view": "^7.23.0",
     "i18next": "^23.15.1",
