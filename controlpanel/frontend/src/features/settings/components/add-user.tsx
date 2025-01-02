@@ -1,9 +1,9 @@
 import {useState} from 'react';
 
-import {useSnackbar} from 'notistack';
 import {Helmet} from 'react-helmet-async';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
+import {toast} from 'react-toastify';
 
 import {Box, Paper, Stack, TextField, Typography} from '@mui/material';
 
@@ -15,8 +15,6 @@ const AddUser = () => {
   const [t] = useTranslation();
 
   const {accessToken} = useAuth();
-
-  const {enqueueSnackbar} = useSnackbar();
 
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -33,7 +31,7 @@ const AddUser = () => {
     } catch (err: unknown) {
       console.error(err);
       if (err instanceof APIError) {
-        enqueueSnackbar(err.message, {variant: 'error'});
+        toast.error(err.message);
       }
     } finally {
       setSubmitting(false);
