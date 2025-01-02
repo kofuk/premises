@@ -1,6 +1,5 @@
 import {useState} from 'react';
 
-import {Helmet} from 'react-helmet-async';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 import {toast} from 'react-toastify';
@@ -98,11 +97,9 @@ const AddUser = () => {
         </Box>
       </form>
 
-      <Helmet>
-        <title>
-          {t('settings.title')} - {t('app_name')}
-        </title>
-      </Helmet>
+      <title>
+        {t('settings.title')} - {t('app_name')}
+      </title>
     </Paper>
   );
 };

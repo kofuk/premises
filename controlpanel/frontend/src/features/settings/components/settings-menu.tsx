@@ -1,6 +1,5 @@
 import {useNavigate} from 'react-router-dom';
 
-import {Helmet} from 'react-helmet-async';
 import {useTranslation} from 'react-i18next';
 
 import {Lock as LockIcon, PersonAdd as PersonAddIcon} from '@mui/icons-material';
@@ -47,11 +46,9 @@ const SettingsMenu = () => {
         </Grid>
       </Grid>
 
-      <Helmet>
-        <title>
-          {t('settings.title')} - {t('app_name')}
-        </title>
-      </Helmet>
+      <title>
+        {t('settings.title')} - {t('app_name')}
+      </title>
     </>
   );
 };

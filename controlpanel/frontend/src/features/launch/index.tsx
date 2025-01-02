@@ -1,4 +1,3 @@
-import {Helmet} from 'react-helmet-async';
 import {useTranslation} from 'react-i18next';
 
 import {Box} from '@mui/material';
@@ -41,9 +40,7 @@ const Launcher = () => {
     <ConfigProvider>
       <Box sx={{maxWidth: 1000, m: '0 auto', p: 2}}>{mainPane}</Box>
 
-      <Helmet>
-        <title>{t('app_name')}</title>
-      </Helmet>
+      <title>{t('app_name')}</title>
     </ConfigProvider>
   );
 };
