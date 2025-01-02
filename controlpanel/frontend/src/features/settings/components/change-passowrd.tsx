@@ -1,9 +1,9 @@
 import {useState} from 'react';
 
-import {useSnackbar} from 'notistack';
 import {Helmet} from 'react-helmet-async';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
+import {toast} from 'react-toastify';
 
 import {Paper, Stack, TextField, Typography} from '@mui/material';
 import {Box} from '@mui/system';
@@ -20,7 +20,6 @@ const ChangePassword = () => {
   const {register, handleSubmit, formState, watch} = useForm();
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
-  const {enqueueSnackbar} = useSnackbar();
 
   const handleChangePassword = ({currentPassword, newPassword}: any) => {
     (async () => {
@@ -30,8 +29,7 @@ const ChangePassword = () => {
         await changePassword(accessToken, {password: currentPassword, newPassword});
         setSuccess(true);
       } catch (err: any) {
-        console.error(err);
-        enqueueSnackbar(err.message, {variant: 'error'});
+        toast.error(err.message);
       } finally {
         setSubmitting(false);
       }

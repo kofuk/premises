@@ -1,7 +1,7 @@
 import {useEffect} from 'react';
 
-import {useSnackbar} from 'notistack';
 import {useTranslation} from 'react-i18next';
+import {toast} from 'react-toastify';
 
 import {useAuth} from '@/utils/auth';
 import {useRunnerStatus} from '@/utils/runner-status';
@@ -12,7 +12,6 @@ const StatusCollector = () => {
   const {accessToken} = useAuth();
 
   const {updateStatus, updateCpuUsage} = useRunnerStatus();
-  const {enqueueSnackbar} = useSnackbar();
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -28,8 +27,11 @@ const StatusCollector = () => {
     });
     eventSource.addEventListener('notify', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);
-      const variant = event.isError ? 'error' : 'success';
-      enqueueSnackbar(t(`info.code_${event.infoCode}`), {variant});
+      if (event.isError) {
+        toast.error(t(`info.code_${event.infoCode}`));
+      } else {
+        toast.info(t(`info.code_${event.infoCode}`));
+      }
     });
     eventSource.addEventListener('sysstat', (ev: MessageEvent) => {
       const event = JSON.parse(ev.data);

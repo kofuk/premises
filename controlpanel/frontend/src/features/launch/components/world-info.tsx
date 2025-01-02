@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 
-import {useSnackbar} from 'notistack';
 import {useTranslation} from 'react-i18next';
+import {toast} from 'react-toastify';
 
 import {Box, List} from '@mui/material';
 
@@ -17,7 +17,6 @@ const WorldInfo = () => {
   const {accessToken} = useAuth();
 
   const [worldInfo, setWorldInfo] = useState<WorldInfoEntity | null>(null);
-  const {enqueueSnackbar} = useSnackbar();
 
   useEffect(() => {
     (async () => {
@@ -25,7 +24,7 @@ const WorldInfo = () => {
         setWorldInfo(await getWorldInfo(accessToken));
       } catch (err) {
         if (err instanceof APIError) {
-          enqueueSnackbar(err.message, {variant: 'error'});
+          toast.error(err.message);
         }
       }
     })();

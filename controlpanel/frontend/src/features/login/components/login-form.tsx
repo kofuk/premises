@@ -1,8 +1,8 @@
 import {useState} from 'react';
 
-import {useSnackbar} from 'notistack';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
+import {toast} from 'react-toastify';
 
 import {LoadingButton} from '@mui/lab';
 import {Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography} from '@mui/material';
@@ -20,8 +20,6 @@ const LoginForm = () => {
 
   const {login, initializePassword} = useAuth();
 
-  const {enqueueSnackbar} = useSnackbar();
-
   const handleLogin = ({username, password}: any) => {
     (async () => {
       setLoggingIn(true);
@@ -34,7 +32,7 @@ const LoginForm = () => {
         }
       } catch (err: any) {
         setLoggingIn(false);
-        enqueueSnackbar(err.message, {variant: 'error'});
+        toast.error(err.message);
       }
     })();
   };
@@ -44,8 +42,7 @@ const LoginForm = () => {
       try {
         await initializePassword(loginForm.getValues('username'), password);
       } catch (err: any) {
-        console.error(err);
-        enqueueSnackbar(err.message, {variant: 'error'});
+        toast.error(err.message);
       }
     })();
   };

@@ -1,8 +1,8 @@
 import React, {useState} from 'react';
 
-import {useSnackbar} from 'notistack';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
+import {toast} from 'react-toastify';
 
 import {
   Download as DownloadIcon,
@@ -60,8 +60,6 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
     }
   };
 
-  const {enqueueSnackbar} = useSnackbar();
-
   const handleDownload = async (generationId: string) => {
     try {
       const {url} = await createWorldDownloadLink(accessToken, {id: generationId});
@@ -77,7 +75,7 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
       a.remove();
     } catch (err) {
       if (err instanceof APIError) {
-        enqueueSnackbar(err.message, {variant: 'error'});
+        toast.error(err.message);
       }
     }
   };
@@ -132,7 +130,7 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
       } catch (err) {
         console.error(err);
         if (err instanceof APIError) {
-          enqueueSnackbar(err.message, {variant: 'error'});
+          toast.error(err.message);
         }
       } finally {
         setUploadMode(false);
