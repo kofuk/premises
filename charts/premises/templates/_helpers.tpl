@@ -34,18 +34,17 @@ Create chart name and version as used by the chart label.
 Common labels
 */}}
 {{- define "premises.labels" -}}
-helm.sh/chart: {{ include "premises.chart" . }}
 {{ include "premises.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+helm.sh/chart: {{ include "premises.chart" . }}
 {{- end }}
 
 {{/*
 Selector labels
 */}}
 {{- define "premises.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "premises.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
