@@ -27,7 +27,7 @@ x-common-settings: &settings
 
 services:
   web:
-    image: ghcr.io/kofuk/premises:0.2.0
+    image: ghcr.io/kofuk/premises:0.2.1
     environment:
       <<: *settings
       PREMISES_MODE: web
@@ -41,7 +41,7 @@ services:
     ports:
       - '8000:8000'
   proxy:
-    image: ghcr.io/kofuk/premises:0.2.0
+    image: ghcr.io/kofuk/premises:0.2.1
     environment:
       <<: *settings
       PREMISES_MODE: proxy
@@ -51,7 +51,7 @@ services:
       - '25530:25530'
       - '25565:25565'
   cron:
-    image: ghcr.io/kofuk/premises:0.2.0
+    image: ghcr.io/kofuk/premises:0.2.1
     environment:
       <<: *settings
       PREMISES_MODE: cron
