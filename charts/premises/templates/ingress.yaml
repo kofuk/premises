@@ -5,8 +5,6 @@ kind: Ingress
 metadata:
   name: {{ include "premises.fullname" . }}
   namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "premises.labels" . | nindent 4 }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
