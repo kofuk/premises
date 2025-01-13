@@ -29,7 +29,7 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
 # Install kind
 RUN curl -fsSLo /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/v${KIND_VERSION}/kind-linux-amd64" && \
     chmod +x /usr/local/bin/kind && \
-    kind completion bash >/usr/local/share/bash-completion/completions/kubectl
+    kind completion bash >/usr/local/share/bash-completion/completions/kind
 
 # Install kubectl
 RUN  curl -fsSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && \
