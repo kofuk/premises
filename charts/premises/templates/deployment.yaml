@@ -4,6 +4,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "premises.fullname" . }}-web
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "premises.labels" . | nindent 4 }}
 spec:
@@ -51,6 +52,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "premises.fullname" . }}-proxy
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "premises.labels" . | nindent 4 }}
 spec:
@@ -88,6 +90,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "premises.fullname" . }}-cron
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "premises.labels" . | nindent 4 }}
 spec:
