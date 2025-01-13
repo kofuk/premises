@@ -15,12 +15,6 @@ spec:
   {{- with .Values.ingress.ingressClassName }}
   ingressClassName: {{ . }}
   {{- end }}
-  {{- if .Values.ingress.tls.enabled }}
-  tls:
-    - hosts:
-        - {{ .Values.domain | quote }}
-      secretName: premises-web-cert
-  {{- end }}
   rules:
     - host: {{ .Values.domain | quote }}
       http:
@@ -29,7 +23,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ include "premises.fullname" $ }}
+                name: {{ include "premises.fullname" $ }}-web
                 port:
                   number: 8000
   {{- if .Values.ingress.tls.enabled }}
