@@ -1,14 +1,20 @@
+ARG GO_VERSION=1.23.0 \
+    KIND_VERSION=0.26.0 \
+    KUBECTL_VERSION=1.32.0 \
+    CLOUD_PROVIDER_KIND_VERSION=0.4.0
+
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-22.04
 
 RUN apt-get update && \
-    apt-get install -y bash-completion lighttpd postgresql-client redis-tools tmux uuid-runtime
+    apt-get install -y bash-completion lighttpd postgresql-client redis-tools tmux uuid-runtime && \
+    mkdir -p /usr/local/share/bash-completion/completions
 
 # Install Node.js
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y nodejs
 
 # Install Go
-RUN curl -fsSL https://go.dev/dl/go1.23.0.linux-amd64.tar.gz | tar -C /usr/local -xz
+RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" | tar -C /usr/local -xz
 ENV PATH="/usr/local/go/bin:${PATH}"
 
 # Install Deno
@@ -19,6 +25,20 @@ RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/s
     chmod 700 get_helm.sh && \
     ./get_helm.sh && \
     rm get_helm.sh
+
+# Install kind
+RUN curl -fsSLo /usr/local/bin/kind "https://kind.sigs.k8s.io/dl/v${KIND_VERSION}/kind-linux-amd64" && \
+    chmod +x /usr/local/bin/kind && \
+    kind completion bash >/usr/local/share/bash-completion/completions/kubectl
+
+# Install kubectl
+RUN  curl -fsSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl" && \
+    chmod +x /usr/local/bin/kubectl && \
+    kubectl completion bash >/usr/local/share/bash-completion/completions/kubectl
+
+# Install cloud-provider-kind
+RUN curl -fsSL "https://github.com/kubernetes-sigs/cloud-provider-kind/releases/download/v${CLOUD_PROVIDER_KIND_VERSION}/cloud-provider-kind_${CLOUD_PROVIDER_KIND_VERSION}_linux_amd64.tar.gz" | \
+        sudo tar -xzC /usr/local/bin cloud-provider-kind
 
 COPY welcome-message.txt /usr/local/etc/vscode-dev-containers/first-run-notice.txt
 
