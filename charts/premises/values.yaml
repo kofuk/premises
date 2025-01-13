@@ -7,7 +7,9 @@ services:
   web:
     replicaCount: 1
     annotations: {}
-    envFrom: []
+    envFrom:
+      - secretRef:
+          name: premises-config
     resources: {}
     migrationCommand:
       - /premises
@@ -16,13 +18,17 @@ services:
   proxy:
     replicaCount: 1
     annotations: {}
-    envFrom: []
+    envFrom:
+      - secretRef:
+          name: premises-config
     resources: {}
     enableService: true
 
   cron:
     annotations: {}
-    envFrom: []
+    envFrom:
+      - secretRef:
+          name: premises-config
     resources: {}
 
 ingress:
