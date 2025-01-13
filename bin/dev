@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+cd "$(git rev-parse --show-toplevel)"
+
 name="premises"
 
 if tmux has-session -t "${name}" 2>/dev/null; then
