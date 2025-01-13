@@ -36,10 +36,6 @@ RUN  curl -fsSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/v${KUBECTL_VE
     chmod +x /usr/local/bin/kubectl && \
     kubectl completion bash >/usr/local/share/bash-completion/completions/kubectl
 
-# Install cloud-provider-kind
-RUN curl -fsSL "https://github.com/kubernetes-sigs/cloud-provider-kind/releases/download/v${CLOUD_PROVIDER_KIND_VERSION}/cloud-provider-kind_${CLOUD_PROVIDER_KIND_VERSION}_linux_amd64.tar.gz" | \
-        sudo tar -xzC /usr/local/bin cloud-provider-kind
-
 COPY welcome-message.txt /usr/local/etc/vscode-dev-containers/first-run-notice.txt
 
 CMD ["sleep", "infinity"]
