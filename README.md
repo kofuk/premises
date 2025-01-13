@@ -20,7 +20,7 @@ Premises consists of the following 2 parts:
 ### Kubernetes
 
 You can deploy Premises to Kubernetes using the Helm chart.
-You will still need to prepare environment variables to configure PostgreSQL, Valkey and Premises.
+You will still need to prepare PostgreSQL, Valkey instances and environment variables to configure Premises.  
 See the [test manifest](charts/premises/test) for an example.
 
 ```shell
