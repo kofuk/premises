@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
 )
 
 type Client struct {
@@ -48,6 +49,7 @@ func New(ctx context.Context, forcePathStyle bool) (*Client, error) {
 			so.DisableURIPathEscaping = true
 		})
 		options.HTTPSignerV4 = &noAcceptEncodingSigner{signer: defSigner}
+		otelaws.AppendMiddlewares(&options.APIOptions)
 	})
 
 	return &Client{s3: s3Client}, nil
