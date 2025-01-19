@@ -2,11 +2,13 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/kofuk/premises/controlpanel/internal/auth"
@@ -21,6 +23,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/uptrace/bun"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Handler struct {
@@ -88,16 +92,30 @@ func setupRoutes(h *Handler) {
 
 func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Client, longpoll *longpoll.PollableActionService, kvs kvs.KeyValueStore) (*Handler, error) {
 	engine := echo.New()
+	engine.Use(otelecho.Middleware("web", otelecho.WithSkipper(func(c echo.Context) bool {
+		path := c.Path()
+		if path == "/" {
+			return true
+		}
+		if !strings.HasPrefix(path, "/api") {
+			return true
+		}
+		return false
+	})))
 	engine.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
 		LogMethod: true,
 		LogStatus: true,
 		LogValuesFunc: func(c echo.Context, values middleware.RequestLoggerValues) error {
-			slog.Debug("Incoming request",
-				slog.String("uri", values.URI),
-				slog.String("method", values.Method),
-				slog.Int("status", values.Status),
-			)
+			var logArgs []any
+
+			span := trace.SpanFromContext(c.Request().Context())
+			if span.IsRecording() {
+				logArgs = append(logArgs, slog.String("trace_id", span.SpanContext().TraceID().String()))
+			}
+
+			slog.Info(fmt.Sprintf("%s %s", values.Method, values.URI), logArgs...)
+
 			return nil
 		},
 	}))
