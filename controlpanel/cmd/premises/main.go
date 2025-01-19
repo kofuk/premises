@@ -27,15 +27,20 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-func initializeTracer(ctx context.Context) (*sdktrace.TracerProvider, error) {
+func initializeTracer(ctx context.Context) error {
+	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" {
+		// Silently disable tracing
+		return nil
+	}
+
 	res, err := resource.Detect(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	exporter, err := otlptracegrpc.New(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	tp := sdktrace.NewTracerProvider(
@@ -44,7 +49,7 @@ func initializeTracer(ctx context.Context) (*sdktrace.TracerProvider, error) {
 	)
 	otel.SetTracerProvider(tp)
 
-	return tp, nil
+	return nil
 }
 
 func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
@@ -81,8 +86,7 @@ func createKVS(redis *redis.Client) kvs.KeyValueStore {
 }
 
 func startWeb(cfg *config.Config) {
-	_, err := initializeTracer(context.Background())
-	if err != nil {
+	if err := initializeTracer(context.Background()); err != nil {
 		slog.Error("Failed to initialize OpenTelemetry", slog.Any("error", err))
 		os.Exit(1)
 	}
