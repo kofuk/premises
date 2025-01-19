@@ -5,21 +5,14 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ../:/workspace/premises:cached
-    networks:
-      - external_network
-      - internal_network
   redis:
     image: valkey/valkey:8
-    networks:
-      - internal_network
   postgres:
     image: postgres:17
     environment:
       POSTGRES_USER: premises
       POSTGRES_DB: premises
       POSTGRES_HOST_AUTH_METHOD: trust
-    networks:
-      - internal_network
   minio:
     image: quay.io/minio/minio
     environment:
@@ -29,10 +22,7 @@ services:
     command:
       - '-c'
       - 'mkdir -p /data/premises && minio server /data --console-address :9001'
-    networks:
-      - internal_network
-
-networks:
-  external_network:
-  internal_network:
-    internal: true
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      COLLECTOR_OTLP_ENABLED: 'true'
