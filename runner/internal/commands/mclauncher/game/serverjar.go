@@ -28,7 +28,7 @@ func DetectAndUpdateVersion(config *runner.Config) error {
 	var options []lm.Option
 
 	if config.GameConfig.Server.ManifestOverride != "" {
-		options = append(options, lm.ManifestURL(config.GameConfig.Server.ManifestOverride))
+		options = append(options, lm.WithManifestURL(config.GameConfig.Server.ManifestOverride))
 	}
 
 	fetcher := lm.New(options...)
