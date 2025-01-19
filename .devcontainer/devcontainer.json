@@ -11,6 +11,7 @@
 		8000,
 		9000,
 		9001,
+		16686,
 		25565
 	],
 	"portsAttributes": {
@@ -24,6 +25,10 @@
 		},
 		"9001": {
 			"label": "MinIO",
+			"onAutoForward": "silent"
+		},
+		"16686": {
+			"label": "Jaeger UI",
 			"onAutoForward": "silent"
 		},
 		"25565": {
