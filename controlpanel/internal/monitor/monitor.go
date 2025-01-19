@@ -14,6 +14,7 @@ import (
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/internal/entity/web"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type StatusData struct {
@@ -54,7 +55,7 @@ func AttachRunner(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueSt
 		Image:    cfg.ConohaImageService,
 		Volume:   cfg.ConohaVolumeService,
 	}
-	client := conoha.NewClient(identity, endpoints, nil)
+	client := conoha.NewClient(identity, endpoints, otelhttp.DefaultClient)
 
 	servers, err := client.ListServerDetails(ctx)
 	if err != nil {

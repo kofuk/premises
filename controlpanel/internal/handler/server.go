@@ -10,6 +10,7 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/conoha"
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/internal/retry"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type GameServer struct {
@@ -30,7 +31,7 @@ func NewGameServer(cfg *config.Config, h *Handler) *GameServer {
 		Image:    cfg.ConohaImageService,
 		Volume:   cfg.ConohaVolumeService,
 	}
-	conoha := conoha.NewClient(identity, endpoints, nil)
+	conoha := conoha.NewClient(identity, endpoints, otelhttp.DefaultClient)
 	return &GameServer{
 		cfg:    cfg,
 		conoha: conoha,
