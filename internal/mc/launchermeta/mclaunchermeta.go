@@ -12,14 +12,21 @@ const (
 )
 
 type LauncherMeta struct {
+	httpClient  *http.Client
 	manifestURL string
 }
 
 type Option func(p *LauncherMeta)
 
-func ManifestURL(url string) Option {
+func WithManifestURL(url string) Option {
 	return func(p *LauncherMeta) {
 		p.manifestURL = url
+	}
+}
+
+func WithHTTPClient(client *http.Client) Option {
+	return func(p *LauncherMeta) {
+		p.httpClient = client
 	}
 }
 
@@ -36,6 +43,7 @@ type launcherMetaData struct {
 
 func New(options ...Option) *LauncherMeta {
 	provider := &LauncherMeta{
+		httpClient:  http.DefaultClient,
 		manifestURL: mojangManifest,
 	}
 
@@ -52,7 +60,7 @@ func (lm *LauncherMeta) GetVersionInfo(ctx context.Context) ([]VersionInfo, erro
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := lm.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +104,7 @@ func (lm *LauncherMeta) GetServerInfo(ctx context.Context, version VersionInfo) 
 		return nil, err
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := lm.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

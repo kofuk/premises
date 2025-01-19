@@ -9,6 +9,7 @@ import (
 
 	"github.com/kofuk/premises/controlpanel/internal/kvs"
 	lm "github.com/kofuk/premises/internal/mc/launchermeta"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type MCVersionsService struct {
@@ -22,8 +23,9 @@ func New(kvs kvs.KeyValueStore) MCVersionsService {
 
 	manifestUrl := os.Getenv("PREMISES_MC_MANIFEST_URL")
 	if manifestUrl != "" {
-		options = append(options, lm.ManifestURL(manifestUrl))
+		options = append(options, lm.WithManifestURL(manifestUrl))
 	}
+	options = append(options, lm.WithHTTPClient(otelhttp.DefaultClient))
 
 	service := MCVersionsService{
 		lm:           lm.New(options...),
