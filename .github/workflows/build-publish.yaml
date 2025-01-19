@@ -164,25 +164,25 @@ jobs:
           name: controlpanel-image
       - name: Make directory for tools
         run: |
-          mkdir bin
-          echo "$(pwd)/bin" >>"${GITHUB_PATH}"
+          mkdir work
+          echo "$(pwd)/work" >>"${GITHUB_PATH}"
       - name: Download runner
         uses: actions/download-artifact@v4
         with:
           name: runner
-          path: ./bin
+          path: ./work
       - name: Download test tool
         uses: actions/download-artifact@v4
         with:
           name: test-tool
-          path: ./bin
+          path: ./work
       - name: Load image
         run: docker load --input image.tar
       - name: Prepare binaries
         run: |
           mkdir /tmp/premises
-          mv bin/premises-runner /tmp/premises
-          chmod +x bin/*
+          mv work/premises-runner /tmp/premises
+          chmod +x work/*
       - name: Launch MinIO
         run: |
           docker run -d \
