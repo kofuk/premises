@@ -21,7 +21,31 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/extra/bundebug"
 	"github.com/uptrace/bun/migrate"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
+
+func initializeTracer(ctx context.Context) (*sdktrace.TracerProvider, error) {
+	res, err := resource.Detect(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	exporter, err := otlptracegrpc.New(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithResource(res),
+		sdktrace.WithBatcher(exporter),
+	)
+	otel.SetTracerProvider(tp)
+
+	return tp, nil
+}
 
 func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
 	db := db.NewClient(
@@ -57,6 +81,12 @@ func createKVS(redis *redis.Client) kvs.KeyValueStore {
 }
 
 func startWeb(cfg *config.Config) {
+	_, err := initializeTracer(context.Background())
+	if err != nil {
+		slog.Error("Failed to initialize OpenTelemetry", slog.Any("error", err))
+		os.Exit(1)
+	}
+
 	db, err := createDatabaseClient(cfg)
 	if err != nil {
 		slog.Error("Failed to create database client", slog.Any("error", err))
