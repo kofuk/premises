@@ -97,7 +97,12 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 		if path == "/" {
 			return true
 		}
-		if !strings.HasPrefix(path, "/api") {
+		if !strings.HasPrefix(path, "/api") && !strings.HasPrefix(path, "/_") {
+			// Ignore static assets and health endpoint
+			return true
+		}
+		if path == "/_/status" || path == "/_/poll" {
+			// Ignore some endpoints which are frequently called by runner.
 			return true
 		}
 		return false
