@@ -46,9 +46,7 @@ const SettingsMenu = () => {
         </Grid>
       </Grid>
 
-      <title>
-        {t('settings.title')} - {t('app_name')}
-      </title>
+      <title>{`${t('settings.title')} - ${t('app_name')}`}</title>
     </>
   );
 };

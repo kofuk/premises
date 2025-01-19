@@ -94,9 +94,7 @@ const ChangePassword = () => {
         </Box>
       </form>
 
-      <title>
-        {t('settings.title')} - {t('app_name')}
-      </title>
+      <title>{`${t('settings.change_password')} - ${t('app_name')}`}</title>
     </Paper>
   );
 };

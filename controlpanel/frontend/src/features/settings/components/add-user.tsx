@@ -97,9 +97,7 @@ const AddUser = () => {
         </Box>
       </form>
 
-      <title>
-        {t('settings.title')} - {t('app_name')}
-      </title>
+      <title>{`${t('settings.add_user')} - ${t('app_name')}`}</title>
     </Paper>
   );
 };
