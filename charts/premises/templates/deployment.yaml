@@ -60,7 +60,6 @@ metadata:
     app.kubernetes.io/name: {{ include "premises.name" . }}-proxy
     {{- include "premises.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.services.proxy.replicaCount }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "premises.name" . }}-proxy

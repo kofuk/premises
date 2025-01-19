@@ -16,7 +16,6 @@ services:
       - migrate
 
   proxy:
-    replicaCount: 1
     annotations: {}
     envFrom:
       - secretRef:
