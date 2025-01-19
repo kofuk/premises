@@ -35,6 +35,10 @@ func (signer *noAcceptEncodingSigner) SignHTTP(ctx context.Context, credentials 
 	return err
 }
 
+func otelInstrument(options *s3.Options) {
+	otelaws.AppendMiddlewares(&options.APIOptions)
+}
+
 func New(ctx context.Context, forcePathStyle bool) (*Client, error) {
 	config, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
@@ -49,7 +53,6 @@ func New(ctx context.Context, forcePathStyle bool) (*Client, error) {
 			so.DisableURIPathEscaping = true
 		})
 		options.HTTPSignerV4 = &noAcceptEncodingSigner{signer: defSigner}
-		otelaws.AppendMiddlewares(&options.APIOptions)
 	})
 
 	return &Client{s3: s3Client}, nil
@@ -83,7 +86,7 @@ func (client *Client) ListObjects(ctx context.Context, bucket string, opts ...Li
 		first = false
 		params.ContinuationToken = continuationToken
 
-		resp, err := client.s3.ListObjectsV2(ctx, params)
+		resp, err := client.s3.ListObjectsV2(ctx, params, otelInstrument)
 		if err != nil {
 			return nil, err
 		}
@@ -114,12 +117,13 @@ func (client *Client) DeleteObjects(ctx context.Context, bucket string, keys []s
 		})
 	}
 
-	if _, err := client.s3.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+	params := &s3.DeleteObjectsInput{
 		Bucket: &bucket,
 		Delete: &types.Delete{
 			Objects: objectIds,
 		},
-	}); err != nil {
+	}
+	if _, err := client.s3.DeleteObjects(ctx, params, otelInstrument); err != nil {
 		// If ErrorCode is "NotImplemented", it means the storage provider does not support bulk delete.
 		// In such case, we'll try to delete objects one by one.
 		var ae smithy.APIError
@@ -136,10 +140,11 @@ func (client *Client) DeleteObjects(ctx context.Context, bucket string, keys []s
 fallback:
 	var errs []error
 	for _, key := range keys {
-		if _, err := client.s3.DeleteObject(ctx, &s3.DeleteObjectInput{
+		params := &s3.DeleteObjectInput{
 			Bucket: &bucket,
 			Key:    &key,
-		}); err != nil {
+		}
+		if _, err := client.s3.DeleteObject(ctx, params, otelInstrument); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -153,10 +158,11 @@ type Object struct {
 }
 
 func (client *Client) GetObject(ctx context.Context, bucket, key string) (*Object, error) {
-	resp, err := client.s3.GetObject(ctx, &s3.GetObjectInput{
+	params := &s3.GetObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
-	})
+	}
+	resp, err := client.s3.GetObject(ctx, params, otelInstrument)
 	if err != nil {
 		return nil, err
 	}
@@ -168,11 +174,12 @@ func (client *Client) GetObject(ctx context.Context, bucket, key string) (*Objec
 }
 
 func (client *Client) PutObject(ctx context.Context, bucket, key string, body io.ReadSeeker, size int64) error {
-	if _, err := client.s3.PutObject(ctx, &s3.PutObjectInput{
+	params := &s3.PutObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
 		Body:   body,
-	}); err != nil {
+	}
+	if _, err := client.s3.PutObject(ctx, params, otelInstrument); err != nil {
 		return err
 	}
 
