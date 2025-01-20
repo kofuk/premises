@@ -28,7 +28,7 @@ require (
 	github.com/uptrace/bun v1.2.8
 	github.com/uptrace/bun/dialect/pgdialect v1.2.8
 	github.com/uptrace/bun/driver/pgdriver v1.2.8
-	github.com/uptrace/bun/extra/bundebug v1.2.8
+	github.com/uptrace/bun/extra/bunotel v1.2.8
 	go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws v0.59.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.59.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0
@@ -70,7 +70,6 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -94,6 +93,7 @@ require (
 	github.com/puzpuzpuz/xsync/v3 v3.4.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
+	github.com/uptrace/opentelemetry-go-extra/otelsql v0.3.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
