@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/go-redis/redis/extra/redisotel/v8"
 	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	"github.com/kofuk/premises/controlpanel/internal/config"
@@ -73,6 +74,9 @@ func createRedisClient(cfg *config.Config) (*redis.Client, error) {
 	if _, err := redis.Ping(context.Background()).Result(); err != nil {
 		return nil, err
 	}
+
+	redis.AddHook(redisotel.NewTracingHook())
+
 	return redis, nil
 }
 
