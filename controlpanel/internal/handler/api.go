@@ -28,6 +28,7 @@ import (
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/internal/entity/web"
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -402,7 +403,12 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 		GameConfig:   *gameConfig,
 	}
 
-	go h.LaunchServer(context.Background(), serverConfig, h.GameServer, memSizeGB)
+	go h.LaunchServer(
+		trace.ContextWithSpan(context.Background(), trace.SpanFromContext(c.Request().Context())),
+		serverConfig,
+		h.GameServer,
+		memSizeGB,
+	)
 
 	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
 		Success: true,
