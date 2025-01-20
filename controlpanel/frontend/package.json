@@ -38,7 +38,7 @@
     "react-hook-form": "^7.54.2",
     "react-i18next": "^15.4.0",
     "react-router-dom": "^7.1.1",
-    "react-toastify": "^11.0.2",
+    "react-toastify": "^11.0.3",
     "react-transition-group": "^4.4.5",
     "recharts": "^2.15.0",
     "swr": "^2.3.0"
