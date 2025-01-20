@@ -19,7 +19,7 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/longpoll"
 	"github.com/kofuk/premises/controlpanel/internal/proxy"
 	"github.com/uptrace/bun"
-	"github.com/uptrace/bun/extra/bundebug"
+	"github.com/uptrace/bun/extra/bunotel"
 	"github.com/uptrace/bun/migrate"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
@@ -59,9 +59,8 @@ func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
 		cfg.PostgresPassword,
 		cfg.PostgresDB,
 	)
-	if cfg.DevMode {
-		db.AddQueryHook(bundebug.NewQueryHook(bundebug.WithVerbose(true)))
-	}
+
+	db.AddQueryHook(bunotel.NewQueryHook())
 
 	return db, nil
 }
