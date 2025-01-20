@@ -10,6 +10,7 @@ require (
 	github.com/aws/smithy-go v1.22.1
 	github.com/boj/redistore v1.3.0
 	github.com/docker/docker v27.5.0+incompatible
+	github.com/go-redis/redis/extra/redisotel/v8 v8.11.5
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.6.0
 	github.com/gorcon/rcon v1.4.0
@@ -73,6 +74,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/go-redis/redis/extra/rediscmd/v8 v8.11.5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gomodule/redigo v1.9.2 // indirect
 	github.com/gorilla/context v1.1.2 // indirect
