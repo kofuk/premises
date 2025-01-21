@@ -1,15 +1,24 @@
 package proc
 
 import (
+	"context"
+	"fmt"
 	"log/slog"
 	"math/rand"
 	"os"
 	"os/exec"
+	"strings"
 	"syscall"
 	"time"
 
+	potel "github.com/kofuk/premises/internal/otel"
 	"github.com/kofuk/premises/runner/internal/system"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var tracer = otel.Tracer("github.com/kofuk/premises/runner/internal/commands/exteriord/proc")
 
 type RestartPolicy int
 
@@ -85,6 +94,36 @@ func (p Proc) waitRestartDelay() {
 	}
 }
 
+func runCommand(cmd *exec.Cmd) error {
+	args := cmd.Args
+	if len(args) > 1 {
+		args = args[1:]
+	}
+
+	path := cmd.Path
+	if strings.HasSuffix(path, "premises-runner") {
+		if len(args) > 0 {
+			path = fmt.Sprintf("RUNNER(%s)", strings.TrimPrefix(args[0], "--"))
+		}
+	}
+
+	ctx, span := tracer.Start(context.Background(), fmt.Sprintf("EXEC %s", path))
+	defer span.End()
+	span.SetAttributes(
+		attribute.String("command.name", path),
+		attribute.StringSlice("command.args", args),
+	)
+
+	cmd.Env = append(cmd.Environ(), fmt.Sprintf("TRACEPARENT=%s", potel.TraceContextFromContext(ctx)))
+
+	if err := cmd.Run(); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return err
+	}
+
+	return nil
+}
+
 func (p Proc) Start() {
 L:
 	for {
@@ -110,7 +149,7 @@ L:
 		}
 
 		failure := false
-		if err := cmd.Run(); err != nil {
+		if err := runCommand(cmd); err != nil {
 			slog.Error("Command failed", slog.Any("error", err), slog.String("executable", p.execPath))
 			failure = true
 		}

@@ -50,6 +50,8 @@ xaptget() {
 __run() {
     PREMISES_BASEDIR=/opt/premises
 
+    [ -f "${PREMISES_BASEDIR}/runner_env.sh" ] && source "${PREMISES_BASEDIR}/runner_env.sh" || true
+
     mkdir -p "${PREMISES_BASEDIR}/bin"
 
     if ! command -v curl &>/dev/null && ! command -v wget &>/dev/null; then

@@ -19,39 +19,11 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/kvs"
 	"github.com/kofuk/premises/controlpanel/internal/longpoll"
 	"github.com/kofuk/premises/controlpanel/internal/proxy"
+	"github.com/kofuk/premises/internal/otel"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/extra/bunotel"
 	"github.com/uptrace/bun/migrate"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
-
-func initializeTracer(ctx context.Context) error {
-	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" {
-		// Silently disable tracing
-		return nil
-	}
-
-	res, err := resource.Detect(ctx)
-	if err != nil {
-		return err
-	}
-
-	exporter, err := otlptracegrpc.New(ctx)
-	if err != nil {
-		return err
-	}
-
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithResource(res),
-		sdktrace.WithBatcher(exporter),
-	)
-	otel.SetTracerProvider(tp)
-
-	return nil
-}
 
 func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
 	db := db.NewClient(
@@ -89,7 +61,7 @@ func createKVS(redis *redis.Client) kvs.KeyValueStore {
 }
 
 func startWeb(cfg *config.Config) {
-	if err := initializeTracer(context.Background()); err != nil {
+	if err := otel.InitializeTracer(context.Background()); err != nil {
 		slog.Error("Failed to initialize OpenTelemetry", slog.Any("error", err))
 		os.Exit(1)
 	}
