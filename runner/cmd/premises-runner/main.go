@@ -8,6 +8,7 @@ import (
 	"sort"
 	"syscall"
 
+	"github.com/kofuk/premises/internal/otel"
 	"github.com/kofuk/premises/runner/internal/commands/cleanup"
 	"github.com/kofuk/premises/runner/internal/commands/cli"
 	"github.com/kofuk/premises/runner/internal/commands/connector"
@@ -25,7 +26,7 @@ import (
 
 type Command struct {
 	Description  string
-	Run          func(args []string) int
+	Run          func(ctx context.Context, args []string) int
 	RequiresRoot bool
 }
 
@@ -46,11 +47,18 @@ func (app App) printUsage() {
 	}
 }
 
+func createContext() context.Context {
+	traceContext := os.Getenv("TRACEPARENT")
+	return otel.ContextFromTraceContext(context.Background(), traceContext)
+}
+
 func (app App) Run(args []string) int {
 	if len(args) < 2 {
 		app.printUsage()
 		os.Exit(1)
 	}
+
+	ctx := createContext()
 
 	cmdName := args[1]
 	if cmdName[0:2] == "--" {
@@ -69,7 +77,7 @@ func (app App) Run(args []string) int {
 
 	rpc.InitializeDefaultServer(env.DataPath("rpc@" + cmdName))
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 
 	var eg errgroup.Group
 	eg.Go(func() error {
@@ -83,7 +91,7 @@ func (app App) Run(args []string) int {
 		}
 	}
 
-	status := cmd.Run(args[2:])
+	status := cmd.Run(ctx, args[2:])
 
 	// Stop background jobs and wait for them to finish
 	cancel()
@@ -101,6 +109,11 @@ func main() {
 		AddSource: true,
 		Level:     logLevel,
 	})))
+
+	if err := otel.InitializeTracer(context.Background()); err != nil {
+		slog.Error("Failed to initialize tracer", slog.Any("error", err))
+		os.Exit(1)
+	}
 
 	app := App{
 		Commands: map[string]Command{
@@ -130,9 +143,9 @@ func main() {
 			},
 			"setup": {
 				Description: "Setup server",
-				Run: func(args []string) int {
+				Run: func(ctx context.Context, args []string) int {
 					serverSetup := serversetup.ServerSetup{}
-					serverSetup.Run()
+					serverSetup.Run(ctx)
 					return 0
 				},
 				RequiresRoot: true,
@@ -154,7 +167,7 @@ func main() {
 			},
 			"version": {
 				Description: "Print version (in machine-readable way) and exit",
-				Run: func(args []string) int {
+				Run: func(ctx context.Context, args []string) int {
 					fmt.Println(metadata.Revision)
 					return 0
 				},

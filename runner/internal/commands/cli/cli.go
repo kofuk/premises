@@ -1,13 +1,14 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
-func Run(args []string) int {
+func Run(ctx context.Context, args []string) int {
 	cmd := &cobra.Command{
 		Use: "premises-runner-cli",
 	}

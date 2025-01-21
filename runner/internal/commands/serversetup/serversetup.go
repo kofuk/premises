@@ -1,6 +1,7 @@
 package serversetup
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net"
@@ -165,7 +166,7 @@ func (setup *ServerSetup) installRequiredJavaVersion() {
 	system.AptGet(installArgs...)
 }
 
-func (setup ServerSetup) Run() {
+func (setup ServerSetup) Run(ctx context.Context) {
 	setup.sendServerHello()
 	setup.notifyStatus()
 

@@ -9,7 +9,7 @@ import (
 	"github.com/kofuk/premises/runner/internal/rpc"
 )
 
-func Run(args []string) int {
+func Run(ctx context.Context, args []string) int {
 	config, err := config.Load()
 	if err != nil {
 		slog.Error("Error loading config", slog.Any("error", err))

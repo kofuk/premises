@@ -1,6 +1,7 @@
 package mclauncher
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 
@@ -11,7 +12,7 @@ import (
 	"github.com/kofuk/premises/runner/internal/rpc"
 )
 
-func Run(args []string) int {
+func Run(ctx context.Context, args []string) int {
 	slog.Info("Starting Premises Runner", slog.String("revision", metadata.Revision))
 
 	config, err := config.Load()

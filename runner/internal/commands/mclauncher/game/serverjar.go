@@ -16,6 +16,7 @@ import (
 	"github.com/kofuk/premises/runner/internal/env"
 	"github.com/kofuk/premises/runner/internal/system"
 	"github.com/kofuk/premises/runner/internal/util"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 func DetectAndUpdateVersion(config *runner.Config) error {
@@ -30,6 +31,7 @@ func DetectAndUpdateVersion(config *runner.Config) error {
 	if config.GameConfig.Server.ManifestOverride != "" {
 		options = append(options, lm.WithManifestURL(config.GameConfig.Server.ManifestOverride))
 	}
+	options = append(options, lm.WithHTTPClient(otelhttp.DefaultClient))
 
 	fetcher := lm.New(options...)
 	versions, err := fetcher.GetVersionInfo(context.TODO())

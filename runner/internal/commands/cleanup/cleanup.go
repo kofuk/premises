@@ -1,6 +1,7 @@
 package cleanup
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -107,7 +108,7 @@ func copyLogData() {
 	}
 }
 
-func Run(args []string) int {
+func Run(ctx context.Context, args []string) int {
 	notifyStatus(entity.EventClean)
 
 	slog.Info("Removing snaphots...")

@@ -16,7 +16,7 @@ import (
 	"github.com/kofuk/premises/runner/internal/rpc"
 )
 
-func Run(args []string) int {
+func Run(ctx context.Context, args []string) int {
 	signal.Ignore(syscall.SIGHUP)
 
 	slog.Info("Starting premises-runner...", slog.String("protocol_version", internal.ProtocolVersion))
