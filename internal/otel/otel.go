@@ -37,19 +37,15 @@ func InitializeTracer(ctx context.Context) error {
 }
 
 func TraceContextFromContext(ctx context.Context) string {
-	var (
-		tc      propagation.TraceContext
-		carrier propagation.MapCarrier
-	)
+	var tc propagation.TraceContext
+	carrier := make(propagation.MapCarrier)
 	tc.Inject(ctx, carrier)
 	return carrier.Get("traceparent")
 }
 
 func ContextFromTraceContext(ctx context.Context, traceContext string) context.Context {
-	var (
-		tc      propagation.TraceContext
-		carrier propagation.MapCarrier
-	)
+	var tc propagation.TraceContext
+	carrier := make(propagation.MapCarrier)
 	carrier.Set("traceparent", traceContext)
 	return tc.Extract(ctx, carrier)
 }
