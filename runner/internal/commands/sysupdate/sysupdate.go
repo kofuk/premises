@@ -7,7 +7,7 @@ import (
 )
 
 func Run(ctx context.Context, args []string) int {
-	system.AptGet("upgrade", "-y")
-	system.AptGet("autoremove", "-y", "--purge")
+	system.AptGet(ctx, "upgrade", "-y")
+	system.AptGet(ctx, "autoremove", "-y", "--purge")
 	return 0
 }

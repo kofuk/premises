@@ -1,6 +1,7 @@
 package mclauncher
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -27,12 +28,12 @@ func NewRPCHandler(s *rpc.Server, game *game.Launcher) *RPCHandler {
 	}
 }
 
-func (h *RPCHandler) HandleGameStop(req *rpc.AbstractRequest) error {
+func (h *RPCHandler) HandleGameStop(ctx context.Context, req *rpc.AbstractRequest) error {
 	h.game.Stop()
 	return nil
 }
 
-func (h *RPCHandler) HandleGameReconfigure(req *rpc.AbstractRequest) error {
+func (h *RPCHandler) HandleGameReconfigure(ctx context.Context, req *rpc.AbstractRequest) error {
 	var gameConfig runner.GameConfig
 	if err := req.Bind(&gameConfig); err != nil {
 		return err
@@ -66,7 +67,7 @@ func (h *RPCHandler) HandleGameReconfigure(req *rpc.AbstractRequest) error {
 	return nil
 }
 
-func (h *RPCHandler) HandleSnapshotCreate(req *rpc.AbstractRequest) error {
+func (h *RPCHandler) HandleSnapshotCreate(ctx context.Context, req *rpc.AbstractRequest) error {
 	var input types.SnapshotInput
 	if err := req.Bind(&input); err != nil {
 		return err
@@ -108,7 +109,7 @@ func (h *RPCHandler) HandleSnapshotCreate(req *rpc.AbstractRequest) error {
 	return nil
 }
 
-func (h *RPCHandler) HandleSnapshotUndo(req *rpc.AbstractRequest) error {
+func (h *RPCHandler) HandleSnapshotUndo(ctx context.Context, req *rpc.AbstractRequest) error {
 	var input types.SnapshotInput
 	if err := req.Bind(&input); err != nil {
 		return err

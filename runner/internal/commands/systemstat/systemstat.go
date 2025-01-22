@@ -47,9 +47,9 @@ func sendSysstat(ctx context.Context) error {
 func Run(ctx context.Context, args []string) int {
 	rpc.ToExteriord.Notify("proc/registerStopHook", os.Getenv("PREMISES_RUNNER_COMMAND"))
 
-	ctx, cancelFn := context.WithCancel(context.Background())
+	ctx, cancelFn := context.WithCancel(ctx)
 
-	rpc.DefaultServer.RegisterNotifyMethod("base/stop", func(req *rpc.AbstractRequest) error {
+	rpc.DefaultServer.RegisterNotifyMethod("base/stop", func(ctx context.Context, req *rpc.AbstractRequest) error {
 		cancelFn()
 		return nil
 	})

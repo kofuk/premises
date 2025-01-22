@@ -1,6 +1,7 @@
 package connector
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -22,7 +23,7 @@ func NewRPCHandler(s *rpc.Server, config *runner.Config, cancelFn func()) *RPCHa
 	}
 }
 
-func (h *RPCHandler) HandleProxyOpen(req *rpc.AbstractRequest) error {
+func (h *RPCHandler) HandleProxyOpen(ctx context.Context, req *rpc.AbstractRequest) error {
 	var connReq runner.ConnReqInfo
 	if err := req.Bind(&connReq); err != nil {
 		return err
@@ -45,7 +46,7 @@ func (h *RPCHandler) HandleProxyOpen(req *rpc.AbstractRequest) error {
 	return nil
 }
 
-func (h *RPCHandler) HandleBaseStop(req *rpc.AbstractRequest) error {
+func (h *RPCHandler) HandleBaseStop(ctx context.Context, req *rpc.AbstractRequest) error {
 	h.cancelFn()
 	return nil
 }

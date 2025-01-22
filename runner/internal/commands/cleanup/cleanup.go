@@ -41,7 +41,7 @@ func removeTempFiles() {
 	removeFilesIgnoreError(paths...)
 }
 
-func removeSnapshots() {
+func removeSnapshots(ctx context.Context) {
 	dirent, err := os.ReadDir(env.DataPath("gamedata"))
 	if err != nil {
 		slog.Error("Error reading data dir", slog.Any("error", err))
@@ -58,7 +58,7 @@ func removeSnapshots() {
 	}
 
 	if needsClean {
-		if err := system.Cmd("btrfs", args); err != nil {
+		if err := system.Cmd(ctx, "btrfs", args); err != nil {
 			slog.Error("Failed to remove snapshots", slog.Any("error", err))
 		}
 	}
@@ -112,7 +112,7 @@ func Run(ctx context.Context, args []string) int {
 	notifyStatus(entity.EventClean)
 
 	slog.Info("Removing snaphots...")
-	removeSnapshots()
+	removeSnapshots(ctx)
 
 	slog.Info("Unmounting data dir...")
 	unmountData()

@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 
 func Test_handleConnection(t *testing.T) {
 	sut := NewServer("")
-	sut.RegisterMethod("foo", func(req *AbstractRequest) (any, error) {
+	sut.RegisterMethod("foo", func(ctx context.Context, req *AbstractRequest) (any, error) {
 		var params struct {
 			Arg1 string `json:"arg1"`
 		}
@@ -21,7 +22,7 @@ func Test_handleConnection(t *testing.T) {
 		}
 		return params.Arg1 == "bar", nil
 	})
-	sut.RegisterMethod("bar", func(req *AbstractRequest) (any, error) {
+	sut.RegisterMethod("bar", func(ctx context.Context, req *AbstractRequest) (any, error) {
 		assert.Fail(t, "This method should not be called")
 		return nil, nil
 	})
@@ -126,14 +127,14 @@ func Test_handleRequest_call(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			sut := NewServer("")
-			sut.RegisterMethod("normal", func(req *AbstractRequest) (any, error) {
+			sut.RegisterMethod("normal", func(ctx context.Context, req *AbstractRequest) (any, error) {
 				return "foo", nil
 			})
-			sut.RegisterNotifyMethod("normal", func(req *AbstractRequest) error {
+			sut.RegisterNotifyMethod("normal", func(ctx context.Context, req *AbstractRequest) error {
 				assert.Fail(t, "This should not be called")
 				return nil
 			})
-			sut.RegisterMethod("error", func(req *AbstractRequest) (any, error) {
+			sut.RegisterMethod("error", func(ctx context.Context, req *AbstractRequest) (any, error) {
 				return nil, errors.New("Error")
 			})
 
@@ -177,14 +178,14 @@ func Test_handleRequest_notify(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			sut := NewServer("")
-			sut.RegisterMethod("normal", func(req *AbstractRequest) (any, error) {
+			sut.RegisterMethod("normal", func(ctx context.Context, req *AbstractRequest) (any, error) {
 				assert.Fail(t, "This should not be called")
 				return "", nil
 			})
-			sut.RegisterNotifyMethod("normal", func(req *AbstractRequest) error {
+			sut.RegisterNotifyMethod("normal", func(ctx context.Context, req *AbstractRequest) error {
 				return nil
 			})
-			sut.RegisterNotifyMethod("error", func(req *AbstractRequest) error {
+			sut.RegisterNotifyMethod("error", func(ctx context.Context, req *AbstractRequest) error {
 				return errors.New("error")
 			})
 
