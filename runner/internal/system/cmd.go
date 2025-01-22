@@ -53,7 +53,7 @@ func WithWorkingDir(dir string) CmdOption {
 }
 
 func Cmd(ctx context.Context, path string, args []string, options ...CmdOption) error {
-	_, span := tracer.Start(ctx, fmt.Sprintf("EXEC %s", path))
+	ctx, span := tracer.Start(ctx, fmt.Sprintf("EXEC %s", path))
 	defer span.End()
 
 	log, logPath, err := createLog()
@@ -66,7 +66,7 @@ func Cmd(ctx context.Context, path string, args []string, options ...CmdOption) 
 
 	slog.Info("Execute system command", slog.String("command", path), slog.Any("args", args), slog.String("command_output", logPath))
 
-	cmd := exec.Command(path, args...)
+	cmd := exec.CommandContext(ctx, path, args...)
 	cmd.Stdout = log
 	cmd.Stderr = log
 	cmd.Env = cmd.Environ()
@@ -77,7 +77,7 @@ func Cmd(ctx context.Context, path string, args []string, options ...CmdOption) 
 	span.SetAttributes(
 		attribute.String("command.name", path),
 		attribute.StringSlice("command.args", cmd.Args),
-		attribute.StringSlice("command.env", cmd.Env),
+		attribute.StringSlice("command.env", cmd.Environ()),
 	)
 
 	if err := cmd.Run(); err != nil {
@@ -89,13 +89,22 @@ func Cmd(ctx context.Context, path string, args []string, options ...CmdOption) 
 }
 
 func CmdOutput(ctx context.Context, path string, args []string, options ...CmdOption) (string, error) {
+	ctx, span := tracer.Start(ctx, fmt.Sprintf("EXEC %s", path))
+	defer span.End()
+
 	buf := new(strings.Builder)
 
-	cmd := exec.Command(path, args...)
+	cmd := exec.CommandContext(ctx, path, args...)
 	cmd.Stdout = buf
 	for _, opt := range options {
 		opt(cmd)
 	}
+
+	span.SetAttributes(
+		attribute.String("command.name", path),
+		attribute.StringSlice("command.args", cmd.Args),
+		attribute.StringSlice("command.env", cmd.Environ()),
+	)
 
 	if err := cmd.Run(); err != nil {
 		return "", err

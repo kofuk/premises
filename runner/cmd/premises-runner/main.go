@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"sort"
+	"strings"
 	"syscall"
 
 	potel "github.com/kofuk/premises/internal/otel"
@@ -49,21 +50,25 @@ func (app App) printUsage() {
 
 func createContext() context.Context {
 	traceContext := os.Getenv("TRACEPARENT")
+	os.Unsetenv("TRACEPARENT")
 	return potel.ContextFromTraceContext(context.Background(), traceContext)
 }
 
-func (app App) Run(args []string) int {
+func (app App) Run(ctx context.Context, args []string) int {
 	if len(args) < 2 {
 		app.printUsage()
 		os.Exit(1)
 	}
 
-	ctx := createContext()
-
-	cmdName := args[1]
-	if cmdName[0:2] == "--" {
-		cmdName = cmdName[2:]
+	tracerProvider, err := potel.InitializeTracer(ctx)
+	if err != nil {
+		slog.Error("Failed to initialize tracer", slog.Any("error", err))
 	}
+	if tracerProvider != nil {
+		defer tracerProvider.Shutdown(ctx)
+	}
+
+	cmdName := strings.TrimPrefix(args[1], "--")
 
 	cmd, ok := app.Commands[cmdName]
 	if !ok {
@@ -74,6 +79,10 @@ func (app App) Run(args []string) int {
 
 	slog.SetDefault(slog.Default().With(slog.String("runner_command", cmdName)))
 	os.Setenv("PREMISES_RUNNER_COMMAND", cmdName)
+
+	tracer := tracerProvider.Tracer("github.com/kofuk/premises/runner/cmd/premises-runner")
+	ctx, span := tracer.Start(ctx, fmt.Sprintf("Runner %s", cmdName))
+	defer span.End()
 
 	rpc.InitializeDefaultServer(env.DataPath("rpc@" + cmdName))
 
@@ -110,10 +119,7 @@ func main() {
 		Level:     logLevel,
 	})))
 
-	if err := potel.InitializeTracer(context.Background()); err != nil {
-		slog.Error("Failed to initialize tracer", slog.Any("error", err))
-		os.Exit(1)
-	}
+	ctx := createContext()
 
 	app := App{
 		Commands: map[string]Command{
@@ -176,5 +182,5 @@ func main() {
 		},
 	}
 
-	os.Exit(app.Run(os.Args))
+	os.Exit(app.Run(ctx, os.Args))
 }

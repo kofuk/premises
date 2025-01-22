@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-func DetectAndUpdateVersion(config *runner.Config) error {
+func DetectAndUpdateVersion(ctx context.Context, config *runner.Config) error {
 	version, err := DetectServerVersion()
 	if err != nil {
 		return err
@@ -34,7 +34,7 @@ func DetectAndUpdateVersion(config *runner.Config) error {
 	options = append(options, lm.WithHTTPClient(otelhttp.DefaultClient))
 
 	fetcher := lm.New(options...)
-	versions, err := fetcher.GetVersionInfo(context.TODO())
+	versions, err := fetcher.GetVersionInfo(ctx)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func DetectAndUpdateVersion(config *runner.Config) error {
 		return errors.New("no matching version found")
 	}
 
-	serverInfo, err := fetcher.GetServerInfo(context.TODO(), versionInfo)
+	serverInfo, err := fetcher.GetServerInfo(ctx, versionInfo)
 	if err != nil {
 		return err
 	}
@@ -84,8 +84,13 @@ func isExecutableFile(path string) bool {
 	return (buf[0] == 0x7F && buf[1] == 'E' && buf[2] == 'L' && buf[3] == 'F') || (buf[0] == '#' && buf[1] == '!')
 }
 
-func downloadServerJar(url, savePath string) error {
-	resp, err := http.Get(url)
+func downloadServerJar(ctx context.Context, url, savePath string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := otelhttp.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -112,13 +117,13 @@ func downloadServerJar(url, savePath string) error {
 	return nil
 }
 
-func DownloadServerJar(url, savePath string) error {
+func DownloadServerJar(ctx context.Context, url, savePath string) error {
 	if err := os.MkdirAll(env.DataPath("servers.d"), 0755); err != nil {
 		return err
 	}
 
 	tmpPath := savePath + ".download"
-	if err := downloadServerJar(url, tmpPath); err != nil {
+	if err := downloadServerJar(ctx, url, tmpPath); err != nil {
 		return err
 	}
 
@@ -135,8 +140,8 @@ func DownloadServerJar(url, savePath string) error {
 	return nil
 }
 
-func getJavaPathFromInstalledVersion(version int) (string, error) {
-	output, err := system.CmdOutput(context.TODO(), "update-alternatives", []string{"--list", "java"})
+func getJavaPathFromInstalledVersion(ctx context.Context, version int) (string, error) {
+	output, err := system.CmdOutput(ctx, "update-alternatives", []string{"--list", "java"})
 	if err != nil {
 		return "", err
 	}
@@ -153,13 +158,13 @@ func getJavaPathFromInstalledVersion(version int) (string, error) {
 	return "", errors.New("not found")
 }
 
-func findJavaPath(version int) string {
+func findJavaPath(ctx context.Context, version int) string {
 	if version == 0 {
 		slog.Info("Version not specified. Using the system default")
 		return "java"
 	}
 
-	path, err := getJavaPathFromInstalledVersion(version)
+	path, err := getJavaPathFromInstalledVersion(ctx, version)
 	if err != nil {
 		slog.Warn("Error finding java installation. Using the system default", slog.Any("error", err))
 		return "java"
