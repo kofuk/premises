@@ -19,34 +19,36 @@ type SnapshotInfo struct {
 	Path string `json:"path"`
 }
 
-func takeFsSnapshot(snapshotId string) (*SnapshotInfo, error) {
+func takeFsSnapshot(ctx context.Context, snapshotId string) (*SnapshotInfo, error) {
 	var snapshotInfo SnapshotInfo
 	snapshotInfo.ID = snapshotId
 	snapshotInfo.Path = env.DataPath("gamedata/ss@" + snapshotId)
 
 	if _, err := os.Stat(snapshotInfo.Path); err == nil {
-		if err := deleteFsSnapshot(snapshotId); err != nil {
+		if err := deleteFsSnapshot(ctx, snapshotId); err != nil {
 			slog.Error("Failed to remove old snapshot (doesn't the snapshot exist?)", slog.Any("error", err))
 		}
 	}
 
 	// Create read-only snapshot
-	if err := system.Cmd("btrfs", []string{"subvolume", "snapshot", "-r", ".", snapshotInfo.Path}, system.WithWorkingDir(env.DataPath("gamedata"))); err != nil {
+	if err := system.Cmd(ctx, "btrfs", []string{"subvolume", "snapshot", "-r", ".", snapshotInfo.Path}, system.WithWorkingDir(env.DataPath("gamedata"))); err != nil {
 		return nil, err
 	}
 
 	return &snapshotInfo, nil
 }
 
-func deleteFsSnapshot(id string) error {
+func deleteFsSnapshot(ctx context.Context, id string) error {
 	if strings.Contains(id, "/") {
 		return errors.New("invalid snapshot ID")
 	}
 
-	if err := system.Cmd("btrfs", []string{"subvolume", "delete", "ss@" + id}, system.WithWorkingDir(env.DataPath("gamedata"))); err != nil {
+	err := system.Cmd(ctx, "btrfs", []string{"subvolume", "delete", "ss@" + id}, system.WithWorkingDir(env.DataPath("gamedata")))
+	if err != nil {
 		return err
 	}
-	if err := system.Cmd("btrfs", []string{"balance", "."}, system.WithWorkingDir(env.DataPath("gamedata"))); err != nil {
+	err = system.Cmd(ctx, "btrfs", []string{"balance", "."}, system.WithWorkingDir(env.DataPath("gamedata")))
+	if err != nil {
 		return err
 	}
 
@@ -58,13 +60,13 @@ func Run(ctx context.Context, args []string) int {
 
 	ctx, cancelFn := context.WithCancel(context.Background())
 
-	rpc.DefaultServer.RegisterMethod("snapshot/create", func(req *rpc.AbstractRequest) (any, error) {
+	rpc.DefaultServer.RegisterMethod("snapshot/create", func(ctx context.Context, req *rpc.AbstractRequest) (any, error) {
 		var ss types.SnapshotHelperInput
 		if err := req.Bind(&ss); err != nil {
 			return nil, err
 		}
 
-		info, err := takeFsSnapshot(fmt.Sprintf("quick%d", ss.Slot))
+		info, err := takeFsSnapshot(ctx, fmt.Sprintf("quick%d", ss.Slot))
 		if err != nil {
 			return nil, err
 		}
@@ -74,7 +76,7 @@ func Run(ctx context.Context, args []string) int {
 			Path: info.Path,
 		}, nil
 	})
-	rpc.DefaultServer.RegisterNotifyMethod("base/stop", func(req *rpc.AbstractRequest) error {
+	rpc.DefaultServer.RegisterNotifyMethod("base/stop", func(ctx context.Context, req *rpc.AbstractRequest) error {
 		cancelFn()
 		return nil
 	})

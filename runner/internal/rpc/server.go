@@ -11,8 +11,8 @@ import (
 	"sync"
 )
 
-type HandlerFunc func(req *AbstractRequest) (any, error)
-type NotifyHandlerFunc func(req *AbstractRequest) error
+type HandlerFunc func(ctx context.Context, req *AbstractRequest) (any, error)
+type NotifyHandlerFunc func(ctx context.Context, req *AbstractRequest) error
 
 type Server struct {
 	path          string
@@ -106,7 +106,7 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 			slog.Error("Method for notify request not found", slog.String("method", req.Method))
 			return nil
 		}
-		if err := method(req); err != nil {
+		if err := method(context.TODO(), req); err != nil {
 			slog.Error("Error handling notification", slog.Any("error", err))
 			return nil
 		}
@@ -126,7 +126,7 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 		}
 	}
 
-	result, err := method(req)
+	result, err := method(context.TODO(), req)
 	if err != nil {
 		return &Response[any]{
 			Version: "2.0",

@@ -104,12 +104,12 @@ func (setup *ServerSetup) notifyStatus() {
 	})
 }
 
-func (setup *ServerSetup) initializeServer() {
+func (setup *ServerSetup) initializeServer(ctx context.Context) {
 	var eg errgroup.Group
 
 	eg.Go(func() error {
 		slog.Info("Installing packages")
-		system.AptGet("install", "-y", "btrfs-progs", latestAvailableJre)
+		system.AptGet(ctx, "install", "-y", "btrfs-progs", latestAvailableJre)
 		return nil
 	})
 	eg.Go(func() error {
@@ -132,7 +132,7 @@ func (setup *ServerSetup) initializeServer() {
 		if _, err := user.Lookup("premises"); err != nil {
 			slog.Info("Adding user")
 			// Create a system user named "premises"
-			return system.Cmd("useradd", []string{
+			return system.Cmd(ctx, "useradd", []string{
 				"--user-group",
 				"--system",
 				"--no-create-home",
@@ -148,10 +148,10 @@ func (setup *ServerSetup) initializeServer() {
 
 	// This command should be executed after `apt-get install` finished
 	slog.Info("Creating filesystem for gamedata.img")
-	system.Cmd("mkfs.btrfs", []string{env.DataPath("gamedata.img")})
+	system.Cmd(ctx, "mkfs.btrfs", []string{env.DataPath("gamedata.img")})
 }
 
-func (setup *ServerSetup) installRequiredJavaVersion() {
+func (setup *ServerSetup) installRequiredJavaVersion(ctx context.Context) {
 	config, err := config.Load()
 	if err != nil {
 		slog.Error("Unable to load config", slog.Any("error", err))
@@ -163,7 +163,7 @@ func (setup *ServerSetup) installRequiredJavaVersion() {
 		installArgs = append(installArgs, fmt.Sprintf("openjdk-%d-jre-headless", config.GameConfig.Server.JavaVersion))
 	}
 
-	system.AptGet(installArgs...)
+	system.AptGet(ctx, installArgs...)
 }
 
 func (setup ServerSetup) Run(ctx context.Context) {
@@ -176,18 +176,18 @@ func (setup ServerSetup) Run(ctx context.Context) {
 	}
 
 	slog.Info("Updating package indices")
-	system.AptGet("update", "-y")
+	system.AptGet(ctx, "update", "-y")
 
 	if !isServerInitialized() {
 		slog.Info("Server seems not to be initialized. Will run full initialization")
-		setup.initializeServer()
+		setup.initializeServer(ctx)
 	}
 
 	slog.Info("Installing required Java version")
-	setup.installRequiredJavaVersion()
+	setup.installRequiredJavaVersion(ctx)
 
 	slog.Info("Mounting gamedata.img")
-	system.Cmd("mount", []string{env.DataPath("gamedata.img"), env.DataPath("gamedata")})
+	system.Cmd(ctx, "mount", []string{env.DataPath("gamedata.img"), env.DataPath("gamedata")})
 
 	slog.Info("Ensure data directory owned by execution user")
 	if uid, gid, err := system.GetAppUserID(); err != nil {

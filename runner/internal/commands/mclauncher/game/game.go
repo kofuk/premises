@@ -354,7 +354,7 @@ func (l *Launcher) executeServer(cmdline []string) error {
 		l.stopAfterLongInactive(ctx)
 	}()
 
-	err := system.Cmd(cmdline[0], cmdline[1:], system.WithWorkingDir(env.DataPath("gamedata")))
+	err := system.Cmd(context.TODO(), cmdline[0], cmdline[1:], system.WithWorkingDir(env.DataPath("gamedata")))
 
 	cancel()
 

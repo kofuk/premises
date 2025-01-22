@@ -8,7 +8,7 @@ import (
 	"sort"
 	"syscall"
 
-	"github.com/kofuk/premises/internal/otel"
+	potel "github.com/kofuk/premises/internal/otel"
 	"github.com/kofuk/premises/runner/internal/commands/cleanup"
 	"github.com/kofuk/premises/runner/internal/commands/cli"
 	"github.com/kofuk/premises/runner/internal/commands/connector"
@@ -49,7 +49,7 @@ func (app App) printUsage() {
 
 func createContext() context.Context {
 	traceContext := os.Getenv("TRACEPARENT")
-	return otel.ContextFromTraceContext(context.Background(), traceContext)
+	return potel.ContextFromTraceContext(context.Background(), traceContext)
 }
 
 func (app App) Run(args []string) int {
@@ -110,7 +110,7 @@ func main() {
 		Level:     logLevel,
 	})))
 
-	if err := otel.InitializeTracer(context.Background()); err != nil {
+	if err := potel.InitializeTracer(context.Background()); err != nil {
 		slog.Error("Failed to initialize tracer", slog.Any("error", err))
 		os.Exit(1)
 	}

@@ -1,6 +1,7 @@
 package exteriord
 
 import (
+	"context"
 	"log/slog"
 	"sync"
 
@@ -28,7 +29,7 @@ func NewRPCHandler(s *rpc.Server, msgChan chan outbound.OutboundMessage, states 
 	}
 }
 
-func (h *RPCHandler) HandleStatusPush(req *rpc.AbstractRequest) error {
+func (h *RPCHandler) HandleStatusPush(ctx context.Context, req *rpc.AbstractRequest) error {
 	var msg types.EventInput
 	if err := req.Bind(&msg); err != nil {
 		return err
@@ -39,7 +40,7 @@ func (h *RPCHandler) HandleStatusPush(req *rpc.AbstractRequest) error {
 	return nil
 }
 
-func (h *RPCHandler) HandleStateSet(req *rpc.AbstractRequest) (any, error) {
+func (h *RPCHandler) HandleStateSet(ctx context.Context, req *rpc.AbstractRequest) (any, error) {
 	var input types.StateSetInput
 	if err := req.Bind(&input); err != nil {
 		return nil, err
@@ -52,7 +53,7 @@ func (h *RPCHandler) HandleStateSet(req *rpc.AbstractRequest) (any, error) {
 	return "ok", nil
 }
 
-func (h *RPCHandler) HandleStateGet(req *rpc.AbstractRequest) (any, error) {
+func (h *RPCHandler) HandleStateGet(ctx context.Context, req *rpc.AbstractRequest) (any, error) {
 	var input types.StateGetInput
 	if err := req.Bind(&input); err != nil {
 		return nil, err
@@ -66,7 +67,7 @@ func (h *RPCHandler) HandleStateGet(req *rpc.AbstractRequest) (any, error) {
 	return value, nil
 }
 
-func (h *RPCHandler) HandleStateRemove(req *rpc.AbstractRequest) (any, error) {
+func (h *RPCHandler) HandleStateRemove(ctx context.Context, req *rpc.AbstractRequest) (any, error) {
 	var input types.StateRemoveInput
 	if err := req.Bind(&input); err != nil {
 		return nil, err
@@ -79,7 +80,7 @@ func (h *RPCHandler) HandleStateRemove(req *rpc.AbstractRequest) (any, error) {
 	return "ok", nil
 }
 
-func (h *RPCHandler) HandleProcRegisterStopHook(req *rpc.AbstractRequest) error {
+func (h *RPCHandler) HandleProcRegisterStopHook(ctx context.Context, req *rpc.AbstractRequest) error {
 	var cmd string
 	if err := req.Bind(&cmd); err != nil {
 		return err
@@ -92,7 +93,7 @@ func (h *RPCHandler) HandleProcRegisterStopHook(req *rpc.AbstractRequest) error 
 	return nil
 }
 
-func (h *RPCHandler) HandleProcDone(req *rpc.AbstractRequest) error {
+func (h *RPCHandler) HandleProcDone(ctx context.Context, req *rpc.AbstractRequest) error {
 	h.m.Lock()
 	defer h.m.Unlock()
 

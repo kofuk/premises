@@ -1,6 +1,7 @@
 package system
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -11,9 +12,16 @@ import (
 	"sync/atomic"
 
 	"github.com/kofuk/premises/runner/internal/env"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
-var logNum uint64
+var (
+	tracer = otel.Tracer("github.com/kofuk/premises/runner/internal/system")
+
+	logNum uint64
+)
 
 func createLog() (io.Writer, string, error) {
 	for {
@@ -44,7 +52,10 @@ func WithWorkingDir(dir string) CmdOption {
 	}
 }
 
-func Cmd(path string, args []string, options ...CmdOption) error {
+func Cmd(ctx context.Context, path string, args []string, options ...CmdOption) error {
+	_, span := tracer.Start(ctx, fmt.Sprintf("EXEC %s", path))
+	defer span.End()
+
 	log, logPath, err := createLog()
 	if err != nil {
 		return err
@@ -63,14 +74,21 @@ func Cmd(path string, args []string, options ...CmdOption) error {
 		opt(cmd)
 	}
 
+	span.SetAttributes(
+		attribute.String("command.name", path),
+		attribute.StringSlice("command.args", cmd.Args),
+		attribute.StringSlice("command.env", cmd.Env),
+	)
+
 	if err := cmd.Run(); err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		slog.Error("Command failed", slog.Any("error", err))
 		return err
 	}
 	return nil
 }
 
-func CmdOutput(path string, args []string, options ...CmdOption) (string, error) {
+func CmdOutput(ctx context.Context, path string, args []string, options ...CmdOption) (string, error) {
 	buf := new(strings.Builder)
 
 	cmd := exec.Command(path, args...)
@@ -85,10 +103,10 @@ func CmdOutput(path string, args []string, options ...CmdOption) (string, error)
 	return buf.String(), nil
 }
 
-func AptGet(args ...string) error {
-	if err := Cmd("apt-get", args, WithEnv("DEBIAN_FRONTEND=noninteractive")); err == nil {
+func AptGet(ctx context.Context, args ...string) error {
+	if err := Cmd(ctx, "apt-get", args, WithEnv("DEBIAN_FRONTEND=noninteractive")); err == nil {
 		return nil
 	}
-	Cmd("dpkg", []string{"--configure", "-a"}, WithEnv("DEBIAN_FRONTEND=noninteractive"))
-	return Cmd("apt-get", args, WithEnv("DEBIAN_FRONTEND=noninteractive"))
+	Cmd(ctx, "dpkg", []string{"--configure", "-a"}, WithEnv("DEBIAN_FRONTEND=noninteractive"))
+	return Cmd(ctx, "apt-get", args, WithEnv("DEBIAN_FRONTEND=noninteractive"))
 }
