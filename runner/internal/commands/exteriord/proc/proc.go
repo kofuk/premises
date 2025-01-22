@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var tracer = otel.Tracer("github.com/kofuk/premises/runner/internal/commands/exteriord/proc")
@@ -107,7 +108,9 @@ func runCommand(cmd *exec.Cmd) error {
 		}
 	}
 
-	ctx, span := tracer.Start(context.Background(), fmt.Sprintf("EXEC %s", path))
+	ctx, span := tracer.Start(context.Background(), fmt.Sprintf("EXEC %s", path),
+		trace.WithNewRoot(),
+	)
 	defer span.End()
 	span.SetAttributes(
 		attribute.String("command.name", path),
@@ -115,6 +118,12 @@ func runCommand(cmd *exec.Cmd) error {
 	)
 
 	cmd.Env = append(cmd.Environ(), fmt.Sprintf("TRACEPARENT=%s", potel.TraceContextFromContext(ctx)))
+
+	slog.Info("Executing process",
+		slog.String("command", path),
+		slog.Any("args", args),
+		slog.String("trace_id", span.SpanContext().TraceID().String()),
+	)
 
 	if err := cmd.Run(); err != nil {
 		span.SetStatus(codes.Error, err.Error())

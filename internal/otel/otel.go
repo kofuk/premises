@@ -11,20 +11,20 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-func InitializeTracer(ctx context.Context) error {
+func InitializeTracer(ctx context.Context) (*sdktrace.TracerProvider, error) {
 	if os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") == "" {
 		// Silently disable tracing
-		return nil
+		return nil, nil
 	}
 
 	res, err := resource.Detect(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	exporter, err := otlptracegrpc.New(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	tp := sdktrace.NewTracerProvider(
@@ -33,7 +33,7 @@ func InitializeTracer(ctx context.Context) error {
 	)
 	otel.SetTracerProvider(tp)
 
-	return nil
+	return tp, nil
 }
 
 func TraceContextFromContext(ctx context.Context) string {

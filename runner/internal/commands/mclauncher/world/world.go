@@ -22,6 +22,7 @@ import (
 	"github.com/kofuk/premises/runner/internal/env"
 	"github.com/kofuk/premises/runner/internal/fs"
 	"github.com/kofuk/premises/runner/internal/util"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type WorldService struct {
@@ -30,7 +31,7 @@ type WorldService struct {
 
 func New(endpoint, authKey string) *WorldService {
 	return &WorldService{
-		client: api.New(endpoint, authKey, http.DefaultClient),
+		client: api.New(endpoint, authKey, otelhttp.DefaultClient),
 	}
 }
 
@@ -71,7 +72,7 @@ func (w *WorldService) getDownloadURL(ctx context.Context, genID string) (string
 	return resp.URL, nil
 }
 
-func (w *WorldService) DownloadWorldData(config *runner.Config) error {
+func (w *WorldService) DownloadWorldData(ctx context.Context, config *runner.Config) error {
 	slog.Info("Downloading world archive...")
 	if err := fs.RemoveIfExists(env.DataPath("gamedata/world")); err != nil {
 		return err
@@ -82,12 +83,17 @@ func (w *WorldService) DownloadWorldData(config *runner.Config) error {
 		return err
 	}
 
-	url, err := w.getDownloadURL(context.TODO(), config.GameConfig.World.GenerationId)
+	url, err := w.getDownloadURL(ctx, config.GameConfig.World.GenerationId)
 	if err != nil {
 		return fmt.Errorf("unable to get download URL: %w", err)
 	}
 
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := otelhttp.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("unable to download %s: %w", config.GameConfig.World.GenerationId, err)
 	}
@@ -117,8 +123,8 @@ func (w *WorldService) GetLatestKey(ctx context.Context, world string) (string, 
 	return resp.WorldID, nil
 }
 
-func (w *WorldService) UploadWorldData(config *runner.Config) (string, error) {
-	return w.doUploadWorldData(config)
+func (w *WorldService) UploadWorldData(ctx context.Context, config *runner.Config) (string, error) {
+	return w.doUploadWorldData(ctx, config)
 }
 
 func (w *WorldService) getUploadURL(ctx context.Context, worldName string) (string, string, error) {
@@ -130,7 +136,7 @@ func (w *WorldService) getUploadURL(ctx context.Context, worldName string) (stri
 	return resp.URL, resp.WorldID, nil
 }
 
-func (w *WorldService) doUploadWorldData(config *runner.Config) (string, error) {
+func (w *WorldService) doUploadWorldData(ctx context.Context, config *runner.Config) (string, error) {
 	slog.Info("Uploading world archive...")
 
 	archivePath := env.DataPath("world.tar.zst")
@@ -145,21 +151,21 @@ func (w *WorldService) doUploadWorldData(config *runner.Config) (string, error) 
 		return "", err
 	}
 
-	url, key, err := w.getUploadURL(context.TODO(), config.GameConfig.World.Name)
+	url, key, err := w.getUploadURL(ctx, config.GameConfig.World.Name)
 	if err != nil {
 		return "", err
 	}
 
 	reader := util.NewProgressReader(file, entity.EventWorldUpload, int(fileInfo.Size())).ToSeekable()
 
-	req, err := http.NewRequest(http.MethodPut, url, reader)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, reader)
 	if err != nil {
 		return "", err
 	}
 	req.ContentLength = fileInfo.Size()
 	req.Header.Set("Content-Type", "application/zstd")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := otelhttp.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}

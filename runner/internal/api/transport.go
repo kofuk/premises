@@ -49,7 +49,7 @@ func (xp *APITransport) Request(ctx context.Context, method string, url string, 
 	req.Header.Set("Authorization", xp.authKey)
 	req.Header.Set("Content-Type", contentType)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := xp.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

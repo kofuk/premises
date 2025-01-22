@@ -42,8 +42,8 @@ var (
 	ErrRestartRequested = errors.New("restart requested")
 )
 
-func NewLauncher(config *runner.Config, world *world.WorldService) *Launcher {
-	ctx, cancel := context.WithCancel(context.Background())
+func NewLauncher(ctx context.Context, config *runner.Config, world *world.WorldService) *Launcher {
+	ctx, cancel := context.WithCancel(ctx)
 
 	rconAddr := "127.0.0.1:25575"
 	if env.IsDevEnv() {
@@ -149,7 +149,7 @@ func storeLastServerVersion(config *runner.Config) error {
 	}, nil)
 }
 
-func (l *Launcher) downloadWorld() error {
+func (l *Launcher) downloadWorld(ctx context.Context) error {
 	if l.config.GameConfig.World.ShouldGenerate {
 		if err := fs.RemoveIfExists(env.DataPath("gamedata/world")); err != nil {
 			slog.Error("Unable to remove world directory", slog.Any("error", err))
@@ -159,7 +159,7 @@ func (l *Launcher) downloadWorld() error {
 	}
 
 	if l.config.GameConfig.World.GenerationId == "@/latest" {
-		genId, err := l.world.GetLatestKey(context.TODO(), l.config.GameConfig.World.Name)
+		genId, err := l.world.GetLatestKey(ctx, l.config.GameConfig.World.Name)
 		if err != nil {
 			return fmt.Errorf("failed to get latest world ID: %w", err)
 		}
@@ -183,7 +183,7 @@ func (l *Launcher) downloadWorld() error {
 			},
 		})
 
-		if err := l.world.DownloadWorldData(l.config); err != nil {
+		if err := l.world.DownloadWorldData(ctx, l.config); err != nil {
 			return err
 		}
 		return nil
@@ -192,7 +192,7 @@ func (l *Launcher) downloadWorld() error {
 	return nil
 }
 
-func (l *Launcher) downloadServerJar() error {
+func (l *Launcher) downloadServerJar(ctx context.Context) error {
 	if _, err := os.Stat(env.LocateServer(l.config.GameConfig.Server.Version)); err == nil {
 		slog.Info("No need to download server.jar")
 		return nil
@@ -209,7 +209,7 @@ func (l *Launcher) downloadServerJar() error {
 
 	slog.Info("Downloading Minecraft server...", slog.String("url", l.config.GameConfig.Server.DownloadUrl))
 
-	if err := DownloadServerJar(l.config.GameConfig.Server.DownloadUrl, env.LocateServer(l.config.GameConfig.Server.Version)); err != nil {
+	if err := DownloadServerJar(ctx, l.config.GameConfig.Server.DownloadUrl, env.LocateServer(l.config.GameConfig.Server.Version)); err != nil {
 		return err
 	}
 
@@ -218,7 +218,7 @@ func (l *Launcher) downloadServerJar() error {
 	return nil
 }
 
-func (l *Launcher) uploadWorld() error {
+func (l *Launcher) uploadWorld(ctx context.Context) error {
 	exterior.SendEvent(runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
@@ -242,7 +242,7 @@ func (l *Launcher) uploadWorld() error {
 			EventCode: entity.EventWorldUpload,
 		},
 	})
-	key, err := l.world.UploadWorldData(l.config)
+	key, err := l.world.UploadWorldData(ctx, l.config)
 	if err != nil {
 		slog.Error("Failed to upload world data", slog.Any("error", err))
 		exterior.SendEvent(runner.Event{
@@ -326,7 +326,7 @@ func (l *Launcher) stopAfterLongInactive(ctx context.Context) {
 	}
 }
 
-func (l *Launcher) executeServer(cmdline []string) error {
+func (l *Launcher) executeServer(ctx context.Context, cmdline []string) error {
 	slog.Info("Launching Minecraft server", slog.String("server_name", l.config.GameConfig.Server.Version), slog.Any("commandline", cmdline))
 
 	exterior.SendEvent(runner.Event{
@@ -340,7 +340,7 @@ func (l *Launcher) executeServer(cmdline []string) error {
 		l.beforeLaunch(l)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 
 	go func() {
 		if err := waitServerHealthy(ctx); err != nil {
@@ -354,14 +354,14 @@ func (l *Launcher) executeServer(cmdline []string) error {
 		l.stopAfterLongInactive(ctx)
 	}()
 
-	err := system.Cmd(context.TODO(), cmdline[0], cmdline[1:], system.WithWorkingDir(env.DataPath("gamedata")))
+	err := system.Cmd(ctx, cmdline[0], cmdline[1:], system.WithWorkingDir(env.DataPath("gamedata")))
 
 	cancel()
 
 	return err
 }
 
-func (l *Launcher) startServer() error {
+func (l *Launcher) startServer(ctx context.Context) error {
 	allocSize := getAllocSizeMiB()
 
 	var launchCommand []string
@@ -374,7 +374,7 @@ func (l *Launcher) startServer() error {
 		}
 	} else {
 		launchCommand = []string{
-			findJavaPath(l.config.GameConfig.Server.JavaVersion),
+			findJavaPath(ctx, l.config.GameConfig.Server.JavaVersion),
 			fmt.Sprintf("-Xmx%dM", allocSize),
 			fmt.Sprintf("-Xms%dM", allocSize),
 			"-jar",
@@ -391,7 +391,7 @@ func (l *Launcher) startServer() error {
 		default:
 		}
 
-		if err := l.executeServer(launchCommand); err == nil {
+		if err := l.executeServer(ctx, launchCommand); err == nil {
 			if !l.restoringSnapshot {
 				return nil
 			}
@@ -476,8 +476,8 @@ func (l *Launcher) prepareEnvironment() error {
 	return nil
 }
 
-func (l *Launcher) Launch() error {
-	if err := l.downloadWorld(); err != nil {
+func (l *Launcher) Launch(ctx context.Context) error {
+	if err := l.downloadWorld(ctx); err != nil {
 		slog.Error("Unable to donwload world data", slog.Any("error", err))
 
 		exterior.SendEvent(runner.Event{
@@ -491,12 +491,12 @@ func (l *Launcher) Launch() error {
 
 	if l.config.GameConfig.Server.PreferDetected {
 		slog.Info("Read server version from level.dat")
-		if err := DetectAndUpdateVersion(l.config); err != nil {
+		if err := DetectAndUpdateVersion(ctx, l.config); err != nil {
 			slog.Error("Error detecting Minecraft version", slog.Any("error", err))
 		}
 	}
 
-	if err := l.downloadServerJar(); err != nil {
+	if err := l.downloadServerJar(ctx); err != nil {
 		slog.Error("Couldn't download server.jar", slog.Any("error", err))
 		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
@@ -518,7 +518,7 @@ func (l *Launcher) Launch() error {
 		return err
 	}
 
-	if err := l.startServer(); err != nil {
+	if err := l.startServer(ctx); err != nil {
 		slog.Error("Failed to launch Minecraft server", slog.Any("error", err))
 		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
@@ -533,7 +533,7 @@ func (l *Launcher) Launch() error {
 		slog.Error("Error saving last server versoin", slog.Any("error", err))
 	}
 
-	if err := l.uploadWorld(); err != nil {
+	if err := l.uploadWorld(ctx); err != nil {
 		return err
 	}
 

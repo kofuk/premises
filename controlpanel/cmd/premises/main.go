@@ -61,7 +61,7 @@ func createKVS(redis *redis.Client) kvs.KeyValueStore {
 }
 
 func startWeb(cfg *config.Config) {
-	if err := otel.InitializeTracer(context.Background()); err != nil {
+	if _, err := otel.InitializeTracer(context.Background()); err != nil {
 		slog.Error("Failed to initialize OpenTelemetry", slog.Any("error", err))
 		os.Exit(1)
 	}

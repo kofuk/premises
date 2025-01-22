@@ -23,12 +23,12 @@ func Run(ctx context.Context, args []string) int {
 
 	worldService := world.New(config.ControlPanel, config.AuthKey)
 
-	launcher := game.NewLauncher(config, worldService)
+	launcher := game.NewLauncher(ctx, config, worldService)
 
 	rpcHandler := NewRPCHandler(rpc.DefaultServer, launcher)
 	rpcHandler.Bind()
 
-	err = launcher.Launch()
+	err = launcher.Launch(ctx)
 	if err != nil {
 		slog.Error("Unable to launch server", slog.Any("error", err))
 	}
