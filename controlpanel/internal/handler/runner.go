@@ -90,7 +90,7 @@ func (h *Handler) handlePostStatus(c echo.Context) error {
 		ctx := context.Background()
 		if event.Type != runner.EventSysstat {
 			ctx, span = tracer.Start(
-				potel.ContextFromTraceContext(context.Background(), event.Metadata.Traceparent),
+				potel.ContextFromTraceContext(ctx, event.Metadata.Traceparent),
 				fmt.Sprintf("Event (%s)", event.Type),
 				trace.WithSpanKind(trace.SpanKindServer),
 				trace.WithAttributes(attribute.String("premises.event_type", event.Type.String())),

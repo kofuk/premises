@@ -75,7 +75,7 @@ func getIPAddr() (v4Addrs []string, v6Addrs []string, err error) {
 	return
 }
 
-func (setup *ServerSetup) sendServerHello() {
+func (setup *ServerSetup) sendServerHello(ctx context.Context) {
 	systemVersion := system.GetSystemVersion()
 
 	eventData := runner.Event{
@@ -92,11 +92,11 @@ func (setup *ServerSetup) sendServerHello() {
 		slog.Error("Failed to get IP addresses for network interface", slog.Any("error", err))
 	}
 
-	exterior.DispatchEvent(eventData)
+	exterior.DispatchEvent(ctx, eventData)
 }
 
-func (setup *ServerSetup) notifyStatus() {
-	exterior.SendEvent(runner.Event{
+func (setup *ServerSetup) notifyStatus(ctx context.Context) {
+	exterior.SendEvent(ctx, runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventSysInit,
@@ -167,8 +167,8 @@ func (setup *ServerSetup) installRequiredJavaVersion(ctx context.Context) {
 }
 
 func (setup ServerSetup) Run(ctx context.Context) {
-	setup.sendServerHello()
-	setup.notifyStatus()
+	setup.sendServerHello(ctx)
+	setup.notifyStatus(ctx)
 
 	slog.Info("Creating required directories (if not exists)")
 	for _, dir := range []string{"servers.d", "gamedata", "tmp"} {

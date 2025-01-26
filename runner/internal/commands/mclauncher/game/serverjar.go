@@ -108,7 +108,7 @@ func downloadServerJar(ctx context.Context, url, savePath string) error {
 	}
 	defer outFile.Close()
 
-	reader := util.NewProgressReader(resp.Body, entity.EventGameDownload, int(resp.ContentLength))
+	reader := util.NewProgressReader(ctx, resp.Body, entity.EventGameDownload, int(resp.ContentLength))
 
 	if _, err := io.Copy(outFile, reader); err != nil {
 		return err

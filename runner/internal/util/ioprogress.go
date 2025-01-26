@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"io"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 )
 
 type ProgressReader struct {
+	ctx        context.Context
 	r          io.Reader
 	event      entity.EventCode
 	total      int
@@ -17,8 +19,9 @@ type ProgressReader struct {
 	prevUpdate time.Time
 }
 
-func NewProgressReader(base io.Reader, event entity.EventCode, total int) *ProgressReader {
+func NewProgressReader(ctx context.Context, base io.Reader, event entity.EventCode, total int) *ProgressReader {
 	return &ProgressReader{
+		ctx:   ctx,
 		r:     base,
 		event: event,
 		total: total,
@@ -37,7 +40,7 @@ func (r *ProgressReader) Read(buf []byte) (int, error) {
 				percent = current * 100 / r.total
 			}
 
-			exterior.SendEvent(runner.Event{
+			exterior.SendEvent(r.ctx, runner.Event{
 				Type: runner.EventStatus,
 				Status: &runner.StatusExtra{
 					EventCode: r.event,

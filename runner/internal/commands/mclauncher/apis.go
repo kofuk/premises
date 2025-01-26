@@ -29,7 +29,7 @@ func NewRPCHandler(s *rpc.Server, game *game.Launcher) *RPCHandler {
 }
 
 func (h *RPCHandler) HandleGameStop(ctx context.Context, req *rpc.AbstractRequest) error {
-	h.game.Stop()
+	h.game.Stop(ctx)
 	return nil
 }
 
@@ -62,7 +62,7 @@ func (h *RPCHandler) HandleGameReconfigure(ctx context.Context, req *rpc.Abstrac
 		return err
 	}
 
-	h.game.StopToRestart()
+	h.game.StopToRestart(ctx)
 
 	return nil
 }
@@ -84,7 +84,7 @@ func (h *RPCHandler) HandleSnapshotCreate(ctx context.Context, req *rpc.Abstract
 		}, nil); err != nil {
 			slog.Error("Failed to create snapshot", slog.Any("error", err))
 
-			exterior.DispatchEvent(runner.Event{
+			exterior.DispatchEvent(ctx, runner.Event{
 				Type: runner.EventInfo,
 				Info: &runner.InfoExtra{
 					InfoCode: entity.InfoSnapshotError,
@@ -96,7 +96,7 @@ func (h *RPCHandler) HandleSnapshotCreate(ctx context.Context, req *rpc.Abstract
 			return
 		}
 
-		exterior.DispatchEvent(runner.Event{
+		exterior.DispatchEvent(ctx, runner.Event{
 			Type: runner.EventInfo,
 			Info: &runner.InfoExtra{
 				InfoCode: entity.InfoSnapshotDone,
@@ -117,7 +117,7 @@ func (h *RPCHandler) HandleSnapshotUndo(ctx context.Context, req *rpc.AbstractRe
 
 	go func() {
 		if _, err := os.Stat(env.DataPath(fmt.Sprintf("gamedata/ss@quick%d/world", input.Slot))); err != nil {
-			exterior.DispatchEvent(runner.Event{
+			exterior.DispatchEvent(ctx, runner.Event{
 				Type: runner.EventInfo,
 				Info: &runner.InfoExtra{
 					InfoCode: entity.InfoNoSnapshot,
@@ -128,7 +128,7 @@ func (h *RPCHandler) HandleSnapshotUndo(ctx context.Context, req *rpc.AbstractRe
 			return
 		}
 
-		if err := h.game.QuickUndo(input.Slot); err != nil {
+		if err := h.game.QuickUndo(ctx, input.Slot); err != nil {
 			slog.Error("Unable to quick-undo", slog.Any("error", err))
 		}
 	}()
