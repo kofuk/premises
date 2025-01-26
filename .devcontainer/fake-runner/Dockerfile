@@ -7,7 +7,7 @@ COPY fake_cloud_init.sh /init.sh
 
 RUN mkdir /opt/premises
 
-ENV OTEL_SERVICE_NAME=premises \
+ENV OTEL_SERVICE_NAME=premises-runner \
     OTEL_EXPORTER_OTLP_ENDPOINT="http://jaeger:4317"
 
 EXPOSE 8521
