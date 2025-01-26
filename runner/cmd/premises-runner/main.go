@@ -81,7 +81,7 @@ func (app App) Run(ctx context.Context, args []string) int {
 	os.Setenv("PREMISES_RUNNER_COMMAND", cmdName)
 
 	tracer := tracerProvider.Tracer("github.com/kofuk/premises/runner/cmd/premises-runner")
-	ctx, span := tracer.Start(ctx, fmt.Sprintf("Runner %s", cmdName))
+	ctx, span := tracer.Start(ctx, "Runner main")
 	defer span.End()
 
 	rpc.InitializeDefaultServer(env.DataPath("rpc@" + cmdName))

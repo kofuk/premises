@@ -20,7 +20,10 @@ import (
 	"github.com/kofuk/premises/runner/internal/rpc"
 	"github.com/kofuk/premises/runner/internal/rpc/types"
 	"github.com/kofuk/premises/runner/internal/system"
+	"go.opentelemetry.io/otel"
 )
+
+var tracer = otel.Tracer("github.com/kofuk/premises/runner/internal/commands/mclauncher/game")
 
 type OnHealthyFunc func(l *Launcher)
 type BeforeLaunchFunc func(l *Launcher)
@@ -150,6 +153,9 @@ func storeLastServerVersion(config *runner.Config) error {
 }
 
 func (l *Launcher) downloadWorld(ctx context.Context) error {
+	ctx, span := tracer.Start(ctx, "Download world")
+	defer span.End()
+
 	if l.config.GameConfig.World.ShouldGenerate {
 		if err := fs.RemoveIfExists(env.DataPath("gamedata/world")); err != nil {
 			slog.Error("Unable to remove world directory", slog.Any("error", err))
@@ -193,6 +199,16 @@ func (l *Launcher) downloadWorld(ctx context.Context) error {
 }
 
 func (l *Launcher) downloadServerJar(ctx context.Context) error {
+	ctx, span := tracer.Start(ctx, "Download server.jar")
+	defer span.End()
+
+	if l.config.GameConfig.Server.PreferDetected {
+		slog.Info("Read server version from level.dat")
+		if err := DetectAndUpdateVersion(ctx, l.config); err != nil {
+			slog.Error("Error detecting Minecraft version", slog.Any("error", err))
+		}
+	}
+
 	if _, err := os.Stat(env.LocateServer(l.config.GameConfig.Server.Version)); err == nil {
 		slog.Info("No need to download server.jar")
 		return nil
@@ -219,13 +235,16 @@ func (l *Launcher) downloadServerJar(ctx context.Context) error {
 }
 
 func (l *Launcher) uploadWorld(ctx context.Context) error {
+	ctx, span := tracer.Start(ctx, "Upload world")
+	defer span.End()
+
 	exterior.SendEvent(runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventWorldPrepare,
 		},
 	})
-	if err := world.PrepareUploadData(); err != nil {
+	if err := world.PrepareUploadData(ctx); err != nil {
 		slog.Error("Failed to create world archive", slog.Any("error", err))
 		exterior.SendEvent(runner.Event{
 			Type: runner.EventStatus,
@@ -487,13 +506,6 @@ func (l *Launcher) Launch(ctx context.Context) error {
 			},
 		})
 		return nil
-	}
-
-	if l.config.GameConfig.Server.PreferDetected {
-		slog.Info("Read server version from level.dat")
-		if err := DetectAndUpdateVersion(ctx, l.config); err != nil {
-			slog.Error("Error detecting Minecraft version", slog.Any("error", err))
-		}
 	}
 
 	if err := l.downloadServerJar(ctx); err != nil {
