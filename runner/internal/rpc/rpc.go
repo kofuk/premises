@@ -1,5 +1,3 @@
 package rpc
 
-import "go.opentelemetry.io/otel"
-
-var tracer = otel.Tracer("github.com/kofuk/premises/runner/internal/rpc")
+const ScopeName = "github.com/kofuk/premises/runner/internal/rpc"

@@ -23,10 +23,10 @@ import (
 	"github.com/kofuk/premises/runner/internal/fs"
 	"github.com/kofuk/premises/runner/internal/util"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
-var tracer = otel.Tracer("github.com/kofuk/premises/runner/internal/commands/mclauncher/world")
+const ScopeName = "github.com/kofuk/premises/runner/internal/commands/mclauncher/world"
 
 type WorldService struct {
 	client *api.Client
@@ -339,6 +339,7 @@ func createArchive() error {
 }
 
 func PrepareUploadData(ctx context.Context) error {
+	tracer := trace.SpanFromContext(ctx).TracerProvider().Tracer(ScopeName)
 	_, span := tracer.Start(ctx, "Create archive")
 	defer span.End()
 

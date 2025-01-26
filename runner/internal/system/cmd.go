@@ -12,16 +12,14 @@ import (
 	"sync/atomic"
 
 	"github.com/kofuk/premises/runner/internal/env"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
-var (
-	tracer = otel.Tracer("github.com/kofuk/premises/runner/internal/system")
+const ScopeName = "github.com/kofuk/premises/runner/internal/system"
 
-	logNum uint64
-)
+var logNum uint64
 
 func createLog() (io.Writer, string, error) {
 	for {
@@ -53,6 +51,7 @@ func WithWorkingDir(dir string) CmdOption {
 }
 
 func Cmd(ctx context.Context, path string, args []string, options ...CmdOption) error {
+	tracer := trace.SpanFromContext(ctx).TracerProvider().Tracer(ScopeName)
 	ctx, span := tracer.Start(ctx, fmt.Sprintf("EXEC %s", path))
 	defer span.End()
 
@@ -89,6 +88,7 @@ func Cmd(ctx context.Context, path string, args []string, options ...CmdOption) 
 }
 
 func CmdOutput(ctx context.Context, path string, args []string, options ...CmdOption) (string, error) {
+	tracer := trace.SpanFromContext(ctx).TracerProvider().Tracer(ScopeName)
 	ctx, span := tracer.Start(ctx, fmt.Sprintf("EXEC %s", path))
 	defer span.End()
 

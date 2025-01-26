@@ -89,6 +89,7 @@ func handleNotify(ctx context.Context, conn io.ReadWriter, method string, params
 }
 
 func (c *Client) Call(ctx context.Context, method string, params, result any) error {
+	tracer := trace.SpanFromContext(ctx).TracerProvider().Tracer(ScopeName)
 	ctx, span := tracer.Start(ctx, "RPC call",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(attribute.String("rpc.method", method)),
@@ -110,6 +111,7 @@ func (c *Client) Call(ctx context.Context, method string, params, result any) er
 }
 
 func (c *Client) Notify(ctx context.Context, method string, params any) error {
+	tracer := trace.SpanFromContext(ctx).TracerProvider().Tracer(ScopeName)
 	ctx, span := tracer.Start(ctx, "RPC notify",
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(attribute.String("rpc.method", method)),
