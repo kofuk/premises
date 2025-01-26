@@ -11,7 +11,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/kofuk/premises/internal/otel"
+	potel "github.com/kofuk/premises/internal/otel"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
@@ -107,16 +108,21 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 		}
 	}
 
-	ctx := otel.ContextFromTraceContext(context.Background(), req.Traceparent)
-	kind := "call"
-	if req.ID == nil {
-		kind = "notify"
+	span := potel.NoopSpan
+	ctx := context.Background()
+	if req.Traceparent != "" {
+		ctx = potel.ContextFromTraceContext(ctx, req.Traceparent)
+		kind := "call"
+		if req.ID == nil {
+			kind = "notify"
+		}
+		tracer := otel.GetTracerProvider().Tracer(ScopeName)
+		ctx, span = tracer.Start(ctx, fmt.Sprintf("RPC %s", kind),
+			trace.WithSpanKind(trace.SpanKindServer),
+			trace.WithAttributes(attribute.String("rpc.method", req.Method)),
+		)
+		defer span.End()
 	}
-	ctx, span := tracer.Start(ctx, fmt.Sprintf("RPC %s", kind),
-		trace.WithSpanKind(trace.SpanKindServer),
-		trace.WithAttributes(attribute.String("rpc.method", req.Method)),
-	)
-	defer span.End()
 
 	if req.ID == nil {
 		// notify

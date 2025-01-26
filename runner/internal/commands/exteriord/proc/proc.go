@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-var tracer = otel.Tracer("github.com/kofuk/premises/runner/internal/commands/exteriord/proc")
+const ScopeName = "github.com/kofuk/premises/runner/internal/commands/exteriord/proc"
 
 type RestartPolicy int
 
@@ -108,6 +108,7 @@ func runCommand(cmd *exec.Cmd) error {
 		}
 	}
 
+	tracer := otel.GetTracerProvider().Tracer(ScopeName)
 	ctx, span := tracer.Start(context.Background(), fmt.Sprintf("EXEC %s", path),
 		trace.WithNewRoot(),
 	)

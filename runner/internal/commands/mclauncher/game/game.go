@@ -20,10 +20,10 @@ import (
 	"github.com/kofuk/premises/runner/internal/rpc"
 	"github.com/kofuk/premises/runner/internal/rpc/types"
 	"github.com/kofuk/premises/runner/internal/system"
-	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
-var tracer = otel.Tracer("github.com/kofuk/premises/runner/internal/commands/mclauncher/game")
+const ScopeName = "github.com/kofuk/premises/runner/internal/commands/mclauncher/game"
 
 type OnHealthyFunc func(l *Launcher)
 type BeforeLaunchFunc func(l *Launcher)
@@ -153,6 +153,7 @@ func storeLastServerVersion(ctx context.Context, config *runner.Config) error {
 }
 
 func (l *Launcher) downloadWorld(ctx context.Context) error {
+	tracer := trace.SpanFromContext(ctx).TracerProvider().Tracer(ScopeName)
 	ctx, span := tracer.Start(ctx, "Download world")
 	defer span.End()
 
@@ -199,6 +200,7 @@ func (l *Launcher) downloadWorld(ctx context.Context) error {
 }
 
 func (l *Launcher) downloadServerJar(ctx context.Context) error {
+	tracer := trace.SpanFromContext(ctx).TracerProvider().Tracer(ScopeName)
 	ctx, span := tracer.Start(ctx, "Download server.jar")
 	defer span.End()
 
@@ -235,6 +237,7 @@ func (l *Launcher) downloadServerJar(ctx context.Context) error {
 }
 
 func (l *Launcher) uploadWorld(ctx context.Context) error {
+	tracer := trace.SpanFromContext(ctx).TracerProvider().Tracer(ScopeName)
 	ctx, span := tracer.Start(ctx, "Upload world")
 	defer span.End()
 

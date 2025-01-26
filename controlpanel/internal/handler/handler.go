@@ -24,11 +24,10 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/uptrace/bun"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
 
-var tracer = otel.Tracer("github.com/kofuk/premises/controlpanel/internal/handler")
+const ScopeName = "github.com/kofuk/premises/controlpanel/internal/handler"
 
 type Handler struct {
 	cfg          *config.Config

@@ -50,10 +50,10 @@ func (app App) printUsage() {
 	}
 }
 
-func createContext() context.Context {
+func createContext(ctx context.Context) context.Context {
 	traceContext := os.Getenv("TRACEPARENT")
 	os.Unsetenv("TRACEPARENT")
-	return potel.ContextFromTraceContext(context.Background(), traceContext)
+	return potel.ContextFromTraceContext(ctx, traceContext)
 }
 
 func (app App) Run(ctx context.Context, args []string) int {
@@ -85,7 +85,7 @@ func (app App) Run(ctx context.Context, args []string) int {
 		tracer := tracerProvider.Tracer("github.com/kofuk/premises/runner/cmd/premises-runner")
 
 		var span trace.Span
-		ctx, span = tracer.Start(createContext(), "Runner main")
+		ctx, span = tracer.Start(createContext(ctx), "Runner main")
 		defer span.End()
 	}
 
