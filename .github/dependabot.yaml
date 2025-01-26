@@ -9,11 +9,21 @@ updates:
     schedule:
       interval: weekly
     groups:
+      aws-sdk-go-v2:
+        applies-to: version-updates
+        patterns:
+          - 'github.com/aws/aws-sdk-go-v2'
+          - 'github.com/aws/aws-sdk-go-v2/*'
+          - 'github.com/aws/smithy-go'
       bun:
         applies-to: version-updates
         patterns:
           - 'github.com/uptrace/bun'
           - 'github.com/uptrace/bun/*'
+      opentelemetry:
+        applies-to: version-updates
+        patterns:
+          - 'go.opentelemetry.io/*'
   - package-ecosystem: npm
     directory: /controlpanel/frontend
     open-pull-requests-limit: 20
