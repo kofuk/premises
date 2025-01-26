@@ -14,6 +14,10 @@ const (
 	EventStarted EventType = "started"
 )
 
+func (ev EventType) String() string {
+	return string(ev)
+}
+
 type StatusExtra struct {
 	EventCode entity.EventCode `json:"eventCode"`
 	Progress  int              `json:"progress"`
@@ -47,13 +51,18 @@ type StartedExtra struct {
 	} `json:"world"`
 }
 
+type RequestMeta struct {
+	Traceparent string `json:"traceparent"`
+}
+
 type Event struct {
-	Type    EventType     `json:"type"`
-	Hello   *HelloExtra   `json:"hello,omitempty"`
-	Status  *StatusExtra  `json:"status,omitempty"`
-	Sysstat *SysstatExtra `json:"sysstat,omitempty"`
-	Info    *InfoExtra    `json:"info,omitempty"`
-	Started *StartedExtra `json:"started,omitempty"`
+	Type     EventType     `json:"type"`
+	Metadata RequestMeta   `json:"metadata"`
+	Hello    *HelloExtra   `json:"hello,omitempty"`
+	Status   *StatusExtra  `json:"status,omitempty"`
+	Sysstat  *SysstatExtra `json:"sysstat,omitempty"`
+	Info     *InfoExtra    `json:"info,omitempty"`
+	Started  *StartedExtra `json:"started,omitempty"`
 }
 
 type ActionType string
@@ -79,6 +88,7 @@ type ConnReqInfo struct {
 type Action struct {
 	Type     ActionType      `json:"type"`
 	Actor    int             `json:"actor"`
+	Metadata RequestMeta     `json:"metadata"`
 	Config   *GameConfig     `json:"config,omitempty"`
 	Snapshot *SnapshotConfig `json:"snapshot,omitempty"`
 	ConnReq  *ConnReqInfo    `json:"connectionRequestInfo,omitempty"`
