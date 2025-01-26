@@ -34,7 +34,7 @@ func sendSysstat(ctx context.Context) error {
 			continue
 		}
 
-		exterior.SendEvent(runner.Event{
+		exterior.SendEvent(ctx, runner.Event{
 			Type: runner.EventSysstat,
 			Sysstat: &runner.SysstatExtra{
 				CPUUsage: usage,

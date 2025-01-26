@@ -72,12 +72,12 @@ func NewLauncher(ctx context.Context, config *runner.Config, world *world.WorldS
 	})
 
 	l.RegisterOnHealthyHook(func(l *Launcher) {
-		go l.sendStartedEvent(config)
+		go l.sendStartedEvent(ctx, config)
 
 		l.AddToWhiteList(l.config.GameConfig.Whitelist)
 		l.AddToOp(l.config.GameConfig.Operators)
 
-		exterior.SendEvent(runner.Event{
+		exterior.SendEvent(ctx, runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventRunning,
@@ -182,7 +182,7 @@ func (l *Launcher) downloadWorld(ctx context.Context) error {
 			slog.Error("Failed to remove last world hash", slog.Any("error", err))
 		}
 
-		exterior.SendEvent(runner.Event{
+		exterior.SendEvent(ctx, runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventWorldDownload,
@@ -216,7 +216,7 @@ func (l *Launcher) downloadServerJar(ctx context.Context) error {
 		return err
 	}
 
-	exterior.SendEvent(runner.Event{
+	exterior.SendEvent(ctx, runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventGameDownload,
@@ -238,7 +238,7 @@ func (l *Launcher) uploadWorld(ctx context.Context) error {
 	ctx, span := tracer.Start(ctx, "Upload world")
 	defer span.End()
 
-	exterior.SendEvent(runner.Event{
+	exterior.SendEvent(ctx, runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventWorldPrepare,
@@ -246,7 +246,7 @@ func (l *Launcher) uploadWorld(ctx context.Context) error {
 	})
 	if err := world.PrepareUploadData(ctx); err != nil {
 		slog.Error("Failed to create world archive", slog.Any("error", err))
-		exterior.SendEvent(runner.Event{
+		exterior.SendEvent(ctx, runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventWorldErr,
@@ -255,7 +255,7 @@ func (l *Launcher) uploadWorld(ctx context.Context) error {
 		return err
 	}
 
-	exterior.SendEvent(runner.Event{
+	exterior.SendEvent(ctx, runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventWorldUpload,
@@ -264,7 +264,7 @@ func (l *Launcher) uploadWorld(ctx context.Context) error {
 	key, err := l.world.UploadWorldData(ctx, l.config)
 	if err != nil {
 		slog.Error("Failed to upload world data", slog.Any("error", err))
-		exterior.SendEvent(runner.Event{
+		exterior.SendEvent(ctx, runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventWorldErr,
@@ -338,7 +338,7 @@ func (l *Launcher) stopAfterLongInactive(ctx context.Context) {
 			}
 
 			if time.Since(lastActive) > time.Duration(timeout)*time.Minute {
-				l.Stop()
+				l.Stop(ctx)
 				return
 			}
 		}
@@ -348,7 +348,7 @@ func (l *Launcher) stopAfterLongInactive(ctx context.Context) {
 func (l *Launcher) executeServer(ctx context.Context, cmdline []string) error {
 	slog.Info("Launching Minecraft server", slog.String("server_name", l.config.GameConfig.Server.Version), slog.Any("commandline", cmdline))
 
-	exterior.SendEvent(runner.Event{
+	exterior.SendEvent(ctx, runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventLoading,
@@ -425,9 +425,9 @@ func (l *Launcher) startServer(ctx context.Context) error {
 	}
 }
 
-func (l *Launcher) StopToRestart() {
+func (l *Launcher) StopToRestart(ctx context.Context) {
 	l.shouldRestart = true
-	l.Stop()
+	l.Stop(ctx)
 	l.cancel()
 }
 
@@ -468,8 +468,8 @@ func (l *Launcher) cleanGameDirIfVersionChanged() error {
 	return nil
 }
 
-func (l *Launcher) prepareEnvironment() error {
-	exterior.SendEvent(runner.Event{
+func (l *Launcher) prepareEnvironment(ctx context.Context) error {
+	exterior.SendEvent(ctx, runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventWorldPrepare,
@@ -499,7 +499,7 @@ func (l *Launcher) Launch(ctx context.Context) error {
 	if err := l.downloadWorld(ctx); err != nil {
 		slog.Error("Unable to donwload world data", slog.Any("error", err))
 
-		exterior.SendEvent(runner.Event{
+		exterior.SendEvent(ctx, runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventWorldErr,
@@ -510,7 +510,7 @@ func (l *Launcher) Launch(ctx context.Context) error {
 
 	if err := l.downloadServerJar(ctx); err != nil {
 		slog.Error("Couldn't download server.jar", slog.Any("error", err))
-		exterior.SendEvent(runner.Event{
+		exterior.SendEvent(ctx, runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventGameErr,
@@ -519,9 +519,9 @@ func (l *Launcher) Launch(ctx context.Context) error {
 		return err
 	}
 
-	if err := l.prepareEnvironment(); err != nil {
+	if err := l.prepareEnvironment(ctx); err != nil {
 		slog.Error("Failed to prepare environment", slog.Any("error", err))
-		exterior.SendEvent(runner.Event{
+		exterior.SendEvent(ctx, runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventLaunchErr,
@@ -532,7 +532,7 @@ func (l *Launcher) Launch(ctx context.Context) error {
 
 	if err := l.startServer(ctx); err != nil {
 		slog.Error("Failed to launch Minecraft server", slog.Any("error", err))
-		exterior.SendEvent(runner.Event{
+		exterior.SendEvent(ctx, runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
 				EventCode: entity.EventLaunchErr,
@@ -566,8 +566,8 @@ func (l *Launcher) isServerActive() bool {
 	return len(list) > 0
 }
 
-func (l *Launcher) Stop() {
-	exterior.DispatchEvent(runner.Event{
+func (l *Launcher) Stop(ctx context.Context) {
+	exterior.DispatchEvent(ctx, runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventStopping,
@@ -604,8 +604,8 @@ func (l *Launcher) AddToOp(players []string) {
 	}
 }
 
-func (l *Launcher) QuickUndo(slot int) error {
-	exterior.DispatchEvent(runner.Event{
+func (l *Launcher) QuickUndo(ctx context.Context, slot int) error {
+	exterior.DispatchEvent(ctx, runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: entity.EventStopping,
@@ -615,12 +615,12 @@ func (l *Launcher) QuickUndo(slot int) error {
 	l.restoringSnapshot = true
 	l.quickUndoSlot = slot
 
-	l.Stop()
+	l.Stop(ctx)
 
 	return nil
 }
 
-func (l *Launcher) sendStartedEvent(config *runner.Config) {
+func (l *Launcher) sendStartedEvent(ctx context.Context, config *runner.Config) {
 	slog.Debug("Send Started event...")
 
 	data := new(runner.StartedExtra)
@@ -633,7 +633,7 @@ func (l *Launcher) sendStartedEvent(config *runner.Config) {
 	}
 	data.World.Seed = seed
 
-	exterior.SendEvent(runner.Event{
+	exterior.SendEvent(ctx, runner.Event{
 		Type:    runner.EventStarted,
 		Started: data,
 	})

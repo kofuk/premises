@@ -106,7 +106,7 @@ func (w *WorldService) DownloadWorldData(ctx context.Context, config *runner.Con
 		return fmt.Errorf("unable to download %s: %s", config.GameConfig.World.GenerationId, resp.Status)
 	}
 
-	reader := util.NewProgressReader(resp.Body, entity.EventWorldDownload, int(resp.ContentLength))
+	reader := util.NewProgressReader(ctx, resp.Body, entity.EventWorldDownload, int(resp.ContentLength))
 
 	if err := pl.Run(reader); err != nil {
 		return err
@@ -159,7 +159,7 @@ func (w *WorldService) doUploadWorldData(ctx context.Context, config *runner.Con
 		return "", err
 	}
 
-	reader := util.NewProgressReader(file, entity.EventWorldUpload, int(fileInfo.Size())).ToSeekable()
+	reader := util.NewProgressReader(ctx, file, entity.EventWorldUpload, int(fileInfo.Size())).ToSeekable()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, reader)
 	if err != nil {

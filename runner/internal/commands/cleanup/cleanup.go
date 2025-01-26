@@ -70,8 +70,8 @@ func unmountData() {
 	}
 }
 
-func notifyStatus(eventCode entity.EventCode) {
-	exterior.SendEvent(runner.Event{
+func notifyStatus(ctx context.Context, eventCode entity.EventCode) {
+	exterior.SendEvent(ctx, runner.Event{
 		Type: runner.EventStatus,
 		Status: &runner.StatusExtra{
 			EventCode: eventCode,
@@ -109,7 +109,7 @@ func copyLogData() {
 }
 
 func Run(ctx context.Context, args []string) int {
-	notifyStatus(entity.EventClean)
+	notifyStatus(ctx, entity.EventClean)
 
 	slog.Info("Removing snaphots...")
 	removeSnapshots(ctx)
@@ -130,7 +130,7 @@ func Run(ctx context.Context, args []string) int {
 	slog.Info("Copying log file if it is dev runner")
 	copyLogData()
 
-	notifyStatus(entity.EventShutdown)
+	notifyStatus(ctx, entity.EventShutdown)
 
 	// XXX
 	time.Sleep(5 * time.Second)
