@@ -16,7 +16,11 @@ import (
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/internal/entity/web"
+	potel "github.com/kofuk/premises/internal/otel"
 	"github.com/labstack/echo/v4"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func (h *Handler) handleRunnerPoll(c echo.Context) error {
@@ -82,8 +86,22 @@ func (h *Handler) handlePostStatus(c echo.Context) error {
 			})
 		}
 
+		span := potel.NoopSpan
+		ctx := context.Background()
+		if event.Type != runner.EventSysstat {
+			ctx, span = tracer.Start(
+				potel.ContextFromTraceContext(context.Background(), event.Metadata.Traceparent),
+				fmt.Sprintf("Event (%s)", event.Type),
+				trace.WithSpanKind(trace.SpanKindServer),
+				trace.WithAttributes(attribute.String("premises.event_type", event.Type.String())),
+			)
+		}
+
 		if event.Type == runner.EventStatus && event.Status.EventCode == entity.EventShutdown {
-			go h.shutdownServer(context.Background(), h.GameServer, c.Request().Header.Get("Authorization"))
+			go h.shutdownServer(ctx, h.GameServer, c.Request().Header.Get("Authorization"))
+
+			span.End()
+
 			return c.JSON(http.StatusOK, web.SuccessfulResponse[interface{}]{
 				Success: true,
 				Data:    nil,
@@ -92,13 +110,19 @@ func (h *Handler) handlePostStatus(c echo.Context) error {
 
 		slog.Debug("Event from runner", slog.Any("payload", event))
 
-		if err := monitor.HandleEvent(context.Background(), runnerId, h.Streaming, h.cfg, &h.KVS, &event); err != nil {
+		if err := monitor.HandleEvent(ctx, runnerId, h.Streaming, h.cfg, &h.KVS, &event); err != nil {
 			slog.Error("Unable to handle event", slog.Any("error", err))
+
+			span.SetStatus(codes.Error, err.Error())
+			span.End()
+
 			return c.JSON(http.StatusOK, web.ErrorResponse{
 				Success:   false,
 				ErrorCode: entity.ErrInternal,
 			})
 		}
+
+		span.End()
 	}
 
 	return c.JSON(http.StatusOK, web.SuccessfulResponse[interface{}]{

@@ -1,3 +1,3 @@
 package internal
 
-const ProtocolVersion = "2024-07-19"
+const ProtocolVersion = "2025-01-26"
