@@ -26,10 +26,10 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.10.0
 	github.com/ulikunitz/xz v0.5.12
-	github.com/uptrace/bun v1.2.8
-	github.com/uptrace/bun/dialect/pgdialect v1.2.8
-	github.com/uptrace/bun/driver/pgdriver v1.2.8
-	github.com/uptrace/bun/extra/bunotel v1.2.8
+	github.com/uptrace/bun v1.2.9
+	github.com/uptrace/bun/dialect/pgdialect v1.2.9
+	github.com/uptrace/bun/driver/pgdriver v1.2.9
+	github.com/uptrace/bun/extra/bunotel v1.2.9
 	go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws v0.59.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.59.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0
@@ -92,7 +92,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/puzpuzpuz/xsync/v3 v3.4.0 // indirect
+	github.com/puzpuzpuz/xsync/v3 v3.5.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/uptrace/opentelemetry-go-extra/otelsql v0.3.2 // indirect
