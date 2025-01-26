@@ -16,6 +16,7 @@ import (
 	"github.com/kofuk/premises/runner/internal/rpc/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type RPCHandler struct {
@@ -119,7 +120,8 @@ func (h *RPCHandler) HandleSnapshotUndo(ctx context.Context, req *rpc.AbstractRe
 
 	go func() {
 		tracer := otel.GetTracerProvider().Tracer(ScopeName)
-		ctx, span := tracer.Start(context.Background(), "Revert to snapshot")
+		ctx := trace.ContextWithSpanContext(context.Background(), trace.SpanContextFromContext(ctx))
+		ctx, span := tracer.Start(ctx, "Revert to snapshot")
 		defer span.End()
 
 		if _, err := os.Stat(env.DataPath(fmt.Sprintf("gamedata/ss@quick%d/world", input.Slot))); err != nil {
