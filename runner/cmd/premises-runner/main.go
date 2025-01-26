@@ -22,6 +22,8 @@ import (
 	"github.com/kofuk/premises/runner/internal/env"
 	"github.com/kofuk/premises/runner/internal/metadata"
 	"github.com/kofuk/premises/runner/internal/rpc"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -60,14 +62,6 @@ func (app App) Run(ctx context.Context, args []string) int {
 		os.Exit(1)
 	}
 
-	tracerProvider, err := potel.InitializeTracer(ctx)
-	if err != nil {
-		slog.Error("Failed to initialize tracer", slog.Any("error", err))
-	}
-	if tracerProvider != nil {
-		defer tracerProvider.Shutdown(ctx)
-	}
-
 	cmdName := strings.TrimPrefix(args[1], "--")
 
 	cmd, ok := app.Commands[cmdName]
@@ -77,12 +71,26 @@ func (app App) Run(ctx context.Context, args []string) int {
 		os.Exit(1)
 	}
 
+	var tracerProvider *sdktrace.TracerProvider
+	if cmdName != "sysstat" {
+		var err error
+		tracerProvider, err = potel.InitializeTracer(ctx)
+		if err != nil {
+			slog.Error("Failed to initialize tracer", slog.Any("error", err))
+		}
+	}
+	if tracerProvider != nil {
+		defer tracerProvider.Shutdown(ctx)
+
+		tracer := tracerProvider.Tracer("github.com/kofuk/premises/runner/cmd/premises-runner")
+
+		var span trace.Span
+		ctx, span = tracer.Start(createContext(), "Runner main")
+		defer span.End()
+	}
+
 	slog.SetDefault(slog.Default().With(slog.String("runner_command", cmdName)))
 	os.Setenv("PREMISES_RUNNER_COMMAND", cmdName)
-
-	tracer := tracerProvider.Tracer("github.com/kofuk/premises/runner/cmd/premises-runner")
-	ctx, span := tracer.Start(ctx, "Runner main")
-	defer span.End()
 
 	rpc.InitializeDefaultServer(env.DataPath("rpc@" + cmdName))
 
@@ -118,8 +126,6 @@ func main() {
 		AddSource: true,
 		Level:     logLevel,
 	})))
-
-	ctx := createContext()
 
 	app := App{
 		Commands: map[string]Command{
@@ -182,5 +188,5 @@ func main() {
 		},
 	}
 
-	os.Exit(app.Run(ctx, os.Args))
+	os.Exit(app.Run(context.Background(), os.Args))
 }
