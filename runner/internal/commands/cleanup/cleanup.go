@@ -135,7 +135,7 @@ func Run(ctx context.Context, args []string) int {
 	// XXX
 	time.Sleep(5 * time.Second)
 
-	rpc.ToExteriord.Notify("proc/done", nil)
+	rpc.ToExteriord.Notify(ctx, "proc/done", nil)
 
 	return 0
 }

@@ -10,7 +10,10 @@ import (
 	"github.com/kofuk/premises/runner/internal/config"
 	"github.com/kofuk/premises/runner/internal/metadata"
 	"github.com/kofuk/premises/runner/internal/rpc"
+	"go.opentelemetry.io/otel"
 )
+
+var tracer = otel.Tracer("github.com/kofuk/premises/runner/internal/commands/mclauncher")
 
 func Run(ctx context.Context, args []string) int {
 	slog.Info("Starting Premises Runner", slog.String("revision", metadata.Revision))

@@ -14,6 +14,7 @@ import (
 	"github.com/kofuk/premises/runner/internal/exterior"
 	"github.com/kofuk/premises/runner/internal/rpc"
 	"github.com/kofuk/premises/runner/internal/rpc/types"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type RPCHandler struct {
@@ -79,7 +80,7 @@ func (h *RPCHandler) HandleSnapshotCreate(ctx context.Context, req *rpc.Abstract
 			return
 		}
 
-		if err := rpc.ToSnapshotHelper.Call("snapshot/create", types.SnapshotHelperInput{
+		if err := rpc.ToSnapshotHelper.Call(ctx, "snapshot/create", types.SnapshotHelperInput{
 			Slot: input.Slot,
 		}, nil); err != nil {
 			slog.Error("Failed to create snapshot", slog.Any("error", err))
@@ -116,7 +117,12 @@ func (h *RPCHandler) HandleSnapshotUndo(ctx context.Context, req *rpc.AbstractRe
 	}
 
 	go func() {
+		ctx, span := tracer.Start(context.Background(), "Revert to snapshot")
+		defer span.End()
+
 		if _, err := os.Stat(env.DataPath(fmt.Sprintf("gamedata/ss@quick%d/world", input.Slot))); err != nil {
+			span.SetStatus(codes.Error, err.Error())
+
 			exterior.DispatchEvent(ctx, runner.Event{
 				Type: runner.EventInfo,
 				Info: &runner.InfoExtra{
@@ -129,6 +135,8 @@ func (h *RPCHandler) HandleSnapshotUndo(ctx context.Context, req *rpc.AbstractRe
 		}
 
 		if err := h.game.QuickUndo(ctx, input.Slot); err != nil {
+			span.SetStatus(codes.Error, err.Error())
+
 			slog.Error("Unable to quick-undo", slog.Any("error", err))
 		}
 	}()

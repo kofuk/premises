@@ -56,7 +56,7 @@ func deleteFsSnapshot(ctx context.Context, id string) error {
 }
 
 func Run(ctx context.Context, args []string) int {
-	rpc.ToExteriord.Notify("proc/registerStopHook", os.Getenv("PREMISES_RUNNER_COMMAND"))
+	rpc.ToExteriord.Notify(ctx, "proc/registerStopHook", os.Getenv("PREMISES_RUNNER_COMMAND"))
 
 	ctx, cancelFn := context.WithCancel(context.Background())
 

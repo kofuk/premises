@@ -4,11 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net"
 	"os"
 	"sync"
+
+	"github.com/kofuk/premises/internal/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type HandlerFunc func(ctx context.Context, req *AbstractRequest) (any, error)
@@ -54,15 +60,17 @@ func readRequest[T any](r io.Reader) (*Request[T], error) {
 	}
 
 	var req Request[T]
-	if err := json.Unmarshal(body, &req); err != nil {
+	if err := json.Unmarshal(body.Body, &req); err != nil {
 		return nil, err
 	}
+
+	req.Traceparent = body.Traceparent
 
 	return &req, nil
 }
 
-func writeResponse[T any](w io.Writer, data *Response[T]) error {
-	if err := writePacket(w, data); err != nil {
+func writeResponse[T any](ctx context.Context, w io.Writer, data *Response[T]) error {
+	if err := writePacket(ctx, w, data); err != nil {
 		return err
 	}
 
@@ -99,14 +107,29 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 		}
 	}
 
+	ctx := otel.ContextFromTraceContext(context.Background(), req.Traceparent)
+	kind := "call"
+	if req.ID == nil {
+		kind = "notify"
+	}
+	ctx, span := tracer.Start(ctx, fmt.Sprintf("RPC %s", kind),
+		trace.WithSpanKind(trace.SpanKindServer),
+		trace.WithAttributes(attribute.String("rpc.method", req.Method)),
+	)
+	defer span.End()
+
 	if req.ID == nil {
 		// notify
 		method, ok := s.getNotifyMethod(req.Method)
 		if !ok {
+			span.SetStatus(codes.Error, "Method not found")
+
 			slog.Error("Method for notify request not found", slog.String("method", req.Method))
 			return nil
 		}
-		if err := method(context.TODO(), req); err != nil {
+		if err := method(ctx, req); err != nil {
+			span.SetStatus(codes.Error, err.Error())
+
 			slog.Error("Error handling notification", slog.Any("error", err))
 			return nil
 		}
@@ -116,6 +139,8 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 	// method call
 	method, ok := s.getMethod(req.Method)
 	if !ok {
+		span.SetStatus(codes.Error, "Method not found")
+
 		return &Response[any]{
 			Version: "2.0",
 			ID:      *req.ID,
@@ -126,8 +151,10 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 		}
 	}
 
-	result, err := method(context.TODO(), req)
+	result, err := method(ctx, req)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+
 		return &Response[any]{
 			Version: "2.0",
 			ID:      *req.ID,
@@ -146,7 +173,7 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 	}
 }
 
-func (s *Server) handleConnection(conn io.ReadWriteCloser) error {
+func (s *Server) handleConnection(ctx context.Context, conn io.ReadWriteCloser) error {
 	defer conn.Close()
 
 	req, err := readRequest[json.RawMessage](conn)
@@ -157,7 +184,7 @@ func (s *Server) handleConnection(conn io.ReadWriteCloser) error {
 	resp := s.handleRequest((*AbstractRequest)(req))
 
 	if resp != nil {
-		if err := writeResponse(conn, resp); err != nil {
+		if err := writeResponse(ctx, conn, resp); err != nil {
 			return err
 		}
 	}
@@ -193,7 +220,7 @@ func (s *Server) Start(ctx context.Context) error {
 		}
 
 		go func() {
-			if err := s.handleConnection(conn); err != nil {
+			if err := s.handleConnection(ctx, conn); err != nil {
 				slog.Error(err.Error())
 			}
 		}()

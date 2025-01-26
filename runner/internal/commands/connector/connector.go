@@ -21,7 +21,7 @@ func Run(ctx context.Context, args []string) int {
 	rpcHandler := NewRPCHandler(rpc.DefaultServer, config, cancelFn)
 	rpcHandler.Bind()
 
-	rpc.ToExteriord.Notify("proc/registerStopHook", os.Getenv("PREMISES_RUNNER_COMMAND"))
+	rpc.ToExteriord.Notify(ctx, "proc/registerStopHook", os.Getenv("PREMISES_RUNNER_COMMAND"))
 
 	<-ctx.Done()
 

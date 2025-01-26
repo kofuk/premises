@@ -12,6 +12,7 @@ import (
 )
 
 func Test_handleConnection(t *testing.T) {
+	ctx := context.Background()
 	sut := NewServer("")
 	sut.RegisterMethod("foo", func(ctx context.Context, req *AbstractRequest) (any, error) {
 		var params struct {
@@ -32,14 +33,14 @@ func Test_handleConnection(t *testing.T) {
 		wb: &bytes.Buffer{},
 	}
 
-	err := sut.handleConnection(conn)
+	err := sut.handleConnection(ctx, conn)
 	assert.NoError(t, err)
 
 	respBody, err := readPacket(conn.wb)
 	assert.NoError(t, err)
 
 	var resp Response[bool]
-	err = json.Unmarshal(respBody, &resp)
+	err = json.Unmarshal(respBody.Body, &resp)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "2.0", resp.Version)

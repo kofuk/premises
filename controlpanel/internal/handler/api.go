@@ -27,6 +27,7 @@ import (
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/internal/entity/web"
+	potel "github.com/kofuk/premises/internal/otel"
 	"github.com/labstack/echo/v4"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
@@ -434,7 +435,10 @@ func (h *Handler) handleApiReconfigure(c echo.Context) error {
 	}
 
 	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
-		Type:   runner.ActionReconfigure,
+		Type: runner.ActionReconfigure,
+		Metadata: runner.RequestMeta{
+			Traceparent: potel.TraceContextFromContext(c.Request().Context()),
+		},
 		Config: gameConfig,
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
@@ -452,6 +456,9 @@ func (h *Handler) handleApiReconfigure(c echo.Context) error {
 func (h *Handler) handleApiStop(c echo.Context) error {
 	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
 		Type: runner.ActionStop,
+		Metadata: runner.RequestMeta{
+			Traceparent: potel.TraceContextFromContext(c.Request().Context()),
+		},
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -782,7 +789,10 @@ func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
 	}
 
 	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
-		Type:  runner.ActionSnapshot,
+		Type: runner.ActionSnapshot,
+		Metadata: runner.RequestMeta{
+			Traceparent: potel.TraceContextFromContext(c.Request().Context()),
+		},
 		Actor: int(userID),
 		Snapshot: &runner.SnapshotConfig{
 			Slot: config.Slot,
@@ -819,7 +829,10 @@ func (h *Handler) handleApiQuickUndoUndo(c echo.Context) error {
 	}
 
 	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
-		Type:  runner.ActionUndo,
+		Type: runner.ActionUndo,
+		Metadata: runner.RequestMeta{
+			Traceparent: potel.TraceContextFromContext(c.Request().Context()),
+		},
 		Actor: int(userID),
 		Snapshot: &runner.SnapshotConfig{
 			Slot: config.Slot,

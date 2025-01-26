@@ -11,13 +11,14 @@ import (
 	"time"
 
 	"github.com/kofuk/premises/internal/entity/runner"
+	"github.com/kofuk/premises/internal/otel"
 	"github.com/kofuk/premises/runner/internal/api"
 	"github.com/kofuk/premises/runner/internal/rpc"
 	"github.com/kofuk/premises/runner/internal/rpc/types"
 	"golang.org/x/sync/errgroup"
 )
 
-type ActionMapper func(action *runner.Action) error
+type ActionMapper func(ctx context.Context, action *runner.Action) error
 
 type OutboundMessage struct {
 	Dispatch bool         `json:"dispatch"`
@@ -30,46 +31,46 @@ type Server struct {
 	actionMappers map[runner.ActionType]ActionMapper
 }
 
-func (s *Server) HandleActionStop(action *runner.Action) error {
-	return rpc.ToLauncher.Notify("game/stop", nil)
+func (s *Server) HandleActionStop(ctx context.Context, action *runner.Action) error {
+	return rpc.ToLauncher.Notify(ctx, "game/stop", nil)
 }
 
-func (s *Server) HandleActionSnapshot(action *runner.Action) error {
+func (s *Server) HandleActionSnapshot(ctx context.Context, action *runner.Action) error {
 	if action.Snapshot == nil {
 		return errors.New("missing snapshot config")
 	}
 
-	return rpc.ToLauncher.Notify("snapshot/create", types.SnapshotInput{
+	return rpc.ToLauncher.Notify(ctx, "snapshot/create", types.SnapshotInput{
 		Slot:  action.Snapshot.Slot,
 		Actor: action.Actor,
 	})
 }
 
-func (s *Server) HandleActionUndo(action *runner.Action) error {
+func (s *Server) HandleActionUndo(ctx context.Context, action *runner.Action) error {
 	if action.Snapshot == nil {
 		return errors.New("missing snapshot config")
 	}
 
-	return rpc.ToLauncher.Notify("snapshot/undo", types.SnapshotInput{
+	return rpc.ToLauncher.Notify(ctx, "snapshot/undo", types.SnapshotInput{
 		Slot:  action.Snapshot.Slot,
 		Actor: action.Actor,
 	})
 }
 
-func (s *Server) HandleActionReconfigure(action *runner.Action) error {
+func (s *Server) HandleActionReconfigure(ctx context.Context, action *runner.Action) error {
 	if action.Config == nil {
 		return errors.New("missing config")
 	}
 
-	return rpc.ToLauncher.Notify("game/reconfigure", action.Config)
+	return rpc.ToLauncher.Notify(ctx, "game/reconfigure", action.Config)
 }
 
-func (s *Server) HandleActionConnRequest(action *runner.Action) error {
+func (s *Server) HandleActionConnRequest(ctx context.Context, action *runner.Action) error {
 	if action.ConnReq == nil {
 		return errors.New("missing request info")
 	}
 
-	return rpc.ToConnector.Notify("proxy/open", action.ConnReq)
+	return rpc.ToConnector.Notify(ctx, "proxy/open", action.ConnReq)
 }
 
 func NewServer(addr string, authKey string, msgChan chan OutboundMessage) *Server {
@@ -165,8 +166,10 @@ func (s *Server) PollAction(ctx context.Context) {
 		}
 
 		eg.Go(func() error {
+			ctx := otel.ContextFromTraceContext(context.Background(), action.Metadata.Traceparent)
+
 			// Handle action asynchronously
-			if err := mapper(action); err != nil {
+			if err := mapper(ctx, action); err != nil {
 				slog.Error(fmt.Sprintf("Error occurred in action mapper: %s", action.Type), slog.Any("error", err))
 			}
 			return nil

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -24,7 +25,7 @@ func NewRPCCommand() *cobra.Command {
 		Use:   "rpc",
 		Short: "Send a request to the RPC server",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return rpc.Run()
+			return rpc.Run(context.Background())
 		},
 	}
 
@@ -37,7 +38,7 @@ func NewRPCCommand() *cobra.Command {
 	return cmd
 }
 
-func (r *RPC) Run() error {
+func (r *RPC) Run(ctx context.Context) error {
 	data, err := io.ReadAll(os.Stdin)
 	if err != nil {
 		return fmt.Errorf("failed to read stdin: %w", err)
@@ -48,13 +49,13 @@ func (r *RPC) Run() error {
 	switch r.RequestType {
 	case "call":
 		var resp json.RawMessage
-		if err := client.Call(r.Method, json.RawMessage(data), &resp); err != nil {
+		if err := client.Call(ctx, r.Method, json.RawMessage(data), &resp); err != nil {
 			return err
 		}
 		fmt.Println(string(resp))
 
 	case "notify":
-		if err := client.Notify(r.Method, json.RawMessage(data)); err != nil {
+		if err := client.Notify(ctx, r.Method, json.RawMessage(data)); err != nil {
 			return err
 		}
 

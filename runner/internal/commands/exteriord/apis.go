@@ -98,7 +98,7 @@ func (h *RPCHandler) HandleProcDone(ctx context.Context, req *rpc.AbstractReques
 	defer h.m.Unlock()
 
 	for _, cmd := range h.stopHook {
-		if err := rpc.NewClient(env.DataPath("rpc@"+cmd)).Notify("base/stop", nil); err != nil {
+		if err := rpc.NewClient(env.DataPath("rpc@"+cmd)).Notify(ctx, "base/stop", nil); err != nil {
 			slog.Warn("Error calling hook", slog.String("cmd", cmd), slog.Any("error", err))
 		}
 	}
