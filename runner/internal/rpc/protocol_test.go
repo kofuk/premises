@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -92,7 +93,8 @@ func Test_readPacket(t *testing.T) {
 
 func Test_writePacket(t *testing.T) {
 	var buf bytes.Buffer
-	err := writePacket(&buf, "foo")
+	ctx := context.Background()
+	err := writePacket(ctx, &buf, "foo")
 
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("Content-Length: 5\r\n\r\n\"foo\""), buf.Bytes())

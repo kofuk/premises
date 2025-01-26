@@ -10,9 +10,9 @@ import (
 	"github.com/kofuk/premises/runner/internal/rpc/types"
 )
 
-func sendEvent(event runner.Event, dispatch bool) error {
+func sendEvent(ctx context.Context, event runner.Event, dispatch bool) error {
 	slog.Debug("Sending message...", slog.Any("data", event))
-	return rpc.ToExteriord.Notify("status/push", types.EventInput{
+	return rpc.ToExteriord.Notify(ctx, "status/push", types.EventInput{
 		Dispatch: dispatch,
 		Event:    event,
 	})
@@ -22,7 +22,7 @@ func sendEvent(event runner.Event, dispatch bool) error {
 func SendEvent(ctx context.Context, event runner.Event) {
 	event.Metadata.Traceparent = potel.TraceContextFromContext(ctx)
 
-	if err := sendEvent(event, false); err != nil {
+	if err := sendEvent(ctx, event, false); err != nil {
 		slog.Error("Unable to send message", slog.Any("error", err))
 	}
 }
@@ -31,7 +31,7 @@ func SendEvent(ctx context.Context, event runner.Event) {
 func DispatchEvent(ctx context.Context, event runner.Event) {
 	event.Metadata.Traceparent = potel.TraceContextFromContext(ctx)
 
-	if err := sendEvent(event, true); err != nil {
+	if err := sendEvent(ctx, event, true); err != nil {
 		slog.Error("Unable to send message", slog.Any("error", err))
 	}
 }

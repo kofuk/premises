@@ -2,12 +2,15 @@ package rpc
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
+
+	"github.com/kofuk/premises/internal/otel"
 )
 
 const (
@@ -27,10 +30,11 @@ const (
 )
 
 type Request[T any] struct {
-	Version string `json:"jsonrpc"`
-	ID      *int   `json:"id,omitempty"`
-	Method  string `json:"method"`
-	Params  T      `json:"params"`
+	Version     string `json:"jsonrpc"`
+	ID          *int   `json:"id,omitempty"`
+	Method      string `json:"method"`
+	Params      T      `json:"params"`
+	Traceparent string `json:"-"`
 }
 
 type AbstractRequest Request[json.RawMessage]
@@ -54,15 +58,24 @@ func (e *RPCError) Error() string {
 }
 
 type Response[T any] struct {
-	Version string    `json:"jsonrpc"`
-	ID      int       `json:"id"`
-	Result  T         `json:"result,omitempty"`
-	Error   *RPCError `json:"error,omitempty"`
+	Version     string    `json:"jsonrpc"`
+	ID          int       `json:"id"`
+	Result      T         `json:"result,omitempty"`
+	Error       *RPCError `json:"error,omitempty"`
+	Traceparent string    `json:"-"`
 }
 
-func readPacket(r io.Reader) (json.RawMessage, error) {
+type Packet struct {
+	ContentLength int
+	Traceparent   string
+	Body          json.RawMessage
+}
+
+func readPacket(r io.Reader) (*Packet, error) {
 	br := bufio.NewReader(r)
-	length := -1
+	packet := &Packet{
+		ContentLength: -1,
+	}
 	for {
 		l, _, err := br.ReadLine()
 		if err != nil {
@@ -76,18 +89,20 @@ func readPacket(r io.Reader) (json.RawMessage, error) {
 			return nil, errors.New("invalid header")
 		}
 		if strings.EqualFold(f[0], "content-length") {
-			length, err = strconv.Atoi(f[1])
+			packet.ContentLength, err = strconv.Atoi(f[1])
 			if err != nil {
 				return nil, err
 			}
+		} else if strings.EqualFold(f[0], "traceparent") {
+			packet.Traceparent = f[1]
 		}
 	}
 
-	if length < 0 {
+	if packet.ContentLength < 0 {
 		return nil, errors.New("invalid length")
 	}
 
-	buf := make([]byte, length)
+	buf := make([]byte, packet.ContentLength)
 	if _, err := io.ReadFull(br, buf); err != nil {
 		return nil, err
 	}
@@ -97,10 +112,12 @@ func readPacket(r io.Reader) (json.RawMessage, error) {
 		return nil, err
 	}
 
-	return body, nil
+	packet.Body = body
+
+	return packet, nil
 }
 
-func writePacket(w io.Writer, body any) error {
+func writePacket(ctx context.Context, w io.Writer, body any) error {
 	bw := bufio.NewWriter(w)
 	defer bw.Flush()
 
@@ -109,7 +126,11 @@ func writePacket(w io.Writer, body any) error {
 		return err
 	}
 
-	bw.WriteString(fmt.Sprintf("Content-Length: %d\r\n\r\n", len(bodyJSON)))
+	bw.WriteString(fmt.Sprintf("Content-Length: %d\r\n", len(bodyJSON)))
+	if traceparent := otel.TraceContextFromContext(ctx); traceparent != "" {
+		bw.WriteString(fmt.Sprintf("Traceparent: %s\r\n", traceparent))
+	}
+	bw.WriteString("\r\n")
 	bw.Write(bodyJSON)
 
 	return nil

@@ -1,12 +1,16 @@
 package rpc
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"net"
 
 	"github.com/kofuk/premises/runner/internal/env"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Client struct {
@@ -27,22 +31,24 @@ func NewClient(path string) *Client {
 }
 
 func readResponse(conn io.ReadWriter) (*Response[json.RawMessage], error) {
-	body, err := readPacket(conn)
+	packet, err := readPacket(conn)
 	if err != nil {
 		return nil, err
 	}
 
 	var resp Response[json.RawMessage]
-	if err := json.Unmarshal(body, &resp); err != nil {
+	if err := json.Unmarshal(packet.Body, &resp); err != nil {
 		return nil, err
 	}
+
+	resp.Traceparent = packet.Traceparent
 
 	return &resp, nil
 }
 
-func handleCall(conn io.ReadWriter, method string, params, result any) error {
+func handleCall(ctx context.Context, conn io.ReadWriter, method string, params, result any) error {
 	reqID := 1
-	if err := writePacket(conn, &Request[any]{
+	if err := writePacket(ctx, conn, &Request[any]{
 		Version: "2.0",
 		ID:      &reqID,
 		Method:  method,
@@ -74,30 +80,52 @@ func handleCall(conn io.ReadWriter, method string, params, result any) error {
 	return nil
 }
 
-func handleNotify(conn io.ReadWriter, method string, params any) error {
-	return writePacket(conn, &Request[any]{
+func handleNotify(ctx context.Context, conn io.ReadWriter, method string, params any) error {
+	return writePacket(ctx, conn, &Request[any]{
 		Version: "2.0",
 		Method:  method,
 		Params:  params,
 	})
 }
 
-func (c *Client) Call(method string, params, result any) error {
+func (c *Client) Call(ctx context.Context, method string, params, result any) error {
+	ctx, span := tracer.Start(ctx, "RPC call",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(attribute.String("rpc.method", method)),
+	)
+	defer span.End()
+
 	conn, err := net.Dial("unix", c.path)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	return handleCall(conn, method, params, result)
+	err = handleCall(ctx, conn, method, params, result)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return err
 }
 
-func (c *Client) Notify(method string, params any) error {
+func (c *Client) Notify(ctx context.Context, method string, params any) error {
+	ctx, span := tracer.Start(ctx, "RPC notify",
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(attribute.String("rpc.method", method)),
+	)
+	defer span.End()
+
 	conn, err := net.Dial("unix", c.path)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
 
-	return handleNotify(conn, method, params)
+	err = handleNotify(ctx, conn, method, params)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+	}
+
+	return err
 }

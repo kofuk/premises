@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"testing"
 
@@ -9,6 +10,8 @@ import (
 )
 
 func Test_handleCall(t *testing.T) {
+	ctx := context.Background()
+
 	cases := []struct {
 		name         string
 		params       any
@@ -45,7 +48,7 @@ func Test_handleCall(t *testing.T) {
 				wb: &bytes.Buffer{},
 			}
 
-			err := handleCall(conn, "test", tt.params, &tt.resultTo)
+			err := handleCall(ctx, conn, "test", tt.params, &tt.resultTo)
 
 			if tt.expectsError {
 				assert.Error(t, err)
@@ -57,22 +60,24 @@ func Test_handleCall(t *testing.T) {
 }
 
 func Test_handleNotify(t *testing.T) {
+	ctx := context.Background()
 	conn := &buffer{
 		rb: bytes.NewBufferString(""),
 		wb: &bytes.Buffer{},
 	}
 
-	err := handleNotify(conn, "test", struct{}{})
+	err := handleNotify(ctx, conn, "test", struct{}{})
 	assert.NoError(t, err)
 }
 
 func Test_handleCall_ignoreResult(t *testing.T) {
+	ctx := context.Background()
 	respJSON := `{"jsonrpc":"2.0","id":1,"result":"foo"}`
 	conn := &buffer{
 		rb: bytes.NewBufferString(fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len([]byte(respJSON)), respJSON)),
 		wb: &bytes.Buffer{},
 	}
 
-	err := handleCall(conn, "test", struct{}{}, nil)
+	err := handleCall(ctx, conn, "test", struct{}{}, nil)
 	assert.NoError(t, err)
 }

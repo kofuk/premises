@@ -96,9 +96,9 @@ func (l *Launcher) RegisterOnHealthyHook(fn OnHealthyFunc) {
 	l.onHealthy = fn
 }
 
-func getLastWorld() (string, error) {
+func getLastWorld(ctx context.Context) (string, error) {
 	var value string
-	if err := rpc.ToExteriord.Call("state/get", types.StateGetInput{
+	if err := rpc.ToExteriord.Call(ctx, "state/get", types.StateGetInput{
 		Key: "lastWorld",
 	}, &value); err != nil {
 		return "", err
@@ -107,8 +107,8 @@ func getLastWorld() (string, error) {
 	return value, nil
 }
 
-func clearLastWorld() error {
-	if err := rpc.ToExteriord.Call("state/remove", types.StateRemoveInput{
+func clearLastWorld(ctx context.Context) error {
+	if err := rpc.ToExteriord.Call(ctx, "state/remove", types.StateRemoveInput{
 		Key: "lastWorld",
 	}, nil); err != nil {
 		return err
@@ -117,8 +117,8 @@ func clearLastWorld() error {
 	return nil
 }
 
-func storeLastWorld(lastWorld string) error {
-	if err := rpc.ToExteriord.Call("state/save", types.StateSetInput{
+func storeLastWorld(ctx context.Context, lastWorld string) error {
+	if err := rpc.ToExteriord.Call(ctx, "state/save", types.StateSetInput{
 		Key:   "lastWorld",
 		Value: lastWorld,
 	}, nil); err != nil {
@@ -128,9 +128,9 @@ func storeLastWorld(lastWorld string) error {
 	return nil
 }
 
-func getLastServerVersion() (string, error) {
+func getLastServerVersion(ctx context.Context) (string, error) {
 	var version string
-	if err := rpc.ToExteriord.Call("state/get", types.StateGetInput{
+	if err := rpc.ToExteriord.Call(ctx, "state/get", types.StateGetInput{
 		Key: "lastVersion",
 	}, &version); err != nil {
 		return "", err
@@ -139,14 +139,14 @@ func getLastServerVersion() (string, error) {
 	return version, nil
 }
 
-func clearLastServerVersion() error {
-	return rpc.ToExteriord.Call("state/remove", types.StateRemoveInput{
+func clearLastServerVersion(ctx context.Context) error {
+	return rpc.ToExteriord.Call(ctx, "state/remove", types.StateRemoveInput{
 		Key: "lastVersion",
 	}, nil)
 }
 
-func storeLastServerVersion(config *runner.Config) error {
-	return rpc.ToExteriord.Call("state/save", types.StateSetInput{
+func storeLastServerVersion(ctx context.Context, config *runner.Config) error {
+	return rpc.ToExteriord.Call(ctx, "state/save", types.StateSetInput{
 		Key:   "lastVersion",
 		Value: config.GameConfig.Server.Version,
 	}, nil)
@@ -172,13 +172,13 @@ func (l *Launcher) downloadWorld(ctx context.Context) error {
 		l.config.GameConfig.World.GenerationId = genId
 	}
 
-	lastWorld, err := getLastWorld()
+	lastWorld, err := getLastWorld(ctx)
 	if err != nil {
 		return err
 	}
 
 	if lastWorld == "" || l.config.GameConfig.World.GenerationId != lastWorld {
-		if err := clearLastWorld(); err != nil {
+		if err := clearLastWorld(ctx); err != nil {
 			slog.Error("Failed to remove last world hash", slog.Any("error", err))
 		}
 
@@ -272,7 +272,7 @@ func (l *Launcher) uploadWorld(ctx context.Context) error {
 		})
 		return err
 	}
-	if err := storeLastWorld(key); err != nil {
+	if err := storeLastWorld(ctx, key); err != nil {
 		slog.Error("Unable to store last world key", slog.Any("error", err))
 	}
 
@@ -450,8 +450,8 @@ func cleanGameDir() error {
 	return errors.Join(errs...)
 }
 
-func (l *Launcher) cleanGameDirIfVersionChanged() error {
-	ver, err := getLastServerVersion()
+func (l *Launcher) cleanGameDirIfVersionChanged(ctx context.Context) error {
+	ver, err := getLastServerVersion(ctx)
 	if err != nil {
 		return err
 	}
@@ -476,11 +476,11 @@ func (l *Launcher) prepareEnvironment(ctx context.Context) error {
 		},
 	})
 
-	if err := l.cleanGameDirIfVersionChanged(); err != nil {
+	if err := l.cleanGameDirIfVersionChanged(ctx); err != nil {
 		slog.Error(err.Error())
 	}
 
-	if err := clearLastServerVersion(); err != nil {
+	if err := clearLastServerVersion(ctx); err != nil {
 		slog.Error(err.Error())
 	}
 
@@ -541,7 +541,7 @@ func (l *Launcher) Launch(ctx context.Context) error {
 		return err
 	}
 
-	if err := storeLastServerVersion(l.config); err != nil {
+	if err := storeLastServerVersion(ctx, l.config); err != nil {
 		slog.Error("Error saving last server versoin", slog.Any("error", err))
 	}
 
