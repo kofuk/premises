@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 	"strings"
 
@@ -45,26 +43,8 @@ type Handler struct {
 }
 
 func setupRoutes(h *Handler) {
-	if h.cfg.DevMode {
-		slog.Info("Proxying vite dev server")
-
-		remoteUrl, err := url.Parse("http://localhost:5173")
-		if err != nil {
-			slog.Error("[BUG] Failed to parse dev server URL", slog.Any("error", err))
-			os.Exit(1)
-		}
-
-		proxy := httputil.NewSingleHostReverseProxy(remoteUrl)
-
-		h.engine.HTTPErrorHandler = func(err error, c echo.Context) {
-			if err != echo.ErrNotFound {
-				h.engine.DefaultHTTPErrorHandler(err, c)
-				return
-			}
-			proxy.ServeHTTP(c.Response().Writer, c.Request())
-		}
-	} else {
-		h.engine.Static("/", "gen")
+	if !h.cfg.ServeStatic {
+		h.engine.Static("/", "static")
 		h.engine.HTTPErrorHandler = func(err error, c echo.Context) {
 			if err != echo.ErrNotFound {
 				h.engine.DefaultHTTPErrorHandler(err, c)
@@ -73,7 +53,7 @@ func setupRoutes(h *Handler) {
 
 			// Return a HTML file for any page to render the page with React.
 
-			entryFile, err := os.Open("gen/index.html")
+			entryFile, err := os.Open("static/index.html")
 			if err != nil {
 				slog.Error("Unable to open index.html", slog.Any("error", err))
 				c.JSON(http.StatusOK, web.ErrorResponse{

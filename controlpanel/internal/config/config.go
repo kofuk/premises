@@ -4,6 +4,7 @@ import "github.com/kelseyhightower/envconfig"
 
 type Config struct {
 	DevMode               bool     `envconfig:"PREMISES_DEV_MODE"`
+	ServeStatic           bool     `envconfig:"PREMISES_SERVE_STATIC"`
 	Mode                  string   `envconfig:"PREMISES_MODE"`
 	ConohaUser            string   `envconfig:"PREMISES_CONOHA_USERNAME"`
 	ConohaPassword        string   `envconfig:"PREMISES_CONOHA_PASSWORD"`

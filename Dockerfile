@@ -35,5 +35,5 @@ FROM scratch
 COPY --from=go_build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=go_build /pmctl /bin/pmctl
 COPY --from=go_build /premises /premises
-COPY --from=frontend_build /build/gen /gen
+COPY --from=frontend_build /build/gen /static
 CMD ["/premises"]

@@ -8,14 +8,14 @@
 		"ghcr.io/devcontainers/features/docker-in-docker": {}
 	},
 	"forwardPorts": [
-		8000,
+		8888,
 		9000,
 		9001,
 		16686,
 		25565
 	],
 	"portsAttributes": {
-		"8000": {
+		"8888": {
 			"label": "App",
 			"onAutoForward": "silent"
 		},

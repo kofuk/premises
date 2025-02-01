@@ -31,6 +31,7 @@ services:
     environment:
       <<: *settings
       PREMISES_MODE: web
+      PREMISES_SERVE_STATIC: 'true'
     read_only: true
     depends_on:
       redis:

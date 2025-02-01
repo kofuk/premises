@@ -9,6 +9,9 @@ export default {
     open: false,
     watch: {
       ignored: ['!src/**']
+    },
+    hmr: {
+      clientPort: 8888
     }
   },
   build: {
