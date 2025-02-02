@@ -215,16 +215,6 @@ jobs:
             curl -f http://localhost:8000/health && break
             sleep 3
           done
-      # - name: Launch proxy
-      #   run: |
-      #     docker container run \
-      #       --env-file tests/integ/test.env \
-      #       --network host \
-      #       -e PREMISES_MODE=proxy \
-      #       -e PREMISES_REDIS_ADDRESS=localhost:6379 \
-      #       --read-only \
-      #       -d \
-      #       ghcr.io/kofuk/premises:latest
       - name: Build base image for ostack-fake
         run: |
           ./.devcontainer/fake-runner/build_base_image.sh
