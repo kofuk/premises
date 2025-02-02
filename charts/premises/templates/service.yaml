@@ -12,7 +12,7 @@ spec:
   ports:
     - name: http
       protocol: TCP
-      port: 8000
+      port: 10000
   selector:
     app.kubernetes.io/name: {{ include "premises.name" . }}-web
     {{- include "premises.selectorLabels" . | nindent 4 }}

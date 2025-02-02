@@ -87,7 +87,7 @@ func startWeb(cfg *config.Config) {
 		os.Exit(1)
 	}
 
-	handler, err := handler.NewHandler(cfg, ":8000", db, redis, createLongPoll(redis), createKVS(redis))
+	handler, err := handler.NewHandler(cfg, ":10000", db, redis, createLongPoll(redis), createKVS(redis))
 	if err != nil {
 		slog.Error("Failed to initialize handler", slog.Any("error", err))
 		os.Exit(1)

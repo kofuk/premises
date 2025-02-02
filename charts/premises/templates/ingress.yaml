@@ -23,7 +23,7 @@ spec:
               service:
                 name: {{ include "premises.fullname" $ }}-web
                 port:
-                  number: 8000
+                  number: 10000
   {{- if .Values.ingress.tls.enabled }}
   tls:
     - hosts:
