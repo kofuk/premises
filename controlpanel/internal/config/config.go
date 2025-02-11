@@ -24,6 +24,7 @@ type Config struct {
 	PostgresUser          string   `envconfig:"PREMISES_POSTGRES_USER"`
 	PostgresPassword      string   `envconfig:"PREMISES_POSTGRES_PASSWORD"`
 	PostgresDB            string   `envconfig:"PREMISES_POSTGRES_DB"`
+	RedisUser             string   `envconfig:"PREMISES_REDIS_USER"`
 	RedisAddress          string   `envconfig:"PREMISES_REDIS_ADDRESS"`
 	RedisPassword         string   `envconfig:"PREMISES_REDIS_PASSWORD"`
 	ProxyBind             string   `envconfig:"PREMISES_PROXY_BIND"`

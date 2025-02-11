@@ -226,7 +226,7 @@ func (h *Handler) handleHealth(c echo.Context) error {
 }
 
 func (h *Handler) setupRootRoutes(group *echo.Group) {
-	store, err := redistore.NewRediStore(4, "tcp", h.cfg.RedisAddress, "", h.cfg.RedisPassword, []byte(h.cfg.Secret))
+	store, err := redistore.NewRediStore(4, "tcp", h.cfg.RedisAddress, h.cfg.RedisUser, h.cfg.RedisPassword, []byte(h.cfg.Secret))
 	if err != nil {
 		slog.Error("Failed to initialize Redis session store", slog.Any("error", err))
 		os.Exit(1)

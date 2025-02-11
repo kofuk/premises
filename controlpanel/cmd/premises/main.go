@@ -38,12 +38,13 @@ func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
 	return db, nil
 }
 
-func createRedisClient(cfg *config.Config) (*redis.Client, error) {
+func createRedisClient(ctx context.Context, cfg *config.Config) (*redis.Client, error) {
 	redis := redis.NewClient(&redis.Options{
 		Addr:     cfg.RedisAddress,
+		Username: cfg.RedisUser,
 		Password: cfg.RedisPassword,
 	})
-	if _, err := redis.Ping(context.Background()).Result(); err != nil {
+	if _, err := redis.Ping(ctx).Result(); err != nil {
 		return nil, err
 	}
 
@@ -60,7 +61,7 @@ func createKVS(redis *redis.Client) kvs.KeyValueStore {
 	return kvs.New(kvs.NewRedis(redis))
 }
 
-func startWeb(cfg *config.Config) {
+func startWeb(ctx context.Context, cfg *config.Config) {
 	if _, err := otel.InitializeTracer(context.Background()); err != nil {
 		slog.Error("Failed to initialize OpenTelemetry", slog.Any("error", err))
 		os.Exit(1)
@@ -81,7 +82,7 @@ func startWeb(cfg *config.Config) {
 		return
 	}
 
-	redis, err := createRedisClient(cfg)
+	redis, err := createRedisClient(ctx, cfg)
 	if err != nil {
 		slog.Error("Failed to create redis client", slog.Any("error", err))
 		os.Exit(1)
@@ -98,8 +99,8 @@ func startWeb(cfg *config.Config) {
 	}
 }
 
-func startProxy(cfg *config.Config) {
-	redis, err := createRedisClient(cfg)
+func startProxy(ctx context.Context, cfg *config.Config) {
+	redis, err := createRedisClient(ctx, cfg)
 	if err != nil {
 		slog.Error("Failed to create redis client", slog.Any("error", err))
 		os.Exit(1)
@@ -117,8 +118,8 @@ func startProxy(cfg *config.Config) {
 	}
 }
 
-func startCron(config *config.Config) {
-	ctx, cancelFn := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
+func startCron(ctx context.Context, config *config.Config) {
+	ctx, cancelFn := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGINT)
 	defer cancelFn()
 
 	cron := cron.NewCronService(config)
@@ -146,13 +147,15 @@ func main() {
 		Level:     logLevel,
 	})))
 
+	ctx := context.Background()
+
 	switch cfg.Mode {
 	case "web":
-		startWeb(cfg)
+		startWeb(ctx, cfg)
 	case "proxy":
-		startProxy(cfg)
+		startProxy(ctx, cfg)
 	case "cron":
-		startCron(cfg)
+		startCron(ctx, cfg)
 	default:
 		slog.Error(fmt.Sprintf("Unknown mode: %s", cfg.Mode))
 		os.Exit(1)
