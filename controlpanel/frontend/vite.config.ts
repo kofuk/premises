@@ -11,7 +11,7 @@ export default {
       ignored: ['!src/**']
     },
     hmr: {
-      clientPort: 8888
+      clientPort: 8000
     }
   },
   build: {
