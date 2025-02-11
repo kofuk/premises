@@ -347,7 +347,7 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 	var config web.PendingConfig
 	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
 		slog.Error("Failed to get pending config", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -355,28 +355,28 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 
 	gameConfig, err := h.createConfigFromPostData(c.Request().Context(), config, h.cfg)
 	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInvalidConfig,
 		})
 	}
 
 	if config.MachineType == nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 	memSizeGB, err := strconv.Atoi(strings.Replace(*config.MachineType, "g", "", 1))
 	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 	if !isValidMemSize(memSizeGB) {
 		slog.Error("Invalid mem size")
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -385,14 +385,14 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 	canLaunch, err := h.aquireServerLock(c.Request().Context())
 	if err != nil {
 		slog.Error("Failed to aquire server lock", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
 	}
 
 	if !canLaunch {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusConflict, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrServerRunning,
 		})
@@ -411,7 +411,7 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 		memSizeGB,
 	)
 
-	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
+	return c.JSON(http.StatusAccepted, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
@@ -420,7 +420,7 @@ func (h *Handler) handleApiReconfigure(c echo.Context) error {
 	var config web.PendingConfig
 	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
 		slog.Error("Failed to get pending config", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -428,7 +428,7 @@ func (h *Handler) handleApiReconfigure(c echo.Context) error {
 
 	gameConfig, err := h.createConfigFromPostData(c.Request().Context(), config, h.cfg)
 	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInvalidConfig,
 		})
@@ -442,13 +442,13 @@ func (h *Handler) handleApiReconfigure(c echo.Context) error {
 		Config: gameConfig,
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
 		})
 	}
 
-	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
+	return c.JSON(http.StatusAccepted, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
@@ -461,13 +461,13 @@ func (h *Handler) handleApiStop(c echo.Context) error {
 		},
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
 		})
 	}
 
-	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
+	return c.JSON(http.StatusAccepted, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
@@ -484,7 +484,7 @@ func (h *Handler) handleApiListWorlds(c echo.Context) error {
 	worlds, err := h.world.GetWorlds(c.Request().Context())
 	if err != nil {
 		slog.Error("Failed to retrieve backup list", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBackup,
 		})
@@ -498,7 +498,7 @@ func (h *Handler) handleApiListWorlds(c echo.Context) error {
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
 		slog.Error("Failed to marshal backpu list", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -553,7 +553,7 @@ func (h *Handler) handleApiMcversions(c echo.Context) error {
 func (h *Handler) handleApiSystemInfo(c echo.Context) error {
 	data, err := monitor.GetSystemInfo(c.Request().Context(), h.cfg, &h.KVS)
 	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -567,7 +567,7 @@ func (h *Handler) handleApiSystemInfo(c echo.Context) error {
 func (h *Handler) handleApiWorldInfo(c echo.Context) error {
 	data, err := monitor.GetWorldInfo(c.Request().Context(), h.cfg, &h.KVS)
 	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -639,7 +639,7 @@ func (h *Handler) handleApiGetConfig(c echo.Context) error {
 	isValid := h.validateAndNormalizeConfig(&config)
 
 	if err := h.KVS.Set(c.Request().Context(), "pending-config", config, 30*24*time.Hour); err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -656,7 +656,7 @@ func (h *Handler) handleApiGetConfig(c echo.Context) error {
 func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 	var newConfig web.PendingConfig
 	if err := c.Bind(&newConfig); err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -664,7 +664,7 @@ func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 
 	var config web.PendingConfig
 	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -672,7 +672,7 @@ func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 
 	if err := mergo.Merge(&config, &newConfig, mergo.WithOverride, mergo.WithoutDereference); err != nil {
 		slog.Error("Error merging config", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -681,7 +681,7 @@ func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 	isValid := h.validateAndNormalizeConfig(&config)
 
 	if err := h.KVS.Set(c.Request().Context(), "pending-config", config, 30*24*time.Hour); err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -699,7 +699,7 @@ func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 func (h *Handler) handleApiCreateWorldDownloadLink(c echo.Context) error {
 	var req web.CreateWorldLinkReq
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -707,13 +707,13 @@ func (h *Handler) handleApiCreateWorldDownloadLink(c echo.Context) error {
 
 	url, err := h.world.GetPresignedGetURLWithLifetime(c.Request().Context(), req.ID, time.Minute)
 	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
 	}
 
-	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.DelegatedURL]{
+	return c.JSON(http.StatusCreated, web.SuccessfulResponse[web.DelegatedURL]{
 		Success: true,
 		Data: web.DelegatedURL{
 			URL: url,
@@ -724,14 +724,14 @@ func (h *Handler) handleApiCreateWorldDownloadLink(c echo.Context) error {
 func (h *Handler) handleApiCreateWorldUploadLink(c echo.Context) error {
 	var req web.CreateWorldUploadLinkReq
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 
 	if strings.ContainsAny(req.WorldName, "@/\\") {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -746,7 +746,7 @@ func (h *Handler) handleApiCreateWorldUploadLink(c echo.Context) error {
 	case "application/zstd":
 		ext = ".tar.zst"
 	default:
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -756,7 +756,7 @@ func (h *Handler) handleApiCreateWorldUploadLink(c echo.Context) error {
 
 	url, err := h.world.GetPresignedPutURLWithLifetime(c.Request().Context(), fileName, time.Minute)
 	if err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -775,14 +775,14 @@ func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
 
 	var config web.SnapshotConfiguration
 	if err := c.Bind(&config); err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 
 	if config.Slot < 0 || 10 <= config.Slot {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -799,13 +799,13 @@ func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
 		},
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
 		})
 	}
 
-	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
+	return c.JSON(http.StatusAccepted, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
@@ -815,14 +815,14 @@ func (h *Handler) handleApiQuickUndoUndo(c echo.Context) error {
 
 	var config web.SnapshotConfiguration
 	if err := c.Bind(&config); err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 
 	if config.Slot < 0 || 10 <= config.Slot {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
@@ -839,13 +839,13 @@ func (h *Handler) handleApiQuickUndoUndo(c echo.Context) error {
 		},
 	}); err != nil {
 		slog.Error("Unable to write action", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
 		})
 	}
 
-	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
+	return c.JSON(http.StatusAccepted, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
@@ -860,14 +860,14 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 
 	var req web.UpdatePassword
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 
 	if !isAllowedPassword(req.NewPassword) {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasswordRule,
 		})
@@ -876,13 +876,13 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 	var password string
 	if err := h.db.NewSelect().Model((*model.User)(nil)).Column("password").Where("id = ? AND deleted_at IS NULL", userID).Scan(c.Request().Context(), &password); err != nil {
 		slog.Error("User not found", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(req.Password)); err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusUnauthorized, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrCredential,
 		})
@@ -891,7 +891,7 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
 		slog.Error("error hashing password", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -899,7 +899,7 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 
 	if _, err := h.db.NewUpdate().Model((*model.User)(nil)).Set("password = ?", string(hashedPassword)).Set("initialized = ?", true).Where("id = ? AND deleted_at IS NULL", userID).Exec(c.Request().Context()); err != nil {
 		slog.Error("error updating password", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -915,20 +915,20 @@ func (h *Handler) handleApiUsersAdd(c echo.Context) error {
 
 	var req web.PasswordCredential
 	if err := c.Bind(&req); err != nil {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 
 	if len(req.UserName) == 0 || len(req.UserName) > 32 {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 	if !isAllowedPassword(req.Password) {
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrPasswordRule,
 		})
@@ -937,7 +937,7 @@ func (h *Handler) handleApiUsersAdd(c echo.Context) error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
 		slog.Error("error hashing password", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
 		})
@@ -952,13 +952,13 @@ func (h *Handler) handleApiUsersAdd(c echo.Context) error {
 
 	if _, err := h.db.NewInsert().Model(user).Exec(c.Request().Context()); err != nil {
 		slog.Error("error registering user", slog.Any("error", err))
-		return c.JSON(http.StatusOK, web.ErrorResponse{
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrDupUserName,
 		})
 	}
 
-	return c.JSON(http.StatusOK, web.SuccessfulResponse[any]{
+	return c.JSON(http.StatusCreated, web.SuccessfulResponse[any]{
 		Success: true,
 	})
 }
@@ -976,7 +976,7 @@ func (h *Handler) accessTokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc 
 		}
 
 		if !strings.HasPrefix(authorization, "Bearer ") {
-			return c.JSON(http.StatusOK, web.ErrorResponse{
+			return c.JSON(http.StatusUnauthorized, web.ErrorResponse{
 				Success:   false,
 				ErrorCode: entity.ErrRequiresAuth,
 			})
@@ -985,7 +985,7 @@ func (h *Handler) accessTokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc 
 		accessToken := strings.TrimPrefix(authorization, "Bearer ")
 
 		if token, err := h.authService.Get(c.Request().Context(), accessToken); err != nil {
-			return c.JSON(http.StatusOK, web.ErrorResponse{
+			return c.JSON(http.StatusUnauthorized, web.ErrorResponse{
 				Success:   false,
 				ErrorCode: entity.ErrRequiresAuth,
 			})
