@@ -48,8 +48,8 @@ github.com/aws/aws-sdk-go-v2/service/sts v1.33.14 h1:TzeR06UCMUq+KA3bDkujxK1GVGy
 github.com/aws/aws-sdk-go-v2/service/sts v1.33.14/go.mod h1:dspXf/oYWGWo6DEvj98wpaTeqt5+DMidZD0A9BYTizc=
 github.com/aws/smithy-go v1.22.2 h1:6D9hW43xKFrRx/tXXfAlIZc4JI+yQe6snnWcQyxSyLQ=
 github.com/aws/smithy-go v1.22.2/go.mod h1:irrKGvNn1InZwb2d7fkIRNucdfwR8R+Ts3wxYa/cJHg=
-github.com/boj/redistore v1.3.0 h1:2Cz7NezUYeuTLKMxWxKluT3t2enyD/N0eB23Fd1jQk4=
-github.com/boj/redistore v1.3.0/go.mod h1:4Dnw2ZVwtwHFiWfJ7FoHVQ79IYAQakYYNICZmt9xIfI=
+github.com/boj/redistore v1.4.0 h1:PFn5Hcbmj22WGsMKGLaEn33In4+C0lX+txbAOpA3mPA=
+github.com/boj/redistore v1.4.0/go.mod h1:JeLqX+qEEBrjytalj9s+3a7o34lNmYncdPj8HeZRvYk=
 github.com/cenkalti/backoff/v4 v4.3.0 h1:MyRJ/UdXutAwSAT+s3wNd7MfTIcy71VQueUuFK343L8=
 github.com/cenkalti/backoff/v4 v4.3.0/go.mod h1:Y3VNntkOUPxTVeUxJ/G5vcM//AlwfmyYozVcomhLiZE=
 github.com/cespare/xxhash/v2 v2.1.2/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
