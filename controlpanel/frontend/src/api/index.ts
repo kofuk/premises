@@ -38,13 +38,17 @@ const api = async <T, U>(endpoint: string, method: string = 'get', accessToken: 
     };
   }
 
-  const resp = await fetch(`${domain}${endpoint}`, options).then((resp) => resp.json());
-
-  if (!resp.success) {
-    throw new APIError(t(`error.code_${resp.errorCode}`));
+  const resp = await fetch(`${domain}${endpoint}`, options);
+  if (!resp.ok) {
+    throw new APIError(`${resp.status} ${resp.statusText}`);
   }
 
-  return resp.data as U;
+  const json = await resp.json();
+  if (!json.success) {
+    throw new APIError(t(`error.code_${json.errorCode}`));
+  }
+
+  return json.data as U;
 };
 
 export default api;
