@@ -511,6 +511,27 @@ func (h *Handler) handleApiListWorlds(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
+func (h *Handler) handleApiDeleteWorld(c echo.Context) error {
+	var req web.DeleteWorldReq
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrBadRequest,
+		})
+	}
+
+	if err := h.world.DeleteWorld(c.Request().Context(), req.ID); err != nil {
+		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
+			Success:   false,
+			ErrorCode: entity.ErrInternal,
+		})
+	}
+
+	return c.JSON(http.StatusNoContent, web.SuccessfulResponse[any]{
+		Success: true,
+	})
+}
+
 func (h *Handler) handleApiMcversions(c echo.Context) error {
 	versions, err := h.MCVersions.GetVersions(c.Request().Context())
 	if err != nil {
@@ -1024,6 +1045,7 @@ func (h *Handler) setupApiRoutes(group *echo.Group) {
 	needsAuth.POST("/reconfigure", h.handleApiReconfigure, scope(auth.ScopeAdmin))
 	needsAuth.POST("/stop", h.handleApiStop, scope(auth.ScopeAdmin))
 	needsAuth.GET("/worlds", h.handleApiListWorlds, scope(auth.ScopeAdmin))
+	needsAuth.DELETE("/worlds", h.handleApiDeleteWorld, scope(auth.ScopeAdmin))
 	needsAuth.GET("/mcversions", h.handleApiMcversions, scope(auth.ScopeAdmin))
 	needsAuth.GET("/systeminfo", h.handleApiSystemInfo, scope(auth.ScopeAdmin))
 	needsAuth.GET("/worldinfo", h.handleApiWorldInfo, scope(auth.ScopeAdmin))

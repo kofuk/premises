@@ -2,11 +2,12 @@ import {t} from 'i18next';
 import useSWR, {KeyedMutator} from 'swr';
 import useSWRImmutable from 'swr/immutable';
 
-import {
+import type {
   ConfigAndValidity,
   CreateWorldDownloadLinkReq,
   CreateWorldUploadLinkReq,
   DelegatedURL,
+  DeleteWorldInput,
   MCVersion,
   PasswordCredential,
   PendingConfig,
@@ -75,6 +76,7 @@ export const reconfigure = declareApi<null, null>('/api/v1/reconfigure', 'post')
 export const stop = declareApi<null, null>('/api/v1/stop', 'post');
 export const createWorldDownloadLink = declareApi<CreateWorldDownloadLinkReq, DelegatedURL>('/api/v1/world-link/download', 'post');
 export const createWorldUploadLink = declareApi<CreateWorldUploadLinkReq, DelegatedURL>('/api/v1/world-link/upload', 'post');
+export const deleteWorld = declareApi<DeleteWorldInput, null>('/api/v1/worlds', 'delete');
 
 export type ImmutableUseResponse<T> = {
   data: T | undefined;

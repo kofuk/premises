@@ -88,6 +88,10 @@ func (ws *WorldService) GetWorlds(ctx context.Context) ([]web.World, error) {
 	return result, nil
 }
 
+func (ws *WorldService) DeleteWorld(ctx context.Context, id string) error {
+	return ws.s3.DeleteObjects(ctx, ws.bucket, []string{id})
+}
+
 func (ws *WorldService) GetLatestWorldKey(ctx context.Context, world string) (string, error) {
 	objects, err := ws.s3.ListObjects(ctx, ws.bucket, s3wrap.WithPrefix(world+"/"))
 	if err != nil {

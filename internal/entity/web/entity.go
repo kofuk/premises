@@ -115,6 +115,10 @@ type CreateWorldUploadLinkReq struct {
 	MimeType  string `json:"mimeType"`
 }
 
+type DeleteWorldReq struct {
+	ID string `json:"id"`
+}
+
 type DelegatedURL struct {
 	URL string `json:"url"`
 }

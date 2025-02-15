@@ -87,3 +87,7 @@ export type CreateWorldUploadLinkReq = {
 export type DelegatedURL = {
   url: string;
 };
+
+export type DeleteWorldInput = {
+  id: string;
+};
