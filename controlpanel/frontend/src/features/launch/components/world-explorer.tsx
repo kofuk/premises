@@ -5,6 +5,7 @@ import {useTranslation} from 'react-i18next';
 import {toast} from 'react-toastify';
 
 import {
+  Delete as DeleteIcon,
   Download as DownloadIcon,
   Folder as FolderIcon,
   FolderOpen as FolderOpenIcon,
@@ -15,7 +16,7 @@ import {
 import {Button, ButtonGroup, IconButton, Stack, TextField, colors} from '@mui/material';
 import {SimpleTreeView, TreeItem} from '@mui/x-tree-view';
 
-import {APIError, createWorldDownloadLink, createWorldUploadLink} from '@/api';
+import {APIError, createWorldDownloadLink, createWorldUploadLink, deleteWorld} from '@/api';
 import {World, WorldGeneration} from '@/api/entities';
 import {useAuth} from '@/utils/auth';
 
@@ -79,6 +80,17 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
     }
   };
 
+  const handleDeleteWorld = async (generationId: string) => {
+    try {
+      await deleteWorld(accessToken, {id: generationId});
+    } catch (err) {
+      if (err instanceof APIError) {
+        toast.error(err.message);
+      }
+    }
+    refresh?.();
+  };
+
   const items = worlds?.map((world) => (
     <TreeItem key={world.worldName} itemId={world.worldName} label={world.worldName}>
       {world.generations.map((gen) => (
@@ -95,6 +107,14 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
                 }}
               >
                 <DownloadIcon />
+              </IconButton>
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteWorld(gen.id);
+                }}
+              >
+                <DeleteIcon />
               </IconButton>
             </>
           }
@@ -127,7 +147,6 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
           body: file
         });
       } catch (err) {
-        console.error(err);
         if (err instanceof APIError) {
           toast.error(err.message);
         }
