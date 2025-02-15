@@ -4,7 +4,6 @@ import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 import {toast} from 'react-toastify';
 
-import {LoadingButton} from '@mui/lab';
 import {Box, Button, Card, CardContent, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField, Typography} from '@mui/material';
 
 import {LoginResult, useAuth} from '@/utils/auth';
@@ -73,9 +72,9 @@ const LoginForm = () => {
                 {...loginForm.register('password')}
               />
               <Stack direction="row" justifyContent="end" sx={{mt: 1}}>
-                <LoadingButton loading={loggingIn} type="submit" variant="contained">
+                <Button loading={loggingIn} type="submit" variant="contained">
                   {t('login.login')}
-                </LoadingButton>
+                </Button>
               </Stack>
             </Stack>
           </form>
