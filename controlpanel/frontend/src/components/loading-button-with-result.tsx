@@ -1,5 +1,5 @@
 import {Check as CheckIcon} from '@mui/icons-material';
-import {LoadingButton} from '@mui/lab';
+import {Button} from '@mui/material';
 import {green} from '@mui/material/colors';
 
 type Props = {
@@ -22,9 +22,9 @@ const LoadingButtonWithResult = ({type, variant, disabled, loading, success, chi
   };
 
   return (
-    <LoadingButton disabled={disabled} loading={loading} sx={sx} type={type} variant={variant}>
+    <Button disabled={disabled} loading={loading} sx={sx} type={type} variant={variant}>
       {success ? <CheckIcon /> : children}
-    </LoadingButton>
+    </Button>
   );
 };
 

@@ -12,8 +12,7 @@ import {
   Upload as UploadIcon,
   Public as WorldIcon
 } from '@mui/icons-material';
-import {LoadingButton} from '@mui/lab';
-import {ButtonGroup, IconButton, Stack, TextField, colors} from '@mui/material';
+import {Button, ButtonGroup, IconButton, Stack, TextField, colors} from '@mui/material';
 import {SimpleTreeView, TreeItem} from '@mui/x-tree-view';
 
 import {APIError, createWorldDownloadLink, createWorldUploadLink} from '@/api';
@@ -161,9 +160,9 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
                   validate: (val: string) => !val.includes('/') && !val.includes('\\') && !val.includes('@')
                 })}
               />
-              <LoadingButton loading={isUploading} type="submit" variant="outlined">
+              <Button loading={isUploading} type="submit" variant="outlined">
                 <UploadIcon />
-              </LoadingButton>
+              </Button>
             </ButtonGroup>
           </form>
         )}
