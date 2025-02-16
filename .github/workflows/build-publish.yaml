@@ -289,7 +289,9 @@ jobs:
           docker load --input image.tar
           docker tag ghcr.io/kofuk/premises:latest "ghcr.io/kofuk/premises:${IMAGE_TAG}"
       - name: Push image
-        run: docker push "ghcr.io/kofuk/premises:${IMAGE_TAG}"
+        run: |
+          docker push "ghcr.io/kofuk/premises:${IMAGE_TAG}"
+          docker push 'ghcr.io/kofuk/premises:latest'
 
   publish-helm-chart:
     runs-on: ubuntu-latest
