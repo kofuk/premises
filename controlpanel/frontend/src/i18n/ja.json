@@ -75,6 +75,8 @@
   "launch.world": "ワールドの読み込み先",
   "launch.world.load_existing": "既存のワールド",
   "launch.world.create_new": "新規作成",
+  "launch.world.download": "ダウンロード",
+  "launch.world.delete": "削除",
   "launch.world.select": "ワールドを選択",
   "launch.world.name": "ワールド名",
   "launch.world.summary_existing_latest": "{{ name }}（既存のワールド）の最新バージョンを読み込む",
