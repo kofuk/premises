@@ -1,5 +1,5 @@
 domain: 'premises.local'
-image: ghcr.io/kofuk/premises:0.2.1
+image: ghcr.io/kofuk/premises:0.3.0
 
 fullNameOverride: ''
 
