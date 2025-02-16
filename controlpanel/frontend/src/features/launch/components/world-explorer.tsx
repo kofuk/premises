@@ -13,7 +13,7 @@ import {
   Upload as UploadIcon,
   Public as WorldIcon
 } from '@mui/icons-material';
-import {Button, ButtonGroup, IconButton, Stack, TextField, colors} from '@mui/material';
+import {Button, ButtonGroup, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Stack, TextField, colors} from '@mui/material';
 import {SimpleTreeView, TreeItem} from '@mui/x-tree-view';
 
 import {APIError, createWorldDownloadLink, createWorldUploadLink, deleteWorld} from '@/api';
@@ -87,38 +87,28 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
       if (err instanceof APIError) {
         toast.error(err.message);
       }
+    } finally {
+      refresh?.();
     }
-    refresh?.();
   };
+
+  const handleContextMenu = (generationId: string): ((event: React.MouseEvent) => void) => {
+    return (event: React.MouseEvent) => {
+      event.preventDefault();
+      setMenuContext({
+        x: event.clientX,
+        y: event.clientY,
+        generationId
+      });
+    };
+  };
+
+  const [menuContext, setMenuContext] = useState<{x: number; y: number; generationId: string} | null>(null);
 
   const items = worlds?.map((world) => (
     <TreeItem key={world.worldName} itemId={world.worldName} label={world.worldName}>
       {world.generations.map((gen) => (
-        <TreeItem
-          key={gen.id}
-          itemId={gen.id}
-          label={
-            <>
-              {getWorldLabel(gen)}
-              <IconButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDownload(gen.id);
-                }}
-              >
-                <DownloadIcon />
-              </IconButton>
-              <IconButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteWorld(gen.id);
-                }}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </>
-          }
-        />
+        <TreeItem key={gen.id} itemId={gen.id} label={<div onContextMenu={handleContextMenu(gen.id)}>{getWorldLabel(gen)}</div>} />
       ))}
     </TreeItem>
   ));
@@ -185,6 +175,25 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
             </ButtonGroup>
           </form>
         )}
+        <Menu
+          anchorPosition={menuContext ? {top: menuContext.y, left: menuContext.x} : undefined}
+          anchorReference="anchorPosition"
+          onClose={() => setMenuContext(null)}
+          open={!!menuContext}
+        >
+          <MenuItem divider={true} onClick={() => handleDownload(menuContext!.generationId)}>
+            <ListItemIcon>
+              <DownloadIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>{t('launch.world.download')}</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={() => handleDeleteWorld(menuContext!.generationId)}>
+            <ListItemIcon>
+              <DeleteIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>{t('launch.world.delete')}</ListItemText>
+          </MenuItem>
+        </Menu>
         <Stack alignSelf="end" direction="row" sx={{backgroundColor: colors.blue[100], px: 2, borderRadius: '50vh'}}>
           {refresh && (
             <IconButton onClick={refresh}>

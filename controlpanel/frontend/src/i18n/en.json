@@ -76,6 +76,8 @@
   "launch.world": "World Location",
   "launch.world.load_existing": "Existing world",
   "launch.world.create_new": "Generate new",
+  "launch.world.download": "Download",
+  "launch.world.delete": "Delete",
   "launch.world.select": "Select a world",
   "launch.world.name": "World name",
   "launch.world.summary_existing_latest": "Load latest version of {{ name }}",
