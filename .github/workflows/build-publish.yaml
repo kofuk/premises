@@ -254,8 +254,10 @@ jobs:
           echo ${{ github.sha }} >"version@${PROTOCOL_VERSION}.txt"
       - name: Upload Artifacts
         run: |
-          aws s3 cp "premises-runner@${PROTOCOL_VERSION}.tar.gz" s3://premises/artifacts/runner/
-          aws s3 cp "version@${PROTOCOL_VERSION}.txt" s3://premises/artifacts/runner/
+          aws s3 cp --checksum-algorithm CRC32 \
+              "premises-runner@${PROTOCOL_VERSION}.tar.gz" s3://premises/artifacts/runner/
+          aws s3 cp --checksum-algorithm CRC32 \
+              "version@${PROTOCOL_VERSION}.txt" s3://premises/artifacts/runner/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -322,8 +324,10 @@ jobs:
         run: helm repo index --merge index.yaml --url https://premises.kofuk.org/charts .
       - name: Upload Helm chart
         run: |
-          aws s3 cp premises-*.tgz s3://premises/charts/
-          aws s3 cp index.yaml s3://premises/charts/
+          aws s3 cp --checksum-algorithm CRC32 \
+              premises-*.tgz s3://premises/charts/
+          aws s3 cp --checksum-algorithm CRC32 \
+              index.yaml s3://premises/charts/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
