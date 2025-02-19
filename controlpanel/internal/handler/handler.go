@@ -56,12 +56,13 @@ func setupRoutes(h *Handler) {
 			entryFile, err := os.Open("static/index.html")
 			if err != nil {
 				slog.Error("Unable to open index.html", slog.Any("error", err))
-				c.JSON(http.StatusOK, web.ErrorResponse{
+				c.JSON(http.StatusNotFound, web.ErrorResponse{
 					Success:   false,
 					ErrorCode: entity.ErrInternal,
 				})
 				return
 			}
+			defer entryFile.Close()
 
 			c.Stream(http.StatusOK, "text/html;charset=utf-8", entryFile)
 		}
