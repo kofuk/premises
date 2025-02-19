@@ -34,8 +34,6 @@ spec:
           env:
             - name: PREMISES_MODE
               value: web
-            - name: PREMISES_SERVE_STATIC
-              value: 'true'
           envFrom:
             {{- toYaml .Values.services.web.envFrom | nindent 12 }}
       containers:
@@ -49,6 +47,8 @@ spec:
           env:
             - name: PREMISES_MODE
               value: web
+            - name: PREMISES_SERVE_STATIC
+              value: 'true'
           envFrom:
             {{- toYaml .Values.services.web.envFrom | nindent 12 }}
 ---
