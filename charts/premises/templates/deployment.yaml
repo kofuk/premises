@@ -47,10 +47,63 @@ spec:
           env:
             - name: PREMISES_MODE
               value: web
-            - name: PREMISES_SERVE_STATIC
-              value: 'true'
           envFrom:
             {{- toYaml .Values.services.web.envFrom | nindent 12 }}
+---
+# static
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "premises.fullname" . }}-static
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "premises.name" . }}-static
+    {{- include "premises.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.services.static.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "premises.name" . }}-static
+      {{- include "premises.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.services.static.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app.kubernetes.io/name: {{ include "premises.name" . }}-static
+        {{- include "premises.labels" . | nindent 8 }}
+    spec:
+      initContainers:
+        - name: prepare-static
+          image: {{ .Values.image }}
+          command:
+            - pmctl
+            - copy-static
+            - --dst=/usr/share/nginx/html
+          resources:
+            {{- toYaml .Values.services.static.resources | nindent 12 }}
+      containers:
+        - name: static
+          image: nginxinc/nginx-unprivileged:alpine-slim
+          ports:
+            - name: http
+              containerPort: 8000
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+            - name: static-files
+              mountPath: /usr/share/nginx/html
+          resources:
+            {{- toYaml .Values.services.static.resources | nindent 12 }}
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: {{ include "premises.fullname" . }}-nginx-conf
+        - name: static-files
+          emptyDir: {}
 ---
 # proxy
 apiVersion: apps/v1
