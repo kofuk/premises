@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.77.1
 	github.com/aws/smithy-go v1.22.3
 	github.com/boj/redistore v1.4.0
-	github.com/docker/docker v28.0.0+incompatible
+	github.com/docker/docker v28.0.1+incompatible
 	github.com/go-redis/redis/extra/redisotel/v8 v8.11.5
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.6.0
