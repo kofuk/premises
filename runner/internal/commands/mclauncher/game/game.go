@@ -294,7 +294,7 @@ func getAllocSizeMiB() int {
 func waitServerHealthy(ctx context.Context) error {
 	for {
 		var d net.Dialer
-		conn, err := d.DialContext(ctx, "tcp", "127.0.0.1:25565")
+		conn, err := d.DialContext(ctx, "tcp", "127.0.0.1:32109")
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return err
