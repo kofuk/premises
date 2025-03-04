@@ -15,6 +15,14 @@ services:
       - /premises
       - migrate
 
+  static:
+    replicaCount: 1
+    annotations: {}
+    envFrom:
+      - secretRef:
+          name: premises-config
+    resources: {}
+
   proxy:
     annotations: {}
     envFrom:
