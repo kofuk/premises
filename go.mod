@@ -26,10 +26,10 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
 	github.com/ulikunitz/xz v0.5.12
-	github.com/uptrace/bun v1.2.10
-	github.com/uptrace/bun/dialect/pgdialect v1.2.10
-	github.com/uptrace/bun/driver/pgdriver v1.2.10
-	github.com/uptrace/bun/extra/bunotel v1.2.10
+	github.com/uptrace/bun v1.2.11
+	github.com/uptrace/bun/dialect/pgdialect v1.2.11
+	github.com/uptrace/bun/driver/pgdriver v1.2.11
+	github.com/uptrace/bun/extra/bunotel v1.2.11
 	go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws v0.60.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho v0.60.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0
