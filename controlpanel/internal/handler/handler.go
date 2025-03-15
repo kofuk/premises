@@ -44,7 +44,7 @@ type Handler struct {
 
 func setupRoutes(h *Handler) {
 	if h.cfg.ServeStatic {
-		h.engine.Static("/", "static")
+		h.engine.Static("/", h.cfg.StaticDir)
 		h.engine.HTTPErrorHandler = func(err error, c echo.Context) {
 			if err != echo.ErrNotFound {
 				h.engine.DefaultHTTPErrorHandler(err, c)

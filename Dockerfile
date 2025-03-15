@@ -32,6 +32,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm run build
 
 FROM scratch
+ENV PREMISES_STATIC_DIR=/static
 COPY --from=go_build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=go_build /pmctl /bin/pmctl
 COPY --from=go_build /premises /premises

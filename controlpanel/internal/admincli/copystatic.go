@@ -15,8 +15,8 @@ type CopyStaticOptions struct {
 }
 
 func findStaticDir() (string, error) {
-	if _, err := os.Stat("/.dockerenv"); err == nil {
-		return "/static", nil
+	if staticDir := os.Getenv("PREMISES_STATIC_DIR"); staticDir != "" {
+		return staticDir, nil
 	}
 	return "", fmt.Errorf("you should provide the source directory")
 }
