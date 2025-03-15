@@ -21,6 +21,13 @@ spec:
             pathType: Prefix
             backend:
               service:
+                name: {{ include "premises.fullname" $ }}-static
+                port:
+                  number: 8000
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
                 name: {{ include "premises.fullname" $ }}-web
                 port:
                   number: 10000

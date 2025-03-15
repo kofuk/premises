@@ -18,6 +18,24 @@ spec:
     {{- include "premises.selectorLabels" . | nindent 4 }}
 {{- if .Values.services.proxy.enableService }}
 ---
+# static
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "premises.fullname" . }}-static
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "premises.name" . }}-static
+    {{- include "premises.labels" . | nindent 4 }}
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8000
+  selector:
+    app.kubernetes.io/name: {{ include "premises.name" . }}-static
+    {{- include "premises.selectorLabels" . | nindent 4 }}
+---
 # proxy
 apiVersion: v1
 kind: Service

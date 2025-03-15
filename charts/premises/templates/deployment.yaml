@@ -82,6 +82,9 @@ spec:
             - pmctl
             - copy-static
             - --dst=/usr/share/nginx/html
+          volumeMounts:
+            - name: static-files
+              mountPath: /usr/share/nginx/html
           resources:
             {{- toYaml .Values.services.static.resources | nindent 12 }}
       containers:
