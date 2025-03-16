@@ -38,4 +38,4 @@ See [documentation](docs/installing.md) for step to setup Premises on your serve
 
 ## License
 
-MIT
+GNU Affero General Public License v3.0 or later.

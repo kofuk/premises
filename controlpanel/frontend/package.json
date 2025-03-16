@@ -17,7 +17,7 @@
     "url": "git+https://github.com/kofuk/premises.git"
   },
   "author": "",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "bugs": {
     "url": "https://github.com/kofuk/premises/issues"
   },
