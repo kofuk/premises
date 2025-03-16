@@ -8,8 +8,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/go-redis/redis/extra/redisotel/v8"
-	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/controlpanel/internal/cron"
@@ -20,6 +18,8 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/longpoll"
 	"github.com/kofuk/premises/controlpanel/internal/proxy"
 	"github.com/kofuk/premises/internal/otel"
+	"github.com/redis/go-redis/extra/redisotel/v9"
+	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/extra/bunotel"
 	"github.com/uptrace/bun/migrate"

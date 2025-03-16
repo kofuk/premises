@@ -10,8 +10,6 @@ require (
 	github.com/aws/smithy-go v1.22.3
 	github.com/boj/redistore v1.4.0
 	github.com/docker/docker v28.0.1+incompatible
-	github.com/go-redis/redis/extra/redisotel/v9 v9.7.1
-	github.com/go-redis/redis/v9 v9.7.1
 	github.com/google/uuid v1.6.0
 	github.com/gorcon/rcon v1.4.0
 	github.com/gorilla/securecookie v1.1.2
@@ -22,6 +20,8 @@ require (
 	github.com/labstack/echo-contrib v0.17.2
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/mackerelio/go-osstat v0.2.5
+	github.com/redis/go-redis/extra/redisotel/v9 v9.7.1
+	github.com/redis/go-redis/v9 v9.7.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
@@ -74,7 +74,6 @@ require (
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-redis/redis/extra/rediscmd/v8 v8.11.5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gomodule/redigo v1.9.2 // indirect
 	github.com/gorilla/context v1.1.2 // indirect
@@ -92,6 +91,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
+	github.com/redis/go-redis/extra/rediscmd/v9 v9.7.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
 	github.com/uptrace/opentelemetry-go-extra/otelsql v0.3.2 // indirect

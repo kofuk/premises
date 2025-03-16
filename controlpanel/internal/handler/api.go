@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"dario.cat/mergo"
-	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/securecookie"
 	"github.com/kofuk/premises/controlpanel/internal/auth"
 	"github.com/kofuk/premises/controlpanel/internal/config"
@@ -29,6 +28,7 @@ import (
 	"github.com/kofuk/premises/internal/entity/web"
 	potel "github.com/kofuk/premises/internal/otel"
 	"github.com/labstack/echo/v4"
+	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
 )
