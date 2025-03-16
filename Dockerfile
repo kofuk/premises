@@ -1,4 +1,4 @@
-FROM golang:1.23 AS go_build
+FROM golang:1.24 AS go_build
 WORKDIR /build
 RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
     --mount=type=bind,source=go.mod,target=go.mod \
