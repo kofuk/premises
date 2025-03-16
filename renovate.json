@@ -33,6 +33,16 @@
       "matchDepNames": [
         "go.opentelemetry.io/**"
       ]
+    },
+    {
+      "groupName": "Redis client for Go",
+      "groupSlug": "redis-go",
+      "matchDatasources": [
+        "go"
+      ],
+      "matchSourceUrls": [
+        "https://github.com/go-redis/redis"
+      ]
     }
   ]
 }
