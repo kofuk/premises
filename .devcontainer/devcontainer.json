@@ -15,7 +15,7 @@
 		25565
 	],
 	"portsAttributes": {
-		"8888": {
+		"8000": {
 			"label": "App",
 			"onAutoForward": "silent"
 		},
