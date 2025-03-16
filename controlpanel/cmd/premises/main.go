@@ -48,7 +48,7 @@ func createRedisClient(ctx context.Context, cfg *config.Config) (*redis.Client, 
 		return nil, err
 	}
 
-	redis.AddHook(redisotel.NewTracingHook())
+	redisotel.InstrumentTracing(redis)
 
 	return redis, nil
 }
