@@ -1,6 +1,6 @@
 import react from '@vitejs/plugin-react';
 import type {UserConfig} from 'vite';
-import checker from 'vite-plugin-checker';
+import {checker} from 'vite-plugin-checker';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import type {ViteUserConfig as VitestUserConfig} from 'vitest/config';
 
