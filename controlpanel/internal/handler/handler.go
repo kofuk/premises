@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/kofuk/premises/controlpanel/internal/auth"
 	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/controlpanel/internal/kvs"
@@ -21,6 +20,7 @@ import (
 	"github.com/kofuk/premises/internal/entity/web"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bun"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 	"go.opentelemetry.io/otel/trace"

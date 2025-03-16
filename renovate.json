@@ -41,7 +41,7 @@
         "go"
       ],
       "matchSourceUrls": [
-        "https://github.com/go-redis/redis"
+        "https://github.com/redis/go-redis"
       ]
     }
   ]

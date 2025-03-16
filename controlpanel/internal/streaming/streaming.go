@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/web"
+	"github.com/redis/go-redis/v9"
 )
 
 type StreamingService struct {
