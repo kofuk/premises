@@ -31,6 +31,13 @@ spec:
                 name: {{ include "premises.fullname" $ }}-web
                 port:
                   number: 10000
+          - path: /_
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "premises.fullname" $ }}-web
+                port:
+                  number: 10000
   {{- if .Values.ingress.tls.enabled }}
   tls:
     - hosts:
