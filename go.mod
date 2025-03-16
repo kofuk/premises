@@ -10,8 +10,8 @@ require (
 	github.com/aws/smithy-go v1.22.3
 	github.com/boj/redistore v1.4.0
 	github.com/docker/docker v28.0.1+incompatible
-	github.com/go-redis/redis/extra/redisotel/v8 v8.11.5
-	github.com/go-redis/redis/v8 v8.11.5
+	github.com/go-redis/redis/extra/redisotel/v9 v9.7.1
+	github.com/go-redis/redis/v9 v9.7.1
 	github.com/google/uuid v1.6.0
 	github.com/gorcon/rcon v1.4.0
 	github.com/gorilla/securecookie v1.1.2
