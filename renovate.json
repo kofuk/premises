@@ -83,7 +83,8 @@
       "groupName": "Go",
       "matchDatasources": [
         "golang-version"
-      ]
+      ],
+      "rangeStrategy": "bump"
     },
     {
       "groupName": "Go",
@@ -92,7 +93,8 @@
       ],
       "matchDatasources": [
         "docker"
-      ]
+      ],
+      "rangeStrategy": "bump"
     }
   ]
 }
