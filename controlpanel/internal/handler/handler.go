@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-redis/redis/v8"
@@ -53,7 +54,7 @@ func setupRoutes(h *Handler) {
 
 			// Return a HTML file for any page to render the page with React.
 
-			entryFile, err := os.Open("static/index.html")
+			entryFile, err := os.Open(filepath.Join(h.cfg.StaticDir, "index.html"))
 			if err != nil {
 				slog.Error("Unable to open index.html", slog.Any("error", err))
 				c.JSON(http.StatusNotFound, web.ErrorResponse{
