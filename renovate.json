@@ -3,6 +3,44 @@
   "extends": [
     "config:recommended"
   ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ".devcontainer/Dockerfile",
+      "matchStrings": [
+        "\\sGO_VERSION=(?<currentValue>\\S+)\\s"
+      ],
+      "datasourceTemplate": "golang-version",
+      "depNameTemplate": "go"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ".devcontainer/Dockerfile",
+      "matchStrings": [
+        "\\sKIND_VERSION=(?<currentValue>\\S+)\\s"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "kubernetes-sigs/kind"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ".devcontainer/Dockerfile",
+      "matchStrings": [
+        "\\sKUBECTL_VERSION=(?<currentValue>\\S+)\\s"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "kubernetes/kubernetes"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ".devcontainer/Dockerfile",
+      "matchStrings": [
+        "\\sCLOUD_PROVIDER_KIND_VERSION=(?<currentValue>\\S+)\\s"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "kubernetes-sigs/cloud-provider-kind"
+    }
+  ],
   "packageRules": [
     {
       "matchDepNames": [
@@ -15,7 +53,6 @@
     },
     {
       "groupName": "Bun",
-      "groupSlug": "bun",
       "matchDatasources": [
         "go"
       ],
@@ -26,7 +63,6 @@
     },
     {
       "groupName": "OpenTelemetry-Go",
-      "groupSlug": "opentelemetry-go",
       "matchDatasources": [
         "go"
       ],
@@ -36,12 +72,26 @@
     },
     {
       "groupName": "Redis client for Go",
-      "groupSlug": "redis-go",
       "matchDatasources": [
         "go"
       ],
       "matchSourceUrls": [
         "https://github.com/redis/go-redis"
+      ]
+    },
+    {
+      "groupName": "Go",
+      "matchDatasources": [
+        "golang-version"
+      ]
+    },
+    {
+      "groupName": "Go",
+      "matchDepNames": [
+        "golang"
+      ],
+      "matchDatasources": [
+        "docker"
       ]
     }
   ]
