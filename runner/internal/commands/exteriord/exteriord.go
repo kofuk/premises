@@ -19,7 +19,7 @@ import (
 func Run(ctx context.Context, args []string) int {
 	signal.Ignore(syscall.SIGHUP)
 
-	slog.Info("Starting premises-runner...", slog.String("protocol_version", internal.ProtocolVersion))
+	slog.Info("Starting premises-runner...", slog.String("protocol_version", internal.Version))
 
 	config, err := config.Load()
 	if err != nil {

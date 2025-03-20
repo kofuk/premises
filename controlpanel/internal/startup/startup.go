@@ -18,5 +18,5 @@ func GenerateStartupScript(gameConfig *runner.Config) ([]byte, error) {
 		return nil, err
 	}
 
-	return []byte(fmt.Sprintf(startupScriptTemplate, internal.ProtocolVersion, gameConfigData)), nil
+	return []byte(fmt.Sprintf(startupScriptTemplate, internal.Version, gameConfigData)), nil
 }
