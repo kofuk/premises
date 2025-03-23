@@ -29,6 +29,11 @@ jobs:
         run: |
           set -euo pipefail
           test "$(go fmt ./... | tee /dev/stderr | wc -l)" -eq 0
+      - name: Check generated code up-to-date
+        run: |
+          set -euo pipefail
+          go generate ./...
+          test "$(git status --porcelain | tee /dev/stderr | wc -l)" -eq 0
       - name: Run test
         run: go test -v -cover -coverprofile=coverprofile ./...
       - name: Create coverage report
