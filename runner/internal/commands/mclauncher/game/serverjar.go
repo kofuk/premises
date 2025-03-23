@@ -141,7 +141,7 @@ func DownloadServerJar(ctx context.Context, url, savePath string) error {
 }
 
 func getJavaPathFromInstalledVersion(ctx context.Context, version int) (string, error) {
-	output, err := system.CmdOutput(ctx, "update-alternatives", []string{"--list", "java"})
+	output, err := system.RunWithOutput(ctx, system.DefaultExecutor, "update-alternatives", []string{"--list", "java"})
 	if err != nil {
 		return "", err
 	}

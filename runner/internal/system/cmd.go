@@ -21,6 +21,14 @@ const ScopeName = "github.com/kofuk/premises/runner/internal/system"
 
 var logNum uint64
 
+type CommandExecutor interface {
+	Run(ctx context.Context, path string, args []string, options ...CmdOption) error
+}
+
+type SimpleExecutor struct{}
+
+var DefaultExecutor CommandExecutor = new(SimpleExecutor)
+
 func createLog() (io.Writer, string, error) {
 	for {
 		logPath := filepath.Join(env.GetTempDir(), fmt.Sprintf("command-%d.log", atomic.AddUint64(&logNum, 1)-1))
@@ -50,7 +58,13 @@ func WithWorkingDir(dir string) CmdOption {
 	}
 }
 
-func Cmd(ctx context.Context, path string, args []string, options ...CmdOption) error {
+func WithOutput(w io.Writer) CmdOption {
+	return func(cmd *exec.Cmd) {
+		cmd.Stdout = w
+	}
+}
+
+func (e *SimpleExecutor) Run(ctx context.Context, path string, args []string, options ...CmdOption) error {
 	tracer := trace.SpanFromContext(ctx).TracerProvider().Tracer(ScopeName)
 	ctx, span := tracer.Start(ctx, fmt.Sprintf("EXEC %s", path))
 	defer span.End()
@@ -87,35 +101,16 @@ func Cmd(ctx context.Context, path string, args []string, options ...CmdOption) 
 	return nil
 }
 
-func CmdOutput(ctx context.Context, path string, args []string, options ...CmdOption) (string, error) {
-	tracer := trace.SpanFromContext(ctx).TracerProvider().Tracer(ScopeName)
-	ctx, span := tracer.Start(ctx, fmt.Sprintf("EXEC %s", path))
-	defer span.End()
-
-	buf := new(strings.Builder)
-
-	cmd := exec.CommandContext(ctx, path, args...)
-	cmd.Stdout = buf
-	for _, opt := range options {
-		opt(cmd)
-	}
-
-	span.SetAttributes(
-		attribute.String("command.name", path),
-		attribute.StringSlice("command.args", cmd.Args),
-		attribute.StringSlice("command.env", cmd.Environ()),
-	)
-
-	if err := cmd.Run(); err != nil {
-		return "", err
-	}
-	return buf.String(), nil
+func RunWithOutput(ctx context.Context, executor CommandExecutor, path string, args []string, options ...CmdOption) (string, error) {
+	output := new(strings.Builder)
+	err := executor.Run(ctx, path, args, append(options, WithOutput(output))...)
+	return output.String(), err
 }
 
 func AptGet(ctx context.Context, args ...string) error {
-	if err := Cmd(ctx, "apt-get", args, WithEnv("DEBIAN_FRONTEND=noninteractive")); err == nil {
+	if err := DefaultExecutor.Run(ctx, "apt-get", args, WithEnv("DEBIAN_FRONTEND=noninteractive")); err == nil {
 		return nil
 	}
-	Cmd(ctx, "dpkg", []string{"--configure", "-a"}, WithEnv("DEBIAN_FRONTEND=noninteractive"))
-	return Cmd(ctx, "apt-get", args, WithEnv("DEBIAN_FRONTEND=noninteractive"))
+	DefaultExecutor.Run(ctx, "dpkg", []string{"--configure", "-a"}, WithEnv("DEBIAN_FRONTEND=noninteractive"))
+	return DefaultExecutor.Run(ctx, "apt-get", args, WithEnv("DEBIAN_FRONTEND=noninteractive"))
 }
