@@ -21,7 +21,7 @@ func executeWithBackOff(ctx context.Context, cmdline []string, workDir string) e
 		default:
 		}
 
-		err = system.Cmd(ctx, cmdline[0], cmdline[1:], system.WithWorkingDir(workDir))
+		err = system.DefaultExecutor.Run(ctx, cmdline[0], cmdline[1:], system.WithWorkingDir(workDir))
 
 		timer := time.NewTimer(time.Duration(backOffWaitTime)*time.Second + time.Duration(rand.Float64()*500.0)*time.Millisecond)
 		select {
