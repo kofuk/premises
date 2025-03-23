@@ -10,18 +10,15 @@ import (
 	"github.com/kofuk/premises/runner/internal/system"
 )
 
-func executeWithBackOff(ctx context.Context, cmdline []string, workDir string) error {
+func executeWithBackOff(ctx context.Context, commandExecutor system.CommandExecutor, cmdline []string, workDir string) error {
 	backOffWaitTime := 2
 
 	var err error
 	for {
-		select {
-		case <-ctx.Done():
-			return err
-		default:
+		err = commandExecutor.Run(ctx, cmdline[0], cmdline[1:], system.WithWorkingDir(workDir))
+		if err == nil {
+			return nil
 		}
-
-		err = system.DefaultExecutor.Run(ctx, cmdline[0], cmdline[1:], system.WithWorkingDir(workDir))
 
 		timer := time.NewTimer(time.Duration(backOffWaitTime)*time.Second + time.Duration(rand.Float64()*500.0)*time.Millisecond)
 		select {
@@ -30,11 +27,11 @@ func executeWithBackOff(ctx context.Context, cmdline []string, workDir string) e
 		case <-timer.C:
 		}
 
-		backOffWaitTime *= 2
+		backOffWaitTime <<= 1
 	}
 }
 
-func startMinecraft(c LauncherContext) error {
+func (launcher *LauncherCore) startMinecraft(c *LauncherContext) error {
 	serverPath := c.Settings().GetServerPath()
 	workDir := c.Settings().GetDataDir()
 
@@ -58,5 +55,5 @@ func startMinecraft(c LauncherContext) error {
 		}
 	}
 
-	return executeWithBackOff(c.Context(), commandLine, workDir)
+	return executeWithBackOff(c.Context(), launcher.CommandExecutor, commandLine, workDir)
 }

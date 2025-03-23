@@ -3,6 +3,8 @@ package core
 import (
 	"context"
 	"errors"
+
+	"github.com/kofuk/premises/runner/internal/system"
 )
 
 var ErrRestart = errors.New("restart required")
@@ -20,24 +22,37 @@ func (c *LauncherContext) Settings() SettingsRepository {
 	return c.settings
 }
 
-type HandlerFunc func(c LauncherContext) error
+type HandlerFunc func(c *LauncherContext) error
 
 type MiddlewareFunc func(next HandlerFunc) HandlerFunc
 
 type LauncherCore struct {
-	handler HandlerFunc
+	handler         HandlerFunc
+	settings        SettingsRepository
+	CommandExecutor system.CommandExecutor
 }
 
 func New(settings SettingsRepository) *LauncherCore {
-	return &LauncherCore{
-		handler: startMinecraft,
+	launcher := &LauncherCore{
+		settings: settings,
 	}
+
+	launcher.handler = launcher.startMinecraft
+
+	return launcher
 }
 
 func (l *LauncherCore) Middlware(m MiddlewareFunc) {
 	l.handler = m(l.handler)
 }
 
-func (l *LauncherCore) Start(c LauncherContext) error {
-	return l.handler(c)
+func (l *LauncherCore) createContext(ctx context.Context) *LauncherContext {
+	return &LauncherContext{
+		ctx:      ctx,
+		settings: l.settings,
+	}
+}
+
+func (l *LauncherCore) Start(ctx context.Context) error {
+	return l.handler(l.createContext(ctx))
 }
