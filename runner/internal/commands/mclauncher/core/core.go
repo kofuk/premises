@@ -26,6 +26,14 @@ type HandlerFunc func(c *LauncherContext) error
 
 type MiddlewareFunc func(next HandlerFunc) HandlerFunc
 
+func StopMiddleware(next HandlerFunc) HandlerFunc {
+	return func(c *LauncherContext) error {
+		return nil
+	}
+}
+
+var _ MiddlewareFunc = StopMiddleware
+
 type LauncherCore struct {
 	handler         HandlerFunc
 	settings        SettingsRepository
@@ -42,7 +50,7 @@ func New(settings SettingsRepository) *LauncherCore {
 	return launcher
 }
 
-func (l *LauncherCore) Middlware(m MiddlewareFunc) {
+func (l *LauncherCore) Middleware(m MiddlewareFunc) {
 	l.handler = m(l.handler)
 }
 
