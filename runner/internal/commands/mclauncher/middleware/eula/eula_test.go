@@ -25,7 +25,7 @@ func TestEulaMiddleware(t *testing.T) {
 
 	launcher := core.New(settings)
 	launcher.Middleware(core.StopMiddleware)
-	launcher.Middleware(eula.EulaMiddleware)
+	launcher.Middleware(eula.NewEulaMiddleware())
 
 	err = launcher.Start(t.Context())
 	assert.NoError(t, err, "EulaMiddleware should not return an error")
