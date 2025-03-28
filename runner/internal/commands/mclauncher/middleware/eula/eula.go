@@ -26,3 +26,5 @@ func EulaMiddleware(next core.HandlerFunc) core.HandlerFunc {
 		return next(c)
 	}
 }
+
+var _ core.MiddlewareFunc = EulaMiddleware
