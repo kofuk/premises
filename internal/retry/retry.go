@@ -41,7 +41,11 @@ func (r *r) wait() {
 	time.Sleep(r.nextInterval())
 }
 
-func Retry(fn func() error, failAfter time.Duration) error {
+type Void struct{}
+
+var V = struct{}{}
+
+func Retry[T any](fn func() (T, error), failAfter time.Duration) (T, error) {
 	rr := r{
 		curInterval: 1 * time.Second,
 		maxInterval: 1 * time.Minute,
@@ -49,13 +53,13 @@ func Retry(fn func() error, failAfter time.Duration) error {
 	}
 
 	for {
-		err := fn()
+		result, err := fn()
 		if err == nil {
-			return nil
+			return result, nil
 		}
 
 		if rr.finished() {
-			return err
+			return *new(T), err
 		}
 
 		rr.wait()

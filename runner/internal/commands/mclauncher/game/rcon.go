@@ -36,14 +36,8 @@ func (r *Rcon) connect() (*rcon.Conn, error) {
 }
 
 func (r *Rcon) waitConnect() (*rcon.Conn, error) {
-	var conn *rcon.Conn
-	err := retry.Retry(func() error {
-		var err error
-		conn, err = r.connect()
-		if err != nil {
-			return err
-		}
-		return nil
+	conn, err := retry.Retry(func() (*rcon.Conn, error) {
+		return r.connect()
 	}, 20*time.Minute)
 	if err != nil {
 		return nil, err
