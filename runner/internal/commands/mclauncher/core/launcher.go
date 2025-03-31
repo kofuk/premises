@@ -39,9 +39,8 @@ func (launcher *LauncherCore) startMinecraft(c *LauncherContext) error {
 	if util.IsJar(serverPath) {
 		// If this is JAR file, execute it with Java.
 		memSize := c.Settings().GetAllowedMemSize()
-		desiredJavaVersion := c.Settings().GetDesiredJavaVersion()
 		commandLine = []string{
-			util.FindJavaPath(c.Context(), desiredJavaVersion),
+			util.FindJavaPath(c.Context()),
 			fmt.Sprintf("-Xmx%dM", memSize),
 			fmt.Sprintf("-Xms%dM", memSize),
 			"-jar",
