@@ -97,6 +97,8 @@ func (m *ServerJarMiddleware) downloadMatchingVersion(c *core.LauncherContext, d
 		return
 	}, 5*time.Minute)
 	if err != nil {
+		// Best effort to clean up the incomplete download
+		os.Remove(destination)
 		return err
 	}
 
@@ -107,8 +109,15 @@ func (m *ServerJarMiddleware) downloadIfNotExists(c *core.LauncherContext) error
 	version := c.Settings().GetMinecraftVersion()
 	serverPath := m.pathProvider.GetDataPath("servers.d", version+".jar")
 
-	if _, err := os.Stat(serverPath); err == nil {
-		return nil
+	if stat, err := os.Stat(serverPath); err == nil {
+		if stat.Mode().IsRegular() && stat.Size() > 0 {
+			return nil
+		}
+
+		// If the file exists but is not a regular file or is empty, remove it and try to download again.
+		if err := os.RemoveAll(serverPath); err != nil {
+			return err
+		}
 	} else if !os.IsNotExist(err) {
 		return err
 	}
