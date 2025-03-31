@@ -17,6 +17,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/klauspost/compress v1.18.0
+	github.com/kofuk/go-queryalternatives v0.2.1
 	github.com/labstack/echo-contrib v0.17.3
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/mackerelio/go-osstat v0.2.5

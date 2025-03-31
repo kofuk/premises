@@ -67,18 +67,18 @@ func (mr *MockSettingsRepositoryMockRecorder) GetDataDir() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDataDir", reflect.TypeOf((*MockSettingsRepository)(nil).GetDataDir))
 }
 
-// GetDesiredJavaVersion mocks base method.
-func (m *MockSettingsRepository) GetDesiredJavaVersion() int {
+// GetMinecraftVersion mocks base method.
+func (m *MockSettingsRepository) GetMinecraftVersion() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDesiredJavaVersion")
-	ret0, _ := ret[0].(int)
+	ret := m.ctrl.Call(m, "GetMinecraftVersion")
+	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// GetDesiredJavaVersion indicates an expected call of GetDesiredJavaVersion.
-func (mr *MockSettingsRepositoryMockRecorder) GetDesiredJavaVersion() *gomock.Call {
+// GetMinecraftVersion indicates an expected call of GetMinecraftVersion.
+func (mr *MockSettingsRepositoryMockRecorder) GetMinecraftVersion() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDesiredJavaVersion", reflect.TypeOf((*MockSettingsRepository)(nil).GetDesiredJavaVersion))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMinecraftVersion", reflect.TypeOf((*MockSettingsRepository)(nil).GetMinecraftVersion))
 }
 
 // GetServerPath mocks base method.
@@ -93,4 +93,16 @@ func (m *MockSettingsRepository) GetServerPath() string {
 func (mr *MockSettingsRepositoryMockRecorder) GetServerPath() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerPath", reflect.TypeOf((*MockSettingsRepository)(nil).GetServerPath))
+}
+
+// SetServerPath mocks base method.
+func (m *MockSettingsRepository) SetServerPath(path string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetServerPath", path)
+}
+
+// SetServerPath indicates an expected call of SetServerPath.
+func (mr *MockSettingsRepositoryMockRecorder) SetServerPath(path any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetServerPath", reflect.TypeOf((*MockSettingsRepository)(nil).SetServerPath), path)
 }

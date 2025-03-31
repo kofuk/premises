@@ -5,6 +5,7 @@ package core
 type SettingsRepository interface {
 	GetAllowedMemSize() int
 	GetServerPath() string
-	GetDesiredJavaVersion() int
+	SetServerPath(path string)
+	GetMinecraftVersion() string
 	GetDataDir() string
 }
