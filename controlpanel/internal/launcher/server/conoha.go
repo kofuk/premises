@@ -125,19 +125,19 @@ func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, mac
 	slog.Info("Creating VM...Done")
 
 	slog.Info("Waiting for VM to be created...")
-	err = retry.Retry(func() error {
+	_, err = retry.Retry(func() (retry.Void, error) {
 		server, err := s.conoha.GetServerDetail(ctx, conoha.GetServerDetailInput{
 			ServerID: server.Server.ID,
 		})
 		if err != nil {
 			slog.Info("Waiting for VM to be created...", slog.Any("error", err))
-			return err
+			return retry.V, err
 		} else if server.Server.Status == "BUILD" {
 			slog.Info("Waiting for VM to be created...", slog.String("vm_status", server.Server.Status))
-			return errors.New("VM is building")
+			return retry.V, errors.New("VM is building")
 		}
 
-		return nil
+		return retry.V, nil
 	}, 30*time.Minute)
 	if err != nil {
 		return "", fmt.Errorf("timeout creating VM: %w", err)
@@ -196,20 +196,20 @@ func (s *ConohaServer) Stop(ctx context.Context, cookie ServerCookie) bool {
 
 	// Wait for VM to stop
 	slog.Info("Waiting for the VM to stop...")
-	err = retry.Retry(func() error {
+	_, err = retry.Retry(func() (retry.Void, error) {
 		server, err := s.conoha.GetServerDetail(ctx, conoha.GetServerDetailInput{
 			ServerID: string(cookie),
 		})
 		if err != nil {
 			slog.Error("Failed to get VM information", slog.Any("error", err))
-			return err
+			return retry.V, err
 		}
 		slog.Info("Waiting for the VM to stop...", slog.String("status", server.Server.Status))
 		if server.Server.Status != "SHUTOFF" {
-			return errors.New("not yet stopped")
+			return retry.V, errors.New("not yet stopped")
 		}
 
-		return nil
+		return retry.V, nil
 	}, 30*time.Minute)
 	if err != nil {
 		slog.Error("Failed to stop VM", slog.Any("error", err))
