@@ -1,4 +1,4 @@
-package mclaunchermeta
+package launchermeta
 
 import (
 	"context"
