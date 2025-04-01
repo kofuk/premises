@@ -1,5 +1,5 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-22.04
-ARG GO_VERSION=1.24.1 \
+ARG GO_VERSION=1.24.2 \
     KIND_VERSION=0.27.0 \
     KUBECTL_VERSION=1.32.3 \
     CLOUD_PROVIDER_KIND_VERSION=0.6.0
