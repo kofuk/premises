@@ -17,6 +17,8 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/kvs"
 	"github.com/kofuk/premises/controlpanel/internal/longpoll"
 	"github.com/kofuk/premises/controlpanel/internal/proxy"
+	"github.com/kofuk/premises/controlpanel/internal/services/mcp"
+	"github.com/kofuk/premises/controlpanel/internal/world"
 	"github.com/kofuk/premises/internal/otel"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
@@ -129,6 +131,30 @@ func startCron(ctx context.Context, config *config.Config) {
 	}
 }
 
+func startMcp(ctx context.Context, config *config.Config) {
+	redis, err := createRedisClient(ctx, config)
+	if err != nil {
+		slog.Error("Failed to create redis client", slog.Any("error", err))
+		os.Exit(1)
+	}
+	db, err := createDatabaseClient(config)
+	if err != nil {
+		slog.Error("Failed to create database client", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	world, err := world.New(ctx, config.S3Bucket, config.S3ForcePathStyle)
+	if err != nil {
+		slog.Error("Failed to create world service", slog.Any("error", err))
+		os.Exit(1)
+	}
+	mcp := mcp.NewMCPServer(redis, db, world)
+	if err := mcp.Start(); err != nil {
+		slog.Error("Error in MCP server", slog.Any("error", err))
+		os.Exit(1)
+	}
+}
+
 func main() {
 	godotenv.Load()
 
@@ -156,6 +182,8 @@ func main() {
 		startProxy(ctx, cfg)
 	case "cron":
 		startCron(ctx, cfg)
+	case "mcp":
+		startMcp(ctx, cfg)
 	default:
 		slog.Error(fmt.Sprintf("Unknown mode: %s", cfg.Mode))
 		os.Exit(1)
