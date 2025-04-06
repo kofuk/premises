@@ -14,6 +14,23 @@ import (
 	"github.com/uptrace/bun"
 )
 
+// # Usage with GitHub Copilot Agent mode
+//
+// Add the following to your settings.json:
+// ```json`
+// "mcp": {
+//   "servers": {
+//     "premises": {
+//       "type": "sse",
+//       "url": "https://<your premises instance>/mcp/sse",
+//       "headers": {
+//         "AUTHORIZATION": "Bearer <bearer token taken from the browser request>",
+//       }
+//     }
+//   }
+// }
+// ````
+
 type MCPServer struct {
 	redis             *redis.Client
 	db                *bun.DB
