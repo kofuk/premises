@@ -1,6 +1,9 @@
 package mcp
 
 import (
+	"net/http"
+
+	"github.com/kofuk/premises/controlpanel/internal/auth"
 	"github.com/kofuk/premises/controlpanel/internal/world"
 	"github.com/kofuk/premises/internal"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -13,13 +16,15 @@ type MCPServer struct {
 	redis *redis.Client
 	db    *bun.DB
 	world *world.WorldService
+	auth  *auth.AuthService
 }
 
-func NewMCPServer(redis *redis.Client, db *bun.DB, world *world.WorldService) *MCPServer {
+func NewMCPServer(redis *redis.Client, db *bun.DB, world *world.WorldService, auth *auth.AuthService) *MCPServer {
 	return &MCPServer{
 		redis: redis,
 		db:    db,
 		world: world,
+		auth:  auth,
 	}
 }
 
@@ -49,5 +54,19 @@ func (s *MCPServer) Start() error {
 	sseServer := mcpServer.NewSSEServer(server,
 		mcpServer.WithBasePath("/mcp"),
 	)
-	return sseServer.Start(":10001")
+	http.HandleFunc("/mcp/", func(w http.ResponseWriter, r *http.Request) {
+		token, err := s.auth.GetFromRequest(r.Context(), r)
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		if !token.HasScope(auth.ScopeAdmin) {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		sseServer.ServeHTTP(w, r)
+	})
+	return http.ListenAndServe(":10001", nil)
 }

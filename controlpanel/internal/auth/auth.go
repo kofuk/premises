@@ -3,11 +3,18 @@ package auth
 import (
 	"context"
 	"encoding/base32"
+	"errors"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/securecookie"
 	"github.com/kofuk/premises/controlpanel/internal/kvs"
 )
+
+var ErrNoAuthorization = errors.New("not a bearer header")
+
+const headerAuthorization = "Authorization"
 
 type Scope string
 
@@ -73,6 +80,19 @@ func (a *AuthService) Get(ctx context.Context, token string) (*Token, error) {
 	}
 
 	return &t, nil
+}
+
+func (a *AuthService) GetFromRequest(ctx context.Context, r *http.Request) (*Token, error) {
+	header := r.Header.Get(headerAuthorization)
+	if header == "" {
+		return nil, ErrNoAuthorization
+	}
+
+	if !strings.HasPrefix(header, "Bearer ") {
+		return nil, ErrNoAuthorization
+	}
+
+	return a.Get(ctx, strings.TrimPrefix(header, "Bearer "))
 }
 
 func (a *AuthService) RevokeToken(ctx context.Context, token string) error {
