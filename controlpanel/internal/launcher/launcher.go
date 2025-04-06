@@ -91,13 +91,13 @@ func (s *LauncherService) launchServer(ctx context.Context, config *LaunchConfig
 	)
 
 	if s.server.IsAvailable() {
-		id, err := s.server.Start(ctx, runnerConfig, config.MachineType)
+		serverCookie, err := s.server.Start(ctx, runnerConfig, config.MachineType)
 		if err != nil {
 			slog.Error("Failed to start server", slog.Any("error", err))
-			s.releaseInstance(context.TODO())
-			return
+			goto failure
 		}
-		if err := s.kvs.Set(ctx, "runner-id:default", id.String(), -1); err != nil {
+
+		if err := s.kvs.Set(ctx, "runner-id:default", serverCookie, -1); err != nil {
 			slog.Error("Failed to set runner ID", slog.Any("error", err))
 			return
 		}
@@ -112,6 +112,7 @@ func (s *LauncherService) launchServer(ctx context.Context, config *LaunchConfig
 
 	// Startup failed. Manual setup required.
 
+failure:
 	encoder := base32.StdEncoding.WithPadding(base32.NoPadding)
 	authCode := encoder.EncodeToString(securecookie.GenerateRandomKey(10))
 
@@ -139,4 +140,67 @@ func (s *LauncherService) Launch(ctx context.Context, config *LaunchConfig) erro
 	go s.launchServer(trace.ContextWithSpan(context.Background(), trace.SpanFromContext(ctx)), config)
 
 	return nil
+}
+
+func (h *LauncherService) Clean(ctx context.Context, authKey string) {
+	defer h.releaseInstance(context.TODO())
+
+	h.streaming.PublishEvent(
+		ctx,
+		streaming.NewStandardMessage(entity.EventStopRunner, web.PageLoading),
+	)
+
+	var serverCookie server.ServerCookie
+	if err := h.kvs.Get(ctx, "runner-id:default", &serverCookie); err != nil || !h.server.IsAvailable() {
+		if err == redis.Nil {
+			goto out
+		}
+
+		h.streaming.PublishEvent(
+			ctx,
+			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
+		)
+		return
+	}
+
+	h.streaming.PublishEvent(
+		ctx,
+		streaming.NewStandardMessageWithProgress(entity.EventStopRunner, 10, web.PageLoading),
+	)
+
+	if !h.server.Stop(ctx, serverCookie) {
+		h.streaming.PublishEvent(
+			ctx,
+			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
+		)
+		return
+	}
+
+	h.streaming.PublishEvent(
+		ctx,
+		streaming.NewStandardMessageWithProgress(entity.EventStopRunner, 60, web.PageLoading),
+	)
+
+	if !h.server.Delete(ctx, serverCookie) {
+		h.streaming.PublishEvent(
+			ctx,
+			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
+		)
+		return
+	}
+
+out:
+	if err := h.kvs.Del(ctx, "runner-id:default", "runner-info:default", "world-info:default", fmt.Sprintf("runner:%s", authKey)); err != nil {
+		slog.Error("Failed to unset runner information", slog.Any("error", err))
+		return
+	}
+
+	h.streaming.PublishEvent(
+		ctx,
+		streaming.NewStandardMessage(entity.EventStopped, web.PageLaunch),
+	)
+
+	if err := h.streaming.ClearSysstat(ctx); err != nil {
+		slog.Error("Unable to clear sysstat history", slog.Any("error", err))
+	}
 }

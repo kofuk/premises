@@ -28,13 +28,13 @@ func ListServerDetails(ctx context.Context, docker *docker.Client) (*entity.List
 			Name:   container.Labels["org.kofuk.premises.name"],
 			Status: status,
 			Addresses: map[string][]entity.ServerDetailAddress{
-				"ext-127-0-0-1-xxx": {
+				"ext-127-0-0-2-xxx": {
 					{
 						Addr:    "::1",
 						Version: 6,
 					},
 					{
-						Addr:    "127.0.0.1",
+						Addr:    "127.0.0.2",
 						Version: 4,
 					},
 				},

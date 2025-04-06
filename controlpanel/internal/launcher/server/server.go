@@ -2,14 +2,11 @@ package server
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/kofuk/premises/internal/entity/runner"
 )
 
-type ServerCookie interface {
-	fmt.Stringer
-}
+type ServerCookie string
 
 type GameServer interface {
 	IsAvailable() bool
