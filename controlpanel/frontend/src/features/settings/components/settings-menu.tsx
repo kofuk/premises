@@ -13,7 +13,7 @@ const SettingsMenu = () => {
   return (
     <>
       <Grid container spacing={1}>
-        <Grid item xs={6}>
+        <Grid size={6}>
           <Paper variant="outlined">
             <Typography sx={{m: 2}} variant="h5">
               {t('settings.account_security')}
@@ -29,7 +29,7 @@ const SettingsMenu = () => {
           </Paper>
         </Grid>
 
-        <Grid item xs={6}>
+        <Grid size={6}>
           <Paper variant="outlined">
             <Typography sx={{m: 2}} variant="h5">
               {t('settings.server_manage')}
