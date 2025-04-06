@@ -14,7 +14,7 @@ services:
     environment:
       <<: *overrides
 
-  proxy:
+  mcp:
     image: ghcr.io/kofuk/premises:latest
     environment:
       <<: *overrides
