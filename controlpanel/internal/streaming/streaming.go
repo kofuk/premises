@@ -14,7 +14,7 @@ type StreamingService struct {
 	redis *redis.Client
 }
 
-func New(redis *redis.Client) *StreamingService {
+func NewStreamingService(redis *redis.Client) *StreamingService {
 	return &StreamingService{
 		redis: redis,
 	}

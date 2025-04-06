@@ -44,6 +44,18 @@ func (s *MCPServer) registerTools(server *mcpServer.MCPServer) {
 		),
 		toolHandler.ListExistingWorlds,
 	)
+	server.AddTool(
+		mcp.NewTool("launch_server",
+			mcp.WithDescription("Launch a server"),
+			mcp.WithString("machine_type",
+				mcp.Description(`Machine type (2g, 4g, 8g, 16g, 32g, 64g).
+For more information, please refer to the list_hardware_configurations tool.`)),
+			mcp.WithString("world_name",
+				mcp.Description(`Existing world name to launch the server with.
+For the list of existing worlds, please refer to the list_existing_worlds tool.`)),
+		),
+		toolHandler.LaunchServer,
+	)
 }
 
 func (s *MCPServer) Start() error {

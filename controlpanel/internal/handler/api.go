@@ -10,7 +10,6 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/controlpanel/internal/db/model"
 	"github.com/kofuk/premises/controlpanel/internal/gameconfig"
+	"github.com/kofuk/premises/controlpanel/internal/launcher"
 	"github.com/kofuk/premises/controlpanel/internal/monitor"
 	"github.com/kofuk/premises/controlpanel/internal/startup"
 	"github.com/kofuk/premises/controlpanel/internal/streaming"
@@ -29,7 +29,6 @@ import (
 	potel "github.com/kofuk/premises/internal/otel"
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
-	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -127,15 +126,16 @@ out:
 	return nil
 }
 
-func isValidMemSize(memSize int) bool {
-	return memSize == 1 || memSize == 2 || memSize == 4 || memSize == 8 || memSize == 16 || memSize == 32 || memSize == 64
-}
-
-func (h *Handler) createConfigFromPostData(ctx context.Context, config web.PendingConfig, cfg *config.Config) (*runner.GameConfig, error) {
+func (h *Handler) convertToLaunchConfig(ctx context.Context, config web.PendingConfig, cfg *config.Config) (*launcher.LaunchConfig, error) {
 	if config.ServerVersion == nil || *config.ServerVersion == "" {
 		return nil, errors.New("server version is not set")
 	}
 	result := gameconfig.New()
+
+	if config.MachineType == nil {
+		return nil, errors.New("machine type is not set")
+	}
+	result.C.MachineType = *config.MachineType
 
 	serverInfo, err := h.MCVersions.GetServerInfo(ctx, *config.ServerVersion)
 	if err != nil {
@@ -322,25 +322,8 @@ func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config,
 	}
 }
 
-func (h *Handler) aquireServerLock(ctx context.Context) (bool, error) {
-	var running bool
-	if err := h.KVS.GetSet(ctx, "running", true, -1, &running); err != nil {
-		if errors.Is(err, redis.Nil) {
-			return true, nil
-		}
-		return false, err
-	}
-	return !running, nil
-}
-
 func (h *Handler) releaseServerLock(ctx context.Context) error {
 	return h.KVS.Del(ctx, "running")
-}
-
-func generateAuthKey() string {
-	encoder := base32.StdEncoding.WithPadding(base32.NoPadding)
-	result := encoder.EncodeToString(securecookie.GenerateRandomKey(30))
-	return result
 }
 
 func (h *Handler) handleApiLaunch(c echo.Context) error {
@@ -353,98 +336,21 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 		})
 	}
 
-	gameConfig, err := h.createConfigFromPostData(c.Request().Context(), config, h.cfg)
+	launchConfig, err := h.convertToLaunchConfig(c.Request().Context(), config, h.cfg)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInvalidConfig,
-		})
-	}
-
-	if config.MachineType == nil {
-		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrBadRequest,
-		})
-	}
-	memSizeGB, err := strconv.Atoi(strings.Replace(*config.MachineType, "g", "", 1))
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrBadRequest,
-		})
-	}
-	if !isValidMemSize(memSizeGB) {
-		slog.Error("Invalid mem size")
+		slog.Error("Failed to convert to launch config", slog.Any("error", err))
 		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
 		})
 	}
 
-	canLaunch, err := h.aquireServerLock(c.Request().Context())
-	if err != nil {
-		slog.Error("Failed to aquire server lock", slog.Any("error", err))
+	if err := h.launcher.Launch(c.Request().Context(), launchConfig); err != nil {
+		slog.Error("Failed to launch server", slog.Any("error", err))
+		// TODO: Check error types and return appropriate error codes.
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
-		})
-	}
-
-	if !canLaunch {
-		return c.JSON(http.StatusConflict, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrServerRunning,
-		})
-	}
-
-	serverConfig := &runner.Config{
-		AuthKey:      generateAuthKey(),
-		ControlPanel: h.cfg.Origin,
-		GameConfig:   *gameConfig,
-	}
-
-	go h.LaunchServer(
-		trace.ContextWithSpan(context.Background(), trace.SpanFromContext(c.Request().Context())),
-		serverConfig,
-		h.GameServer,
-		memSizeGB,
-	)
-
-	return c.JSON(http.StatusAccepted, web.SuccessfulResponse[any]{
-		Success: true,
-	})
-}
-
-func (h *Handler) handleApiReconfigure(c echo.Context) error {
-	var config web.PendingConfig
-	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
-		slog.Error("Failed to get pending config", slog.Any("error", err))
-		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrBadRequest,
-		})
-	}
-
-	gameConfig, err := h.createConfigFromPostData(c.Request().Context(), config, h.cfg)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrInvalidConfig,
-		})
-	}
-
-	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
-		Type: runner.ActionReconfigure,
-		Metadata: runner.RequestMeta{
-			Traceparent: potel.TraceContextFromContext(c.Request().Context()),
-		},
-		Config: gameConfig,
-	}); err != nil {
-		slog.Error("Unable to write action", slog.Any("error", err))
-		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
-			Success:   false,
-			ErrorCode: entity.ErrRemote,
 		})
 	}
 
@@ -1033,7 +939,6 @@ func (h *Handler) setupApiRoutes(group *echo.Group) {
 	needsAuth.Use(h.accessTokenMiddleware)
 	needsAuth.GET("/streaming", h.handleStream, scope(auth.ScopeAdmin))
 	needsAuth.POST("/launch", h.handleApiLaunch, scope(auth.ScopeAdmin))
-	needsAuth.POST("/reconfigure", h.handleApiReconfigure, scope(auth.ScopeAdmin))
 	needsAuth.POST("/stop", h.handleApiStop, scope(auth.ScopeAdmin))
 	needsAuth.GET("/worlds", h.handleApiListWorlds, scope(auth.ScopeAdmin))
 	needsAuth.DELETE("/worlds", h.handleApiDeleteWorld, scope(auth.ScopeAdmin))
