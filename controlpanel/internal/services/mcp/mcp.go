@@ -79,15 +79,19 @@ func (s *MCPServer) Start() error {
 		mcpServer.WithBasePath("/mcp"),
 	)
 	http.HandleFunc("/mcp/", func(w http.ResponseWriter, r *http.Request) {
-		token, err := s.authService.GetFromRequest(r.Context(), r)
-		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
+		if r.URL.Path != sseServer.CompleteMessagePath() {
+			// This is an SSE request.
+			// Check if the request is authorized.
+			token, err := s.authService.GetFromRequest(r.Context(), r)
+			if err != nil {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
 
-		if !token.HasScope(auth.ScopeAdmin) {
-			http.Error(w, "Forbidden", http.StatusForbidden)
-			return
+			if !token.HasScope(auth.ScopeAdmin) {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
 		}
 
 		sseServer.ServeHTTP(w, r)
