@@ -33,7 +33,7 @@ func (h *Handler) handleRunnerPoll(c echo.Context) error {
 		})
 	}
 
-	action, err := h.runnerAction.Wait(c.Request().Context(), runnerId)
+	action, err := h.runnerActionService.Wait(c.Request().Context(), runnerId)
 	if err != nil {
 		if err == longpoll.ErrCancelled {
 			return nil
@@ -111,7 +111,7 @@ func (h *Handler) handlePostStatus(c echo.Context) error {
 
 		slog.Debug("Event from runner", slog.Any("payload", event))
 
-		if err := monitor.HandleEvent(ctx, runnerId, h.Streaming, h.cfg, &h.KVS, &event); err != nil {
+		if err := monitor.HandleEvent(ctx, runnerId, h.StreamingService, h.cfg, &h.KVS, &event); err != nil {
 			slog.Error("Unable to handle event", slog.Any("error", err))
 
 			span.SetStatus(codes.Error, err.Error())
@@ -196,7 +196,7 @@ func (h *Handler) handleGetLatestWorldID(c echo.Context) error {
 		})
 	}
 
-	key, err := h.world.GetLatestWorldKey(c.Request().Context(), worldName)
+	key, err := h.worldService.GetLatestWorldKey(c.Request().Context(), worldName)
 	if err != nil {
 		slog.Error("Unable to get latest world key", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -221,7 +221,7 @@ func (h *Handler) handleCreateWorldDownloadURL(c echo.Context) error {
 		})
 	}
 
-	url, err := h.world.GetPresignedGetURL(c.Request().Context(), req.WorldID)
+	url, err := h.worldService.GetPresignedGetURL(c.Request().Context(), req.WorldID)
 	if err != nil {
 		slog.Error("Unable to get presigned URL", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -256,7 +256,7 @@ func (h *Handler) handleCreateWorldUploadURL(c echo.Context) error {
 
 	key := fmt.Sprintf("%s/%s.tar.zst", req.WorldName, time.Now().Format(time.DateTime))
 
-	url, err := h.world.GetPresignedPutURL(c.Request().Context(), key)
+	url, err := h.worldService.GetPresignedPutURL(c.Request().Context(), key)
 	if err != nil {
 		slog.Error("Unable to get presigned URL", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{

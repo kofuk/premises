@@ -33,14 +33,14 @@ func DetectAndUpdateVersion(ctx context.Context, config *runner.Config) error {
 	}
 	options = append(options, lm.WithHTTPClient(otelhttp.DefaultClient))
 
-	fetcher := lm.New(options...)
+	fetcher := lm.NewLauncherMetaClient(options...)
 	versions, err := fetcher.GetVersionInfo(ctx)
 	if err != nil {
 		return err
 	}
 
 	var versionInfo lm.VersionInfo
-	for _, ver := range versions {
+	for _, ver := range versions.Versions {
 		if ver.ID == version {
 			versionInfo = ver
 			break
@@ -50,15 +50,15 @@ func DetectAndUpdateVersion(ctx context.Context, config *runner.Config) error {
 		return errors.New("no matching version found")
 	}
 
-	serverInfo, err := fetcher.GetServerInfo(ctx, versionInfo)
+	versionMetaData, err := fetcher.GetVersionMetaData(ctx, versionInfo)
 	if err != nil {
 		return err
 	}
 
-	if serverInfo.DownloadURL != "" {
-		config.GameConfig.Server.DownloadUrl = serverInfo.DownloadURL
+	if versionMetaData.Downloads.Server.URL != "" {
+		config.GameConfig.Server.DownloadUrl = versionMetaData.Downloads.Server.URL
 		config.GameConfig.Server.Version = version
-		config.GameConfig.Server.JavaVersion = serverInfo.JavaVersion
+		config.GameConfig.Server.JavaVersion = versionMetaData.JavaVersion.Major
 
 		return nil
 	}

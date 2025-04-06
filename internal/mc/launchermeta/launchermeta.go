@@ -1,9 +1,10 @@
-package mclaunchermeta
+package launchermeta
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -11,21 +12,21 @@ const (
 	mojangManifest = "https://launchermeta.mojang.com/mc/game/version_manifest.json"
 )
 
-type LauncherMeta struct {
+type LauncherMetaClient struct {
 	httpClient  *http.Client
 	manifestURL string
 }
 
-type Option func(p *LauncherMeta)
+type Option func(p *LauncherMetaClient)
 
 func WithManifestURL(url string) Option {
-	return func(p *LauncherMeta) {
+	return func(p *LauncherMetaClient) {
 		p.manifestURL = url
 	}
 }
 
 func WithHTTPClient(client *http.Client) Option {
-	return func(p *LauncherMeta) {
+	return func(p *LauncherMetaClient) {
 		p.httpClient = client
 	}
 }
@@ -37,12 +38,16 @@ type VersionInfo struct {
 	ReleaseTime string `json:"releaseTime"`
 }
 
-type launcherMetaData struct {
+type VersionManifest struct {
+	Latest struct {
+		Release  string `json:"release"`
+		Snapshot string `json:"snapshot"`
+	}
 	Versions []VersionInfo `json:"versions"`
 }
 
-func New(options ...Option) *LauncherMeta {
-	provider := &LauncherMeta{
+func NewLauncherMetaClient(options ...Option) *LauncherMetaClient {
+	provider := &LauncherMetaClient{
 		httpClient:  http.DefaultClient,
 		manifestURL: mojangManifest,
 	}
@@ -54,7 +59,7 @@ func New(options ...Option) *LauncherMeta {
 	return provider
 }
 
-func (lm *LauncherMeta) GetVersionInfo(ctx context.Context) ([]VersionInfo, error) {
+func (lm *LauncherMetaClient) GetVersionInfo(ctx context.Context) (*VersionManifest, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, lm.manifestURL, nil)
 	if err != nil {
 		return nil, err
@@ -67,18 +72,19 @@ func (lm *LauncherMeta) GetVersionInfo(ctx context.Context) ([]VersionInfo, erro
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to retrieve launchermeta")
+		io.CopyN(io.Discard, resp.Body, 1024)
+		return nil, fmt.Errorf("failed to retrieve launchermeta: %s", resp.Status)
 	}
 
-	var meta launcherMetaData
-	if err := json.NewDecoder(resp.Body).Decode(&meta); err != nil {
+	var manifest VersionManifest
+	if err := json.NewDecoder(resp.Body).Decode(&manifest); err != nil {
 		return nil, err
 	}
 
-	return meta.Versions, nil
+	return &manifest, nil
 }
 
-type versionMetaResp struct {
+type VersionMetaData struct {
 	Downloads struct {
 		Server struct {
 			URL            string `json:"url"`
@@ -88,17 +94,11 @@ type versionMetaResp struct {
 		} `json:"server"`
 	} `json:"downloads"`
 	JavaVersion struct {
-		Marjor int `json:"majorVersion"`
+		Major int `json:"majorVersion"`
 	} `json:"javaVersion"`
 }
 
-type ServerInfo struct {
-	DownloadURL   string
-	LaunchCommand []string
-	JavaVersion   int
-}
-
-func (lm *LauncherMeta) GetServerInfo(ctx context.Context, version VersionInfo) (*ServerInfo, error) {
+func (lm *LauncherMetaClient) GetVersionMetaData(ctx context.Context, version VersionInfo) (*VersionMetaData, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, version.URL, nil)
 	if err != nil {
 		return nil, err
@@ -114,16 +114,10 @@ func (lm *LauncherMeta) GetServerInfo(ctx context.Context, version VersionInfo) 
 		return nil, fmt.Errorf("failed to get version metadata")
 	}
 
-	var versionMeta versionMetaResp
+	var versionMeta VersionMetaData
 	if err := json.NewDecoder(resp.Body).Decode(&versionMeta); err != nil {
 		return nil, err
 	}
 
-	result := &ServerInfo{
-		DownloadURL:   versionMeta.Downloads.Server.URL,
-		LaunchCommand: versionMeta.Downloads.Server.CustomProperty.LaunchCommand,
-		JavaVersion:   versionMeta.JavaVersion.Marjor,
-	}
-
-	return result, nil
+	return &versionMeta, nil
 }

@@ -70,7 +70,7 @@ func (h *Handler) handleStream(c echo.Context) error {
 		return nil
 	}
 
-	subscription, err := h.Streaming.SubscribeEvent(c.Request().Context())
+	subscription, err := h.StreamingService.SubscribeEvent(c.Request().Context())
 	if err != nil {
 		slog.Error("Failed to connect to stream", slog.Any("error", err))
 		return c.String(http.StatusInternalServerError, "")
@@ -134,13 +134,13 @@ func (h *Handler) convertToLaunchConfig(ctx context.Context, config web.PendingC
 	}
 	result.C.MachineType = *config.MachineType
 
-	serverInfo, err := h.MCVersions.GetServerInfo(ctx, *config.ServerVersion)
+	serverInfo, err := h.MCVersionsService.GetServerInfo(ctx, *config.ServerVersion)
 	if err != nil {
 		return nil, err
 	}
 	result.SetServer(*config.ServerVersion, serverInfo.DownloadURL)
 	result.SetDetectServerVersion(*config.GuessVersion)
-	result.C.Server.ManifestOverride = h.MCVersions.GetOverridenManifestUrl()
+	result.C.Server.ManifestOverride = h.MCVersionsService.GetOverridenManifestURL()
 	result.C.Server.CustomCommand = serverInfo.LaunchCommand
 	result.C.Server.JavaVersion = serverInfo.JavaVersion
 	if config.InactiveTimeout != nil {
@@ -188,7 +188,7 @@ func (h *Handler) convertToLaunchConfig(ctx context.Context, config web.PendingC
 }
 
 func (h *Handler) shutdownServer(ctx context.Context, authKey string) {
-	h.launcher.Clean(ctx, authKey)
+	h.launcherService.Clean(ctx, authKey)
 }
 
 func (h *Handler) handleApiLaunch(c echo.Context) error {
@@ -210,7 +210,7 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 		})
 	}
 
-	if err := h.launcher.Launch(c.Request().Context(), launchConfig); err != nil {
+	if err := h.launcherService.Launch(c.Request().Context(), launchConfig); err != nil {
 		slog.Error("Failed to launch server", slog.Any("error", err))
 		// TODO: Check error types and return appropriate error codes.
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
@@ -225,7 +225,7 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 }
 
 func (h *Handler) handleApiStop(c echo.Context) error {
-	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
+	if err := h.runnerActionService.Push(c.Request().Context(), "default", runner.Action{
 		Type: runner.ActionStop,
 		Metadata: runner.RequestMeta{
 			Traceparent: potel.TraceContextFromContext(c.Request().Context()),
@@ -252,7 +252,7 @@ func (h *Handler) handleApiListWorlds(c echo.Context) error {
 
 	slog.Info("cache miss", slog.String("cache_key", CacheKeyWorlds))
 
-	worlds, err := h.world.GetWorlds(c.Request().Context())
+	worlds, err := h.worldService.GetWorlds(c.Request().Context())
 	if err != nil {
 		slog.Error("Failed to retrieve backup list", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
@@ -291,7 +291,7 @@ func (h *Handler) handleApiDeleteWorld(c echo.Context) error {
 		})
 	}
 
-	if err := h.world.DeleteWorld(c.Request().Context(), req.ID); err != nil {
+	if err := h.worldService.DeleteWorld(c.Request().Context(), req.ID); err != nil {
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -304,7 +304,7 @@ func (h *Handler) handleApiDeleteWorld(c echo.Context) error {
 }
 
 func (h *Handler) handleApiMcversions(c echo.Context) error {
-	versions, err := h.MCVersions.GetVersions(c.Request().Context())
+	versions, err := h.MCVersionsService.GetVersions(c.Request().Context())
 	if err != nil {
 		slog.Error("Failed to retrieve Minecraft versions", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -497,7 +497,7 @@ func (h *Handler) handleApiCreateWorldDownloadLink(c echo.Context) error {
 		})
 	}
 
-	url, err := h.world.GetPresignedGetURLWithLifetime(c.Request().Context(), req.ID, time.Minute)
+	url, err := h.worldService.GetPresignedGetURLWithLifetime(c.Request().Context(), req.ID, time.Minute)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
@@ -546,7 +546,7 @@ func (h *Handler) handleApiCreateWorldUploadLink(c echo.Context) error {
 
 	fileName := fmt.Sprintf("%s/user_uploaded_world%s", req.WorldName, ext)
 
-	url, err := h.world.GetPresignedPutURLWithLifetime(c.Request().Context(), fileName, time.Minute)
+	url, err := h.worldService.GetPresignedPutURLWithLifetime(c.Request().Context(), fileName, time.Minute)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
@@ -580,7 +580,7 @@ func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
 		})
 	}
 
-	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
+	if err := h.runnerActionService.Push(c.Request().Context(), "default", runner.Action{
 		Type: runner.ActionSnapshot,
 		Metadata: runner.RequestMeta{
 			Traceparent: potel.TraceContextFromContext(c.Request().Context()),
@@ -620,7 +620,7 @@ func (h *Handler) handleApiQuickUndoUndo(c echo.Context) error {
 		})
 	}
 
-	if err := h.runnerAction.Push(c.Request().Context(), "default", runner.Action{
+	if err := h.runnerActionService.Push(c.Request().Context(), "default", runner.Action{
 		Type: runner.ActionUndo,
 		Metadata: runner.RequestMeta{
 			Traceparent: potel.TraceContextFromContext(c.Request().Context()),

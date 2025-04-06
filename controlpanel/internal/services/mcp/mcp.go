@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/kofuk/premises/controlpanel/internal/auth"
+	"github.com/kofuk/premises/controlpanel/internal/launcher"
+	"github.com/kofuk/premises/controlpanel/internal/mcversions"
 	"github.com/kofuk/premises/controlpanel/internal/world"
 	"github.com/kofuk/premises/internal"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -13,18 +15,28 @@ import (
 )
 
 type MCPServer struct {
-	redis *redis.Client
-	db    *bun.DB
-	world *world.WorldService
-	auth  *auth.AuthService
+	redis             *redis.Client
+	db                *bun.DB
+	worldService      *world.WorldService
+	authService       *auth.AuthService
+	launcherService   *launcher.LauncherService
+	mcVersionsService *mcversions.MCVersionsService
+
+	// TODO: Don't hold this here directly.
+	operators []string
+	whitelist []string
 }
 
-func NewMCPServer(redis *redis.Client, db *bun.DB, world *world.WorldService, auth *auth.AuthService) *MCPServer {
+func NewMCPServer(redis *redis.Client, db *bun.DB, world *world.WorldService, auth *auth.AuthService, launcher *launcher.LauncherService, mcVersions *mcversions.MCVersionsService, operators []string, whitelist []string) *MCPServer {
 	return &MCPServer{
-		redis: redis,
-		db:    db,
-		world: world,
-		auth:  auth,
+		redis:             redis,
+		db:                db,
+		worldService:      world,
+		authService:       auth,
+		launcherService:   launcher,
+		mcVersionsService: mcVersions,
+		operators:         []string{},
+		whitelist:         []string{},
 	}
 }
 
@@ -67,7 +79,7 @@ func (s *MCPServer) Start() error {
 		mcpServer.WithBasePath("/mcp"),
 	)
 	http.HandleFunc("/mcp/", func(w http.ResponseWriter, r *http.Request) {
-		token, err := s.auth.GetFromRequest(r.Context(), r)
+		token, err := s.authService.GetFromRequest(r.Context(), r)
 		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return

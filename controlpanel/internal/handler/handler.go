@@ -30,19 +30,19 @@ import (
 const ScopeName = "github.com/kofuk/premises/controlpanel/internal/handler"
 
 type Handler struct {
-	cfg          *config.Config
-	bind         string
-	engine       *echo.Echo
-	db           *bun.DB
-	redis        *redis.Client
-	GameServer   *GameServer
-	KVS          kvs.KeyValueStore
-	MCVersions   mcversions.MCVersionsService
-	Streaming    *streaming.StreamingService
-	world        *world.WorldService
-	runnerAction *longpoll.PollableActionService
-	authService  *auth.AuthService
-	launcher     *launcher.LauncherService
+	cfg                 *config.Config
+	bind                string
+	engine              *echo.Echo
+	db                  *bun.DB
+	redis               *redis.Client
+	GameServer          *GameServer
+	KVS                 kvs.KeyValueStore
+	MCVersionsService   *mcversions.MCVersionsService
+	StreamingService    *streaming.StreamingService
+	worldService        *world.WorldService
+	runnerActionService *longpoll.PollableActionService
+	authService         *auth.AuthService
+	launcherService     *launcher.LauncherService
 }
 
 func setupRoutes(h *Handler) {
@@ -119,21 +119,21 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 	}
 
 	h := &Handler{
-		cfg:          cfg,
-		engine:       engine,
-		db:           db,
-		redis:        redis,
-		bind:         bindAddr,
-		KVS:          kvs,
-		Streaming:    streaming.NewStreamingService(redis),
-		world:        worldService,
-		runnerAction: longpoll,
-		authService:  auth.New(kvs),
-		launcher:     launcher,
+		cfg:                 cfg,
+		engine:              engine,
+		db:                  db,
+		redis:               redis,
+		bind:                bindAddr,
+		KVS:                 kvs,
+		StreamingService:    streaming.NewStreamingService(redis),
+		worldService:        worldService,
+		runnerActionService: longpoll,
+		authService:         auth.New(kvs),
+		launcherService:     launcher,
 	}
 	h.GameServer = NewGameServer(cfg)
 
-	h.MCVersions = mcversions.New(h.KVS)
+	h.MCVersionsService = mcversions.New(h.KVS)
 
 	setupRoutes(h)
 

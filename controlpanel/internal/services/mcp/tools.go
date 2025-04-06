@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/kofuk/premises/controlpanel/internal/launcher"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
@@ -48,7 +49,7 @@ func (*ToolHandler) ListHardwareConfigurations(ctx context.Context, req mcp.Call
 }
 
 func (t *ToolHandler) ListExistingWorlds(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	worlds, err := t.server.world.GetWorlds(ctx)
+	worlds, err := t.server.worldService.GetWorlds(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -70,9 +71,42 @@ func (t *ToolHandler) LaunchServer(ctx context.Context, req mcp.CallToolRequest)
 		return nil, errors.New("world_name is required")
 	}
 
-	// TODO
-	_ = machineType
-	_ = worldName
+	minecraftVersion, err := t.server.mcVersionsService.GetLatestRelease(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	serverInfo, err := t.server.mcVersionsService.GetServerInfo(ctx, minecraftVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	err = t.server.launcherService.Launch(ctx, &launcher.LaunchConfig{
+		MachineType: machineType,
+		Server: launcher.LaunchServerConfig{
+			PreferDetected:   true,
+			Version:          minecraftVersion,
+			DownloadUrl:      serverInfo.DownloadURL,
+			ManifestOverride: t.server.mcVersionsService.GetOverridenManifestURL(),
+			CustomCommand:    serverInfo.LaunchCommand,
+			JavaVersion:      serverInfo.JavaVersion,
+			InactiveTimeout:  -1,
+			Motd:             "",
+			Operators:        t.server.operators,
+			Whitelist:        t.server.whitelist,
+		},
+		World: launcher.LaunchWorldConfig{
+			ShouldGenerate: false,
+			Name:           worldName,
+			GenerationID:   "@/latest",
+			Seed:           "",
+			LevelType:      "default",
+			Difficulty:     "easy",
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return mcp.NewToolResultText("Server launched successfully."), nil
 }
