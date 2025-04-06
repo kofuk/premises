@@ -2,7 +2,7 @@ import {ReactNode, createContext, useContext} from 'react';
 
 import useSWR from 'swr';
 
-import {launch as apiLaunch, reconfigure as apiReconfigure, updateConfig as apiUpdateConfig, getConfig} from '@/api';
+import {launch as apiLaunch, updateConfig as apiUpdateConfig, getConfig} from '@/api';
 import {PendingConfig} from '@/api/entities';
 import Loading from '@/components/loading';
 import {useAuth} from '@/utils/auth';
@@ -12,7 +12,6 @@ type ConfigContextType = {
   updateConfig: (config: PendingConfig) => Promise<void>;
   isValid: boolean;
   launch: () => Promise<void>;
-  reconfigure: () => Promise<void>;
 };
 
 const ConfigContext = createContext<ConfigContextType>(null!);
@@ -36,16 +35,11 @@ export const ConfigProvider = ({children}: {children: ReactNode}) => {
     await apiLaunch(accessToken);
   };
 
-  const reconfigure = async (): Promise<void> => {
-    await apiReconfigure(accessToken);
-  };
-
   const value = {
     config: remoteConfig!,
     updateConfig,
     isValid,
-    launch,
-    reconfigure
+    launch
   };
 
   return <ConfigContext.Provider value={value}>{children}</ConfigContext.Provider>;
