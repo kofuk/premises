@@ -991,28 +991,19 @@ func setupApiUsersRoutes(h *Handler, group *echo.Group) {
 
 func (h *Handler) accessTokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		authorization := c.Request().Header.Get("Authorization")
-		if authorization == "" {
-			authorization = c.Request().URL.Query().Get("x-auth")
+		if c.Request().Header.Get("Authorization") == "" {
+			c.Request().Header.Set("Authorization", c.Request().URL.Query().Get("x-auth"))
 		}
 
-		if !strings.HasPrefix(authorization, "Bearer ") {
+		token, err := h.authService.GetFromRequest(c.Request().Context(), c.Request())
+		if err != nil {
 			return c.JSON(http.StatusUnauthorized, web.ErrorResponse{
 				Success:   false,
 				ErrorCode: entity.ErrRequiresAuth,
 			})
 		}
 
-		accessToken := strings.TrimPrefix(authorization, "Bearer ")
-
-		if token, err := h.authService.Get(c.Request().Context(), accessToken); err != nil {
-			return c.JSON(http.StatusUnauthorized, web.ErrorResponse{
-				Success:   false,
-				ErrorCode: entity.ErrRequiresAuth,
-			})
-		} else {
-			c.Set("access_token", token)
-		}
+		c.Set("access_token", token)
 
 		return next(c)
 	}

@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
+	"github.com/kofuk/premises/controlpanel/internal/auth"
 	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/controlpanel/internal/cron"
 	"github.com/kofuk/premises/controlpanel/internal/db"
@@ -148,7 +149,10 @@ func startMcp(ctx context.Context, config *config.Config) {
 		slog.Error("Failed to create world service", slog.Any("error", err))
 		os.Exit(1)
 	}
-	mcp := mcp.NewMCPServer(redis, db, world)
+
+	kvs := kvs.New(kvs.NewRedis(redis))
+
+	mcp := mcp.NewMCPServer(redis, db, world, auth.New(kvs))
 	if err := mcp.Start(); err != nil {
 		slog.Error("Error in MCP server", slog.Any("error", err))
 		os.Exit(1)
