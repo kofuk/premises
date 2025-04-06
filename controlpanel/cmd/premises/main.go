@@ -132,7 +132,13 @@ func startCron(ctx context.Context, config *config.Config) {
 	ctx, cancelFn := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGINT)
 	defer cancelFn()
 
-	cron := cron.NewCronService(config)
+	worldService, err := world.New(ctx, config.S3Bucket, config.S3ForcePathStyle)
+	if err != nil {
+		slog.Error("Failed to create world service", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	cron := cron.NewCronService(config, worldService)
 	if err := cron.Run(ctx); err != nil {
 		slog.Error("Error in cron", slog.Any("error", err))
 		os.Exit(1)

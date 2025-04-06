@@ -9,15 +9,17 @@ import (
 
 	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/controlpanel/internal/conoha"
+	"github.com/kofuk/premises/controlpanel/internal/world"
 	"github.com/robfig/cron/v3"
 )
 
 type CronService struct {
-	conoha  *conoha.Client
-	nameTag string
+	conoha       *conoha.Client
+	nameTag      string
+	worldService *world.WorldService
 }
 
-func NewCronService(config *config.Config) *CronService {
+func NewCronService(config *config.Config, worldService *world.WorldService) *CronService {
 	identity := conoha.Identity{
 		User:     config.ConohaUser,
 		Password: config.ConohaPassword,
@@ -32,8 +34,9 @@ func NewCronService(config *config.Config) *CronService {
 	conoha := conoha.NewClient(identity, endpoints, nil)
 
 	return &CronService{
-		conoha:  conoha,
-		nameTag: config.ConohaNameTag,
+		conoha:       conoha,
+		nameTag:      config.ConohaNameTag,
+		worldService: worldService,
 	}
 }
 
@@ -126,6 +129,10 @@ func (cr *CronService) runCreateStorageJob() error {
 	return nil
 }
 
+func (cr *CronService) runPruneWorldsJob() error {
+	return cr.worldService.Prune(context.Background(), 3)
+}
+
 func withDelay(fn func() error) func() {
 	return func() {
 		time.Sleep(time.Duration(rand.Intn(10)) * time.Minute)
@@ -145,6 +152,10 @@ func (cr *CronService) Run(ctx context.Context) error {
 	// Every 1 hour.
 	// Create a new storage using saved image.
 	c.AddFunc("45 * * * *", withDelay(cr.runCreateStorageJob))
+
+	// Every day at 04:00 (JST)
+	// Prune old worlds
+	c.AddFunc("0 19 * * *", withDelay(cr.runPruneWorldsJob))
 
 	c.Start()
 

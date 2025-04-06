@@ -25,14 +25,6 @@ type ConohaServer struct {
 
 var _ GameServer = (*ConohaServer)(nil)
 
-type conohaServerCookie string
-
-func (c conohaServerCookie) String() string {
-	return string(c)
-}
-
-var _ ServerCookie = (*conohaServerCookie)(nil)
-
 func NewConohaServer(cfg *config.Config) *ConohaServer {
 	identity := conoha.Identity{
 		User:     cfg.ConohaUser,
@@ -94,28 +86,28 @@ func getMemorySize(machineType string) (int, error) {
 func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, machineType string) (ServerCookie, error) {
 	memorySizeInGB, err := getMemorySize(machineType)
 	if err != nil {
-		return conohaServerCookie(""), fmt.Errorf("invalid machine type: %w", err)
+		return "", fmt.Errorf("invalid machine type: %w", err)
 	}
 
 	slog.Info("Retrieving flavors...")
 	flavors, err := s.conoha.ListFlavorDetails(ctx)
 	if err != nil {
-		return conohaServerCookie(""), fmt.Errorf("failed to get flavors: %w", err)
+		return "", fmt.Errorf("failed to get flavors: %w", err)
 	}
 	flavor, err := findMatchingFlavor(flavors.Flavors, memorySizeInGB*1024)
 	if err != nil {
-		return conohaServerCookie(""), fmt.Errorf("matching flavor not found: %w", err)
+		return "", fmt.Errorf("matching flavor not found: %w", err)
 	}
 	slog.Info("Retriving flavors...Done", slog.Any("selected_flavor", flavor))
 
 	slog.Info("Retriving volume ID...")
 	volumes, err := s.conoha.ListVolumes(ctx)
 	if err != nil {
-		return conohaServerCookie(""), fmt.Errorf("failed to get volumes: %w", err)
+		return "", fmt.Errorf("failed to get volumes: %w", err)
 	}
 	volumeID, err := findVolume(volumes.Volumes, s.cfg.ConohaNameTag)
 	if err != nil {
-		return conohaServerCookie(""), fmt.Errorf("failed to get volume ID: %w", err)
+		return "", fmt.Errorf("failed to get volume ID: %w", err)
 	}
 	slog.Info("Retriving image ID...Done", slog.String("volume_id", volumeID))
 
@@ -128,7 +120,7 @@ func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, mac
 		UserData:     string(startupScript),
 	})
 	if err != nil {
-		return conohaServerCookie(""), fmt.Errorf("failed to create server: %w", err)
+		return "", fmt.Errorf("failed to create server: %w", err)
 	}
 	slog.Info("Creating VM...Done")
 
@@ -148,10 +140,10 @@ func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, mac
 		return nil
 	}, 30*time.Minute)
 	if err != nil {
-		return conohaServerCookie(""), fmt.Errorf("timeout creating VM: %w", err)
+		return "", fmt.Errorf("timeout creating VM: %w", err)
 	}
 
-	return conohaServerCookie(server.Server.ID), nil
+	return ServerCookie(server.Server.ID), nil
 }
 
 func findServer(servers []conoha.ServerDetail, nameTag string) (string, error) {
@@ -167,21 +159,21 @@ func findServer(servers []conoha.ServerDetail, nameTag string) (string, error) {
 func (s *ConohaServer) Find(ctx context.Context) (ServerCookie, error) {
 	servers, err := s.conoha.ListServerDetails(ctx)
 	if err != nil {
-		return conohaServerCookie(""), err
+		return "", err
 	}
 
 	serverID, err := findServer(servers.Servers, s.cfg.ConohaNameTag)
 	if err != nil {
-		return conohaServerCookie(""), err
+		return "", err
 	}
 
-	return conohaServerCookie(serverID), nil
+	return ServerCookie(serverID), nil
 }
 
 func (s *ConohaServer) IsRunning(ctx context.Context, cookie ServerCookie) bool {
 	slog.Info("Getting VM information...")
 	server, err := s.conoha.GetServerDetail(ctx, conoha.GetServerDetailInput{
-		ServerID: cookie.String(),
+		ServerID: string(cookie),
 	})
 	if err != nil {
 		return false
@@ -194,7 +186,7 @@ func (s *ConohaServer) IsRunning(ctx context.Context, cookie ServerCookie) bool 
 func (s *ConohaServer) Stop(ctx context.Context, cookie ServerCookie) bool {
 	slog.Info("Requesting to Stop VM...")
 	err := s.conoha.StopServer(ctx, conoha.StopServerInput{
-		ServerID: cookie.String(),
+		ServerID: string(cookie),
 	})
 	if err != nil {
 		slog.Error("Failed to stop VM", slog.Any("error", err))
@@ -206,7 +198,7 @@ func (s *ConohaServer) Stop(ctx context.Context, cookie ServerCookie) bool {
 	slog.Info("Waiting for the VM to stop...")
 	err = retry.Retry(func() error {
 		server, err := s.conoha.GetServerDetail(ctx, conoha.GetServerDetailInput{
-			ServerID: cookie.String(),
+			ServerID: string(cookie),
 		})
 		if err != nil {
 			slog.Error("Failed to get VM information", slog.Any("error", err))
@@ -231,7 +223,7 @@ func (s *ConohaServer) Stop(ctx context.Context, cookie ServerCookie) bool {
 func (s *ConohaServer) Delete(ctx context.Context, cookie ServerCookie) bool {
 	slog.Info("Deleting VM...")
 	err := s.conoha.DeleteServer(ctx, conoha.DeleteServerInput{
-		ServerID: cookie.String(),
+		ServerID: string(cookie),
 	})
 	if err != nil {
 		slog.Error("Failed to delete VM", slog.Any("error", err))

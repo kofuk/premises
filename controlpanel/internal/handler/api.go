@@ -3,7 +3,6 @@ package handler
 import (
 	"bufio"
 	"context"
-	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,14 +13,12 @@ import (
 	"time"
 
 	"dario.cat/mergo"
-	"github.com/gorilla/securecookie"
 	"github.com/kofuk/premises/controlpanel/internal/auth"
 	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/controlpanel/internal/db/model"
 	"github.com/kofuk/premises/controlpanel/internal/gameconfig"
 	"github.com/kofuk/premises/controlpanel/internal/launcher"
 	"github.com/kofuk/premises/controlpanel/internal/monitor"
-	"github.com/kofuk/premises/controlpanel/internal/startup"
 	"github.com/kofuk/premises/controlpanel/internal/streaming"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
@@ -190,140 +187,8 @@ func (h *Handler) convertToLaunchConfig(ctx context.Context, config web.PendingC
 	return &result.C, nil
 }
 
-func (h *Handler) shutdownServer(ctx context.Context, gameServer *GameServer, authKey string) {
-	defer h.releaseServerLock(context.TODO())
-
-	h.Streaming.PublishEvent(
-		ctx,
-		streaming.NewStandardMessage(entity.EventStopRunner, web.PageLoading),
-	)
-
-	var id string
-	if err := h.KVS.Get(ctx, "runner-id:default", &id); err != nil || !gameServer.IsAvailable() {
-		if err == redis.Nil {
-			goto out
-		}
-
-		h.Streaming.PublishEvent(
-			ctx,
-			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
-		)
-		return
-	}
-
-	if !gameServer.StopVM(ctx, id) {
-		h.Streaming.PublishEvent(
-			ctx,
-			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
-		)
-		return
-	}
-
-	h.Streaming.PublishEvent(
-		ctx,
-		streaming.NewStandardMessageWithProgress(entity.EventStopRunner, 40, web.PageLoading),
-	)
-
-	h.Streaming.PublishEvent(
-		ctx,
-		streaming.NewStandardMessageWithProgress(entity.EventStopRunner, 80, web.PageLoading),
-	)
-
-	if !gameServer.DeleteVM(ctx, id) {
-		h.Streaming.PublishEvent(
-			ctx,
-			streaming.NewInfoMessage(entity.InfoErrRunnerStop, true),
-		)
-		return
-	}
-
-out:
-	if err := h.world.Prune(ctx, 3); err != nil {
-		slog.Error("Failed to prune worlds", slog.Any("error", err))
-	}
-
-	if err := h.KVS.Del(ctx, "runner-id:default", "runner-info:default", "world-info:default", fmt.Sprintf("runner:%s", authKey)); err != nil {
-		slog.Error("Failed to unset runner information", slog.Any("error", err))
-		return
-	}
-
-	h.Streaming.PublishEvent(
-		ctx,
-		streaming.NewStandardMessage(entity.EventStopped, web.PageLaunch),
-	)
-
-	if err := h.Streaming.ClearSysstat(ctx); err != nil {
-		slog.Error("Unable to clear sysstat history", slog.Any("error", err))
-	}
-}
-
-func (h *Handler) LaunchServer(ctx context.Context, serverConfig *runner.Config, gameServer *GameServer, memSizeGB int) {
-	if err := h.KVS.Set(ctx, fmt.Sprintf("runner:%s", serverConfig.AuthKey), "default", -1); err != nil {
-		slog.Error("Failed to save runner id", slog.Any("error", err))
-
-		h.Streaming.PublishEvent(
-			ctx,
-			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
-		)
-
-		h.releaseServerLock(context.TODO())
-		return
-	}
-
-	h.Streaming.PublishEvent(
-		ctx,
-		streaming.NewStandardMessage(entity.EventCreateRunner, web.PageLoading),
-	)
-
-	slog.Info("Generating startup script...")
-	startupScript, err := startup.GenerateStartupScript(serverConfig)
-	if err != nil {
-		slog.Error("Failed to generate startup script", slog.Any("error", err))
-
-		h.Streaming.PublishEvent(
-			ctx,
-			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
-		)
-
-		h.releaseServerLock(context.TODO())
-		return
-	}
-	slog.Info("Generating startup script...Done")
-
-	if gameServer.IsAvailable() {
-		if id := gameServer.SetUp(ctx, serverConfig, memSizeGB, startupScript); id != "" {
-			if err := h.KVS.Set(ctx, "runner-id:default", id, -1); err != nil {
-				slog.Error("Failed to set runner ID", slog.Any("error", err))
-				return
-			}
-
-			h.Streaming.PublishEvent(
-				ctx,
-				streaming.NewStandardMessageWithProgress(entity.EventCreateRunner, 50, web.PageLoading),
-			)
-
-			return
-		}
-	}
-
-	// Startup failed. Manual setup required.
-
-	encoder := base32.StdEncoding.WithPadding(base32.NoPadding)
-	authCode := encoder.EncodeToString(securecookie.GenerateRandomKey(10))
-
-	h.Streaming.PublishEvent(
-		ctx,
-		streaming.NewStandardMessageWithTextData(entity.EventManualSetup, authCode, web.PageManualSetup),
-	)
-
-	if err := h.KVS.Set(ctx, fmt.Sprintf("startup:%s", authCode), string(startupScript), time.Hour); err != nil {
-		slog.Error("Failed to set startup script", slog.Any("error", err))
-		return
-	}
-}
-
-func (h *Handler) releaseServerLock(ctx context.Context) error {
-	return h.KVS.Del(ctx, "running")
+func (h *Handler) shutdownServer(ctx context.Context, authKey string) {
+	h.launcher.Clean(ctx, authKey)
 }
 
 func (h *Handler) handleApiLaunch(c echo.Context) error {
