@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -35,12 +34,11 @@ type Handler struct {
 	engine              *echo.Echo
 	db                  *bun.DB
 	redis               *redis.Client
-	GameServer          *GameServer
 	KVS                 kvs.KeyValueStore
 	MCVersionsService   *mcversions.MCVersionsService
 	StreamingService    *streaming.StreamingService
 	worldService        *world.WorldService
-	runnerActionService *longpoll.PollableActionService
+	runnerActionService *longpoll.LongPollService
 	authService         *auth.AuthService
 	launcherService     *launcher.LauncherService
 }
@@ -76,7 +74,7 @@ func setupRoutes(h *Handler) {
 	h.setupRunnerRoutes(h.engine.Group("/_"))
 }
 
-func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Client, longpoll *longpoll.PollableActionService, kvs kvs.KeyValueStore, launcher *launcher.LauncherService) (*Handler, error) {
+func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Client, worldService *world.WorldService, longpoll *longpoll.LongPollService, kvs kvs.KeyValueStore, launcher *launcher.LauncherService) (*Handler, error) {
 	engine := echo.New()
 	engine.Use(otelecho.Middleware("web", otelecho.WithSkipper(func(c echo.Context) bool {
 		path := c.Path()
@@ -113,11 +111,6 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 	engine.HideBanner = true
 	engine.HidePort = true
 
-	worldService, err := world.New(context.TODO(), cfg.S3Bucket, cfg.S3ForcePathStyle)
-	if err != nil {
-		return nil, err
-	}
-
 	h := &Handler{
 		cfg:                 cfg,
 		engine:              engine,
@@ -131,7 +124,6 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 		authService:         auth.New(kvs),
 		launcherService:     launcher,
 	}
-	h.GameServer = NewGameServer(cfg)
 
 	h.MCVersionsService = mcversions.New(h.KVS)
 

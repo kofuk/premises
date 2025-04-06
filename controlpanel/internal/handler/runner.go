@@ -99,7 +99,7 @@ func (h *Handler) handlePostStatus(c echo.Context) error {
 		}
 
 		if event.Type == runner.EventStatus && event.Status.EventCode == entity.EventShutdown {
-			go h.shutdownServer(ctx, c.Request().Header.Get("Authorization"))
+			go h.launcherService.Clean(ctx, c.Request().Header.Get("Authorization"))
 
 			span.End()
 

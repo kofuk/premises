@@ -187,10 +187,6 @@ func (h *Handler) convertToLaunchConfig(ctx context.Context, config web.PendingC
 	return &result.C, nil
 }
 
-func (h *Handler) shutdownServer(ctx context.Context, authKey string) {
-	h.launcherService.Clean(ctx, authKey)
-}
-
 func (h *Handler) handleApiLaunch(c echo.Context) error {
 	var config web.PendingConfig
 	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {

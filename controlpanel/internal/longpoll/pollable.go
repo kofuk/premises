@@ -11,19 +11,19 @@ import (
 
 var ErrCancelled = errors.New("Cancelled")
 
-type PollableActionService struct {
+type LongPollService struct {
 	redis *redis.Client
 	key   string
 }
 
-func New(redis *redis.Client, key string) *PollableActionService {
-	return &PollableActionService{
+func NewLongPollService(redis *redis.Client, key string) *LongPollService {
+	return &LongPollService{
 		redis: redis,
 		key:   key,
 	}
 }
 
-func (pa *PollableActionService) Push(ctx context.Context, runnerId string, data any) error {
+func (pa *LongPollService) Push(ctx context.Context, runnerId string, data any) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func (pa *PollableActionService) Push(ctx context.Context, runnerId string, data
 	return nil
 }
 
-func (pa *PollableActionService) getAction(ctx context.Context, runnerId string) (string, error) {
+func (pa *LongPollService) getAction(ctx context.Context, runnerId string) (string, error) {
 	act, err := pa.redis.LPop(ctx, fmt.Sprintf("%s:%s", pa.key, runnerId)).Result()
 	if err != nil {
 		if err == redis.Nil {
@@ -50,7 +50,7 @@ func (pa *PollableActionService) getAction(ctx context.Context, runnerId string)
 	return act, nil
 }
 
-func (pa *PollableActionService) Wait(ctx context.Context, runnerId string) (string, error) {
+func (pa *LongPollService) Wait(ctx context.Context, runnerId string) (string, error) {
 	subscription := pa.redis.Subscribe(ctx, fmt.Sprintf("%s:notify:%s", pa.key, runnerId))
 	defer subscription.Close()
 

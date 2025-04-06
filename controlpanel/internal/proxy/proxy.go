@@ -32,7 +32,7 @@ type Connection struct {
 
 type ProxyHandler struct {
 	kvs        kvs.KeyValueStore
-	action     *longpoll.PollableActionService
+	action     *longpoll.LongPollService
 	bindAddr   string
 	endpoint   string
 	iconURL    string
@@ -42,7 +42,7 @@ type ProxyHandler struct {
 	m          sync.Mutex
 }
 
-func NewProxyHandler(cfg *config.Config, kvs kvs.KeyValueStore, action *longpoll.PollableActionService) (*ProxyHandler, error) {
+func NewProxyHandler(cfg *config.Config, kvs kvs.KeyValueStore, action *longpoll.LongPollService) (*ProxyHandler, error) {
 	bindAddr := cfg.ProxyBind
 	if bindAddr == "" {
 		bindAddr = "0.0.0.0:25565"

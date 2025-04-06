@@ -60,8 +60,8 @@ func createRedisClient(ctx context.Context, cfg *config.Config) (*redis.Client, 
 	return redis, nil
 }
 
-func createLongPoll(redis *redis.Client) *longpoll.PollableActionService {
-	return longpoll.New(redis, "runner-action")
+func createLongPoll(redis *redis.Client) *longpoll.LongPollService {
+	return longpoll.NewLongPollService(redis, "runner-action")
 }
 
 func createKVS(redis *redis.Client) kvs.KeyValueStore {
@@ -97,9 +97,15 @@ func startWeb(ctx context.Context, cfg *config.Config) {
 
 	kvs := createKVS(redis)
 
-	launcher := launcher.NewLauncherService(cfg, kvs, server.NewConohaServer(cfg), streaming.NewStreamingService(redis))
+	launcherService := launcher.NewLauncherService(cfg, kvs, server.NewConohaServer(cfg), streaming.NewStreamingService(redis))
 
-	handler, err := handler.NewHandler(cfg, ":10000", db, redis, createLongPoll(redis), kvs, launcher)
+	worldService, err := world.New(ctx, cfg.S3Bucket, cfg.S3ForcePathStyle)
+	if err != nil {
+		slog.Error("Failed to create world service", slog.Any("error", err))
+		os.Exit(1)
+	}
+
+	handler, err := handler.NewHandler(cfg, ":10000", db, redis, worldService, createLongPoll(redis), kvs, launcherService)
 	if err != nil {
 		slog.Error("Failed to initialize handler", slog.Any("error", err))
 		os.Exit(1)
