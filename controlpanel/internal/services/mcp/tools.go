@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"github.com/mark3labs/mcp-go/mcp"
 )
@@ -57,4 +58,21 @@ func (t *ToolHandler) ListExistingWorlds(ctx context.Context, req mcp.CallToolRe
 	}
 
 	return mcp.NewToolResultText(toJSON(worldNames)), nil
+}
+
+func (t *ToolHandler) LaunchServer(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	machineType, ok := req.Params.Arguments["machine_type"].(string)
+	if !ok {
+		return nil, errors.New("machine_type is required")
+	}
+	worldName, ok := req.Params.Arguments["world_name"].(string)
+	if !ok {
+		return nil, errors.New("world_name is required")
+	}
+
+	// TODO
+	_ = machineType
+	_ = worldName
+
+	return nil, nil
 }

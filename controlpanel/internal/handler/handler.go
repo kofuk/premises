@@ -12,6 +12,7 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/auth"
 	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/controlpanel/internal/kvs"
+	"github.com/kofuk/premises/controlpanel/internal/launcher"
 	"github.com/kofuk/premises/controlpanel/internal/longpoll"
 	"github.com/kofuk/premises/controlpanel/internal/mcversions"
 	"github.com/kofuk/premises/controlpanel/internal/streaming"
@@ -41,6 +42,7 @@ type Handler struct {
 	world        *world.WorldService
 	runnerAction *longpoll.PollableActionService
 	authService  *auth.AuthService
+	launcher     *launcher.LauncherService
 }
 
 func setupRoutes(h *Handler) {
@@ -74,7 +76,7 @@ func setupRoutes(h *Handler) {
 	h.setupRunnerRoutes(h.engine.Group("/_"))
 }
 
-func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Client, longpoll *longpoll.PollableActionService, kvs kvs.KeyValueStore) (*Handler, error) {
+func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Client, longpoll *longpoll.PollableActionService, kvs kvs.KeyValueStore, launcher *launcher.LauncherService) (*Handler, error) {
 	engine := echo.New()
 	engine.Use(otelecho.Middleware("web", otelecho.WithSkipper(func(c echo.Context) bool {
 		path := c.Path()
@@ -123,12 +125,13 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 		redis:        redis,
 		bind:         bindAddr,
 		KVS:          kvs,
-		Streaming:    streaming.New(redis),
+		Streaming:    streaming.NewStreamingService(redis),
 		world:        worldService,
 		runnerAction: longpoll,
 		authService:  auth.New(kvs),
+		launcher:     launcher,
 	}
-	h.GameServer = NewGameServer(cfg, h)
+	h.GameServer = NewGameServer(cfg)
 
 	h.MCVersions = mcversions.New(h.KVS)
 

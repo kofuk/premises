@@ -16,9 +16,12 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/db/model/migrations"
 	"github.com/kofuk/premises/controlpanel/internal/handler"
 	"github.com/kofuk/premises/controlpanel/internal/kvs"
+	"github.com/kofuk/premises/controlpanel/internal/launcher"
+	"github.com/kofuk/premises/controlpanel/internal/launcher/server"
 	"github.com/kofuk/premises/controlpanel/internal/longpoll"
 	"github.com/kofuk/premises/controlpanel/internal/proxy"
 	"github.com/kofuk/premises/controlpanel/internal/services/mcp"
+	"github.com/kofuk/premises/controlpanel/internal/streaming"
 	"github.com/kofuk/premises/controlpanel/internal/world"
 	"github.com/kofuk/premises/internal/otel"
 	"github.com/redis/go-redis/extra/redisotel/v9"
@@ -91,7 +94,11 @@ func startWeb(ctx context.Context, cfg *config.Config) {
 		os.Exit(1)
 	}
 
-	handler, err := handler.NewHandler(cfg, ":10000", db, redis, createLongPoll(redis), createKVS(redis))
+	kvs := createKVS(redis)
+
+	launcher := launcher.NewLauncherService(cfg, kvs, server.NewConohaServer(cfg), streaming.NewStreamingService(redis))
+
+	handler, err := handler.NewHandler(cfg, ":10000", db, redis, createLongPoll(redis), kvs, launcher)
 	if err != nil {
 		slog.Error("Failed to initialize handler", slog.Any("error", err))
 		os.Exit(1)

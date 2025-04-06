@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kofuk/premises/internal/entity/runner"
+	"github.com/kofuk/premises/controlpanel/internal/launcher"
 	"golang.org/x/exp/slices"
 )
 
 type Config struct {
-	C runner.GameConfig
+	C launcher.LaunchConfig
 }
 
 func New() *Config {
@@ -45,7 +45,7 @@ func (c *Config) SetWorld(worldName string, generationId string) error {
 		return fmt.Errorf("either worldName or generationId is empty")
 	}
 	c.C.World.Name = worldName
-	c.C.World.GenerationId = generationId
+	c.C.World.GenerationID = generationId
 	return nil
 }
 
@@ -56,7 +56,7 @@ func (c *Config) GenerateWorld(worldName, seed string) {
 }
 
 func (c *Config) SetMotd(motd string) {
-	c.C.Motd = motd
+	c.C.Server.Motd = motd
 }
 
 func isValidLevelType(levelType string) bool {
@@ -94,13 +94,13 @@ func addToSlice[T comparable](to []T, elm T) []T {
 
 func (c *Config) SetOperators(ops []string) {
 	for _, op := range ops {
-		c.C.Operators = addToSlice(c.C.Operators, op)
-		c.C.Whitelist = addToSlice(c.C.Whitelist, op)
+		c.C.Server.Operators = addToSlice(c.C.Server.Operators, op)
+		c.C.Server.Whitelist = addToSlice(c.C.Server.Whitelist, op)
 	}
 }
 
 func (c *Config) SetWhitelist(wlist []string) {
 	for _, wl := range wlist {
-		c.C.Whitelist = addToSlice(c.C.Whitelist, wl)
+		c.C.Server.Whitelist = addToSlice(c.C.Server.Whitelist, wl)
 	}
 }
