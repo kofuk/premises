@@ -19,6 +19,7 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/launcher"
 	"github.com/kofuk/premises/controlpanel/internal/launcher/server"
 	"github.com/kofuk/premises/controlpanel/internal/longpoll"
+	"github.com/kofuk/premises/controlpanel/internal/mcversions"
 	"github.com/kofuk/premises/controlpanel/internal/proxy"
 	"github.com/kofuk/premises/controlpanel/internal/services/mcp"
 	"github.com/kofuk/premises/controlpanel/internal/streaming"
@@ -165,7 +166,20 @@ func startMcp(ctx context.Context, config *config.Config) {
 
 	kvs := kvs.New(kvs.NewRedis(redis))
 
-	mcp := mcp.NewMCPServer(redis, db, world, auth.New(kvs))
+	launcherService := launcher.NewLauncherService(config, kvs, server.NewConohaServer(config), streaming.NewStreamingService(redis))
+
+	mcVersionsService := mcversions.New(kvs)
+
+	mcp := mcp.NewMCPServer(
+		redis,
+		db,
+		world,
+		auth.New(kvs),
+		launcherService,
+		mcVersionsService,
+		config.Operators,
+		config.Whitelist,
+	)
 	if err := mcp.Start(); err != nil {
 		slog.Error("Error in MCP server", slog.Any("error", err))
 		os.Exit(1)
