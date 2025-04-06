@@ -72,7 +72,6 @@ export const undoQuickSnapshot = declareApi<SnapshotConfiguration, null>('/api/v
 export const getConfig = declareApi<null, ConfigAndValidity>('/api/v1/config');
 export const updateConfig = declareApi<PendingConfig, ConfigAndValidity>('/api/v1/config', 'put');
 export const launch = declareApi<null, null>('/api/v1/launch', 'post');
-export const reconfigure = declareApi<null, null>('/api/v1/reconfigure', 'post');
 export const stop = declareApi<null, null>('/api/v1/stop', 'post');
 export const createWorldDownloadLink = declareApi<CreateWorldDownloadLinkReq, DelegatedURL>('/api/v1/world-link/download', 'post');
 export const createWorldUploadLink = declareApi<CreateWorldUploadLinkReq, DelegatedURL>('/api/v1/world-link/upload', 'post');

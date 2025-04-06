@@ -1,12 +1,11 @@
 import {useTranslation} from 'react-i18next';
 import {Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts';
 
-import {Info as InfoIcon, RestartAlt as RestartIcon, Stop as StopIcon, History as UndoIcon, Public as WorldIcon} from '@mui/icons-material';
+import {Info as InfoIcon, Stop as StopIcon, History as UndoIcon, Public as WorldIcon} from '@mui/icons-material';
 import {Box, Button, Card, Stack} from '@mui/material';
 
 import MenuContainer from './menu-container';
 import QuickUndo from './quickundo';
-import Reconfigure from './reconfigure';
 import SystemInfo from './system-info';
 import WorldInfo from './world-info';
 
@@ -31,11 +30,6 @@ const ServerControlPane = () => {
             ui: <WorldInfo />,
             variant: 'dialog',
             cancellable: true
-          },
-          {
-            title: t('launch.reconfigure'),
-            icon: <RestartIcon />,
-            ui: <Reconfigure />
           },
           {
             title: t('launch.quick_undo'),
