@@ -16,7 +16,24 @@ spec:
   selector:
     app.kubernetes.io/name: {{ include "premises.name" . }}-web
     {{- include "premises.selectorLabels" . | nindent 4 }}
-{{- if .Values.services.proxy.enableService }}
+---
+# mcp
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "premises.fullname" . }}-mcp
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "premises.name" . }}-mcp
+    {{- include "premises.labels" . | nindent 4 }}
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 10001
+  selector:
+    app.kubernetes.io/name: {{ include "premises.name" . }}-mcp
+    {{- include "premises.selectorLabels" . | nindent 4 }}
 ---
 # static
 apiVersion: v1
@@ -35,6 +52,7 @@ spec:
   selector:
     app.kubernetes.io/name: {{ include "premises.name" . }}-static
     {{- include "premises.selectorLabels" . | nindent 4 }}
+{{- if .Values.services.proxy.enableService }}
 ---
 # proxy
 apiVersion: v1

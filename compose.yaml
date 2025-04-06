@@ -79,6 +79,19 @@ services:
       PREMISES_MODE: cron
     read_only: true
 
+  mcp:
+    image: ghcr.io/kofuk/premises:0.5.0
+    environment:
+      <<: *settings
+      PREMISES_MODE: mcp
+    read_only: true
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: always
+
   redis:
     image: valkey/valkey:8
     healthcheck:

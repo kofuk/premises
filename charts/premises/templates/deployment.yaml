@@ -50,6 +50,45 @@ spec:
           envFrom:
             {{- toYaml .Values.services.web.envFrom | nindent 12 }}
 ---
+# mcp
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "premises.fullname" . }}-mcp
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "premises.name" . }}-mcp
+    {{- include "premises.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.services.mcp.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "premises.name" . }}-mcp
+      {{- include "premises.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.services.mcp.annotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        app.kubernetes.io/name: {{ include "premises.name" . }}-mcp
+        {{- include "premises.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: mcp
+          image: {{ .Values.image }}
+          ports:
+            - name: http
+              containerPort: 10001
+          resources:
+            {{- toYaml .Values.services.mcp.resources | nindent 12 }}
+          env:
+            - name: PREMISES_MODE
+              value: mcp
+          envFrom:
+            {{- toYaml .Values.services.mcp.envFrom | nindent 12 }}
+---
 # static
 apiVersion: apps/v1
 kind: Deployment
