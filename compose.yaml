@@ -43,7 +43,7 @@ services:
         mode: host
 
   web:
-    image: ghcr.io/kofuk/premises:0.5.0
+    image: ghcr.io/kofuk/premises:0.6.0
     environment:
       <<: *settings
       PREMISES_MODE: web
@@ -57,7 +57,7 @@ services:
     restart: always
 
   proxy:
-    image: ghcr.io/kofuk/premises:0.5.0
+    image: ghcr.io/kofuk/premises:0.6.0
     environment:
       <<: *settings
       PREMISES_MODE: proxy
@@ -73,14 +73,14 @@ services:
         mode: host
 
   cron:
-    image: ghcr.io/kofuk/premises:0.5.0
+    image: ghcr.io/kofuk/premises:0.6.0
     environment:
       <<: *settings
       PREMISES_MODE: cron
     read_only: true
 
   mcp:
-    image: ghcr.io/kofuk/premises:0.5.0
+    image: ghcr.io/kofuk/premises:0.6.0
     environment:
       <<: *settings
       PREMISES_MODE: mcp
