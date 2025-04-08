@@ -11,22 +11,20 @@ import (
 	"github.com/kofuk/premises/internal/mc/launchermeta"
 	"github.com/kofuk/premises/internal/retry"
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/core"
-	"github.com/kofuk/premises/runner/internal/env"
 	"github.com/kofuk/premises/runner/internal/util"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type ServerJarMiddleware struct {
-	pathProvider       env.PathProvider
 	launcherMetaClient *launchermeta.LauncherMetaClient
+	httpClient         *http.Client
 }
 
 var _ core.Middleware = (*ServerJarMiddleware)(nil)
 
-func NewServerJarMiddleware(pathProvider env.PathProvider, launcherMetaClient *launchermeta.LauncherMetaClient) *ServerJarMiddleware {
+func NewServerJarMiddleware(launcherMetaClient *launchermeta.LauncherMetaClient, httpClient *http.Client) *ServerJarMiddleware {
 	return &ServerJarMiddleware{
-		pathProvider:       pathProvider,
 		launcherMetaClient: launcherMetaClient,
+		httpClient:         httpClient,
 	}
 }
 
@@ -77,7 +75,7 @@ func (m *ServerJarMiddleware) downloadMatchingVersion(c *core.LauncherContext, d
 			return retry.V, err
 		}
 
-		resp, err := otelhttp.DefaultClient.Do(req)
+		resp, err := m.httpClient.Do(req)
 		if err != nil {
 			return retry.V, err
 		}
@@ -107,7 +105,7 @@ func (m *ServerJarMiddleware) downloadMatchingVersion(c *core.LauncherContext, d
 
 func (m *ServerJarMiddleware) downloadIfNotExists(c *core.LauncherContext) error {
 	version := c.Settings().GetMinecraftVersion()
-	serverPath := m.pathProvider.GetDataPath("servers.d", version+".jar")
+	serverPath := c.Env().GetDataPath("servers.d", version+".jar")
 
 	if stat, err := os.Stat(serverPath); err == nil {
 		if stat.Mode().IsRegular() && stat.Size() > 0 {
@@ -134,7 +132,7 @@ func (m *ServerJarMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 		if err := m.downloadIfNotExists(c); err != nil {
 			return err
 		}
-		c.Settings().SetServerPath(m.pathProvider.GetDataPath("servers.d", c.Settings().GetMinecraftVersion()+".jar"))
+		c.Settings().SetServerPath(c.Env().GetDataPath("servers.d", c.Settings().GetMinecraftVersion()+".jar"))
 
 		return next(c)
 	}

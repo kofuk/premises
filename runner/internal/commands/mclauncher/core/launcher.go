@@ -33,7 +33,7 @@ func executeWithBackOff(ctx context.Context, commandExecutor system.CommandExecu
 
 func (launcher *LauncherCore) startMinecraft(c *LauncherContext) error {
 	serverPath := c.Settings().GetServerPath()
-	workDir := c.Settings().GetDataDir()
+	workDir := c.Env().GetDataPath("gamedata")
 
 	var commandLine []string
 	if util.IsJar(serverPath) {

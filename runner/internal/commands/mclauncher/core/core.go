@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/kofuk/premises/runner/internal/env"
 	"github.com/kofuk/premises/runner/internal/system"
 )
 
@@ -12,6 +13,7 @@ var ErrRestart = errors.New("restart required")
 type LauncherContext struct {
 	ctx      context.Context
 	settings SettingsRepository
+	env      env.EnvProvider
 }
 
 func (c *LauncherContext) Context() context.Context {
@@ -20,6 +22,10 @@ func (c *LauncherContext) Context() context.Context {
 
 func (c *LauncherContext) Settings() SettingsRepository {
 	return c.settings
+}
+
+func (c *LauncherContext) Env() env.EnvProvider {
+	return c.env
 }
 
 type HandlerFunc func(c *LauncherContext) error
@@ -41,12 +47,14 @@ var StopMiddleware = &stopMiddleware{}
 type LauncherCore struct {
 	handler         HandlerFunc
 	settings        SettingsRepository
+	env             env.EnvProvider
 	CommandExecutor system.CommandExecutor
 }
 
-func New(settings SettingsRepository) *LauncherCore {
+func New(settings SettingsRepository, env env.EnvProvider) *LauncherCore {
 	launcher := &LauncherCore{
 		settings: settings,
+		env:      env,
 	}
 
 	launcher.handler = launcher.startMinecraft
@@ -62,6 +70,7 @@ func (l *LauncherCore) createContext(ctx context.Context) *LauncherContext {
 	return &LauncherContext{
 		ctx:      ctx,
 		settings: l.settings,
+		env:      l.env,
 	}
 }
 
