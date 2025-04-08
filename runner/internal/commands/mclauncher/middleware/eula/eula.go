@@ -7,7 +7,8 @@ import (
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/core"
 )
 
-type EulaMiddleware struct{}
+type EulaMiddleware struct {
+}
 
 func NewEulaMiddleware() *EulaMiddleware {
 	return &EulaMiddleware{}
@@ -25,7 +26,7 @@ func createEulaFile(dataDir string) error {
 
 func (m *EulaMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 	return func(c *core.LauncherContext) error {
-		if err := createEulaFile(c.Settings().GetDataDir()); err != nil {
+		if err := createEulaFile(c.Env().GetDataPath("gamedata")); err != nil {
 			return err
 		}
 

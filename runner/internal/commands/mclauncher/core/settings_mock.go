@@ -53,20 +53,6 @@ func (mr *MockSettingsRepositoryMockRecorder) GetAllowedMemSize() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllowedMemSize", reflect.TypeOf((*MockSettingsRepository)(nil).GetAllowedMemSize))
 }
 
-// GetDataDir mocks base method.
-func (m *MockSettingsRepository) GetDataDir() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetDataDir")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetDataDir indicates an expected call of GetDataDir.
-func (mr *MockSettingsRepositoryMockRecorder) GetDataDir() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDataDir", reflect.TypeOf((*MockSettingsRepository)(nil).GetDataDir))
-}
-
 // GetMinecraftVersion mocks base method.
 func (m *MockSettingsRepository) GetMinecraftVersion() string {
 	m.ctrl.T.Helper()

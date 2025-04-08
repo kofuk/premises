@@ -7,6 +7,7 @@ import (
 
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/core"
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/middleware/eula"
+	"github.com/kofuk/premises/runner/internal/env"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -21,9 +22,11 @@ func TestEulaMiddleware(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 	ctrl := gomock.NewController(t)
 	settings := core.NewMockSettingsRepository(ctrl)
-	settings.EXPECT().GetDataDir().Return(tempDir)
 
-	launcher := core.New(settings)
+	envProvider := env.NewMockEnvProvider(ctrl)
+	envProvider.EXPECT().GetDataPath(gomock.Any()).AnyTimes().Return(tempDir)
+
+	launcher := core.New(settings, envProvider)
 	launcher.Middleware(core.StopMiddleware)
 	launcher.Middleware(eula.NewEulaMiddleware())
 

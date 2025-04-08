@@ -7,5 +7,4 @@ type SettingsRepository interface {
 	GetServerPath() string
 	SetServerPath(path string)
 	GetMinecraftVersion() string
-	GetDataDir() string
 }
