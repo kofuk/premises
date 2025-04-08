@@ -134,6 +134,8 @@ func (m *ServerJarMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 		}
 		c.Settings().SetServerPath(c.Env().GetDataPath("servers.d", c.Settings().GetMinecraftVersion()+".jar"))
 
+		// TODO: Clean up old data files in game data directory if the version changes
+
 		return next(c)
 	}
 }
