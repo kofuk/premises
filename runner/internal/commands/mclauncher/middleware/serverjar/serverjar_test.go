@@ -95,3 +95,45 @@ func TestServerJarMiddleware(t *testing.T) {
 	}
 	assert.Contains(t, string(content), "#!/usr/bin/true", "Server jar file should contain '#!/usr/bin/true'")
 }
+
+func TestServerJarMiddleware_whenAlreadyExists(t *testing.T) {
+	t.Parallel()
+
+	tempDir, err := os.MkdirTemp("", "serverjar_test")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempDir)
+
+	if err := os.MkdirAll(filepath.Join(tempDir, "servers.d"), 0755); err != nil {
+		t.Fatalf("failed to create servers.d dir: %v", err)
+	}
+
+	if err := os.WriteFile(filepath.Join(tempDir, "servers.d/1.20.1.jar"), []byte("foo"), 0644); err != nil {
+		t.Fatalf("failed to create server jar file: %v", err)
+	}
+
+	ctrl := gomock.NewController(t)
+	settings := core.NewMockSettingsRepository(ctrl)
+	settings.EXPECT().GetMinecraftVersion().AnyTimes().Return("1.20.1")
+	settings.EXPECT().SetServerPath(gomock.Eq(filepath.Join(tempDir, "servers.d/1.20.1.jar"))).Times(1)
+
+	envProvider := env.NewMockEnvProvider(ctrl)
+	envProvider.EXPECT().GetDataPath(gomock.Eq("servers.d"), gomock.Eq("1.20.1.jar")).AnyTimes().Return(filepath.Join(tempDir, "servers.d/1.20.1.jar"))
+
+	launcherMetaClient := launchermeta.NewLauncherMetaClient(launchermeta.WithManifestURL("http://launchermeta.premises.local/version_manifest.json"))
+
+	launcher := core.New(settings, envProvider)
+	launcher.Middleware(core.StopMiddleware)
+	launcher.Middleware(serverjar.NewServerJarMiddleware(launcherMetaClient, http.DefaultClient))
+
+	err = launcher.Start(t.Context())
+	assert.NoError(t, err, "ServerJarMiddleware should not return an error")
+
+	assert.FileExists(t, filepath.Join(tempDir, "servers.d/1.20.1.jar"), "Server jar file should exist")
+	content, err := os.ReadFile(filepath.Join(tempDir, "servers.d/1.20.1.jar"))
+	if err != nil {
+		t.Fatalf("failed to read server jar file: %v", err)
+	}
+	assert.Contains(t, string(content), "foo", "Server jar file should contain 'foo'")
+}
