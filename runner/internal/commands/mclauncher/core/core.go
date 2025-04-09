@@ -14,6 +14,7 @@ type LauncherContext struct {
 	ctx      context.Context
 	settings SettingsRepository
 	env      env.EnvProvider
+	state    StateRepository
 }
 
 func (c *LauncherContext) Context() context.Context {
@@ -26,6 +27,10 @@ func (c *LauncherContext) Settings() SettingsRepository {
 
 func (c *LauncherContext) Env() env.EnvProvider {
 	return c.env
+}
+
+func (c *LauncherContext) State() StateRepository {
+	return c.state
 }
 
 type HandlerFunc func(c *LauncherContext) error
@@ -49,12 +54,14 @@ type LauncherCore struct {
 	settings        SettingsRepository
 	env             env.EnvProvider
 	CommandExecutor system.CommandExecutor
+	state           StateRepository
 }
 
-func New(settings SettingsRepository, env env.EnvProvider) *LauncherCore {
+func NewLauncherCore(settings SettingsRepository, env env.EnvProvider, state StateRepository) *LauncherCore {
 	launcher := &LauncherCore{
 		settings: settings,
 		env:      env,
+		state:    state,
 	}
 
 	launcher.handler = launcher.startMinecraft
@@ -71,6 +78,7 @@ func (l *LauncherCore) createContext(ctx context.Context) *LauncherContext {
 		ctx:      ctx,
 		settings: l.settings,
 		env:      l.env,
+		state:    l.state,
 	}
 }
 

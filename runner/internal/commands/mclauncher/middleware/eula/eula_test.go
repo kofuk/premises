@@ -26,7 +26,9 @@ func TestEulaMiddleware(t *testing.T) {
 	envProvider := env.NewMockEnvProvider(ctrl)
 	envProvider.EXPECT().GetDataPath(gomock.Any()).AnyTimes().Return(tempDir)
 
-	launcher := core.New(settings, envProvider)
+	stateRepositroy := core.NewMockStateRepository(ctrl)
+
+	launcher := core.NewLauncherCore(settings, envProvider, stateRepositroy)
 	launcher.Middleware(core.StopMiddleware)
 	launcher.Middleware(eula.NewEulaMiddleware())
 
