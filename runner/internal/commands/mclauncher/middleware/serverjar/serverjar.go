@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/kofuk/premises/internal/entity"
@@ -13,6 +15,8 @@ import (
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/core"
 	"github.com/kofuk/premises/runner/internal/util"
 )
+
+const StateKeyMinecraftVersion = "github.com/kofuk/premises/runner/mclauncher/middleware/serverjar.MinecraftVersion"
 
 type ServerJarMiddleware struct {
 	launcherMetaClient *launchermeta.LauncherMetaClient
@@ -127,6 +131,26 @@ func (m *ServerJarMiddleware) downloadIfNotExists(c *core.LauncherContext) error
 	return nil
 }
 
+func (m *ServerJarMiddleware) cleanupDataDir(c *core.LauncherContext) error {
+	gameDataDir := c.Env().GetDataPath("gamedata")
+	ents, err := os.ReadDir(gameDataDir)
+	if err != nil {
+		return err
+	}
+
+	var errs []error
+	for _, ent := range ents {
+		if ent.Name() == "server.properties" || ent.Name() == "world" || strings.HasPrefix(ent.Name(), "ss@") {
+			continue
+		}
+		if err := os.RemoveAll(filepath.Join(gameDataDir, ent.Name())); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
 func (m *ServerJarMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 	return func(c *core.LauncherContext) error {
 		if err := m.downloadIfNotExists(c); err != nil {
@@ -134,7 +158,14 @@ func (m *ServerJarMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 		}
 		c.Settings().SetServerPath(c.Env().GetDataPath("servers.d", c.Settings().GetMinecraftVersion()+".jar"))
 
-		// TODO: Clean up old data files in game data directory if the version changes
+		oldVersion, ok := c.State().GetState(StateKeyMinecraftVersion).(string)
+		if !ok || oldVersion != c.Settings().GetMinecraftVersion() {
+			// Minecraft version has changed, clean up the old data directory.
+			if err := m.cleanupDataDir(c); err != nil {
+				return err
+			}
+		}
+		c.State().SetState(StateKeyMinecraftVersion, c.Settings().GetMinecraftVersion())
 
 		return next(c)
 	}

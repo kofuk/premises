@@ -23,7 +23,9 @@ func TestLaunch(t *testing.T) {
 	envProvider := env.NewMockEnvProvider(ctrl)
 	envProvider.EXPECT().GetDataPath(gomock.Any()).AnyTimes().Return("/tmp")
 
-	launcher := core.New(settings, envProvider)
+	stateRepository := core.NewMockStateRepository(ctrl)
+
+	launcher := core.NewLauncherCore(settings, envProvider, stateRepository)
 	launcher.CommandExecutor = executor
 
 	err := launcher.Start(t.Context())
@@ -46,7 +48,9 @@ func TestServerFailure(t *testing.T) {
 	envProvider := env.NewMockEnvProvider(ctrl)
 	envProvider.EXPECT().GetDataPath(gomock.Any()).AnyTimes().Return("/tmp")
 
-	launcher := core.New(settings, envProvider)
+	stateRepository := core.NewMockStateRepository(ctrl)
+
+	launcher := core.NewLauncherCore(settings, envProvider, stateRepository)
 	launcher.CommandExecutor = executor
 
 	err := launcher.Start(t.Context())
