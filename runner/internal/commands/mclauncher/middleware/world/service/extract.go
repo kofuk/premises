@@ -1,4 +1,4 @@
-package world
+package service
 
 import (
 	"archive/tar"
@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/klauspost/compress/zstd"
-	"github.com/kofuk/premises/runner/internal/env"
 	"github.com/kofuk/premises/runner/internal/fs"
 	"github.com/ulikunitz/xz"
 )
@@ -23,12 +22,7 @@ type FileCreator struct {
 	worldRoot  string
 }
 
-func NewFileCreator(outDir string) (*FileCreator, error) {
-	tmpDir, err := env.MkdirTemp(env.DefaultPathProvider)
-	if err != nil {
-		return nil, err
-	}
-
+func NewFileCreator(tmpDir string, outDir string) (*FileCreator, error) {
 	return &FileCreator{
 		outDir: outDir,
 		tmpDir: tmpDir,
@@ -95,6 +89,10 @@ type Decompressor interface {
 
 type ZstdDecompressor struct{}
 
+func NewZstdDecompressor() *ZstdDecompressor {
+	return &ZstdDecompressor{}
+}
+
 func (*ZstdDecompressor) ToDecompressed(r io.Reader) (io.Reader, error) {
 	zstdr, err := zstd.NewReader(r)
 	if err != nil {
@@ -105,6 +103,10 @@ func (*ZstdDecompressor) ToDecompressed(r io.Reader) (io.Reader, error) {
 }
 
 type XZDecompressor struct{}
+
+func NewXZDecompressor() *XZDecompressor {
+	return &XZDecompressor{}
+}
 
 func (*XZDecompressor) ToDecompressed(r io.Reader) (io.Reader, error) {
 	xzr, err := xz.NewReader(r)
@@ -119,15 +121,18 @@ type Unarchiver interface {
 	Unarchive(io.Reader, *FileCreator) error
 }
 
-type ZipUnarchiver struct{}
+type ZipUnarchiver struct {
+	tmpDir string
+}
 
-func (*ZipUnarchiver) toFile(r io.Reader) (string, error) {
-	tmpDir, err := env.MkdirTemp(env.DefaultPathProvider)
-	if err != nil {
-		return "", err
+func NewZipUnarchiver(tmpDir string) *ZipUnarchiver {
+	return &ZipUnarchiver{
+		tmpDir: tmpDir,
 	}
+}
 
-	tmpPath := filepath.Join(tmpDir, "tmp.zip")
+func (z *ZipUnarchiver) toFile(r io.Reader) (string, error) {
+	tmpPath := filepath.Join(z.tmpDir, "tmp.zip")
 	f, err := os.Create(tmpPath)
 	if err != nil {
 		return "", err
@@ -181,6 +186,10 @@ func (z *ZipUnarchiver) Unarchive(r io.Reader, c *FileCreator) error {
 }
 
 type TarUnarchiver struct{}
+
+func NewTarUnarchiver() *TarUnarchiver {
+	return &TarUnarchiver{}
+}
 
 func (*TarUnarchiver) Unarchive(r io.Reader, c *FileCreator) error {
 	tr := tar.NewReader(r)
