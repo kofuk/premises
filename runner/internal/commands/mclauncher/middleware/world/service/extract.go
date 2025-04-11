@@ -22,7 +22,7 @@ type FileCreator struct {
 	worldRoot  string
 }
 
-func NewFileCreator(tmpDir string, outDir string) (*FileCreator, error) {
+func NewFileCreator(outDir, tmpDir string) (*FileCreator, error) {
 	return &FileCreator{
 		outDir: outDir,
 		tmpDir: tmpDir,

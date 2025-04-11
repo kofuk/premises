@@ -42,6 +42,7 @@ func (w *WorldService) GetLatestResourceID(ctx context.Context, worldName string
 }
 
 func (w *WorldService) getExtractionPipeline(resourceID string, envProvider env.EnvProvider) (*ExtractionPipeline, error) {
+	// TODO: Don't use resourceID directly, use a separate struct to indicate file type.
 	tmpDir, err := env.MkdirTemp(envProvider)
 	if err != nil {
 		return nil, err
@@ -257,8 +258,8 @@ func (w *WorldService) createArchive(envProvider env.EnvProvider) (string, error
 	}
 	defer zstWriter.Close()
 
-	if err := writeTar(zstWriter, env.DataPath("gamedata"), "world"); err != nil {
-		return "", err
+	if err := writeTar(zstWriter, envProvider.GetDataPath("gamedata"), "world"); err != nil {
+		return "", fmt.Errorf("failed to create tar: %w", err)
 	}
 
 	return outFile.Name(), nil
@@ -267,7 +268,7 @@ func (w *WorldService) createArchive(envProvider env.EnvProvider) (string, error
 func (w *WorldService) UploadWorld(ctx context.Context, worldName string, envProvider env.EnvProvider) (string, error) {
 	archivePath, err := w.createArchive(envProvider)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create archive: %w", err)
 	}
 	defer os.Remove(archivePath)
 
