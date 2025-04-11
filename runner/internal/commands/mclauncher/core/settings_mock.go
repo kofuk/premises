@@ -81,6 +81,48 @@ func (mr *MockSettingsRepositoryMockRecorder) GetServerPath() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerPath", reflect.TypeOf((*MockSettingsRepository)(nil).GetServerPath))
 }
 
+// GetWorldGeneration mocks base method.
+func (m *MockSettingsRepository) GetWorldGeneration() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWorldGeneration")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetWorldGeneration indicates an expected call of GetWorldGeneration.
+func (mr *MockSettingsRepositoryMockRecorder) GetWorldGeneration() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorldGeneration", reflect.TypeOf((*MockSettingsRepository)(nil).GetWorldGeneration))
+}
+
+// GetWorldName mocks base method.
+func (m *MockSettingsRepository) GetWorldName() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWorldName")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetWorldName indicates an expected call of GetWorldName.
+func (mr *MockSettingsRepositoryMockRecorder) GetWorldName() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorldName", reflect.TypeOf((*MockSettingsRepository)(nil).GetWorldName))
+}
+
+// IsNewWorld mocks base method.
+func (m *MockSettingsRepository) IsNewWorld() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "IsNewWorld")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// IsNewWorld indicates an expected call of IsNewWorld.
+func (mr *MockSettingsRepositoryMockRecorder) IsNewWorld() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsNewWorld", reflect.TypeOf((*MockSettingsRepository)(nil).IsNewWorld))
+}
+
 // SetServerPath mocks base method.
 func (m *MockSettingsRepository) SetServerPath(path string) {
 	m.ctrl.T.Helper()

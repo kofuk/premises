@@ -15,7 +15,7 @@ type Client struct {
 	transport *APITransport
 }
 
-func New(endpoint, authKey string, httpClient *http.Client) *Client {
+func NewClient(endpoint, authKey string, httpClient *http.Client) *Client {
 	return &Client{
 		endpoint:  endpoint,
 		transport: &APITransport{httpClient: httpClient, authKey: authKey},

@@ -75,7 +75,7 @@ func (s *Server) HandleActionConnRequest(ctx context.Context, action *runner.Act
 
 func NewServer(addr string, authKey string, msgChan chan OutboundMessage) *Server {
 	s := &Server{
-		client:        api.New(addr, authKey, http.DefaultClient),
+		client:        api.NewClient(addr, authKey, http.DefaultClient),
 		msgChan:       msgChan,
 		actionMappers: make(map[runner.ActionType]ActionMapper),
 	}
