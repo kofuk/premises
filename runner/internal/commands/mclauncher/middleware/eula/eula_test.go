@@ -8,37 +8,51 @@ import (
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/core"
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/middleware/eula"
 	"github.com/kofuk/premises/runner/internal/env"
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 )
 
-func TestEulaMiddleware(t *testing.T) {
-	t.Parallel()
+var _ = Describe("EulaMiddleware", func() {
+	var (
+		tempDir            string
+		ctrl               *gomock.Controller
+		settingsRepository *core.MockSettingsRepository
+		envProvider        *env.MockEnvProvider
+		stateRepository    *core.MockStateRepository
+		launcher           *core.LauncherCore
+	)
 
-	tempDir, err := os.MkdirTemp("", "eula_test")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-	ctrl := gomock.NewController(t)
-	settings := core.NewMockSettingsRepository(ctrl)
+	BeforeEach(func() {
+		tempDir = GinkgoT().TempDir()
+		ctrl = gomock.NewController(GinkgoT())
+		settingsRepository = core.NewMockSettingsRepository(ctrl)
+		envProvider = env.NewMockEnvProvider(ctrl)
+		stateRepository = core.NewMockStateRepository(ctrl)
 
-	envProvider := env.NewMockEnvProvider(ctrl)
-	envProvider.EXPECT().GetDataPath(gomock.Any()).AnyTimes().Return(tempDir)
+		launcher = core.NewLauncherCore(settingsRepository, envProvider, stateRepository)
+		launcher.Middleware(core.StopMiddleware)
+	})
 
-	stateRepositroy := core.NewMockStateRepository(ctrl)
+	It("should sign to EULA file", func() {
+		envProvider.EXPECT().GetDataPath(gomock.Any()).AnyTimes().Return(tempDir)
 
-	launcher := core.NewLauncherCore(settings, envProvider, stateRepositroy)
-	launcher.Middleware(core.StopMiddleware)
-	launcher.Middleware(eula.NewEulaMiddleware())
+		sut := eula.NewEulaMiddleware()
 
-	err = launcher.Start(t.Context())
-	assert.NoError(t, err, "EulaMiddleware should not return an error")
+		launcher.Middleware(sut)
 
-	assert.FileExists(t, filepath.Join(tempDir, "eula.txt"), "EULA file should exist")
-	content, err := os.ReadFile(filepath.Join(tempDir, "eula.txt"))
-	if err != nil {
-		t.Fatalf("failed to read eula.txt: %v", err)
-	}
-	assert.Contains(t, string(content), "eula=true", "EULA file should contain 'eula=true'")
+		err := launcher.Start(GinkgoT().Context())
+		Expect(err).ShouldNot(HaveOccurred())
+
+		eulaFilePath := filepath.Join(tempDir, "eula.txt")
+		Expect(eulaFilePath).To(BeAnExistingFile())
+
+		content, _ := os.ReadFile(eulaFilePath)
+		Expect(string(content)).To(ContainSubstring("eula=true"))
+	})
+})
+
+func Test(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "EulaMiddleware Suite")
 }

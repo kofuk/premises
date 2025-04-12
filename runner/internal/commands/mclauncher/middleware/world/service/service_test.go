@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"testing"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/kofuk/premises/internal/entity/web"
@@ -81,7 +80,7 @@ var _ = Describe("WorldService", func() {
 			)
 
 			err := sut.DownloadWorld(GinkgoT().Context(), "latest-world.tar.zst", envProvider)
-			Expect(err).To(BeNil())
+			Expect(err).ShouldNot(HaveOccurred())
 
 			Expect(filepath.Join(dataDir, "gamedata/world/level.dat")).To(BeARegularFile())
 		})
@@ -103,13 +102,8 @@ var _ = Describe("WorldService", func() {
 			os.WriteFile(filepath.Join(dataDir, "gamedata/world/foo.txt"), []byte("foo"), 0o644)
 
 			resourceID, err := sut.UploadWorld(GinkgoT().Context(), "foo", envProvider)
-			Expect(err).To(BeNil())
+			Expect(err).ShouldNot(HaveOccurred())
 			Expect(resourceID).To(Equal("uploaded-world.tar.zst"))
 		})
 	})
 })
-
-func Test(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "WorldService Suite")
-}
