@@ -10,6 +10,7 @@ type SettingsRepository interface {
 	SetMinecraftVersion(version string)
 	AutoVersionEnabled() bool
 	GetWorldName() string
-	GetWorldGeneration() string
+	GetWorldResourceID() string
+	SetWorldResourceID(resourceID string)
 	IsNewWorld() bool
 }

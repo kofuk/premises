@@ -15,10 +15,10 @@ const (
 )
 
 type WorldMiddleware struct {
-	worldService *service.WorldService
+	worldService service.WorldServiceInterface
 }
 
-func NewWorldMiddleware(worldService *service.WorldService) *WorldMiddleware {
+func NewWorldMiddleware(worldService service.WorldServiceInterface) *WorldMiddleware {
 	return &WorldMiddleware{
 		worldService: worldService,
 	}
@@ -40,19 +40,25 @@ func (m *WorldMiddleware) cleanupOldWorldFiles(c *core.LauncherContext) error {
 
 func (m *WorldMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 	return func(c *core.LauncherContext) error {
-		worldName := c.Settings().GetWorldName()
-		worldResourceID, err := m.getRealResourceID(c.Context(), worldName, c.Settings().GetWorldGeneration())
-		if err != nil {
-			return err
-		}
 		isNewWorld := c.Settings().IsNewWorld()
-		oldResourceID, ok := c.State().GetState(StateKeyWorldKey).(string)
+		worldName := c.Settings().GetWorldName()
 
-		if isNewWorld || !ok || worldResourceID != oldResourceID {
+		var worldResourceID, oldResourceID string
+		if !isNewWorld {
+			var err error
+			worldResourceID, err = m.getRealResourceID(c.Context(), worldName, c.Settings().GetWorldResourceID())
+			if err != nil {
+				return err
+			}
+			c.Settings().SetWorldResourceID(worldResourceID)
+			oldResourceID, _ = c.State().GetState(StateKeyWorldKey).(string)
+		}
+
+		// just in case
+		c.State().SetState(StateKeyWorldKey, nil)
+
+		if isNewWorld || worldResourceID != oldResourceID {
 			// In this case, we don't need data of previously launched world.
-
-			// just in case
-			c.State().SetState(StateKeyWorldKey, nil)
 
 			if err := m.cleanupOldWorldFiles(c); err != nil {
 				return err
@@ -60,7 +66,7 @@ func (m *WorldMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 
 			if !isNewWorld {
 				// Download world if we are not creating a new world
-				err := m.worldService.DownloadWorld(c.Context(), c.Settings().GetWorldGeneration(), c.Env())
+				err := m.worldService.DownloadWorld(c.Context(), worldResourceID, c.Env())
 				if err != nil {
 					return err
 				}

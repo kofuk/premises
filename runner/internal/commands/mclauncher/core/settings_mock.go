@@ -95,20 +95,6 @@ func (mr *MockSettingsRepositoryMockRecorder) GetServerPath() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServerPath", reflect.TypeOf((*MockSettingsRepository)(nil).GetServerPath))
 }
 
-// GetWorldGeneration mocks base method.
-func (m *MockSettingsRepository) GetWorldGeneration() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetWorldGeneration")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetWorldGeneration indicates an expected call of GetWorldGeneration.
-func (mr *MockSettingsRepositoryMockRecorder) GetWorldGeneration() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorldGeneration", reflect.TypeOf((*MockSettingsRepository)(nil).GetWorldGeneration))
-}
-
 // GetWorldName mocks base method.
 func (m *MockSettingsRepository) GetWorldName() string {
 	m.ctrl.T.Helper()
@@ -121,6 +107,20 @@ func (m *MockSettingsRepository) GetWorldName() string {
 func (mr *MockSettingsRepositoryMockRecorder) GetWorldName() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorldName", reflect.TypeOf((*MockSettingsRepository)(nil).GetWorldName))
+}
+
+// GetWorldResourceID mocks base method.
+func (m *MockSettingsRepository) GetWorldResourceID() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetWorldResourceID")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetWorldResourceID indicates an expected call of GetWorldResourceID.
+func (mr *MockSettingsRepositoryMockRecorder) GetWorldResourceID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetWorldResourceID", reflect.TypeOf((*MockSettingsRepository)(nil).GetWorldResourceID))
 }
 
 // IsNewWorld mocks base method.
@@ -159,4 +159,16 @@ func (m *MockSettingsRepository) SetServerPath(path string) {
 func (mr *MockSettingsRepositoryMockRecorder) SetServerPath(path any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetServerPath", reflect.TypeOf((*MockSettingsRepository)(nil).SetServerPath), path)
+}
+
+// SetWorldResourceID mocks base method.
+func (m *MockSettingsRepository) SetWorldResourceID(resourceID string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetWorldResourceID", resourceID)
+}
+
+// SetWorldResourceID indicates an expected call of SetWorldResourceID.
+func (mr *MockSettingsRepositoryMockRecorder) SetWorldResourceID(resourceID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetWorldResourceID", reflect.TypeOf((*MockSettingsRepository)(nil).SetWorldResourceID), resourceID)
 }
