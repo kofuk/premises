@@ -1,5 +1,7 @@
 package service
 
+//go:generate go run go.uber.org/mock/mockgen@v0.5.0 -destination service_mock.go -package service . WorldServiceInterface
+
 import (
 	"archive/tar"
 	"context"
@@ -21,10 +23,18 @@ import (
 	"github.com/kofuk/premises/runner/internal/util"
 )
 
+type WorldServiceInterface interface {
+	GetLatestResourceID(ctx context.Context, worldName string) (string, error)
+	DownloadWorld(ctx context.Context, resourceID string, envProvider env.EnvProvider) error
+	UploadWorld(ctx context.Context, worldName string, envProvider env.EnvProvider) (string, error)
+}
+
 type WorldService struct {
 	client     *api.Client
 	httpClient *http.Client
 }
+
+var _ WorldServiceInterface = (*WorldService)(nil)
 
 func NewWorldService(endpoint, authKey string, httpClient *http.Client) *WorldService {
 	return &WorldService{
