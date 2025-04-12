@@ -47,7 +47,7 @@ func (m *stopMiddleware) Wrap(next HandlerFunc) HandlerFunc {
 	}
 }
 
-var StopMiddleware = &stopMiddleware{}
+var StopMiddleware Middleware = &stopMiddleware{}
 
 type LauncherCore struct {
 	handler         HandlerFunc
