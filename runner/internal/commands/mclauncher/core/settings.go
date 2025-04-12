@@ -7,6 +7,8 @@ type SettingsRepository interface {
 	GetServerPath() string
 	SetServerPath(path string)
 	GetMinecraftVersion() string
+	SetMinecraftVersion(version string)
+	AutoVersionEnabled() bool
 	GetWorldName() string
 	GetWorldGeneration() string
 	IsNewWorld() bool

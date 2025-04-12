@@ -39,6 +39,20 @@ func (m *MockSettingsRepository) EXPECT() *MockSettingsRepositoryMockRecorder {
 	return m.recorder
 }
 
+// AutoVersionEnabled mocks base method.
+func (m *MockSettingsRepository) AutoVersionEnabled() bool {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AutoVersionEnabled")
+	ret0, _ := ret[0].(bool)
+	return ret0
+}
+
+// AutoVersionEnabled indicates an expected call of AutoVersionEnabled.
+func (mr *MockSettingsRepositoryMockRecorder) AutoVersionEnabled() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AutoVersionEnabled", reflect.TypeOf((*MockSettingsRepository)(nil).AutoVersionEnabled))
+}
+
 // GetAllowedMemSize mocks base method.
 func (m *MockSettingsRepository) GetAllowedMemSize() int {
 	m.ctrl.T.Helper()
@@ -121,6 +135,18 @@ func (m *MockSettingsRepository) IsNewWorld() bool {
 func (mr *MockSettingsRepositoryMockRecorder) IsNewWorld() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsNewWorld", reflect.TypeOf((*MockSettingsRepository)(nil).IsNewWorld))
+}
+
+// SetMinecraftVersion mocks base method.
+func (m *MockSettingsRepository) SetMinecraftVersion(version string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetMinecraftVersion", version)
+}
+
+// SetMinecraftVersion indicates an expected call of SetMinecraftVersion.
+func (mr *MockSettingsRepositoryMockRecorder) SetMinecraftVersion(version any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMinecraftVersion", reflect.TypeOf((*MockSettingsRepository)(nil).SetMinecraftVersion), version)
 }
 
 // SetServerPath mocks base method.
