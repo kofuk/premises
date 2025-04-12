@@ -22,11 +22,11 @@ type FileCreator struct {
 	worldRoot  string
 }
 
-func NewFileCreator(outDir, tmpDir string) (*FileCreator, error) {
+func NewFileCreator(outDir, tmpDir string) *FileCreator {
 	return &FileCreator{
 		outDir: outDir,
 		tmpDir: tmpDir,
-	}, nil
+	}
 }
 
 func createFile(path string, content io.Reader) error {

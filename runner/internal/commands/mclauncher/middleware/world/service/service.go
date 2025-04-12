@@ -48,10 +48,7 @@ func (w *WorldService) getExtractionPipeline(resourceID string, envProvider env.
 		return nil, err
 	}
 
-	c, err := NewFileCreator(envProvider.GetDataPath("gamedata/world"), tmpDir)
-	if err != nil {
-		return nil, err
-	}
+	c := NewFileCreator(envProvider.GetDataPath("gamedata/world"), tmpDir)
 
 	switch {
 	case strings.HasSuffix(resourceID, ".zip"):
