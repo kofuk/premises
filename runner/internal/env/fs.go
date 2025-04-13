@@ -21,6 +21,6 @@ func GetTempDir() string {
 	return DataPath("tmp")
 }
 
-func MkdirTemp() (string, error) {
-	return os.MkdirTemp(GetTempDir(), "premises-temp")
+func MkdirTemp(envProvider EnvProvider) (string, error) {
+	return os.MkdirTemp(envProvider.GetTempDir(), "premises-temp")
 }

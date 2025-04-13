@@ -58,7 +58,7 @@ func removeSnapshots(ctx context.Context) {
 	}
 
 	if needsClean {
-		if err := system.Cmd(ctx, "btrfs", args); err != nil {
+		if err := system.DefaultExecutor.Run(ctx, "btrfs", args); err != nil {
 			slog.Error("Failed to remove snapshots", slog.Any("error", err))
 		}
 	}

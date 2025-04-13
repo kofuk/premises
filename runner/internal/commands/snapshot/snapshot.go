@@ -31,7 +31,7 @@ func takeFsSnapshot(ctx context.Context, snapshotId string) (*SnapshotInfo, erro
 	}
 
 	// Create read-only snapshot
-	if err := system.Cmd(ctx, "btrfs", []string{"subvolume", "snapshot", "-r", ".", snapshotInfo.Path}, system.WithWorkingDir(env.DataPath("gamedata"))); err != nil {
+	if err := system.DefaultExecutor.Run(ctx, "btrfs", []string{"subvolume", "snapshot", "-r", ".", snapshotInfo.Path}, system.WithWorkingDir(env.DataPath("gamedata"))); err != nil {
 		return nil, err
 	}
 
@@ -43,11 +43,11 @@ func deleteFsSnapshot(ctx context.Context, id string) error {
 		return errors.New("invalid snapshot ID")
 	}
 
-	err := system.Cmd(ctx, "btrfs", []string{"subvolume", "delete", "ss@" + id}, system.WithWorkingDir(env.DataPath("gamedata")))
+	err := system.DefaultExecutor.Run(ctx, "btrfs", []string{"subvolume", "delete", "ss@" + id}, system.WithWorkingDir(env.DataPath("gamedata")))
 	if err != nil {
 		return err
 	}
-	err = system.Cmd(ctx, "btrfs", []string{"balance", "."}, system.WithWorkingDir(env.DataPath("gamedata")))
+	err = system.DefaultExecutor.Run(ctx, "btrfs", []string{"balance", "."}, system.WithWorkingDir(env.DataPath("gamedata")))
 	if err != nil {
 		return err
 	}

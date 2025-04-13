@@ -34,7 +34,7 @@ type WorldService struct {
 
 func New(endpoint, authKey string) *WorldService {
 	return &WorldService{
-		client: api.New(endpoint, authKey, otelhttp.DefaultClient),
+		client: api.NewClient(endpoint, authKey, otelhttp.DefaultClient),
 	}
 }
 

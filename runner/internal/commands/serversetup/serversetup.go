@@ -132,7 +132,7 @@ func (setup *ServerSetup) initializeServer(ctx context.Context) {
 		if _, err := user.Lookup("premises"); err != nil {
 			slog.Info("Adding user")
 			// Create a system user named "premises"
-			return system.Cmd(ctx, "useradd", []string{
+			return system.DefaultExecutor.Run(ctx, "useradd", []string{
 				"--user-group",
 				"--system",
 				"--no-create-home",
@@ -148,7 +148,7 @@ func (setup *ServerSetup) initializeServer(ctx context.Context) {
 
 	// This command should be executed after `apt-get install` finished
 	slog.Info("Creating filesystem for gamedata.img")
-	system.Cmd(ctx, "mkfs.btrfs", []string{env.DataPath("gamedata.img")})
+	system.DefaultExecutor.Run(ctx, "mkfs.btrfs", []string{env.DataPath("gamedata.img")})
 }
 
 func (setup *ServerSetup) installRequiredJavaVersion(ctx context.Context) {
@@ -187,7 +187,7 @@ func (setup ServerSetup) Run(ctx context.Context) {
 	setup.installRequiredJavaVersion(ctx)
 
 	slog.Info("Mounting gamedata.img")
-	system.Cmd(ctx, "mount", []string{env.DataPath("gamedata.img"), env.DataPath("gamedata")})
+	system.DefaultExecutor.Run(ctx, "mount", []string{env.DataPath("gamedata.img"), env.DataPath("gamedata")})
 
 	slog.Info("Ensure data directory owned by execution user")
 	if uid, gid, err := system.GetAppUserID(); err != nil {
