@@ -1,6 +1,7 @@
 package world_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,6 +14,18 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/mock/gomock"
 )
+
+type ErrorMiddleware struct {
+	err error
+}
+
+var _ core.Middleware = (*ErrorMiddleware)(nil)
+
+func (e *ErrorMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
+	return func(c *core.LauncherContext) error {
+		return e.err
+	}
+}
 
 var _ = Describe("WorldMiddleware", func() {
 	var (
@@ -164,6 +177,51 @@ var _ = Describe("WorldMiddleware", func() {
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ShouldNot(HaveOccurred())
+
+		Expect(filepath.Join(tempDir, "gamedata/world/levdel.dat")).NotTo(BeAnExistingFile())
+	})
+
+	It("should not upload world if unknown error occurred", func() {
+		settingsRepository.EXPECT().IsNewWorld().Return(true)
+		stateRepository.EXPECT().SetState(world.StateKeyWorldKey, nil)
+		envProvider.EXPECT().GetDataPath("gamedata/world").Return(filepath.Join(tempDir, "gamedata/world"))
+
+		os.WriteFile(filepath.Join(tempDir, "gamedata/world/levdel.dat"), []byte("level"), 0o644)
+
+		sut := world.NewWorldMiddleware(worldService)
+
+		launcher.Middleware(&ErrorMiddleware{
+			err: errors.New("test"),
+		})
+		launcher.Middleware(sut)
+
+		err := launcher.Start(GinkgoT().Context())
+		Expect(err).To(HaveOccurred())
+
+		Expect(filepath.Join(tempDir, "gamedata/world/levdel.dat")).NotTo(BeAnExistingFile())
+	})
+
+	It("should upload world if error is ErrRestart", func() {
+		settingsRepository.EXPECT().IsNewWorld().Return(true)
+		gomock.InOrder(
+			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, nil),
+			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, "res-id-1"),
+		)
+		envProvider.EXPECT().GetDataPath("gamedata/world").Return(filepath.Join(tempDir, "gamedata/world"))
+
+		os.WriteFile(filepath.Join(tempDir, "gamedata/world/levdel.dat"), []byte("level"), 0o644)
+
+		worldService.EXPECT().UploadWorld(gomock.Any(), "foo", gomock.Any()).Return("res-id-1", nil)
+
+		sut := world.NewWorldMiddleware(worldService)
+
+		launcher.Middleware(&ErrorMiddleware{
+			err: core.ErrRestart,
+		})
+		launcher.Middleware(sut)
+
+		err := launcher.Start(GinkgoT().Context())
+		Expect(err).To(MatchError(core.ErrRestart))
 
 		Expect(filepath.Join(tempDir, "gamedata/world/levdel.dat")).NotTo(BeAnExistingFile())
 	})
