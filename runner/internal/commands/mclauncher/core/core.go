@@ -60,9 +60,10 @@ type LauncherCore struct {
 
 func NewLauncherCore(settings SettingsRepository, env env.EnvProvider, state StateRepository) *LauncherCore {
 	launcher := &LauncherCore{
-		settings: settings,
-		env:      env,
-		state:    state,
+		settings:        settings,
+		env:             env,
+		state:           state,
+		CommandExecutor: NewGameExecutor(),
 	}
 
 	launcher.handler = launcher.startMinecraft
@@ -91,4 +92,11 @@ func (l *LauncherCore) createContext(ctx context.Context) *LauncherContext {
 
 func (l *LauncherCore) Start(ctx context.Context) error {
 	return l.handler(l.createContext(ctx))
+}
+
+func (l *LauncherCore) ForceRestart() error {
+	if ge, ok := l.CommandExecutor.(*GameExecutor); ok {
+		return ge.Kill()
+	}
+	return errors.New("executor not supports force restart")
 }
