@@ -50,11 +50,12 @@ func (m *stopMiddleware) Wrap(next HandlerFunc) HandlerFunc {
 var StopMiddleware Middleware = &stopMiddleware{}
 
 type LauncherCore struct {
-	handler         HandlerFunc
-	settings        SettingsRepository
-	env             env.EnvProvider
-	CommandExecutor system.CommandExecutor
-	state           StateRepository
+	handler               HandlerFunc
+	settings              SettingsRepository
+	env                   env.EnvProvider
+	CommandExecutor       system.CommandExecutor
+	state                 StateRepository
+	BeforeLaunchListeners []BeforeLaunchListener
 }
 
 func NewLauncherCore(settings SettingsRepository, env env.EnvProvider, state StateRepository) *LauncherCore {
@@ -71,6 +72,12 @@ func NewLauncherCore(settings SettingsRepository, env env.EnvProvider, state Sta
 
 func (l *LauncherCore) Middleware(m Middleware) {
 	l.handler = m.Wrap(l.handler)
+}
+
+type BeforeLaunchListener func(c *LauncherContext)
+
+func (l *LauncherCore) AddBeforeLaunchListener(listener BeforeLaunchListener) {
+	l.BeforeLaunchListeners = append(l.BeforeLaunchListeners, listener)
 }
 
 func (l *LauncherCore) createContext(ctx context.Context) *LauncherContext {

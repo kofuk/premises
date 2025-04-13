@@ -1,7 +1,6 @@
 package core
 
 import (
-	"context"
 	"fmt"
 	"math/rand/v2"
 	"time"
@@ -10,19 +9,23 @@ import (
 	"github.com/kofuk/premises/runner/internal/system"
 )
 
-func executeWithBackOff(ctx context.Context, commandExecutor system.CommandExecutor, cmdline []string, workDir string) error {
+func (l *LauncherCore) executeWithBackOff(c *LauncherContext, cmdline []string, workDir string) error {
 	backOffWaitTime := 2
 
 	var err error
 	for {
-		err = commandExecutor.Run(ctx, cmdline[0], cmdline[1:], system.WithWorkingDir(workDir))
+		for _, listener := range l.BeforeLaunchListeners {
+			listener(c)
+		}
+
+		err = l.CommandExecutor.Run(c.Context(), cmdline[0], cmdline[1:], system.WithWorkingDir(workDir))
 		if err == nil {
 			return nil
 		}
 
 		timer := time.NewTimer(time.Duration(backOffWaitTime)*time.Second + time.Duration(rand.Float64()*500.0)*time.Millisecond)
 		select {
-		case <-ctx.Done():
+		case <-c.Context().Done():
 			return err
 		case <-timer.C:
 		}
@@ -31,7 +34,7 @@ func executeWithBackOff(ctx context.Context, commandExecutor system.CommandExecu
 	}
 }
 
-func (launcher *LauncherCore) startMinecraft(c *LauncherContext) error {
+func (l *LauncherCore) startMinecraft(c *LauncherContext) error {
 	serverPath := c.Settings().GetServerPath()
 	workDir := c.Env().GetDataPath("gamedata")
 
@@ -54,5 +57,5 @@ func (launcher *LauncherCore) startMinecraft(c *LauncherContext) error {
 		}
 	}
 
-	return executeWithBackOff(c.Context(), launcher.CommandExecutor, commandLine, workDir)
+	return l.executeWithBackOff(c, commandLine, workDir)
 }
