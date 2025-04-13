@@ -55,7 +55,7 @@ type LauncherCore struct {
 	env                   env.EnvProvider
 	CommandExecutor       system.CommandExecutor
 	state                 StateRepository
-	BeforeLaunchListeners []BeforeLaunchListener
+	beforeLaunchListeners []BeforeLaunchListener
 }
 
 func NewLauncherCore(settings SettingsRepository, env env.EnvProvider, state StateRepository) *LauncherCore {
@@ -78,7 +78,7 @@ func (l *LauncherCore) Middleware(m Middleware) {
 type BeforeLaunchListener func(c *LauncherContext)
 
 func (l *LauncherCore) AddBeforeLaunchListener(listener BeforeLaunchListener) {
-	l.BeforeLaunchListeners = append(l.BeforeLaunchListeners, listener)
+	l.beforeLaunchListeners = append(l.beforeLaunchListeners, listener)
 }
 
 func (l *LauncherCore) createContext(ctx context.Context) *LauncherContext {
