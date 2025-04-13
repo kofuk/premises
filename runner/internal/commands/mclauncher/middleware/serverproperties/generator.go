@@ -1,17 +1,16 @@
-package game
+package serverproperties
 
 import (
 	"bufio"
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"slices"
 	"strings"
-
-	"github.com/kofuk/premises/internal/entity/runner"
 )
 
-var serverProperties = map[string]string{
+var defaultServerProperties = map[string]string{
 	"allow-flight":                      "false",
 	"allow-nether":                      "true",
 	"broadcast-console-to-ops":          "false",
@@ -77,69 +76,68 @@ var overrideBlockedProps = map[string]struct{}{
 	"white-list":            {},
 }
 
-type ServerProperties struct {
-	props map[string]string
+var keyRegexp = regexp.MustCompile(`^[a-zA-Z0-9._-]+$`)
+
+type ServerPropertiesGenerator struct {
+	properties map[string]string
 }
 
-func NewServerProperties() *ServerProperties {
-	return &ServerProperties{
-		props: serverProperties,
+func NewServerPropertiesGenerator() *ServerPropertiesGenerator {
+	properties := make(map[string]string)
+	for k, v := range defaultServerProperties {
+		properties[k] = v
+	}
+
+	return &ServerPropertiesGenerator{
+		properties: properties,
 	}
 }
 
-func (p *ServerProperties) LoadConfig(config *runner.Config) error {
-	serverProps := NewServerProperties()
-	serverProps.SetMotd(config.GameConfig.Motd)
-	serverProps.SetDifficulty(config.GameConfig.World.Difficulty)
-	serverProps.SetLevelType(config.GameConfig.World.LevelType)
-	serverProps.SetSeed(config.GameConfig.World.Seed)
-	serverProps.OverrideProperties(config.GameConfig.Server.ServerPropOverride)
-	return nil
+func (g *ServerPropertiesGenerator) SetMotd(motd string) error {
+	return g.Set("motd", motd)
 }
 
-func (p *ServerProperties) SetMotd(motd string) {
-	p.props["motd"] = strings.ReplaceAll(strings.ReplaceAll(motd, "\r", ""), "\n", " ")
-}
-
-func (p *ServerProperties) SetDifficulty(difficulty string) error {
+func (g *ServerPropertiesGenerator) SetDifficulty(difficulty string) error {
 	if !slices.Contains([]string{"peaceful", "easy", "normal", "hard"}, difficulty) {
 		return errors.New("unknown difficulty")
 	}
-	p.props["difficulty"] = difficulty
+
+	return g.Set("difficulty", difficulty)
+}
+
+func (g *ServerPropertiesGenerator) SetLevelType(levelType string) error {
+	if !slices.Contains([]string{"flat", "largebiomes", "amplified", "default"}, levelType) {
+		return errors.New("unknown level type")
+	}
+
+	return g.Set("level-type", levelType)
+}
+
+func (g *ServerPropertiesGenerator) SetSeed(seed string) error {
+	return g.Set("level-seed", seed)
+}
+
+func (g *ServerPropertiesGenerator) Set(key, value string) error {
+	if _, ok := overrideBlockedProps[key]; ok {
+		return errors.New("this property is not allowed to be overridden")
+	}
+	if !keyRegexp.MatchString(key) {
+		return errors.New("invalid property key")
+	}
+
+	sanitizedValue := strings.ReplaceAll(strings.ReplaceAll(value, "\r", ""), "\n", " ")
+	g.properties[key] = sanitizedValue
+
 	return nil
 }
 
-func (p *ServerProperties) SetLevelType(levelType string) error {
-	if !slices.Contains([]string{"default", "flat", "largeBiomes", "amplified", "buffet"}, levelType) {
-		return errors.New("unknown world type")
-	}
-	p.props["level-type"] = levelType
-	return nil
-}
-
-func (p *ServerProperties) OverrideProperties(props map[string]string) {
-	for k, v := range props {
-		if strings.Trim(k, "abcdefghijklmnopqrstuvwxyz0123456789.-") != "" {
-			continue
-		}
-		if _, ok := overrideBlockedProps[k]; ok {
-			continue
-		}
-		p.props[k] = v
-	}
-}
-
-func (p *ServerProperties) SetSeed(seed string) {
-	p.props["level-seed"] = seed
-}
-
-func (p *ServerProperties) Write(out io.Writer) error {
-	writer := bufio.NewWriter(out)
+func (g *ServerPropertiesGenerator) Write(w io.Writer) error {
+	writer := bufio.NewWriter(w)
 	defer writer.Flush()
 
-	for k, v := range p.props {
-		escapedValue := strings.ReplaceAll(v, "\\", "\\\\")
-		fmt.Fprintf(writer, "%s=%s\n", k, escapedValue)
+	for key, value := range g.properties {
+		escapedValue := strings.ReplaceAll(value, "\\", "\\\\")
+		fmt.Fprintf(writer, "%s=%s\n", key, escapedValue)
 	}
 
 	return nil
