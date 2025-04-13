@@ -14,7 +14,7 @@ func (l *LauncherCore) executeWithBackOff(c *LauncherContext, cmdline []string, 
 
 	var err error
 	for {
-		for _, listener := range l.BeforeLaunchListeners {
+		for _, listener := range l.beforeLaunchListeners {
 			listener(c)
 		}
 
