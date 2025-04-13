@@ -13,4 +13,9 @@ type SettingsRepository interface {
 	GetWorldResourceID() string
 	SetWorldResourceID(resourceID string)
 	IsNewWorld() bool
+	GetMotd() string
+	GetDifficulty() string
+	GetLevelType() string
+	GetSeed() string
+	ServerPropertiesOverrides() map[string]string
 }

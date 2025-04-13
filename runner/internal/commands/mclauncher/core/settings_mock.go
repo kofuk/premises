@@ -67,6 +67,34 @@ func (mr *MockSettingsRepositoryMockRecorder) GetAllowedMemSize() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllowedMemSize", reflect.TypeOf((*MockSettingsRepository)(nil).GetAllowedMemSize))
 }
 
+// GetDifficulty mocks base method.
+func (m *MockSettingsRepository) GetDifficulty() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDifficulty")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetDifficulty indicates an expected call of GetDifficulty.
+func (mr *MockSettingsRepositoryMockRecorder) GetDifficulty() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDifficulty", reflect.TypeOf((*MockSettingsRepository)(nil).GetDifficulty))
+}
+
+// GetLevelType mocks base method.
+func (m *MockSettingsRepository) GetLevelType() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLevelType")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetLevelType indicates an expected call of GetLevelType.
+func (mr *MockSettingsRepositoryMockRecorder) GetLevelType() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLevelType", reflect.TypeOf((*MockSettingsRepository)(nil).GetLevelType))
+}
+
 // GetMinecraftVersion mocks base method.
 func (m *MockSettingsRepository) GetMinecraftVersion() string {
 	m.ctrl.T.Helper()
@@ -79,6 +107,34 @@ func (m *MockSettingsRepository) GetMinecraftVersion() string {
 func (mr *MockSettingsRepositoryMockRecorder) GetMinecraftVersion() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMinecraftVersion", reflect.TypeOf((*MockSettingsRepository)(nil).GetMinecraftVersion))
+}
+
+// GetMotd mocks base method.
+func (m *MockSettingsRepository) GetMotd() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMotd")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetMotd indicates an expected call of GetMotd.
+func (mr *MockSettingsRepositoryMockRecorder) GetMotd() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMotd", reflect.TypeOf((*MockSettingsRepository)(nil).GetMotd))
+}
+
+// GetSeed mocks base method.
+func (m *MockSettingsRepository) GetSeed() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSeed")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetSeed indicates an expected call of GetSeed.
+func (mr *MockSettingsRepositoryMockRecorder) GetSeed() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSeed", reflect.TypeOf((*MockSettingsRepository)(nil).GetSeed))
 }
 
 // GetServerPath mocks base method.
@@ -135,6 +191,20 @@ func (m *MockSettingsRepository) IsNewWorld() bool {
 func (mr *MockSettingsRepositoryMockRecorder) IsNewWorld() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsNewWorld", reflect.TypeOf((*MockSettingsRepository)(nil).IsNewWorld))
+}
+
+// ServerPropertiesOverrides mocks base method.
+func (m *MockSettingsRepository) ServerPropertiesOverrides() map[string]string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ServerPropertiesOverrides")
+	ret0, _ := ret[0].(map[string]string)
+	return ret0
+}
+
+// ServerPropertiesOverrides indicates an expected call of ServerPropertiesOverrides.
+func (mr *MockSettingsRepositoryMockRecorder) ServerPropertiesOverrides() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ServerPropertiesOverrides", reflect.TypeOf((*MockSettingsRepository)(nil).ServerPropertiesOverrides))
 }
 
 // SetMinecraftVersion mocks base method.
