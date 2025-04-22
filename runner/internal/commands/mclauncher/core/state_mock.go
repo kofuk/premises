@@ -10,6 +10,7 @@
 package core
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -40,29 +41,44 @@ func (m *MockStateRepository) EXPECT() *MockStateRepositoryMockRecorder {
 }
 
 // GetState mocks base method.
-func (m *MockStateRepository) GetState(key string) any {
+func (m *MockStateRepository) GetState(ctx context.Context, key string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetState", key)
-	ret0, _ := ret[0].(any)
-	return ret0
+	ret := m.ctrl.Call(m, "GetState", ctx, key)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetState indicates an expected call of GetState.
-func (mr *MockStateRepositoryMockRecorder) GetState(key any) *gomock.Call {
+func (mr *MockStateRepositoryMockRecorder) GetState(ctx, key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetState", reflect.TypeOf((*MockStateRepository)(nil).GetState), key)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetState", reflect.TypeOf((*MockStateRepository)(nil).GetState), ctx, key)
+}
+
+// RemoveState mocks base method.
+func (m *MockStateRepository) RemoveState(ctx context.Context, key string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RemoveState", ctx, key)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RemoveState indicates an expected call of RemoveState.
+func (mr *MockStateRepositoryMockRecorder) RemoveState(ctx, key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveState", reflect.TypeOf((*MockStateRepository)(nil).RemoveState), ctx, key)
 }
 
 // SetState mocks base method.
-func (m *MockStateRepository) SetState(key string, state any) error {
+func (m *MockStateRepository) SetState(ctx context.Context, key, state string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetState", key, state)
+	ret := m.ctrl.Call(m, "SetState", ctx, key, state)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // SetState indicates an expected call of SetState.
-func (mr *MockStateRepositoryMockRecorder) SetState(key, state any) *gomock.Call {
+func (mr *MockStateRepositoryMockRecorder) SetState(ctx, key, state any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetState", reflect.TypeOf((*MockStateRepository)(nil).SetState), key, state)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetState", reflect.TypeOf((*MockStateRepository)(nil).SetState), ctx, key, state)
 }

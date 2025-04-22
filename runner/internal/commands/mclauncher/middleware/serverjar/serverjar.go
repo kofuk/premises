@@ -158,14 +158,14 @@ func (m *ServerJarMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 		}
 		c.Settings().SetServerPath(c.Env().GetDataPath("servers.d", c.Settings().GetMinecraftVersion()+".jar"))
 
-		oldVersion, ok := c.State().GetState(StateKeyMinecraftVersion).(string)
-		if !ok || oldVersion != c.Settings().GetMinecraftVersion() {
+		oldVersion, err := c.State().GetState(c.Context(), StateKeyMinecraftVersion)
+		if err != nil || oldVersion != c.Settings().GetMinecraftVersion() {
 			// Minecraft version has changed, clean up the old data directory.
 			if err := m.cleanupDataDir(c); err != nil {
 				return err
 			}
 		}
-		c.State().SetState(StateKeyMinecraftVersion, c.Settings().GetMinecraftVersion())
+		c.State().SetState(c.Context(), StateKeyMinecraftVersion, c.Settings().GetMinecraftVersion())
 
 		return next(c)
 	}

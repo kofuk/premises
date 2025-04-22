@@ -59,9 +59,9 @@ var _ = Describe("WorldMiddleware", func() {
 		settingsRepository.EXPECT().IsNewWorld().Return(false)
 		settingsRepository.EXPECT().SetWorldResourceID("res-id-1")
 		gomock.InOrder(
-			stateRepository.EXPECT().GetState(world.StateKeyWorldKey).Return(nil), // return nil here
-			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, nil),
-			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, "res-id-2"),
+			stateRepository.EXPECT().GetState(gomock.Any(), world.StateKeyWorldKey).Return("", nil), // return empty string here
+			stateRepository.EXPECT().RemoveState(gomock.Any(), world.StateKeyWorldKey),
+			stateRepository.EXPECT().SetState(gomock.Any(), world.StateKeyWorldKey, "res-id-2"),
 		)
 		envProvider.EXPECT().GetDataPath("gamedata/world").Return(filepath.Join(tempDir, "gamedata/world"))
 
@@ -85,9 +85,9 @@ var _ = Describe("WorldMiddleware", func() {
 		settingsRepository.EXPECT().IsNewWorld().Return(false)
 		settingsRepository.EXPECT().SetWorldResourceID("res-id-2")
 		gomock.InOrder(
-			stateRepository.EXPECT().GetState(world.StateKeyWorldKey).Return("res-id-1"),
-			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, nil),
-			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, "res-id-3"),
+			stateRepository.EXPECT().GetState(gomock.Any(), world.StateKeyWorldKey).Return("res-id-1", nil),
+			stateRepository.EXPECT().RemoveState(gomock.Any(), world.StateKeyWorldKey),
+			stateRepository.EXPECT().SetState(gomock.Any(), world.StateKeyWorldKey, "res-id-3"),
 		)
 		envProvider.EXPECT().GetDataPath("gamedata/world").Return(filepath.Join(tempDir, "gamedata/world"))
 
@@ -111,9 +111,9 @@ var _ = Describe("WorldMiddleware", func() {
 		settingsRepository.EXPECT().IsNewWorld().Return(false)
 		settingsRepository.EXPECT().SetWorldResourceID("res-id-1")
 		gomock.InOrder(
-			stateRepository.EXPECT().GetState(world.StateKeyWorldKey).Return("res-id-1"),
-			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, nil),
-			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, "res-id-2"),
+			stateRepository.EXPECT().GetState(gomock.Any(), world.StateKeyWorldKey).Return("res-id-1", nil),
+			stateRepository.EXPECT().RemoveState(gomock.Any(), world.StateKeyWorldKey),
+			stateRepository.EXPECT().SetState(gomock.Any(), world.StateKeyWorldKey, "res-id-2"),
 		)
 
 		os.WriteFile(filepath.Join(tempDir, "gamedata/world/levdel.dat"), []byte("level"), 0o644)
@@ -135,9 +135,9 @@ var _ = Describe("WorldMiddleware", func() {
 		settingsRepository.EXPECT().IsNewWorld().Return(false)
 		settingsRepository.EXPECT().SetWorldResourceID("res-id-2")
 		gomock.InOrder(
-			stateRepository.EXPECT().GetState(world.StateKeyWorldKey).Return("res-id-1"),
-			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, nil),
-			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, "res-id-3"),
+			stateRepository.EXPECT().GetState(gomock.Any(), world.StateKeyWorldKey).Return("res-id-1", nil),
+			stateRepository.EXPECT().RemoveState(gomock.Any(), world.StateKeyWorldKey),
+			stateRepository.EXPECT().SetState(gomock.Any(), world.StateKeyWorldKey, "res-id-3"),
 		)
 		envProvider.EXPECT().GetDataPath("gamedata/world").Return(filepath.Join(tempDir, "gamedata/world"))
 
@@ -162,8 +162,8 @@ var _ = Describe("WorldMiddleware", func() {
 	It("should not download world if intended to generate a new world", func() {
 		settingsRepository.EXPECT().IsNewWorld().Return(true)
 		gomock.InOrder(
-			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, nil),
-			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, "res-id-1"),
+			stateRepository.EXPECT().RemoveState(gomock.Any(), world.StateKeyWorldKey),
+			stateRepository.EXPECT().SetState(gomock.Any(), world.StateKeyWorldKey, "res-id-1"),
 		)
 		envProvider.EXPECT().GetDataPath("gamedata/world").Return(filepath.Join(tempDir, "gamedata/world"))
 
@@ -183,7 +183,7 @@ var _ = Describe("WorldMiddleware", func() {
 
 	It("should not upload world if unknown error occurred", func() {
 		settingsRepository.EXPECT().IsNewWorld().Return(true)
-		stateRepository.EXPECT().SetState(world.StateKeyWorldKey, nil)
+		stateRepository.EXPECT().RemoveState(gomock.Any(), world.StateKeyWorldKey)
 		envProvider.EXPECT().GetDataPath("gamedata/world").Return(filepath.Join(tempDir, "gamedata/world"))
 
 		os.WriteFile(filepath.Join(tempDir, "gamedata/world/levdel.dat"), []byte("level"), 0o644)
@@ -204,8 +204,8 @@ var _ = Describe("WorldMiddleware", func() {
 	It("should upload world if error is ErrRestart", func() {
 		settingsRepository.EXPECT().IsNewWorld().Return(true)
 		gomock.InOrder(
-			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, nil),
-			stateRepository.EXPECT().SetState(world.StateKeyWorldKey, "res-id-1"),
+			stateRepository.EXPECT().RemoveState(gomock.Any(), world.StateKeyWorldKey),
+			stateRepository.EXPECT().SetState(gomock.Any(), world.StateKeyWorldKey, "res-id-1"),
 		)
 		envProvider.EXPECT().GetDataPath("gamedata/world").Return(filepath.Join(tempDir, "gamedata/world"))
 
