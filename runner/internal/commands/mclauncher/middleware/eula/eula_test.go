@@ -31,7 +31,7 @@ var _ = Describe("EulaMiddleware", func() {
 		stateRepository = core.NewMockStateRepository(ctrl)
 
 		launcher = core.NewLauncherCore(settingsRepository, envProvider, stateRepository)
-		launcher.Middleware(core.StopMiddleware)
+		launcher.Use(core.StopMiddleware)
 	})
 
 	It("should sign to EULA file", func() {
@@ -39,7 +39,7 @@ var _ = Describe("EulaMiddleware", func() {
 
 		sut := eula.NewEulaMiddleware()
 
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ShouldNot(HaveOccurred())

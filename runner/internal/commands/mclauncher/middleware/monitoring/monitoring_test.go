@@ -43,7 +43,7 @@ var _ = Describe("Monitoring Middleware", func() {
 		stateRepository = core.NewMockStateRepository(ctrl)
 
 		launcher = core.NewLauncherCore(settingsRepository, envProvider, stateRepository)
-		launcher.Middleware(core.StopMiddleware)
+		launcher.Use(core.StopMiddleware)
 	})
 
 	It("should trigger watchdogs", func() {
@@ -65,8 +65,8 @@ var _ = Describe("Monitoring Middleware", func() {
 		sut := monitoring.NewMonitoringMiddleware()
 		sut.AddWatchdog(wd)
 
-		launcher.Middleware(&sleepMiddleware{duration: 3 * time.Second})
-		launcher.Middleware(sut)
+		launcher.Use(&sleepMiddleware{duration: 3 * time.Second})
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).NotTo(HaveOccurred())

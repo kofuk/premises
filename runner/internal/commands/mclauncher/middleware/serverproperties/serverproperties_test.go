@@ -30,7 +30,7 @@ var _ = Describe("ServerProperties", func() {
 		tempDir = GinkgoT().TempDir()
 
 		launcher = core.NewLauncherCore(settingsRepository, envProvider, stateRepository)
-		launcher.Middleware(core.StopMiddleware)
+		launcher.Use(core.StopMiddleware)
 
 		envProvider.EXPECT().GetDataPath("gamedata/server.properties").AnyTimes().Return(filepath.Join(tempDir, "gamedata/server.properties"))
 		os.MkdirAll(filepath.Join(tempDir, "gamedata"), 0755)
@@ -46,7 +46,7 @@ var _ = Describe("ServerProperties", func() {
 		})
 
 		sut := serverproperties.NewServerPropertiesMiddleware()
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ToNot(HaveOccurred())

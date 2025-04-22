@@ -51,7 +51,7 @@ var _ = Describe("WorldMiddleware", func() {
 		worldService = service.NewMockWorldServiceInterface(ctrl)
 
 		launcher = core.NewLauncherCore(settingsRepository, envProvider, stateRepository)
-		launcher.Middleware(core.StopMiddleware)
+		launcher.Use(core.StopMiddleware)
 	})
 
 	It("should download world if no state stored", func() {
@@ -72,7 +72,7 @@ var _ = Describe("WorldMiddleware", func() {
 
 		sut := world.NewWorldMiddleware(worldService)
 
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ShouldNot(HaveOccurred())
@@ -98,7 +98,7 @@ var _ = Describe("WorldMiddleware", func() {
 
 		sut := world.NewWorldMiddleware(worldService)
 
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ShouldNot(HaveOccurred())
@@ -122,7 +122,7 @@ var _ = Describe("WorldMiddleware", func() {
 
 		sut := world.NewWorldMiddleware(worldService)
 
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ShouldNot(HaveOccurred())
@@ -151,7 +151,7 @@ var _ = Describe("WorldMiddleware", func() {
 
 		sut := world.NewWorldMiddleware(worldService)
 
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ShouldNot(HaveOccurred())
@@ -173,7 +173,7 @@ var _ = Describe("WorldMiddleware", func() {
 
 		sut := world.NewWorldMiddleware(worldService)
 
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ShouldNot(HaveOccurred())
@@ -190,10 +190,10 @@ var _ = Describe("WorldMiddleware", func() {
 
 		sut := world.NewWorldMiddleware(worldService)
 
-		launcher.Middleware(&ErrorMiddleware{
+		launcher.Use(&ErrorMiddleware{
 			err: errors.New("test"),
 		})
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).To(HaveOccurred())
@@ -215,10 +215,10 @@ var _ = Describe("WorldMiddleware", func() {
 
 		sut := world.NewWorldMiddleware(worldService)
 
-		launcher.Middleware(&ErrorMiddleware{
+		launcher.Use(&ErrorMiddleware{
 			err: core.ErrRestart,
 		})
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).To(MatchError(core.ErrRestart))

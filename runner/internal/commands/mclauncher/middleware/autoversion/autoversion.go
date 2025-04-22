@@ -11,6 +11,12 @@ import (
 type AutoVersionMiddleware struct {
 }
 
+var _ core.Middleware = (*AutoVersionMiddleware)(nil)
+
+func NewAutoVersionMiddleware() *AutoVersionMiddleware {
+	return &AutoVersionMiddleware{}
+}
+
 func (m *AutoVersionMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 	return func(c *core.LauncherContext) error {
 		if c.Settings().AutoVersionEnabled() {
