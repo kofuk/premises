@@ -24,7 +24,7 @@ type FileCreator struct {
 }
 
 func NewFileCreator(outDir string) (*FileCreator, error) {
-	tmpDir, err := env.MkdirTemp(env.DefaultPathProvider)
+	tmpDir, err := env.MkdirTemp(env.DefaultEnvProvider)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ type Unarchiver interface {
 type ZipUnarchiver struct{}
 
 func (*ZipUnarchiver) toFile(r io.Reader) (string, error) {
-	tmpDir, err := env.MkdirTemp(env.DefaultPathProvider)
+	tmpDir, err := env.MkdirTemp(env.DefaultEnvProvider)
 	if err != nil {
 		return "", err
 	}

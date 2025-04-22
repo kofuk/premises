@@ -71,7 +71,7 @@ func NewRun(ctx context.Context, args []string) int {
 	settingsRepository := repository.NewConfigJSONSettingsRepository(config)
 	stateRepository := repository.NewExteriorStateRepository(rpc.ToExteriord)
 
-	launcher := core.NewLauncherCore(settingsRepository, env.DefaultPathProvider, stateRepository)
+	launcher := core.NewLauncherCore(settingsRepository, env.DefaultEnvProvider, stateRepository)
 
 	worldService := worldService.NewWorldService(config.ControlPanel, config.AuthKey, otelhttp.DefaultClient)
 	launchermetaClient := launchermeta.NewLauncherMetaClient(launchermeta.WithHTTPClient(otelhttp.DefaultClient))
