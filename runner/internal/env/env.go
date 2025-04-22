@@ -19,7 +19,7 @@ type EnvProvider interface {
 
 type defaultEnvProvider struct{}
 
-var DefaultPathProvider EnvProvider = &defaultEnvProvider{}
+var DefaultEnvProvider EnvProvider = &defaultEnvProvider{}
 
 func (p *defaultEnvProvider) GetDataPath(path ...string) string {
 	return filepath.Join(BaseDir, filepath.Join(path...))
