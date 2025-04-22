@@ -71,7 +71,7 @@ func NewLauncherCore(settings SettingsRepository, env env.EnvProvider, state Sta
 	return launcher
 }
 
-func (l *LauncherCore) Middleware(m Middleware) {
+func (l *LauncherCore) Use(m Middleware) {
 	l.handler = m.Wrap(l.handler)
 }
 

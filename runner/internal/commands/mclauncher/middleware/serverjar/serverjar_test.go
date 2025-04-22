@@ -73,7 +73,7 @@ var _ = Describe("ServerJarMiddleware", func() {
 		launcherMetaClient = launchermeta.NewLauncherMetaClient(launchermeta.WithManifestURL("http://launchermeta.premises.local/version_manifest.json"))
 
 		launcher = core.NewLauncherCore(settingsRepository, envProvider, stateRepository)
-		launcher.Middleware(core.StopMiddleware)
+		launcher.Use(core.StopMiddleware)
 
 		tempDir = GinkgoT().TempDir()
 
@@ -93,7 +93,7 @@ var _ = Describe("ServerJarMiddleware", func() {
 
 		sut := serverjar.NewServerJarMiddleware(launcherMetaClient, http.DefaultClient)
 
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ShouldNot(HaveOccurred(), "ServerJarMiddleware should not return an error")
@@ -116,7 +116,7 @@ var _ = Describe("ServerJarMiddleware", func() {
 
 		sut := serverjar.NewServerJarMiddleware(launcherMetaClient, http.DefaultClient)
 
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ShouldNot(HaveOccurred(), "ServerJarMiddleware should not return an error")
@@ -147,7 +147,7 @@ var _ = Describe("ServerJarMiddleware", func() {
 
 		sut := serverjar.NewServerJarMiddleware(launcherMetaClient, http.DefaultClient)
 
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ShouldNot(HaveOccurred(), "ServerJarMiddleware should not return an error")
@@ -184,7 +184,7 @@ var _ = Describe("ServerJarMiddleware", func() {
 
 		sut := serverjar.NewServerJarMiddleware(launcherMetaClient, http.DefaultClient)
 
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ShouldNot(HaveOccurred(), "ServerJarMiddleware should not return an error")

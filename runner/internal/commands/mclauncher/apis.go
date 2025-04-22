@@ -2,7 +2,6 @@ package mclauncher
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -33,40 +32,6 @@ func NewRPCHandler(s *rpc.Server, game *game.Launcher) *RPCHandler {
 
 func (h *RPCHandler) HandleGameStop(ctx context.Context, req *rpc.AbstractRequest) error {
 	h.game.Stop(ctx)
-	return nil
-}
-
-func (h *RPCHandler) HandleGameReconfigure(ctx context.Context, req *rpc.AbstractRequest) error {
-	var gameConfig runner.GameConfig
-	if err := req.Bind(&gameConfig); err != nil {
-		return err
-	}
-
-	oldData, err := os.ReadFile(env.DataPath("config.json"))
-	if err != nil {
-		return err
-	}
-
-	var config runner.Config
-	if err := json.Unmarshal(oldData, &config); err != nil {
-		return err
-	}
-
-	config.GameConfig = gameConfig
-
-	data, err := json.Marshal(&config)
-	if err != nil {
-		slog.Error("Failed to stringify request", slog.Any("error", err))
-		return err
-	}
-
-	if err := os.WriteFile(env.DataPath("config.json"), data, 0644); err != nil {
-		slog.Error("Failed to write server config", slog.Any("error", err))
-		return err
-	}
-
-	h.game.StopToRestart(ctx)
-
 	return nil
 }
 
@@ -150,7 +115,6 @@ func (h *RPCHandler) HandleSnapshotUndo(ctx context.Context, req *rpc.AbstractRe
 
 func (h *RPCHandler) Bind() {
 	h.s.RegisterNotifyMethod("game/stop", h.HandleGameStop)
-	h.s.RegisterNotifyMethod("game/reconfigure", h.HandleGameReconfigure)
 	h.s.RegisterNotifyMethod("snapshot/create", h.HandleSnapshotCreate)
 	h.s.RegisterNotifyMethod("snapshot/undo", h.HandleSnapshotUndo)
 }

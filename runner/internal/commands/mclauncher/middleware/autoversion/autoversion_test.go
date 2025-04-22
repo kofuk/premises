@@ -39,7 +39,7 @@ var _ = Describe("AutoVersionMiddleware", func() {
 		stateRepository = core.NewMockStateRepository(ctrl)
 
 		launcher = core.NewLauncherCore(settingsRepository, envProvider, stateRepository)
-		launcher.Middleware(core.StopMiddleware)
+		launcher.Use(core.StopMiddleware)
 	})
 
 	It("should detect server version", func() {
@@ -49,7 +49,7 @@ var _ = Describe("AutoVersionMiddleware", func() {
 
 		sut := &autoversion.AutoVersionMiddleware{}
 
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ShouldNot(HaveOccurred())
@@ -61,7 +61,7 @@ var _ = Describe("AutoVersionMiddleware", func() {
 
 		sut := &autoversion.AutoVersionMiddleware{}
 
-		launcher.Middleware(sut)
+		launcher.Use(sut)
 
 		err := launcher.Start(GinkgoT().Context())
 		Expect(err).ShouldNot(HaveOccurred())
