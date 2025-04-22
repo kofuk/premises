@@ -88,8 +88,8 @@ var _ = Describe("ServerJarMiddleware", func() {
 
 		envProvider.EXPECT().GetDataPath(gomock.Eq("servers.d"), gomock.Eq("1.20.1.jar")).AnyTimes().Return(filepath.Join(tempDir, "servers.d/1.20.1.jar"))
 
-		stateRepository.EXPECT().GetState(gomock.Eq(serverjar.StateKeyMinecraftVersion)).Return("1.20.1")
-		stateRepository.EXPECT().SetState(gomock.Eq(serverjar.StateKeyMinecraftVersion), gomock.Eq("1.20.1")).Return(nil)
+		stateRepository.EXPECT().GetState(gomock.Any(), gomock.Eq(serverjar.StateKeyMinecraftVersion)).Return("1.20.1", nil)
+		stateRepository.EXPECT().SetState(gomock.Any(), gomock.Eq(serverjar.StateKeyMinecraftVersion), gomock.Eq("1.20.1")).Return(nil)
 
 		sut := serverjar.NewServerJarMiddleware(launcherMetaClient, http.DefaultClient)
 
@@ -111,8 +111,8 @@ var _ = Describe("ServerJarMiddleware", func() {
 
 		envProvider.EXPECT().GetDataPath(gomock.Eq("servers.d"), gomock.Eq("1.20.1.jar")).AnyTimes().Return(filepath.Join(tempDir, "servers.d/1.20.1.jar"))
 
-		stateRepository.EXPECT().GetState(gomock.Eq(serverjar.StateKeyMinecraftVersion)).Return("1.20.1")
-		stateRepository.EXPECT().SetState(gomock.Eq(serverjar.StateKeyMinecraftVersion), gomock.Eq("1.20.1")).Return(nil)
+		stateRepository.EXPECT().GetState(gomock.Any(), gomock.Eq(serverjar.StateKeyMinecraftVersion)).Return("1.20.1", nil)
+		stateRepository.EXPECT().SetState(gomock.Any(), gomock.Eq(serverjar.StateKeyMinecraftVersion), gomock.Eq("1.20.1")).Return(nil)
 
 		sut := serverjar.NewServerJarMiddleware(launcherMetaClient, http.DefaultClient)
 
@@ -142,8 +142,8 @@ var _ = Describe("ServerJarMiddleware", func() {
 		envProvider.EXPECT().GetDataPath(gomock.Eq("servers.d"), gomock.Eq("1.20.1.jar")).AnyTimes().Return(filepath.Join(tempDir, "servers.d/1.20.1.jar"))
 		envProvider.EXPECT().GetDataPath(gomock.Eq("gamedata")).AnyTimes().Return(filepath.Join(tempDir, "gamedata"))
 
-		stateRepository.EXPECT().GetState(gomock.Eq(serverjar.StateKeyMinecraftVersion)).Return("1.20.0")
-		stateRepository.EXPECT().SetState(gomock.Eq(serverjar.StateKeyMinecraftVersion), gomock.Eq("1.20.1")).Return(nil)
+		stateRepository.EXPECT().GetState(gomock.Any(), gomock.Eq(serverjar.StateKeyMinecraftVersion)).Return("1.20.0", nil)
+		stateRepository.EXPECT().SetState(gomock.Any(), gomock.Eq(serverjar.StateKeyMinecraftVersion), gomock.Eq("1.20.1")).Return(nil)
 
 		sut := serverjar.NewServerJarMiddleware(launcherMetaClient, http.DefaultClient)
 
@@ -179,8 +179,8 @@ var _ = Describe("ServerJarMiddleware", func() {
 		envProvider.EXPECT().GetDataPath(gomock.Eq("servers.d"), gomock.Eq("1.20.1.jar")).AnyTimes().Return(filepath.Join(tempDir, "servers.d/1.20.1.jar"))
 		envProvider.EXPECT().GetDataPath(gomock.Eq("gamedata")).AnyTimes().Return(filepath.Join(tempDir, "gamedata"))
 
-		stateRepository.EXPECT().GetState(gomock.Eq(serverjar.StateKeyMinecraftVersion)).Return("1.20.1")
-		stateRepository.EXPECT().SetState(gomock.Eq(serverjar.StateKeyMinecraftVersion), gomock.Eq("1.20.1")).Return(nil)
+		stateRepository.EXPECT().GetState(gomock.Any(), gomock.Eq(serverjar.StateKeyMinecraftVersion)).Return("1.20.1", nil)
+		stateRepository.EXPECT().SetState(gomock.Any(), gomock.Eq(serverjar.StateKeyMinecraftVersion), gomock.Eq("1.20.1")).Return(nil)
 
 		sut := serverjar.NewServerJarMiddleware(launcherMetaClient, http.DefaultClient)
 

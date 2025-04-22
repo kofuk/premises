@@ -51,11 +51,11 @@ func (m *WorldMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 				return err
 			}
 			c.Settings().SetWorldResourceID(worldResourceID)
-			oldResourceID, _ = c.State().GetState(StateKeyWorldKey).(string)
+			oldResourceID, _ = c.State().GetState(c.Context(), StateKeyWorldKey)
 		}
 
 		// just in case
-		c.State().SetState(StateKeyWorldKey, nil)
+		c.State().RemoveState(c.Context(), StateKeyWorldKey)
 
 		if isNewWorld || worldResourceID != oldResourceID {
 			// In this case, we don't need data of previously launched world.
@@ -80,7 +80,7 @@ func (m *WorldMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 			if err != nil {
 				return errors.Join(err, innerError)
 			} else {
-				c.State().SetState(StateKeyWorldKey, worldKey)
+				c.State().SetState(c.Context(), StateKeyWorldKey, worldKey)
 			}
 		}
 
