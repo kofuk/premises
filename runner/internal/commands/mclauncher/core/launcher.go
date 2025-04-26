@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"log/slog"
 	"math/rand/v2"
 	"time"
 
@@ -15,7 +16,9 @@ func (l *LauncherCore) executeWithBackOff(c *LauncherContext, cmdline []string, 
 	var err error
 	for {
 		for _, listener := range l.beforeLaunchListeners {
-			listener(c)
+			if err := listener(c); err != nil {
+				slog.Error(fmt.Sprintf("failed to execute before launch listener: %s", err))
+			}
 		}
 
 		err = l.CommandExecutor.Run(c.Context(), cmdline[0], cmdline[1:], system.WithWorkingDir(workDir))

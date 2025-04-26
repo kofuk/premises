@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
-	"github.com/kofuk/premises/runner/internal/commands/mclauncher/game"
-	"github.com/kofuk/premises/runner/internal/env"
+	"github.com/kofuk/premises/runner/internal/commands/mclauncher/quickundo"
+	"github.com/kofuk/premises/runner/internal/commands/mclauncher/rcon"
 	"github.com/kofuk/premises/runner/internal/exterior"
 	"github.com/kofuk/premises/runner/internal/rpc"
 	"github.com/kofuk/premises/runner/internal/rpc/types"
@@ -19,19 +18,31 @@ import (
 )
 
 type RPCHandler struct {
-	s    *rpc.Server
-	game *game.Launcher
+	s                *rpc.Server
+	quickUndoService *quickundo.QuickUndoService
+	rconClient       *rcon.Rcon
 }
 
-func NewRPCHandler(s *rpc.Server, game *game.Launcher) *RPCHandler {
+func NewRPCHandler(s *rpc.Server, quickUndoService *quickundo.QuickUndoService, rconClient *rcon.Rcon) *RPCHandler {
 	return &RPCHandler{
-		s:    s,
-		game: game,
+		s:                s,
+		quickUndoService: quickUndoService,
+		rconClient:       rconClient,
 	}
 }
 
 func (h *RPCHandler) HandleGameStop(ctx context.Context, req *rpc.AbstractRequest) error {
-	h.game.Stop(ctx)
+	if err := h.rconClient.Stop(); err != nil {
+		return err
+	}
+
+	exterior.DispatchEvent(ctx, runner.Event{
+		Type: runner.EventStatus,
+		Status: &runner.StatusExtra{
+			EventCode: entity.EventStopping,
+		},
+	})
+
 	return nil
 }
 
@@ -42,14 +53,12 @@ func (h *RPCHandler) HandleSnapshotCreate(ctx context.Context, req *rpc.Abstract
 	}
 
 	go func() {
-		if err := h.game.SaveAll(); err != nil {
-			slog.Error("Failed to run save-all", slog.Any("error", err))
+		if err := h.rconClient.SaveAll(); err != nil {
+			slog.Error(fmt.Sprintf("Failed to run save-all: %s", err))
 			return
 		}
 
-		if err := rpc.ToSnapshotHelper.Call(ctx, "snapshot/create", types.SnapshotHelperInput{
-			Slot: input.Slot,
-		}, nil); err != nil {
+		if err := h.quickUndoService.CreateSnapshot(ctx, input.Slot); err != nil {
 			slog.Error("Failed to create snapshot", slog.Any("error", err))
 
 			exterior.DispatchEvent(ctx, runner.Event{
@@ -89,21 +98,7 @@ func (h *RPCHandler) HandleSnapshotUndo(ctx context.Context, req *rpc.AbstractRe
 		ctx, span := tracer.Start(ctx, "Revert to snapshot")
 		defer span.End()
 
-		if _, err := os.Stat(env.DataPath(fmt.Sprintf("gamedata/ss@quick%d/world", input.Slot))); err != nil {
-			span.SetStatus(codes.Error, err.Error())
-
-			exterior.DispatchEvent(ctx, runner.Event{
-				Type: runner.EventInfo,
-				Info: &runner.InfoExtra{
-					InfoCode: entity.InfoNoSnapshot,
-					Actor:    input.Actor,
-					IsError:  true,
-				},
-			})
-			return
-		}
-
-		if err := h.game.QuickUndo(ctx, input.Slot); err != nil {
+		if err := h.quickUndoService.RestartWithSnapshot(ctx, input.Slot); err != nil {
 			span.SetStatus(codes.Error, err.Error())
 
 			slog.Error("Unable to quick-undo", slog.Any("error", err))

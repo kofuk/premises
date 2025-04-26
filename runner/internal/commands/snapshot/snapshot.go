@@ -76,6 +76,21 @@ func Run(ctx context.Context, args []string) int {
 			Path: info.Path,
 		}, nil
 	})
+	rpc.DefaultServer.RegisterMethod("snapshot/stat", func(ctx context.Context, req *rpc.AbstractRequest) (any, error) {
+		var ss types.SnapshotHelperInput
+		if err := req.Bind(&ss); err != nil {
+			return nil, err
+		}
+
+		if _, err := os.Stat(env.DataPath(fmt.Sprintf("gamedata/ss@quick%d/world", ss.Slot))); err != nil {
+			return nil, err
+		}
+
+		return types.SnapshotHelperOutput{
+			ID:   fmt.Sprintf("quick%d", ss.Slot),
+			Path: env.DataPath(fmt.Sprintf("gamedata/ss@quick%d", ss.Slot)),
+		}, nil
+	})
 	rpc.DefaultServer.RegisterNotifyMethod("base/stop", func(ctx context.Context, req *rpc.AbstractRequest) error {
 		cancelFn()
 		return nil

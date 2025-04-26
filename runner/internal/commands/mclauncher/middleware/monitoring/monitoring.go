@@ -19,12 +19,10 @@ type MonitoringMiddleware struct {
 
 var _ core.Middleware = (*MonitoringMiddleware)(nil)
 
-func NewMonitoringMiddleware() *MonitoringMiddleware {
-	return &MonitoringMiddleware{}
-}
-
-func (m *MonitoringMiddleware) AddWatchdog(w watchdog.Watchdog) {
-	m.watchdogs = append(m.watchdogs, w)
+func NewMonitoringMiddleware(watchdogs ...watchdog.Watchdog) *MonitoringMiddleware {
+	return &MonitoringMiddleware{
+		watchdogs: watchdogs,
+	}
 }
 
 func (m *MonitoringMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {

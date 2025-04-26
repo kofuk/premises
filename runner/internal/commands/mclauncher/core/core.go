@@ -63,7 +63,7 @@ func NewLauncherCore(settings SettingsRepository, env env.EnvProvider, state Sta
 		settings:        settings,
 		env:             env,
 		state:           state,
-		CommandExecutor: NewGameExecutor(),
+		CommandExecutor: system.DefaultExecutor,
 	}
 
 	launcher.handler = launcher.startMinecraft
@@ -75,7 +75,7 @@ func (l *LauncherCore) Use(m Middleware) {
 	l.handler = m.Wrap(l.handler)
 }
 
-type BeforeLaunchListener func(c *LauncherContext)
+type BeforeLaunchListener func(c *LauncherContext) error
 
 func (l *LauncherCore) AddBeforeLaunchListener(listener BeforeLaunchListener) {
 	l.beforeLaunchListeners = append(l.beforeLaunchListeners, listener)
@@ -92,11 +92,4 @@ func (l *LauncherCore) createContext(ctx context.Context) *LauncherContext {
 
 func (l *LauncherCore) Start(ctx context.Context) error {
 	return l.handler(l.createContext(ctx))
-}
-
-func (l *LauncherCore) ForceRestart() error {
-	if ge, ok := l.CommandExecutor.(*GameExecutor); ok {
-		return ge.Kill()
-	}
-	return errors.New("executor not supports force restart")
 }
