@@ -62,8 +62,7 @@ var _ = Describe("Monitoring Middleware", func() {
 			wd.EXPECT().Check(gomock.Any(), gomock.Any(), &watchdog.Status{Online: false}).AnyTimes().Return(nil),
 		)
 
-		sut := monitoring.NewMonitoringMiddleware()
-		sut.AddWatchdog(wd)
+		sut := monitoring.NewMonitoringMiddleware(wd)
 
 		launcher.Use(&sleepMiddleware{duration: 3 * time.Second})
 		launcher.Use(sut)

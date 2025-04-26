@@ -1,4 +1,4 @@
-package core
+package quickundo
 
 import (
 	"context"
@@ -9,17 +9,17 @@ import (
 	"github.com/kofuk/premises/runner/internal/system"
 )
 
-type GameExecutor struct {
+type KillableCommandExecutor struct {
 	pid int
 }
 
-func NewGameExecutor() *GameExecutor {
-	return &GameExecutor{}
+func NewKillableCommandExecutor() *KillableCommandExecutor {
+	return &KillableCommandExecutor{}
 }
 
-var _ system.CommandExecutor = (*GameExecutor)(nil)
+var _ system.CommandExecutor = (*KillableCommandExecutor)(nil)
 
-func (e *GameExecutor) Run(ctx context.Context, command string, args []string, opts ...system.CmdOption) error {
+func (e *KillableCommandExecutor) Run(ctx context.Context, command string, args []string, opts ...system.CmdOption) error {
 	if e.pid != 0 {
 		return errors.New("process already running")
 	}
@@ -42,7 +42,7 @@ func (e *GameExecutor) Run(ctx context.Context, command string, args []string, o
 	return err
 }
 
-func (e *GameExecutor) Kill() error {
+func (e *KillableCommandExecutor) Kill() error {
 	if e.pid == 0 {
 		return nil
 	}
