@@ -18,7 +18,7 @@
   "status.code_4": "Downloading world…",
   "status.code_5": "Processing world data…",
   "status.code_6": "Uploading world data…",
-  "status.code_7": "Loading the game…",
+  "status.code_7": "Preparing…",
   "status.code_8": "Running",
   "status.code_9": "Stopping…",
   "status.code_10": "Game has been crashed",

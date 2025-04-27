@@ -36,6 +36,8 @@ func (l *LivenessWatchdog) Name() string {
 
 func (l *LivenessWatchdog) Check(ctx context.Context, watchID int, status *Status) error {
 	if l.prevOnline && watchID%30 != 0 {
+		// Assume that the server's liveness is not changing
+		status.Online = l.prevOnline
 		return nil
 	}
 
