@@ -8,7 +8,6 @@ import (
 	"syscall"
 
 	"github.com/gorcon/rcon"
-	"github.com/kofuk/premises/runner/internal/env"
 	"github.com/spf13/cobra"
 	"golang.org/x/sys/unix"
 )
@@ -32,12 +31,7 @@ func NewRconCommand() *cobra.Command {
 
 	flags := cmd.Flags()
 
-	defaultAddr := ":25575"
-	if env.IsDevEnv() {
-		defaultAddr = "127.0.0.2:25575"
-	}
-
-	flags.StringVarP(&rcon.Address, "address", "a", defaultAddr, "Address of the RCON server")
+	flags.StringVarP(&rcon.Address, "address", "a", "127.0.0.2:25575", "Address of the RCON server")
 	flags.StringVarP(&rcon.Password, "password", "p", "x", "Password for the RCON server")
 
 	return cmd

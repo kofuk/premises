@@ -17,7 +17,7 @@ type LivenessWatchdog struct {
 var _ Watchdog = (*LivenessWatchdog)(nil)
 
 func NewLivenessWatchdog(optionalAddr ...string) *LivenessWatchdog {
-	addr := "127.0.0.1.32109"
+	addr := "127.0.0.2:32109"
 	if len(optionalAddr) > 0 {
 		addr = optionalAddr[0]
 	}
@@ -44,6 +44,7 @@ func (l *LivenessWatchdog) Check(ctx context.Context, watchID int, status *Statu
 		slog.Debug(fmt.Sprintf("Server is not healthy: %v", err))
 	} else {
 		conn.Close()
+		slog.Debug("Server is healthy")
 	}
 
 	online := err == nil

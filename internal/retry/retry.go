@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"log/slog"
 	"math/rand"
 	"time"
 )
@@ -61,6 +62,8 @@ func Retry[T any](fn func() (T, error), failAfter time.Duration) (T, error) {
 		if rr.finished() {
 			return *new(T), err
 		}
+
+		slog.Debug("Retrying...", slog.String("error", err.Error()))
 
 		rr.wait()
 	}
