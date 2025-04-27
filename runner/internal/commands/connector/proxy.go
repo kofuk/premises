@@ -41,7 +41,7 @@ func (p *Proxy) Run() error {
 		return err
 	}
 
-	upstrm, err := net.Dial("tcp", "localhost:32109")
+	upstrm, err := net.Dial("tcp", "127.0.0.2:32109")
 	if err != nil {
 		return err
 	}

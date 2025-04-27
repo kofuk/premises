@@ -2,8 +2,12 @@ package watchdog
 
 import (
 	"context"
+	"log/slog"
 
+	"github.com/kofuk/premises/internal/entity"
+	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/rcon"
+	"github.com/kofuk/premises/runner/internal/exterior"
 )
 
 // This is not a real watchdog, but we'll use watchdog mechanism
@@ -34,6 +38,8 @@ func (l *OneTimeInitWatchdog) Check(ctx context.Context, watchID int, status *St
 		return nil
 	}
 
+	slog.Debug("Server became online, invoking one-time initialization")
+
 	for _, user := range l.ops {
 		if err := l.rcon.AddToOp(user); err != nil {
 
@@ -46,7 +52,12 @@ func (l *OneTimeInitWatchdog) Check(ctx context.Context, watchID int, status *St
 		}
 	}
 
-	// Emit a running event
+	exterior.SendEvent(ctx, runner.Event{
+		Type: runner.EventStatus,
+		Status: &runner.StatusExtra{
+			EventCode: entity.EventRunning,
+		},
+	})
 
 	l.prevOnline = true
 

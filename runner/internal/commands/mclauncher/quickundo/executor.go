@@ -29,11 +29,11 @@ func (e *KillableCommandExecutor) Run(ctx context.Context, command string, args 
 		opt(cmd)
 	}
 
-	e.pid = cmd.Process.Pid
-
 	if err := cmd.Start(); err != nil {
 		return err
 	}
+
+	e.pid = cmd.Process.Pid
 
 	err := cmd.Wait()
 
