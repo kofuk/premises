@@ -29,7 +29,7 @@ x-common-settings: &settings
 
 services:
   nginx:
-    image: nginxinc/nginx-unprivileged:alpine-slim
+    image: nginxinc/nginx-unprivileged:1.27.4-alpine-slim
     restart: always
     volumes:
       - type: bind
@@ -93,7 +93,7 @@ services:
     restart: always
 
   redis:
-    image: valkey/valkey:8
+    image: valkey/valkey:8.1.1
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 1s
@@ -106,7 +106,7 @@ services:
         target: /data
 
   postgres:
-    image: postgres:17
+    image: postgres:17.4
     environment:
       POSTGRES_USER: premises
       POSTGRES_DB: premises
