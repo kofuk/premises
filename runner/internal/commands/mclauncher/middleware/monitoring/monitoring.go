@@ -43,6 +43,8 @@ func (m *MonitoringMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 
 			watchID := 0
 
+			prevOnline := false
+
 			for {
 				select {
 				case <-ctx.Done():
@@ -53,6 +55,25 @@ func (m *MonitoringMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 				for _, w := range m.watchdogs {
 					if err := w.Check(ctx, watchID, status); err != nil {
 						slog.Error(fmt.Sprintf("Watchdog %s raised an error: %v", w.Name(), err))
+					}
+				}
+
+				if prevOnline != status.Online {
+					prevOnline = status.Online
+					if status.Online {
+						exterior.SendEvent(c.Context(), runner.Event{
+							Type: runner.EventStatus,
+							Status: &runner.StatusExtra{
+								EventCode: entity.EventRunning,
+							},
+						})
+					} else {
+						exterior.SendEvent(c.Context(), runner.Event{
+							Type: runner.EventStatus,
+							Status: &runner.StatusExtra{
+								EventCode: entity.EventLoading,
+							},
+						})
 					}
 				}
 
