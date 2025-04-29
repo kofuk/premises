@@ -26,7 +26,7 @@ func NewLivenessWatchdog(optionalAddr ...string) *LivenessWatchdog {
 	return &LivenessWatchdog{
 		addr: addr,
 		dialer: net.Dialer{
-			Timeout: time.Second * 5,
+			Timeout: time.Second * 3,
 		},
 	}
 }
@@ -36,7 +36,7 @@ func (l *LivenessWatchdog) Name() string {
 }
 
 func (l *LivenessWatchdog) Check(c core.LauncherContext, watchID int, status *Status) error {
-	if l.prevOnline && watchID%30 != 0 {
+	if l.prevOnline || watchID%3 != 0 {
 		// Assume that the server's liveness is not changing
 		status.Online = l.prevOnline
 		return nil
