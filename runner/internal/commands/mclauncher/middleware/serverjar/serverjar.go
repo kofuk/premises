@@ -32,7 +32,7 @@ func NewServerJarMiddleware(launcherMetaClient *launchermeta.LauncherMetaClient,
 	}
 }
 
-func (m *ServerJarMiddleware) downloadMatchingVersion(c *core.LauncherContext, desiredVersion string, destination string) error {
+func (m *ServerJarMiddleware) downloadMatchingVersion(c core.LauncherContext, desiredVersion string, destination string) error {
 	versions, err := retry.Retry(func() (*launchermeta.VersionManifest, error) {
 		return m.launcherMetaClient.GetVersionInfo(c.Context())
 	}, time.Minute)
@@ -107,7 +107,7 @@ func (m *ServerJarMiddleware) downloadMatchingVersion(c *core.LauncherContext, d
 	return nil
 }
 
-func (m *ServerJarMiddleware) downloadIfNotExists(c *core.LauncherContext) error {
+func (m *ServerJarMiddleware) downloadIfNotExists(c core.LauncherContext) error {
 	version := c.Settings().GetMinecraftVersion()
 	serverPath := c.Env().GetDataPath("servers.d", version+".jar")
 
@@ -131,7 +131,7 @@ func (m *ServerJarMiddleware) downloadIfNotExists(c *core.LauncherContext) error
 	return nil
 }
 
-func (m *ServerJarMiddleware) cleanupDataDir(c *core.LauncherContext) error {
+func (m *ServerJarMiddleware) cleanupDataDir(c core.LauncherContext) error {
 	gameDataDir := c.Env().GetDataPath("gamedata")
 	ents, err := os.ReadDir(gameDataDir)
 	if err != nil {
@@ -152,7 +152,7 @@ func (m *ServerJarMiddleware) cleanupDataDir(c *core.LauncherContext) error {
 }
 
 func (m *ServerJarMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
-	return func(c *core.LauncherContext) error {
+	return func(c core.LauncherContext) error {
 		if err := m.downloadIfNotExists(c); err != nil {
 			return err
 		}

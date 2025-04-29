@@ -1,7 +1,6 @@
 package monitoring_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -21,7 +20,7 @@ type sleepMiddleware struct {
 var _ core.Middleware = (*sleepMiddleware)(nil)
 
 func (m *sleepMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
-	return func(c *core.LauncherContext) error {
+	return func(c core.LauncherContext) error {
 		time.Sleep(m.duration)
 		return next(c)
 	}
@@ -50,12 +49,12 @@ var _ = Describe("Monitoring Middleware", func() {
 		wd := watchdog.NewMockWatchdog(ctrl)
 		gomock.InOrder(
 			wd.EXPECT().Check(gomock.Any(), 0, &watchdog.Status{Online: false}).Do(
-				func(ctx context.Context, id int, status *watchdog.Status) {
+				func(c core.LauncherContext, id int, status *watchdog.Status) {
 					status.Online = true
 				},
 			).Return(nil),
 			wd.EXPECT().Check(gomock.Any(), 1, &watchdog.Status{Online: false}).Do(
-				func(ctx context.Context, id int, status *watchdog.Status) {
+				func(c core.LauncherContext, id int, status *watchdog.Status) {
 					status.Online = true
 				},
 			).Return(nil),

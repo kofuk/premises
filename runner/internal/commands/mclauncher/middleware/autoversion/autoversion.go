@@ -18,7 +18,7 @@ func NewAutoVersionMiddleware() *AutoVersionMiddleware {
 }
 
 func (m *AutoVersionMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
-	return func(c *core.LauncherContext) error {
+	return func(c core.LauncherContext) error {
 		if c.Settings().AutoVersionEnabled() {
 			if version, err := leveldat.GetCanonicalServerVersion(c.Env().GetDataPath("gamedata/world/level.dat")); err != nil {
 				// Don't exit here, just log the error

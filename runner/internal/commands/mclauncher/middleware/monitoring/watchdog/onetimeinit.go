@@ -1,10 +1,12 @@
 package watchdog
 
 import (
-	"context"
 	"log/slog"
 
+	"github.com/kofuk/premises/internal/entity/runner"
+	"github.com/kofuk/premises/runner/internal/commands/mclauncher/core"
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/rcon"
+	"github.com/kofuk/premises/runner/internal/exterior"
 )
 
 // This is not a real watchdog, but we'll use watchdog mechanism
@@ -30,10 +32,12 @@ func (l *OneTimeInitWatchdog) Name() string {
 	return "OneTimeInitWatchdog"
 }
 
-func (l *OneTimeInitWatchdog) Check(ctx context.Context, watchID int, status *Status) error {
+func (l *OneTimeInitWatchdog) Check(c core.LauncherContext, watchID int, status *Status) error {
 	if !status.Online || l.prevOnline {
 		return nil
 	}
+
+	l.prevOnline = true
 
 	slog.Debug("Server became online, invoking one-time initialization")
 
@@ -49,7 +53,20 @@ func (l *OneTimeInitWatchdog) Check(ctx context.Context, watchID int, status *St
 		}
 	}
 
-	l.prevOnline = true
+	data := &runner.StartedExtra{}
+	data.ServerVersion = c.Settings().GetMinecraftVersion()
+	data.World.Name = c.Settings().GetWorldName()
+	seed, err := l.rcon.Seed()
+	if err != nil {
+		slog.Error("Failed to retrieve seed", slog.Any("error", err))
+		// We don't want to fail the startup if we can't get the seed
+	}
+	data.World.Seed = string(seed)
+
+	exterior.SendEvent(c.Context(), runner.Event{
+		Type:    runner.EventStarted,
+		Started: data,
+	})
 
 	return nil
 }

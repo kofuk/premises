@@ -24,7 +24,7 @@ func NewQuickUndoService(rpcClient *rpc.Client) *QuickUndoService {
 	}
 }
 
-func (s *QuickUndoService) BeforeLaunch(c *core.LauncherContext) error {
+func (s *QuickUndoService) BeforeLaunch(c core.LauncherContext) error {
 	if s.restorePath == "" {
 		// We are not in a state to restore a snapshot.
 		return nil

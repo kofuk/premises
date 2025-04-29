@@ -1,11 +1,12 @@
 package watchdog
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"net"
 	"time"
+
+	"github.com/kofuk/premises/runner/internal/commands/mclauncher/core"
 )
 
 type LivenessWatchdog struct {
@@ -34,14 +35,14 @@ func (l *LivenessWatchdog) Name() string {
 	return "LivenessWatchdog"
 }
 
-func (l *LivenessWatchdog) Check(ctx context.Context, watchID int, status *Status) error {
+func (l *LivenessWatchdog) Check(c core.LauncherContext, watchID int, status *Status) error {
 	if l.prevOnline && watchID%30 != 0 {
 		// Assume that the server's liveness is not changing
 		status.Online = l.prevOnline
 		return nil
 	}
 
-	conn, err := l.dialer.DialContext(ctx, "tcp", l.addr)
+	conn, err := l.dialer.DialContext(c.Context(), "tcp", l.addr)
 	if err != nil {
 		slog.Debug(fmt.Sprintf("Server is not healthy: %v", err))
 	} else {

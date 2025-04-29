@@ -26,7 +26,7 @@ func NewMonitoringMiddleware(watchdogs ...watchdog.Watchdog) *MonitoringMiddlewa
 }
 
 func (m *MonitoringMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
-	return func(c *core.LauncherContext) error {
+	return func(c core.LauncherContext) error {
 		exterior.SendEvent(c.Context(), runner.Event{
 			Type: runner.EventStatus,
 			Status: &runner.StatusExtra{
@@ -53,7 +53,7 @@ func (m *MonitoringMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 				}
 				status := &watchdog.Status{}
 				for _, w := range m.watchdogs {
-					if err := w.Check(ctx, watchID, status); err != nil {
+					if err := w.Check(c, watchID, status); err != nil {
 						slog.Error(fmt.Sprintf("Watchdog %s raised an error: %v", w.Name(), err))
 					}
 				}

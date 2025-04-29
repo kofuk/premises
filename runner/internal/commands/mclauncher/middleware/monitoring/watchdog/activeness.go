@@ -1,10 +1,10 @@
 package watchdog
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 
+	"github.com/kofuk/premises/runner/internal/commands/mclauncher/core"
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/rcon"
 )
 
@@ -28,7 +28,7 @@ func (w *ActivenessWatchdog) Name() string {
 	return "ActivenessWatchdog"
 }
 
-func (w *ActivenessWatchdog) Check(ctx context.Context, watchID int, status *Status) error {
+func (w *ActivenessWatchdog) Check(c core.LauncherContext, watchID int, status *Status) error {
 	if w.timeoutMinutes <= 0 {
 		// No timeout set, so no need to check
 		return nil

@@ -10,30 +10,30 @@ import (
 
 var ErrRestart = errors.New("restart required")
 
-type LauncherContext struct {
+type launcherContext struct {
 	ctx      context.Context
 	settings SettingsRepository
 	env      env.EnvProvider
 	state    StateRepository
 }
 
-func (c *LauncherContext) Context() context.Context {
+func (c *launcherContext) Context() context.Context {
 	return c.ctx
 }
 
-func (c *LauncherContext) Settings() SettingsRepository {
+func (c *launcherContext) Settings() SettingsRepository {
 	return c.settings
 }
 
-func (c *LauncherContext) Env() env.EnvProvider {
+func (c *launcherContext) Env() env.EnvProvider {
 	return c.env
 }
 
-func (c *LauncherContext) State() StateRepository {
+func (c *launcherContext) State() StateRepository {
 	return c.state
 }
 
-type HandlerFunc func(c *LauncherContext) error
+type HandlerFunc func(c LauncherContext) error
 
 type Middleware interface {
 	Wrap(next HandlerFunc) HandlerFunc
@@ -42,7 +42,7 @@ type Middleware interface {
 type stopMiddleware struct{}
 
 func (m *stopMiddleware) Wrap(next HandlerFunc) HandlerFunc {
-	return func(c *LauncherContext) error {
+	return func(c LauncherContext) error {
 		return nil
 	}
 }
@@ -75,14 +75,14 @@ func (l *LauncherCore) Use(m Middleware) {
 	l.handler = m.Wrap(l.handler)
 }
 
-type BeforeLaunchListener func(c *LauncherContext) error
+type BeforeLaunchListener func(c LauncherContext) error
 
 func (l *LauncherCore) AddBeforeLaunchListener(listener BeforeLaunchListener) {
 	l.beforeLaunchListeners = append(l.beforeLaunchListeners, listener)
 }
 
-func (l *LauncherCore) createContext(ctx context.Context) *LauncherContext {
-	return &LauncherContext{
+func (l *LauncherCore) createContext(ctx context.Context) LauncherContext {
+	return &launcherContext{
 		ctx:      ctx,
 		settings: l.settings,
 		env:      l.env,

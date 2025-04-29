@@ -10,9 +10,9 @@
 package watchdog
 
 import (
-	context "context"
 	reflect "reflect"
 
+	core "github.com/kofuk/premises/runner/internal/commands/mclauncher/core"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -41,17 +41,17 @@ func (m *MockWatchdog) EXPECT() *MockWatchdogMockRecorder {
 }
 
 // Check mocks base method.
-func (m *MockWatchdog) Check(ctx context.Context, watchID int, status *Status) error {
+func (m *MockWatchdog) Check(c core.LauncherContext, watchID int, status *Status) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Check", ctx, watchID, status)
+	ret := m.ctrl.Call(m, "Check", c, watchID, status)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Check indicates an expected call of Check.
-func (mr *MockWatchdogMockRecorder) Check(ctx, watchID, status any) *gomock.Call {
+func (mr *MockWatchdogMockRecorder) Check(c, watchID, status any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Check", reflect.TypeOf((*MockWatchdog)(nil).Check), ctx, watchID, status)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Check", reflect.TypeOf((*MockWatchdog)(nil).Check), c, watchID, status)
 }
 
 // Name mocks base method.
