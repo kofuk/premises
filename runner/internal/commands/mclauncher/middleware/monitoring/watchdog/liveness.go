@@ -36,10 +36,18 @@ func (l *LivenessWatchdog) Name() string {
 }
 
 func (l *LivenessWatchdog) Check(c core.LauncherContext, watchID int, status *Status) error {
-	if l.prevOnline || watchID%3 != 0 {
-		// Assume that the server's liveness is not changing
-		status.Online = l.prevOnline
-		return nil
+	if l.prevOnline {
+		// If the previous check was successful, we perform a check every 10 seconds.
+		if watchID%10 != 0 {
+			status.Online = l.prevOnline
+			return nil
+		}
+	} else {
+		// If the previous check was failed, we perform a check every 3 second.
+		if watchID%3 != 0 {
+			status.Online = l.prevOnline
+			return nil
+		}
 	}
 
 	conn, err := l.dialer.DialContext(c.Context(), "tcp", l.addr)
