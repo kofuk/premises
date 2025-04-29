@@ -6,8 +6,9 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/kofuk/premises/runner/internal/commands/mclauncher/core/util"
+	coreUtil "github.com/kofuk/premises/runner/internal/commands/mclauncher/core/util"
 	"github.com/kofuk/premises/runner/internal/system"
+	"github.com/kofuk/premises/runner/internal/util"
 )
 
 func (l *LauncherCore) executeWithBackOff(c LauncherContext, cmdline []string, workDir string) error {
@@ -46,7 +47,7 @@ func (l *LauncherCore) startMinecraft(c LauncherContext) error {
 		// If this is JAR file, execute it with Java.
 		memSize := c.Settings().GetAllowedMemSize()
 		commandLine = []string{
-			util.FindJavaPath(c.Context()),
+			coreUtil.FindJavaPath(c.Context()),
 			fmt.Sprintf("-Xmx%dM", memSize),
 			fmt.Sprintf("-Xms%dM", memSize),
 			"-jar",
