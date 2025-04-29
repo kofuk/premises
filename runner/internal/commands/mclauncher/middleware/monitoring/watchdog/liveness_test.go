@@ -13,7 +13,7 @@ import (
 var _ = Describe("LivenessWatchdog", func() {
 	var (
 		ctrl *gomock.Controller
-		lc *core.MockLauncherContext
+		lc   *core.MockLauncherContext
 	)
 
 	BeforeEach(func() {
