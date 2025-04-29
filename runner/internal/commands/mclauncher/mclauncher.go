@@ -46,7 +46,16 @@ func Run(ctx context.Context, args []string) int {
 	quickUndoService.Register(launcher)
 
 	worldService := worldService.NewWorldService(config.ControlPanel, config.AuthKey, otelhttp.DefaultClient)
-	launchermetaClient := launchermeta.NewLauncherMetaClient(launchermeta.WithHTTPClient(otelhttp.DefaultClient))
+
+	launchermetaOptions := []launchermeta.Option{
+		launchermeta.WithHTTPClient(otelhttp.DefaultClient),
+	}
+	if config.GameConfig.Server.ManifestOverride != "" {
+		launchermetaOptions = append(launchermetaOptions, launchermeta.WithManifestURL(config.GameConfig.Server.ManifestOverride))
+	}
+	launchermetaClient := launchermeta.NewLauncherMetaClient(
+		launchermetaOptions...,
+	)
 
 	rconClient := rcon.NewRcon(rcon.NewRconExecutor("127.0.0.2:25575", "x"))
 
