@@ -29,7 +29,7 @@ x-common-settings: &settings
 
 services:
   nginx:
-    image: nginxinc/nginx-unprivileged:1.27.4-alpine-slim
+    image: nginxinc/nginx-unprivileged:1.28.0-alpine-slim
     restart: always
     volumes:
       - type: bind
