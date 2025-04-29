@@ -5,210 +5,170 @@ import (
 	"io"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func Test_readVarInt(t *testing.T) {
-	cases := []struct {
-		name         string
-		input        []byte
-		expected     int
-		expectsError bool
-	}{
-		{
-			name:         "zero",
-			input:        []byte{0x00},
-			expected:     0,
-			expectsError: false,
-		},
-		{
-			name:         "single byte",
-			input:        []byte{0x7F},
-			expected:     0x7F,
-			expectsError: false,
-		},
-		{
-			name:         "two bytes",
-			input:        []byte{0x81, 0x7F}, // 00011 1111 1000 0001
-			expected:     0x3F81,
-			expectsError: false,
-		},
-		{
-			name:         "Four bytes",
-			input:        []byte{0x83, 0x80, 0x80, 0x00},
-			expected:     0x00000003,
-			expectsError: false,
-		},
-		{
-			name:         "malformed 1",
-			input:        []byte{0xFF, 0xFF, 0xFF, 0xFF},
-			expectsError: true,
-		},
-		{
-			name:         "malformed 2",
-			input:        []byte{0x81, 0x81},
-			expectsError: true,
-		},
-	}
+var _ = Describe("Protocol", func() {
+	DescribeTable("readVarInt", func(input []byte, expected int, expectsError bool) {
+		r := bytes.NewReader(input)
+		value, err := readVarInt(r)
 
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			r := bytes.NewReader(tt.input)
-			value, err := readVarInt(r)
+		if expectsError {
+			Expect(err).To(HaveOccurred())
+		} else {
+			Expect(err).NotTo(HaveOccurred())
+			Expect(value).To(Equal(expected))
+		}
+	},
+		Entry(
+			"zero",
+			[]byte{0x00},
+			0,
+			false,
+		),
+		Entry(
+			"single byte",
+			[]byte{0x7F, 0x01},
+			0x7F,
+			false,
+		),
+		Entry(
+			"two bytes",
+			[]byte{0x81, 0x7F}, // 00011 1111 1000 0001
+			0x3F81,
+			false,
+		),
+		Entry(
+			"four bytes",
+			[]byte{0x83, 0x80, 0x80, 0x00},
+			0x00000003,
+			false,
+		),
+		Entry(
+			"malformed 1",
+			[]byte{0xFF, 0xFF, 0xFF, 0xFF},
+			0,
+			true,
+		),
+		Entry(
+			"malmalformed 2",
+			[]byte{0x81, 0x81},
+			0,
+			true,
+		),
+	)
 
-			if tt.expectsError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, value)
-			}
-		})
-	}
-}
+	DescribeTable("writeVarInt", func(input int, expected []byte, expectsError bool) {
+		w := bytes.NewBuffer(nil)
+		err := writeVarInt(w, input)
 
-func Test_writeVarInt(t *testing.T) {
-	cases := []struct {
-		name         string
-		input        int
-		expected     []byte
-		expectsError bool
-	}{
-		{
-			name:         "zero",
-			input:        0,
-			expected:     []byte{0x00},
-			expectsError: false,
-		},
-		{
-			name:         "one byte",
-			input:        0x7F,
-			expected:     []byte{0x7F},
-			expectsError: false,
-		},
-		{
-			name:         "two byte 1",
-			input:        0xFF,
-			expected:     []byte{0xFF, 0x01},
-			expectsError: false,
-		},
-		{
-			name:         "two byte 2",
-			input:        0x3FFF,
-			expected:     []byte{0xFF, 0x7F},
-			expectsError: false,
-		},
-	}
+		if expectsError {
+			Expect(err).To(HaveOccurred())
+		} else {
+			Expect(err).NotTo(HaveOccurred())
+			Expect(w.Bytes()).To(Equal(expected))
+		}
+	},
+		Entry(
+			"zero",
+			0,
+			[]byte{0x00},
+			false,
+		),
+		Entry(
+			"one byte",
+			0x7F,
+			[]byte{0x7F},
+			false,
+		),
+		Entry(
+			"two byte 1",
+			0xFF,
+			[]byte{0xFF, 0x01},
+			false,
+		),
+		Entry(
+			"two byte 2",
+			0x3FFF,
+			[]byte{0xFF, 0x7F},
+			false,
+		),
+	)
 
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			w := bytes.NewBuffer(nil)
-			err := writeVarInt(w, tt.input)
+	DescribeTable("writeShort", func(input []byte, expected int, expectsError bool) {
+		r := bytes.NewReader(input)
+		result, err := readShort(r)
 
-			if tt.expectsError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, w.Bytes())
-			}
-		})
-	}
-}
+		if expectsError {
+			Expect(err).To(HaveOccurred())
+		} else {
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(expected))
+		}
+	},
+		Entry(
+			"normal",
+			[]byte{0x02, 0x01},
+			513,
+			false,
+		),
+		Entry(
+			"too short",
+			[]byte{0x01},
+			nil,
+			true,
+		),
+	)
 
-func Test_readShort(t *testing.T) {
-	cases := []struct {
-		name         string
-		input        []byte
-		expected     int
-		expectsError bool
-	}{
-		{
-			name:     "normal",
-			input:    []byte{0x02, 0x01},
-			expected: 513,
-		},
-		{
-			name:         "too short",
-			input:        []byte{0x01},
-			expectsError: true,
-		},
-	}
+	DescribeTable("readLong", func(iput []byte, expected int, expectsError bool) {
+		r := bytes.NewReader(iput)
+		result, err := readLong(r)
 
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			r := bytes.NewReader(tt.input)
-			result, err := readShort(r)
+		if expectsError {
+			Expect(err).To(HaveOccurred())
+		} else {
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(expected))
+		}
+	},
+		Entry(
+			"normal",
+			[]byte{0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01},
+			578437695752307201,
+			false,
+		),
+		Entry(
+			"too short",
+			[]byte{0x01},
+			0,
+			true,
+		),
+	)
 
-			if tt.expectsError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, result)
-			}
-		})
-	}
-}
+	DescribeTable("writeLong", func(input int, expected []byte, expectsError bool) {
+		w := bytes.NewBuffer(nil)
+		err := writeLong(w, input)
 
-func Test_readLong(t *testing.T) {
-	cases := []struct {
-		name         string
-		input        []byte
-		expected     int
-		expectsError bool
-	}{
-		{
-			name:     "normal",
-			input:    []byte{0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01},
-			expected: 578437695752307201,
-		},
-		{
-			name:         "too short",
-			input:        []byte{0x01},
-			expectsError: true,
-		},
-	}
+		if expectsError {
+			Expect(err).To(HaveOccurred())
+		} else {
+			Expect(err).NotTo(HaveOccurred())
+			Expect(w.Bytes()).To(Equal(expected))
+		}
+	},
+		Entry(
+			"normal",
+			578437695752307201,
+			[]byte{0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01},
+			false,
+		),
+	)
+})
 
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			r := bytes.NewReader(tt.input)
-			result, err := readLong(r)
-
-			if tt.expectsError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, result)
-			}
-		})
-	}
-}
-
-func Test_writeLong(t *testing.T) {
-	cases := []struct {
-		name         string
-		input        int
-		expected     []byte
-		expectsError bool
-	}{
-		{
-			name:     "normal",
-			input:    578437695752307201,
-			expected: []byte{0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01},
-		},
-	}
-
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			w := bytes.NewBuffer(nil)
-			err := writeLong(w, tt.input)
-
-			if tt.expectsError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.expected, w.Bytes())
-			}
-		})
-	}
+func Test(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Protocol Suite")
 }
 
 type readWriteBuffer struct {

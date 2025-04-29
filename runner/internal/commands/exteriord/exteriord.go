@@ -27,7 +27,7 @@ func Run(ctx context.Context, args []string) int {
 		os.Exit(1)
 	}
 
-	ctx, cancelFn := context.WithCancel(context.Background())
+	ctx, cancelFn := context.WithCancel(ctx)
 
 	msgChan := make(chan outbound.OutboundMessage, 8)
 

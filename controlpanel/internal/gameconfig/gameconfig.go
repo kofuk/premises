@@ -25,17 +25,6 @@ func (c *Config) SetServer(version, downloadURL string) {
 	c.C.Server.DownloadUrl = downloadURL
 }
 
-var (
-	ErrMemoryTooSmall = errors.New("memory too small")
-)
-
-func calculateMemSizeForGame(availableSizeMiB int) (int, error) {
-	if availableSizeMiB < 2048 {
-		return 0, ErrMemoryTooSmall
-	}
-	return availableSizeMiB - 1024, nil
-}
-
 func (c *Config) SetDetectServerVersion(detect bool) {
 	c.C.Server.PreferDetected = detect
 }
