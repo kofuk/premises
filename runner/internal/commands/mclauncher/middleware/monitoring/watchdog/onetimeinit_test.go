@@ -28,7 +28,7 @@ var _ = Describe("OneTimeInitWatchdog", func() {
 	It("should run one time initialization when server goes online", func() {
 		executor.EXPECT().Exec("op user1").Times(1).Return("", nil)
 		executor.EXPECT().Exec("whitelist add user2").Times(1).Return("", nil)
-		executor.EXPECT().Exec("seed").Times(1).Return("seed [hogehoge]", nil)
+		executor.EXPECT().Exec("seed").Times(1).Return("Seed: [5947924885426060132]", nil)
 
 		settingsRepository := core.NewMockSettingsRepository(ctrl)
 		settingsRepository.EXPECT().GetWorldName().Return("foo")
