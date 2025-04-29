@@ -1,44 +1,41 @@
 package handler
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func TestIsAllowedPassword(t *testing.T) {
-	testcases := []struct {
-		name     string
-		password string
-		allowed  bool
-	}{
-		{
-			name:     "8 chars",
-			password: "abcd1234",
-			allowed:  true,
-		},
-		{
-			name:     "7 chars",
-			password: "abcd123",
-			allowed:  false,
-		},
-		{
-			name:     "alphabet only",
-			password: "abcdefgh",
-			allowed:  false,
-		},
-		{
-			name:     "numeric only",
-			password: "12345678",
-			allowed:  false,
-		},
-	}
+var _ = Describe("Root", func() {
+	DescribeTable("isAllowedPassword", func(password string, allowed bool) {
+		result := isAllowedPassword(password)
+		Expect(result).To(Equal(allowed))
+	},
+		Entry(
+			"8 chars",
+			"abcd1234",
+			true,
+		),
+		Entry(
+			"7 chars",
+			"abcd123",
+			false,
+		),
+		Entry(
+			"alphabet only",
+			"abcdefgh",
+			false,
+		),
+		Entry(
+			"numeric only",
+			"12345678",
+			false,
+		),
+	)
+})
 
-	for _, tt := range testcases {
-		t.Run(tt.name, func(t *testing.T) {
-			result := isAllowedPassword(tt.password)
-			assert.Equal(t, tt.allowed, result, fmt.Sprintf("Resut for %s is correct", tt.password))
-		})
-	}
+func Test(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Handler Suite")
 }

@@ -6,80 +6,90 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"testing"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func Test_handleConnection(t *testing.T) {
-	ctx := context.Background()
-	sut := NewServer("")
-	sut.RegisterMethod("foo", func(ctx context.Context, req *AbstractRequest) (any, error) {
-		var params struct {
-			Arg1 string `json:"arg1"`
+var _ = Describe("Server", func() {
+	It("should handle connection", func() {
+		sut := NewServer("")
+		sut.RegisterMethod("foo", func(ctx context.Context, req *AbstractRequest) (any, error) {
+			return "foo", nil
+		})
+		sut.RegisterNotifyMethod("bar", func(ctx context.Context, req *AbstractRequest) error {
+			return nil
+		})
+
+		body := `{"jsonrpc":"2.0","method":"foo","params":{"arg1":"foo"},"id":1}`
+		conn := &buffer{
+			rb: bytes.NewBufferString(fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len([]byte(body)), body)),
+			wb: &bytes.Buffer{},
 		}
-		if err := req.Bind(&params); err != nil {
-			return nil, err
-		}
-		return params.Arg1 == "bar", nil
+
+		err := sut.handleConnection(GinkgoT().Context(), conn)
+		Expect(err).NotTo(HaveOccurred())
+
+		respBody, err := readPacket(conn.wb)
+		Expect(err).NotTo(HaveOccurred())
+
+		var resp Response[any]
+		err = json.Unmarshal(respBody.Body, &resp)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(resp.Version).To(Equal("2.0"))
+		Expect(resp.ID).To(Equal(1))
+		Expect(resp.Result).To(Equal("foo"))
+		Expect(resp.Error).To(BeNil())
 	})
-	sut.RegisterMethod("bar", func(ctx context.Context, req *AbstractRequest) (any, error) {
-		assert.Fail(t, "This method should not be called")
-		return nil, nil
+
+	var (
+		reqID int
+	)
+
+	BeforeEach(func() {
+		reqID = 1
 	})
-	body := `{"jsonrpc":"2.0","method":"foo","params":{"arg1":"bar"},"id":1}`
-	conn := &buffer{
-		rb: bytes.NewBufferString(fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len([]byte(body)), body)),
-		wb: &bytes.Buffer{},
-	}
 
-	err := sut.handleConnection(ctx, conn)
-	assert.NoError(t, err)
+	DescribeTable("handleRequest call", func(req *AbstractRequest, resp *Response[any]) {
+		sut := NewServer("")
+		sut.RegisterMethod("normal", func(ctx context.Context, req *AbstractRequest) (any, error) {
+			return "foo", nil
+		})
+		sut.RegisterNotifyMethod("normal", func(ctx context.Context, req *AbstractRequest) error {
+			Fail("This should not be called")
+			return nil
+		})
+		sut.RegisterMethod("error", func(ctx context.Context, req *AbstractRequest) (any, error) {
+			return nil, errors.New("Error")
+		})
 
-	respBody, err := readPacket(conn.wb)
-	assert.NoError(t, err)
-
-	var resp Response[bool]
-	err = json.Unmarshal(respBody.Body, &resp)
-	assert.NoError(t, err)
-
-	assert.Equal(t, "2.0", resp.Version)
-	assert.Equal(t, 1, resp.ID)
-	assert.Equal(t, true, resp.Result)
-	assert.Equal(t, (*RPCError)(nil), resp.Error)
-}
-
-func Test_handleRequest_call(t *testing.T) {
-	reqIDOne := 1
-
-	cases := []struct {
-		name string
-		req  *AbstractRequest
-		resp *Response[any]
-	}{
-		{
-			name: "Normal",
-			req: &AbstractRequest{
+		actualResp := sut.handleRequest(req)
+		Expect(actualResp).To(Equal(resp))
+	},
+		Entry(
+			"Normal",
+			&AbstractRequest{
 				Version: "2.0",
-				ID:      &reqIDOne,
+				ID:      &reqID,
 				Method:  "normal",
 				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
 			},
-			resp: &Response[any]{
+			&Response[any]{
 				Version: "2.0",
 				ID:      1,
 				Result:  "foo",
 			},
-		},
-		{
-			name: "Unsupported version",
-			req: &AbstractRequest{
+		),
+		Entry(
+			"Unsupported version",
+			&AbstractRequest{
 				Version: "1.0",
-				ID:      &reqIDOne,
+				ID:      &reqID,
 				Method:  "foo",
 				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
 			},
-			resp: &Response[any]{
+			&Response[any]{
 				Version: "2.0",
 				ID:      1,
 				Error: &RPCError{
@@ -87,16 +97,16 @@ func Test_handleRequest_call(t *testing.T) {
 					Message: InvalidRequestMessage,
 				},
 			},
-		},
-		{
-			name: "Method missing",
-			req: &AbstractRequest{
+		),
+		Entry(
+			"Method missing",
+			&AbstractRequest{
 				Version: "2.0",
-				ID:      &reqIDOne,
+				ID:      &reqID,
 				Method:  "noMethod",
 				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
 			},
-			resp: &Response[any]{
+			&Response[any]{
 				Version: "2.0",
 				ID:      1,
 				Error: &RPCError{
@@ -104,16 +114,16 @@ func Test_handleRequest_call(t *testing.T) {
 					Message: MethodNotFoundMessage,
 				},
 			},
-		},
-		{
-			name: "Error in method",
-			req: &AbstractRequest{
+		),
+		Entry(
+			"Error in method",
+			&AbstractRequest{
 				Version: "2.0",
-				ID:      &reqIDOne,
+				ID:      &reqID,
 				Method:  "error",
 				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
 			},
-			resp: &Response[any]{
+			&Response[any]{
 				Version: "2.0",
 				ID:      1,
 				Error: &RPCError{
@@ -122,76 +132,48 @@ func Test_handleRequest_call(t *testing.T) {
 					Data:    "Error",
 				},
 			},
-		},
-	}
+		),
+	)
 
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			sut := NewServer("")
-			sut.RegisterMethod("normal", func(ctx context.Context, req *AbstractRequest) (any, error) {
-				return "foo", nil
-			})
-			sut.RegisterNotifyMethod("normal", func(ctx context.Context, req *AbstractRequest) error {
-				assert.Fail(t, "This should not be called")
-				return nil
-			})
-			sut.RegisterMethod("error", func(ctx context.Context, req *AbstractRequest) (any, error) {
-				return nil, errors.New("Error")
-			})
-
-			resp := sut.handleRequest(tt.req)
-			assert.Equal(t, tt.resp, resp)
+	DescribeTable("handleRequest notify", func(req *AbstractRequest) {
+		sut := NewServer("")
+		sut.RegisterMethod("normal", func(ctx context.Context, req *AbstractRequest) (any, error) {
+			Fail("This should not be called")
+			return "", nil
 		})
-	}
-}
+		sut.RegisterNotifyMethod("normal", func(ctx context.Context, req *AbstractRequest) error {
+			return nil
+		})
+		sut.RegisterNotifyMethod("error", func(ctx context.Context, req *AbstractRequest) error {
+			return errors.New("error")
+		})
 
-func Test_handleRequest_notify(t *testing.T) {
-	cases := []struct {
-		name string
-		req  *AbstractRequest
-	}{
-		{
-			name: "Normal",
-			req: &AbstractRequest{
+		actualResp := sut.handleRequest(req)
+		Expect(actualResp).To(BeNil())
+	},
+		Entry(
+			"Normal",
+			&AbstractRequest{
 				Version: "2.0",
 				Method:  "normal",
 				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
 			},
-		},
-		{
-			name: "Error",
-			req: &AbstractRequest{
+		),
+		Entry(
+			"Error",
+			&AbstractRequest{
 				Version: "2.0",
 				Method:  "error",
 				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
 			},
-		},
-		{
-			name: "Method missing",
-			req: &AbstractRequest{
+		),
+		Entry(
+			"Method missing",
+			&AbstractRequest{
 				Version: "2.0",
 				Method:  "missing",
 				Params:  json.RawMessage([]byte(`{"arg1":"foo"}`)),
 			},
-		},
-	}
-
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			sut := NewServer("")
-			sut.RegisterMethod("normal", func(ctx context.Context, req *AbstractRequest) (any, error) {
-				assert.Fail(t, "This should not be called")
-				return "", nil
-			})
-			sut.RegisterNotifyMethod("normal", func(ctx context.Context, req *AbstractRequest) error {
-				return nil
-			})
-			sut.RegisterNotifyMethod("error", func(ctx context.Context, req *AbstractRequest) error {
-				return errors.New("error")
-			})
-
-			resp := sut.handleRequest(tt.req)
-			assert.Nil(t, resp)
-		})
-	}
-}
+		),
+	)
+})

@@ -1,15 +1,64 @@
-package fs
+package fs_test
 
 import (
-	"io/fs"
+	gofs "io/fs"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/kofuk/premises/runner/internal/fs"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
+
+var _ = Describe("Copy", func() {
+	var (
+		fromDir string
+		toDir   string
+	)
+
+	BeforeEach(func() {
+		fromDir = GinkgoT().TempDir()
+		toDir = GinkgoT().TempDir()
+
+		for _, name := range fileList {
+			path := filepath.Join(fromDir, name)
+
+			if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+				Fail("failed to create dir")
+			}
+
+			if strings.HasSuffix(name, "/") {
+				if err := os.Mkdir(path, 0755); err != nil {
+					Fail("failed to create dir")
+				}
+			} else {
+				if err := os.WriteFile(path, []byte("This is "+name), 0644); err != nil {
+					Fail("failed to create file")
+				}
+			}
+		}
+	})
+
+	It("should handle move mode", func() {
+		err := fs.MoveAll(fromDir, toDir)
+		Expect(err).To(BeNil())
+
+		checkDir(toDir)
+		_, err = os.Stat(fromDir)
+		Expect(os.IsNotExist(err)).To(BeTrue())
+	})
+
+	It("should handle copy mode", func() {
+		err := fs.CopyAll(fromDir, toDir)
+		Expect(err).NotTo(HaveOccurred())
+
+		checkDir(toDir)
+		checkDir(fromDir)
+	})
+})
 
 var (
 	fileList = []string{
@@ -33,37 +82,10 @@ var (
 	}
 )
 
-func prepareTestDir(t *testing.T) string {
-	dir, err := os.MkdirTemp("", "TEST-")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, name := range fileList {
-		path := filepath.Join(dir, name)
-
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-			t.Fatal(err)
-		}
-
-		if strings.HasSuffix(name, "/") {
-			if err := os.Mkdir(path, 0755); err != nil {
-				t.Fatal(err)
-			}
-		} else {
-			if err := os.WriteFile(path, []byte("This is "+name), 0644); err != nil {
-				t.Fatal(err)
-			}
-		}
-	}
-
-	return dir
-}
-
-func checkDir(t *testing.T, dir string) {
+func checkDir(dir string) {
 	var files []string
 
-	err := fs.WalkDir(os.DirFS(dir), ".", func(path string, d fs.DirEntry, err error) error {
+	err := gofs.WalkDir(os.DirFS(dir), ".", func(path string, d gofs.DirEntry, err error) error {
 		if path == "." {
 			return nil
 		}
@@ -73,13 +95,13 @@ func checkDir(t *testing.T, dir string) {
 		files = append(files, path)
 		return nil
 	})
-	assert.NoError(t, err)
+	Expect(err).NotTo(HaveOccurred())
 
 	expectedFiles := slices.Clone(fileList)
 	slices.Sort(expectedFiles)
 	slices.Sort(files)
 
-	assert.Equal(t, expectedFiles, files)
+	Expect(files).To(Equal(expectedFiles))
 
 	for _, path := range files {
 		if strings.HasSuffix(path, "/") {
@@ -87,34 +109,12 @@ func checkDir(t *testing.T, dir string) {
 		}
 
 		content, err := os.ReadFile(filepath.Join(dir, path))
-		assert.NoError(t, err)
-		assert.Equal(t, "This is "+path, string(content))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(content)).To(Equal("This is " + path))
 	}
 }
 
-func Test_moveDir_moveMode(t *testing.T) {
-	fromDir := prepareTestDir(t)
-
-	toDir, err := os.MkdirTemp("", "TEST-")
-	assert.NoError(t, err)
-
-	err = MoveAll(fromDir, toDir)
-	assert.NoError(t, err)
-
-	checkDir(t, toDir)
-	_, err = os.Stat(fromDir)
-	assert.True(t, os.IsNotExist(err))
-}
-
-func Test_moveDir_copyMode(t *testing.T) {
-	fromDir := prepareTestDir(t)
-
-	toDir, err := os.MkdirTemp("", "TEST-")
-	assert.NoError(t, err)
-
-	err = CopyAll(fromDir, toDir)
-	assert.NoError(t, err)
-
-	checkDir(t, fromDir)
-	checkDir(t, toDir)
+func Test(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "FS Suite")
 }

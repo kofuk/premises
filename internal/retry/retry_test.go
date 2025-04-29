@@ -5,8 +5,28 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
+
+var _ = Describe("Retry", func() {
+	It("should calculate the correct intervals", func() {
+		intervals := createReferenceInterval()
+		sut := r{
+			rand:        rand.New(rand.NewSource(0)),
+			curInterval: 1 * time.Second,
+			maxInterval: 1 * time.Minute,
+			failAfter:   3 * time.Minute,
+		}
+
+		for _, expectedInterval := range intervals {
+			Expect(sut.finished()).To(BeFalse())
+			got := sut.nextInterval()
+			Expect(got).To(Equal(expectedInterval))
+		}
+		Expect(sut.finished()).To(BeTrue())
+	})
+})
 
 func createReferenceInterval() []time.Duration {
 	intervals := []time.Duration{
@@ -27,19 +47,7 @@ func createReferenceInterval() []time.Duration {
 	return intervals
 }
 
-func Test_calculateInterval(t *testing.T) {
-	intervals := createReferenceInterval()
-	sut := r{
-		rand:        rand.New(rand.NewSource(0)),
-		curInterval: 1 * time.Second,
-		maxInterval: 1 * time.Minute,
-		failAfter:   3 * time.Minute,
-	}
-
-	for _, expectedInterval := range intervals {
-		assert.False(t, sut.finished())
-		got := sut.nextInterval()
-		assert.Equal(t, expectedInterval, got)
-	}
-	assert.True(t, sut.finished())
+func Test(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Rcon Suite")
 }

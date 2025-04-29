@@ -1,9 +1,11 @@
-package exteriord
+package exteriord_test
 
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/kofuk/premises/runner/internal/commands/exteriord"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 type inMemoryBackend struct {
@@ -19,50 +21,54 @@ func (b *inMemoryBackend) SaveStates(s map[string]string) error {
 	return nil
 }
 
-func Test_StateStore_Set(t *testing.T) {
-	backend := &inMemoryBackend{
-		s: make(map[string]string),
-	}
-	sut := NewStateStore(backend)
+var _ = Describe("StateStore", func() {
+	var (
+		backend *inMemoryBackend
+		sut     *exteriord.StateStore
+	)
 
-	err := sut.Set("foo", "111")
-	assert.NoError(t, err)
-	assert.Equal(t, map[string]string{"foo": "111"}, backend.s)
+	BeforeEach(func() {
+		backend = &inMemoryBackend{
+			s: make(map[string]string),
+		}
+		sut = exteriord.NewStateStore(backend)
+	})
 
-	err = sut.Set("foo", "222")
-	assert.NoError(t, err)
-	assert.Equal(t, map[string]string{"foo": "222"}, backend.s)
-}
+	It("should store value when Set is called", func() {
+		err := sut.Set("foo", "111")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(backend.s).To(Equal(map[string]string{"foo": "111"}))
 
-func Test_StateStore_Get(t *testing.T) {
-	backend := &inMemoryBackend{
-		s: make(map[string]string),
-	}
-	sut := NewStateStore(backend)
+		err = sut.Set("foo", "222")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(backend.s).To(Equal(map[string]string{"foo": "222"}))
+	})
 
-	value, err := sut.Get("foo")
-	assert.NoError(t, err)
-	assert.Equal(t, "", value)
+	It("should return value when Get is called", func() {
+		value, err := sut.Get("foo")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(value).To(Equal(""))
 
-	sut.Set("foo", "111")
-	value, err = sut.Get("foo")
-	assert.NoError(t, err)
-	assert.Equal(t, "111", value)
-}
+		sut.Set("foo", "111")
+		value, err = sut.Get("foo")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(value).To(Equal("111"))
+	})
 
-func Test_StateStore_Remove(t *testing.T) {
-	backend := &inMemoryBackend{
-		s: make(map[string]string),
-	}
-	sut := NewStateStore(backend)
+	It("should remove value when Remove is called", func() {
+		err := sut.Remove("foo")
+		Expect(err).NotTo(HaveOccurred())
 
-	err := sut.Remove("foo")
-	assert.NoError(t, err)
+		sut.Set("foo", "111")
+		sut.Set("bar", "222")
 
-	sut.Set("foo", "111")
-	sut.Set("bar", "222")
+		err = sut.Remove("foo")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(backend.s).To(Equal(map[string]string{"bar": "222"}))
+	})
+})
 
-	err = sut.Remove("foo")
-	assert.NoError(t, err)
-	assert.Equal(t, map[string]string{"bar": "222"}, backend.s)
+func Test(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Rcon Suite")
 }

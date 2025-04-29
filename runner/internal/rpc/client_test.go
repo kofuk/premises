@@ -2,82 +2,68 @@ package rpc
 
 import (
 	"bytes"
-	"context"
 	"fmt"
-	"testing"
 
-	"github.com/stretchr/testify/assert"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
-func Test_handleCall(t *testing.T) {
-	ctx := context.Background()
-
-	cases := []struct {
-		name         string
-		params       any
-		respJSON     string
-		result       any
-		resultTo     any
-		expectsError bool
-	}{
-		{
-			name:     "Normal",
-			params:   struct{}{},
-			respJSON: `{"jsonrpc":"2.0","id":1,"result":"foo"}`,
-			result:   "foo",
-			resultTo: "",
-		},
-		{
-			name:         "Incorrect ID",
-			params:       struct{}{},
-			respJSON:     `{"jsonrpc":"2.0","id":2,"result":"foo"}`,
-			expectsError: true,
-		},
-		{
-			name:         "Error response",
-			params:       struct{}{},
-			respJSON:     `{"jsonrpc":"2.0","id":1,"error":{"code":-32600,"message":"Invalid request"}}`,
-			expectsError: true,
-		},
-	}
-
-	for _, tt := range cases {
-		t.Run(tt.name, func(t *testing.T) {
-			conn := &buffer{
-				rb: bytes.NewBufferString(fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len([]byte(tt.respJSON)), tt.respJSON)),
-				wb: &bytes.Buffer{},
-			}
-
-			err := handleCall(ctx, conn, "test", tt.params, &tt.resultTo)
-
-			if tt.expectsError {
-				assert.Error(t, err)
-			} else {
-				assert.Equal(t, tt.result, tt.resultTo)
-			}
-		})
-	}
+type buffer struct {
+	rb *bytes.Buffer
+	wb *bytes.Buffer
 }
 
-func Test_handleNotify(t *testing.T) {
-	ctx := context.Background()
-	conn := &buffer{
-		rb: bytes.NewBufferString(""),
-		wb: &bytes.Buffer{},
-	}
-
-	err := handleNotify(ctx, conn, "test", struct{}{})
-	assert.NoError(t, err)
+func (b *buffer) Read(buf []byte) (int, error) {
+	return b.rb.Read(buf)
 }
 
-func Test_handleCall_ignoreResult(t *testing.T) {
-	ctx := context.Background()
-	respJSON := `{"jsonrpc":"2.0","id":1,"result":"foo"}`
-	conn := &buffer{
-		rb: bytes.NewBufferString(fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len([]byte(respJSON)), respJSON)),
-		wb: &bytes.Buffer{},
-	}
-
-	err := handleCall(ctx, conn, "test", struct{}{}, nil)
-	assert.NoError(t, err)
+func (b *buffer) Write(buf []byte) (int, error) {
+	return b.wb.Write(buf)
 }
+
+func (b *buffer) Close() error {
+	return nil
+}
+
+var _ = Describe("Client", func() {
+	DescribeTable("handleCall", func(params any, respJSON string, result, resultOut any, expectsError bool) {
+		conn := &buffer{
+			rb: bytes.NewBufferString(fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len([]byte(respJSON)), respJSON)),
+			wb: &bytes.Buffer{},
+		}
+
+		err := handleCall(GinkgoT().Context(), conn, "test", params, &resultOut)
+
+		if expectsError {
+			Expect(err).To(HaveOccurred())
+		} else {
+			Expect(err).NotTo(HaveOccurred())
+			Expect(resultOut).To(Equal(result))
+		}
+	},
+		Entry("Normal", struct{}{}, `{"jsonrpc":"2.0","id":1,"result":"foo"}`, "foo", "", false),
+		Entry("Incorrect ID", struct{}{}, `{"jsonrpc":"2.0","id":2,"result":"foo"}`, nil, nil, true),
+		Entry("Error response", struct{}{}, `{"jsonrpc":"2.0","id":1,"error":{"code":-32600,"message":"Invalid request"}}`, nil, nil, true),
+	)
+
+	It("handleNotify", func() {
+		conn := &buffer{
+			rb: bytes.NewBufferString(""),
+			wb: &bytes.Buffer{},
+		}
+
+		err := handleNotify(GinkgoT().Context(), conn, "test", struct{}{})
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("handleCall with ignoreResult", func() {
+		respJSON := `{"jsonrpc":"2.0","id":1,"result":"foo"}`
+		conn := &buffer{
+			rb: bytes.NewBufferString(fmt.Sprintf("Content-Length: %d\r\n\r\n%s", len([]byte(respJSON)), respJSON)),
+			wb: &bytes.Buffer{},
+		}
+
+		err := handleCall(GinkgoT().Context(), conn, "test", struct{}{}, nil)
+		Expect(err).NotTo(HaveOccurred())
+	})
+})
