@@ -47,7 +47,7 @@ const WorldExplorer = ({worlds, selection, onChange, refresh}: Props) => {
 
   const {accessToken} = useAuth();
 
-  const handleSelectedItemsChange = (_event: React.SyntheticEvent, id: string | null) => {
+  const handleSelectedItemsChange = (_event: React.SyntheticEvent | null, id: string | null) => {
     if (!id || !onChange) {
       return;
     }
