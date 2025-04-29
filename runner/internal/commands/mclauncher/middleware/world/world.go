@@ -3,6 +3,7 @@ package world
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/core"
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/middleware/world/service"
@@ -31,10 +32,12 @@ func (m *WorldMiddleware) getRealResourceID(ctx context.Context, worldName strin
 		return resourceID, nil
 	}
 
+	slog.Info("Latest world is specified. Looking for the latest revision of the world")
 	return m.worldService.GetLatestResourceID(ctx, worldName)
 }
 
 func (m *WorldMiddleware) cleanupOldWorldFiles(c core.LauncherContext) error {
+	slog.Info("Cleaning up old world files")
 	return fs.RemoveIfExists(c.Env().GetDataPath("gamedata/world"))
 }
 
@@ -66,6 +69,7 @@ func (m *WorldMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 
 			if !isNewWorld {
 				// Download world if we are not creating a new world
+				slog.Info("Downloading world from remote")
 				err := m.worldService.DownloadWorld(c.Context(), worldResourceID, c.Env())
 				if err != nil {
 					return err
@@ -76,6 +80,7 @@ func (m *WorldMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 		innerError := next(c)
 
 		if innerError == nil || errors.Is(innerError, core.ErrRestart) {
+			slog.Info("Uploading world to remote")
 			worldKey, err := m.worldService.UploadWorld(c.Context(), worldName, c.Env())
 			if err != nil {
 				return errors.Join(err, innerError)

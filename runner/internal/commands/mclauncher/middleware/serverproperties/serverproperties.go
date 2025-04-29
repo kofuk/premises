@@ -17,6 +17,8 @@ func NewServerPropertiesMiddleware() *ServerPropertiesMiddleware {
 }
 
 func (m *ServerPropertiesMiddleware) createServerPropertiesFile(c core.LauncherContext) error {
+	slog.Info("Creating server.properties")
+
 	serverProperties := NewServerPropertiesGenerator()
 	serverProperties.SetMotd(c.Settings().GetMotd())
 	serverProperties.SetDifficulty(c.Settings().GetDifficulty())
