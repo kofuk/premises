@@ -1,6 +1,6 @@
 package rcon
 
-//go:generate go run go.uber.org/mock/mockgen@v0.5.0 -destination executor_mock.go -package rcon . RconExecutorInterface
+//go:generate go run go.uber.org/mock/mockgen@v0.5.2 -destination executor_mock.go -package rcon . RconExecutorInterface
 
 import (
 	"log/slog"
