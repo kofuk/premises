@@ -103,6 +103,16 @@
         "docker"
       ],
       "rangeStrategy": "bump"
+    },
+    {
+      "groupName": "gomock",
+      "matchDatasources": [
+        "go"
+      ],
+      "matchPackageNames": [
+        "go.uber.org/mock",
+        "go.uber.org/mock/mockgen"
+      ]
     }
   ]
 }
