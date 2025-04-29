@@ -128,6 +128,11 @@ func (m *ServerJarMiddleware) downloadIfNotExists(c core.LauncherContext) error 
 		return err
 	}
 
+	if !util.IsJar(serverPath) {
+		// This is a single executable, or wrapper script, so we need to make it executable.
+		os.Chmod(serverPath, 0755)
+	}
+
 	return nil
 }
 
