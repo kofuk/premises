@@ -2,7 +2,9 @@ package serverjar
 
 import (
 	"errors"
+	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -33,6 +35,8 @@ func NewServerJarMiddleware(launcherMetaClient *launchermeta.LauncherMetaClient,
 }
 
 func (m *ServerJarMiddleware) downloadMatchingVersion(c core.LauncherContext, desiredVersion string, destination string) error {
+	slog.Info(fmt.Sprintf("Looking for the server.jar with version %s", desiredVersion))
+
 	versions, err := retry.Retry(func() (*launchermeta.VersionManifest, error) {
 		return m.launcherMetaClient.GetVersionInfo(c.Context())
 	}, time.Minute)
@@ -52,7 +56,7 @@ func (m *ServerJarMiddleware) downloadMatchingVersion(c core.LauncherContext, de
 		return errors.New("version not found")
 	}
 
-	versionMetaData, err := retry.Retry(func() (*launchermeta.VersionMetaData, error) {
+	versionMetadata, err := retry.Retry(func() (*launchermeta.VersionMetaData, error) {
 		return m.launcherMetaClient.GetVersionMetaData(c.Context(), *matchedVersion)
 	}, time.Minute)
 	if err != nil {
@@ -65,6 +69,8 @@ func (m *ServerJarMiddleware) downloadMatchingVersion(c core.LauncherContext, de
 	}
 	defer outFile.Close()
 
+	slog.Info("Downloading server.jar...", "source", versionMetadata.Downloads.Server.URL)
+
 	_, err = retry.Retry(func() (_ retry.Void, err error) {
 		defer func() {
 			if err != nil {
@@ -74,7 +80,7 @@ func (m *ServerJarMiddleware) downloadMatchingVersion(c core.LauncherContext, de
 		}()
 
 		var req *http.Request
-		req, err = http.NewRequestWithContext(c.Context(), http.MethodGet, versionMetaData.Downloads.Server.URL, nil)
+		req, err = http.NewRequestWithContext(c.Context(), http.MethodGet, versionMetadata.Downloads.Server.URL, nil)
 		if err != nil {
 			return retry.V, err
 		}
@@ -87,7 +93,7 @@ func (m *ServerJarMiddleware) downloadMatchingVersion(c core.LauncherContext, de
 
 		if resp.StatusCode != http.StatusOK {
 			io.CopyN(io.Discard, resp.Body, 10*1024)
-			err = errors.New("failed to download server jar")
+			err = fmt.Errorf("downloading server.jar failed with status code %d", resp.StatusCode)
 			return
 		}
 
