@@ -44,7 +44,7 @@
       "customType": "regex",
       "fileMatch": "\\.go$",
       "matchStrings": [
-        "^//go:generate\\s+go\\s+run\\s+(?<depName>[^@]+)@(?<currentValue>\\S+)"
+        "//go:generate\\s+go\\s+run\\s+(?<depName>[^@]+)@(?<currentValue>\\S+)"
       ],
       "datasourceTemplate": "go"
     }
