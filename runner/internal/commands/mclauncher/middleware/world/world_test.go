@@ -22,7 +22,7 @@ type ErrorMiddleware struct {
 var _ core.Middleware = (*ErrorMiddleware)(nil)
 
 func (e *ErrorMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
-	return func(c *core.LauncherContext) error {
+	return func(c core.LauncherContext) error {
 		return e.err
 	}
 }

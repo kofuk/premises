@@ -1,6 +1,7 @@
 package watchdog_test
 
 import (
+	"github.com/kofuk/premises/runner/internal/commands/mclauncher/core"
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/middleware/monitoring/watchdog"
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/rcon"
 	. "github.com/onsi/ginkgo/v2"
@@ -13,12 +14,15 @@ var _ = Describe("ActivenessWatchdog", func() {
 		ctrl     *gomock.Controller
 		executor *rcon.MockRconExecutorInterface
 		rc       *rcon.Rcon
+		lc       *core.MockLauncherContext
 	)
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(GinkgoT())
 		executor = rcon.NewMockRconExecutorInterface(ctrl)
 		rc = rcon.NewRcon(executor)
+		lc = core.NewMockLauncherContext(ctrl)
+		lc.EXPECT().Context().AnyTimes().Return(GinkgoT().Context())
 	})
 
 	It("should stop the server after timeout", func() {
@@ -35,7 +39,7 @@ var _ = Describe("ActivenessWatchdog", func() {
 		}
 
 		for _, time := range []int{0, 60, 120} {
-			err := wd.Check(GinkgoT().Context(), time, status)
+			err := wd.Check(lc, time, status)
 			Expect(err).To(BeNil())
 		}
 	})
@@ -56,7 +60,7 @@ var _ = Describe("ActivenessWatchdog", func() {
 		}
 
 		for _, time := range []int{0, 60, 120, 180, 240} {
-			err := wd.Check(GinkgoT().Context(), time, status)
+			err := wd.Check(lc, time, status)
 			Expect(err).To(BeNil())
 		}
 	})
@@ -90,7 +94,7 @@ var _ = Describe("ActivenessWatchdog", func() {
 			status := &watchdog.Status{
 				Online: call.online,
 			}
-			err := wd.Check(GinkgoT().Context(), call.watchID, status)
+			err := wd.Check(lc, call.watchID, status)
 			Expect(err).To(BeNil())
 		}
 	})

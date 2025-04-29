@@ -3,12 +3,26 @@ package watchdog_test
 import (
 	"net"
 
+	"github.com/kofuk/premises/runner/internal/commands/mclauncher/core"
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/middleware/monitoring/watchdog"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
 )
 
 var _ = Describe("LivenessWatchdog", func() {
+	var (
+		ctrl *gomock.Controller
+		lc *core.MockLauncherContext
+	)
+
+	BeforeEach(func() {
+		ctrl = gomock.NewController(GinkgoT())
+
+		lc = core.NewMockLauncherContext(ctrl)
+		lc.EXPECT().Context().AnyTimes().Return(GinkgoT().Context())
+	})
+
 	It("should return the correct name", func() {
 		watchdog := watchdog.NewLivenessWatchdog()
 		Expect(watchdog.Name()).To(Equal("LivenessWatchdog"))
@@ -25,7 +39,7 @@ var _ = Describe("LivenessWatchdog", func() {
 
 		wd := watchdog.NewLivenessWatchdog(addr)
 		status := &watchdog.Status{}
-		err = wd.Check(GinkgoT().Context(), 0, status)
+		err = wd.Check(lc, 0, status)
 		Expect(err).To(BeNil())
 		Expect(status.Online).To(BeFalse())
 	})
@@ -49,7 +63,7 @@ var _ = Describe("LivenessWatchdog", func() {
 
 		wd := watchdog.NewLivenessWatchdog(listener.Addr().String())
 		status := &watchdog.Status{}
-		err = wd.Check(GinkgoT().Context(), 0, status)
+		err = wd.Check(lc, 0, status)
 		Expect(err).To(BeNil())
 		Expect(status.Online).To(BeTrue())
 	})

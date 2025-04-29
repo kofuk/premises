@@ -34,12 +34,12 @@ func (m *WorldMiddleware) getRealResourceID(ctx context.Context, worldName strin
 	return m.worldService.GetLatestResourceID(ctx, worldName)
 }
 
-func (m *WorldMiddleware) cleanupOldWorldFiles(c *core.LauncherContext) error {
+func (m *WorldMiddleware) cleanupOldWorldFiles(c core.LauncherContext) error {
 	return fs.RemoveIfExists(c.Env().GetDataPath("gamedata/world"))
 }
 
 func (m *WorldMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
-	return func(c *core.LauncherContext) error {
+	return func(c core.LauncherContext) error {
 		isNewWorld := c.Settings().IsNewWorld()
 		worldName := c.Settings().GetWorldName()
 

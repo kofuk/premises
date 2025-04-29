@@ -10,7 +10,7 @@ import (
 	"github.com/kofuk/premises/runner/internal/system"
 )
 
-func (l *LauncherCore) executeWithBackOff(c *LauncherContext, cmdline []string, workDir string) error {
+func (l *LauncherCore) executeWithBackOff(c LauncherContext, cmdline []string, workDir string) error {
 	backOffWaitTime := 2
 
 	var err error
@@ -37,7 +37,7 @@ func (l *LauncherCore) executeWithBackOff(c *LauncherContext, cmdline []string, 
 	}
 }
 
-func (l *LauncherCore) startMinecraft(c *LauncherContext) error {
+func (l *LauncherCore) startMinecraft(c LauncherContext) error {
 	serverPath := c.Settings().GetServerPath()
 	workDir := c.Env().GetDataPath("gamedata")
 
