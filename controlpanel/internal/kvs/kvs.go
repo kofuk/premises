@@ -39,6 +39,9 @@ func (kvs KeyValueStore) Get(ctx context.Context, key string, result any) error 
 	if err != nil {
 		return err
 	}
+	if result == nil {
+		return nil
+	}
 
 	return json.Unmarshal(data, result)
 }

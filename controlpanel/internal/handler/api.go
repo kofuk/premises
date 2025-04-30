@@ -38,7 +38,7 @@ const (
 func (h *Handler) handleStream(c echo.Context) error {
 	jsonMode := c.Request().Header.Get("Accept") == "application/json"
 
-	userID := c.Get("access_token").(*auth.Token).UserID
+	userID := c.Get("access_token").(auth.Token).UserID()
 
 	writeEvent := func(eventName string, message []byte) error {
 		if jsonMode {
@@ -559,7 +559,7 @@ func (h *Handler) handleApiCreateWorldUploadLink(c echo.Context) error {
 }
 
 func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
-	userID := c.Get("access_token").(*auth.Token).UserID
+	userID := c.Get("access_token").(auth.Token).UserID()
 
 	var config web.SnapshotConfiguration
 	if err := c.Bind(&config); err != nil {
@@ -599,7 +599,7 @@ func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
 }
 
 func (h *Handler) handleApiQuickUndoUndo(c echo.Context) error {
-	userID := c.Get("access_token").(*auth.Token).UserID
+	userID := c.Get("access_token").(auth.Token).UserID()
 
 	var config web.SnapshotConfiguration
 	if err := c.Bind(&config); err != nil {
@@ -644,7 +644,7 @@ func setupApiQuickUndoRoutes(h *Handler, group *echo.Group) {
 }
 
 func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
-	userID := c.Get("access_token").(*auth.Token).UserID
+	userID := c.Get("access_token").(auth.Token).UserID()
 
 	var req web.UpdatePassword
 	if err := c.Bind(&req); err != nil {
@@ -699,7 +699,7 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 }
 
 func (h *Handler) handleApiUsersAdd(c echo.Context) error {
-	userID := c.Get("access_token").(*auth.Token).UserID
+	userID := c.Get("access_token").(auth.Token).UserID()
 
 	var req web.PasswordCredential
 	if err := c.Bind(&req); err != nil {
@@ -779,7 +779,7 @@ func (h *Handler) accessTokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc 
 func scope(scopes ...auth.Scope) func(echo.HandlerFunc) echo.HandlerFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			token := c.Get("access_token").(*auth.Token)
+			token := c.Get("access_token").(auth.Token)
 
 			for _, scope := range scopes {
 				if !token.HasScope(scope) {

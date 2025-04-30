@@ -180,7 +180,7 @@ func startMcp(ctx context.Context, config *config.Config) {
 		redis,
 		db,
 		world,
-		auth.New(kvs),
+		auth.New(kvs, config.Origin, config.Secret),
 		launcherService,
 		mcVersionsService,
 		config.Operators,

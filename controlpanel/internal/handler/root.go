@@ -70,7 +70,7 @@ func (h *Handler) handleLogin(c echo.Context) error {
 		})
 	}
 
-	session.Values["access_token"] = token.Token
+	session.Values["access_token"] = token.TokenString
 	session.Save(c.Request(), c.Response())
 
 	return c.JSON(http.StatusOK, web.SuccessfulResponse[web.SessionState]{
@@ -198,7 +198,7 @@ func (h *Handler) handleSessionData(c echo.Context) error {
 		token, err := h.authService.Get(c.Request().Context(), accessToken)
 		if err == nil {
 			sessionData.LoggedIn = true
-			sessionData.AccessToken = token.Token
+			sessionData.AccessToken = token.TokenString()
 		}
 	}
 

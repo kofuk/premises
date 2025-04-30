@@ -121,7 +121,7 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 		StreamingService:    streaming.NewStreamingService(redis),
 		worldService:        worldService,
 		runnerActionService: longpoll,
-		authService:         auth.New(kvs),
+		authService:         auth.New(kvs, cfg.Origin, cfg.Secret),
 		launcherService:     launcher,
 	}
 
