@@ -124,6 +124,8 @@ github.com/klauspost/compress v1.18.0 h1:c/Cqfb0r+Yi+JtIEq73FWXVkRonBlf0CRNYc8Zt
 github.com/klauspost/compress v1.18.0/go.mod h1:2Pp+KzxcywXVXMr50+X0Q/Lsb43OQHYWRCY2AiWywWQ=
 github.com/kofuk/go-queryalternatives v0.2.1 h1:NLZd7NYMlcl1/x+v5JBuQyswC32qD8BibfEmDVVTLsg=
 github.com/kofuk/go-queryalternatives v0.2.1/go.mod h1:lWoN6+da5q3U5fZ1AI4Uk9f7cBgFejID5mzYXxmDYvE=
+github.com/kofuk/go-structnbt v0.0.2 h1:27G6jRAXrLivMcGDMjn2ojEiTUvLYu/AnMwQp5PbgYY=
+github.com/kofuk/go-structnbt v0.0.2/go.mod h1:bZBGoygVQQYx0bGdLtEbJz4k8zW33sIghQuSnZvK368=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
