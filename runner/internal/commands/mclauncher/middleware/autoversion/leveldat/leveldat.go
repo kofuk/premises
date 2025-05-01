@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/kofuk/premises/internal/mc/nbt"
+	"github.com/kofuk/go-structnbt"
 )
 
 type LevelDat struct {
@@ -50,7 +50,7 @@ func GetCanonicalServerVersion(levelDatPath string) (string, error) {
 
 	reader := io.LimitReader(gzipReader, 4*1024*1024) // 4 MiB limit
 
-	decoder := nbt.NewDecoderWithDepthLimit(reader, 20)
+	decoder := structnbt.NewDecoderWithDepthLimit(reader, 20)
 	var levelDat LevelDat
 	if err := decoder.Decode(&levelDat); err != nil {
 		return "", err
