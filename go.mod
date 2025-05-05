@@ -129,4 +129,7 @@ require (
 	mellium.im/sasl v0.3.2 // indirect
 )
 
-tool go.uber.org/mock/mockgen
+tool (
+	go.uber.org/mock/mockgen
+	golang.org/x/tools/cmd/stringer
+)

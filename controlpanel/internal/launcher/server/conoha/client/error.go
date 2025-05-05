@@ -1,4 +1,6 @@
-package conoha
+package client
+
+//go:generate go tool stringer -type=Operation -output=operation_string.go
 
 import (
 	"encoding/json"
@@ -6,24 +8,26 @@ import (
 	"net/http"
 )
 
+type Operation int
+
 const (
-	OpCreateServer      = "CreateServer"
-	OpListFlavorDetails = "ListFlavorDetails"
-	OpGetServerDetail   = "GetServerDetail"
-	OpListServerDetails = "ListServerDetails"
-	OpStopServer        = "StopServer"
-	OpDeleteServer      = "DeleteServer"
-	OpCreateToken       = "CreateToken"
-	OpListImages        = "ListImages"
-	OpDeleteImage       = "DeleteImage"
-	OpCreateBootVolume  = "CreateBootVolume"
-	OpListVolumes       = "ListVolumes"
-	OpRenameVolume      = "RenameVolume"
-	OpSaveVolumeImage   = "SaveVolumeImage"
+	OpCreateServer Operation = iota
+	OpListFlavorDetails
+	OpGetServerDetail
+	OpListServerDetails
+	OpStopServer
+	OpDeleteServer
+	OpCreateToken
+	OpListImages
+	OpDeleteImage
+	OpCreateBootVolume
+	OpListVolumes
+	OpRenameVolume
+	OpSaveVolumeImage
 )
 
 type ClientError struct {
-	Op  string
+	Op  Operation
 	Err error
 }
 
