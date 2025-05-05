@@ -1,4 +1,4 @@
-package conoha
+package client
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kofuk/premises/controlpanel/internal/conoha/apitypes"
+	"github.com/kofuk/premises/controlpanel/internal/launcher/server/conoha/client/apitypes"
 )
 
 type GetTokenInput struct {

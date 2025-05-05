@@ -1,4 +1,4 @@
-package conoha
+package client
 
 import (
 	"context"
@@ -17,11 +17,12 @@ type ListImagesOutput struct {
 }
 
 func (c *Client) ListImages(ctx context.Context) (*ListImagesOutput, error) {
-	if err := c.updateToken(ctx); err != nil {
+	token, err := c.getTokenCached(ctx)
+	if err != nil {
 		return nil, ClientError{Op: OpListImages, Err: err}
 	}
 
-	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Image, "v2/images", c.token, nil)
+	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Image, "v2/images", token, nil)
 	if err != nil {
 		return nil, ClientError{Op: OpListImages, Err: err}
 	}
@@ -49,11 +50,12 @@ type DeleteImageInput struct {
 }
 
 func (c *Client) DeleteImage(ctx context.Context, input DeleteImageInput) error {
-	if err := c.updateToken(ctx); err != nil {
+	token, err := c.getTokenCached(ctx)
+	if err != nil {
 		return ClientError{Op: OpDeleteImage, Err: err}
 	}
 
-	req, err := newRequest(ctx, http.MethodDelete, c.endpoints.Image, "v2/images/"+input.ImageID, c.token, nil)
+	req, err := newRequest(ctx, http.MethodDelete, c.endpoints.Image, "v2/images/"+input.ImageID, token, nil)
 	if err != nil {
 		return ClientError{Op: OpDeleteImage, Err: err}
 	}

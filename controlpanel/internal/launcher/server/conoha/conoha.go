@@ -1,4 +1,4 @@
-package server
+package conoha
 
 import (
 	"context"
@@ -11,7 +11,8 @@ import (
 	"time"
 
 	"github.com/kofuk/premises/controlpanel/internal/config"
-	"github.com/kofuk/premises/controlpanel/internal/conoha"
+	"github.com/kofuk/premises/controlpanel/internal/launcher/server"
+	"github.com/kofuk/premises/controlpanel/internal/launcher/server/conoha/client"
 	"github.com/kofuk/premises/controlpanel/internal/startup"
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/internal/retry"
@@ -19,36 +20,64 @@ import (
 )
 
 type ConohaServer struct {
-	cfg    *config.Config
-	conoha *conoha.Client
+	conoha   *client.Client
+	user     string
+	password string
+	nameTag  string
 }
 
-var _ GameServer = (*ConohaServer)(nil)
+var _ server.GameServer = (*ConohaServer)(nil)
 
-func NewConohaServer(cfg *config.Config) *ConohaServer {
-	identity := conoha.Identity{
+func NewConohaServer(cfg *config.Config) server.GameServer {
+	identity := client.Identity{
 		User:     cfg.ConohaUser,
 		Password: cfg.ConohaPassword,
 		TenantID: cfg.ConohaTenantID,
 	}
-	endpoints := conoha.Endpoints{
+	endpoints := client.Endpoints{
 		Identity: cfg.ConohaIdentityService,
 		Compute:  cfg.ConohaComputeService,
 		Image:    cfg.ConohaImageService,
 		Volume:   cfg.ConohaVolumeService,
 	}
-	conoha := conoha.NewClient(identity, endpoints, otelhttp.DefaultClient)
+	conoha := client.NewClient(identity, endpoints, otelhttp.DefaultClient)
 	return &ConohaServer{
-		cfg:    cfg,
-		conoha: conoha,
+		conoha:   conoha,
+		user:     cfg.ConohaUser,
+		password: cfg.ConohaPassword,
+		nameTag:  cfg.ConohaNameTag,
 	}
 }
 
-func (s *ConohaServer) IsAvailable() bool {
-	return s.cfg.ConohaUser != "" && s.cfg.ConohaPassword != ""
+func NewWithProviderSpecificData(ctx context.Context, data map[string]string) (server.GameServer, error) {
+	user := data["user"]
+	password := data["password"]
+
+	identity := client.Identity{
+		User:     user,
+		Password: password,
+		TenantID: data["tenant_id"],
+	}
+	endpoints := client.Endpoints{
+		Identity: data["identity_service"],
+		Compute:  data["compute_service"],
+		Image:    data["image_service"],
+		Volume:   data["volume_service"],
+	}
+	client := client.NewClient(identity, endpoints, otelhttp.DefaultClient)
+	return &ConohaServer{
+		conoha:   client,
+		user:     user,
+		password: password,
+		nameTag:  data["name_tag"],
+	}, nil
 }
 
-func findMatchingFlavor(flavors []conoha.Flavor, memSizeMB int) (string, error) {
+func (s *ConohaServer) IsAvailable(ctx context.Context) bool {
+	return s.user != "" && s.password != ""
+}
+
+func findMatchingFlavor(flavors []client.Flavor, memSizeMB int) (string, error) {
 	for _, f := range flavors {
 		if f.RAM == memSizeMB {
 			return f.ID, nil
@@ -58,7 +87,7 @@ func findMatchingFlavor(flavors []conoha.Flavor, memSizeMB int) (string, error) 
 	return "", errors.New("no matching flavor")
 }
 
-func findVolume(volumes []conoha.Volume, name string) (string, error) {
+func findVolume(volumes []client.Volume, name string) (string, error) {
 	for _, v := range volumes {
 		if v.Name == name {
 			return v.ID, nil
@@ -83,7 +112,7 @@ func getMemorySize(machineType string) (int, error) {
 	return memSizeGB, nil
 }
 
-func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, machineType string) (ServerCookie, error) {
+func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, machineType string) (server.ServerCookie, error) {
 	memorySizeInGB, err := getMemorySize(machineType)
 	if err != nil {
 		return "", fmt.Errorf("invalid machine type: %w", err)
@@ -105,7 +134,7 @@ func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, mac
 	if err != nil {
 		return "", fmt.Errorf("failed to get volumes: %w", err)
 	}
-	volumeID, err := findVolume(volumes.Volumes, s.cfg.ConohaNameTag)
+	volumeID, err := findVolume(volumes.Volumes, s.nameTag)
 	if err != nil {
 		return "", fmt.Errorf("failed to get volume ID: %w", err)
 	}
@@ -113,10 +142,10 @@ func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, mac
 
 	slog.Info("Creating VM...")
 	startupScript, _ := startup.GenerateStartupScript(gameConfig)
-	server, err := s.conoha.CreateServer(ctx, conoha.CreateServerInput{
+	sv, err := s.conoha.CreateServer(ctx, client.CreateServerInput{
 		FlavorID:     flavor,
 		RootVolumeID: volumeID,
-		NameTag:      s.cfg.ConohaNameTag,
+		NameTag:      s.nameTag,
 		UserData:     string(startupScript),
 	})
 	if err != nil {
@@ -126,8 +155,8 @@ func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, mac
 
 	slog.Info("Waiting for VM to be created...")
 	_, err = retry.Retry(func() (retry.Void, error) {
-		server, err := s.conoha.GetServerDetail(ctx, conoha.GetServerDetailInput{
-			ServerID: server.Server.ID,
+		server, err := s.conoha.GetServerDetail(ctx, client.GetServerDetailInput{
+			ServerID: sv.Server.ID,
 		})
 		if err != nil {
 			slog.Info("Waiting for VM to be created...", slog.Any("error", err))
@@ -143,10 +172,10 @@ func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, mac
 		return "", fmt.Errorf("timeout creating VM: %w", err)
 	}
 
-	return ServerCookie(server.Server.ID), nil
+	return server.ServerCookie(sv.Server.ID), nil
 }
 
-func findServer(servers []conoha.ServerDetail, nameTag string) (string, error) {
+func findServer(servers []client.ServerDetail, nameTag string) (string, error) {
 	for _, s := range servers {
 		if s.Metadata.InstanceNameTag == nameTag {
 			return s.ID, nil
@@ -156,23 +185,23 @@ func findServer(servers []conoha.ServerDetail, nameTag string) (string, error) {
 	return "", errors.New("no matching server")
 }
 
-func (s *ConohaServer) Find(ctx context.Context) (ServerCookie, error) {
+func (s *ConohaServer) Find(ctx context.Context) (server.ServerCookie, error) {
 	servers, err := s.conoha.ListServerDetails(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	serverID, err := findServer(servers.Servers, s.cfg.ConohaNameTag)
+	serverID, err := findServer(servers.Servers, s.nameTag)
 	if err != nil {
 		return "", err
 	}
 
-	return ServerCookie(serverID), nil
+	return server.ServerCookie(serverID), nil
 }
 
-func (s *ConohaServer) IsRunning(ctx context.Context, cookie ServerCookie) bool {
+func (s *ConohaServer) IsRunning(ctx context.Context, cookie server.ServerCookie) bool {
 	slog.Info("Getting VM information...")
-	server, err := s.conoha.GetServerDetail(ctx, conoha.GetServerDetailInput{
+	server, err := s.conoha.GetServerDetail(ctx, client.GetServerDetailInput{
 		ServerID: string(cookie),
 	})
 	if err != nil {
@@ -183,9 +212,9 @@ func (s *ConohaServer) IsRunning(ctx context.Context, cookie ServerCookie) bool 
 	return server.Server.Status == "ACTIVE"
 }
 
-func (s *ConohaServer) Stop(ctx context.Context, cookie ServerCookie) bool {
+func (s *ConohaServer) Stop(ctx context.Context, cookie server.ServerCookie) bool {
 	slog.Info("Requesting to Stop VM...")
-	err := s.conoha.StopServer(ctx, conoha.StopServerInput{
+	err := s.conoha.StopServer(ctx, client.StopServerInput{
 		ServerID: string(cookie),
 	})
 	if err != nil {
@@ -197,7 +226,7 @@ func (s *ConohaServer) Stop(ctx context.Context, cookie ServerCookie) bool {
 	// Wait for VM to stop
 	slog.Info("Waiting for the VM to stop...")
 	_, err = retry.Retry(func() (retry.Void, error) {
-		server, err := s.conoha.GetServerDetail(ctx, conoha.GetServerDetailInput{
+		server, err := s.conoha.GetServerDetail(ctx, client.GetServerDetailInput{
 			ServerID: string(cookie),
 		})
 		if err != nil {
@@ -220,9 +249,9 @@ func (s *ConohaServer) Stop(ctx context.Context, cookie ServerCookie) bool {
 	return true
 }
 
-func (s *ConohaServer) Delete(ctx context.Context, cookie ServerCookie) bool {
+func (s *ConohaServer) Delete(ctx context.Context, cookie server.ServerCookie) bool {
 	slog.Info("Deleting VM...")
-	err := s.conoha.DeleteServer(ctx, conoha.DeleteServerInput{
+	err := s.conoha.DeleteServer(ctx, client.DeleteServerInput{
 		ServerID: string(cookie),
 	})
 	if err != nil {

@@ -1,4 +1,4 @@
-package conoha
+package client
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/kofuk/premises/controlpanel/internal/conoha/apitypes"
+	"github.com/kofuk/premises/controlpanel/internal/launcher/server/conoha/client/apitypes"
 )
 
 func convertToAvailableFlavorList(flavors []Flavor) []Flavor {
@@ -42,7 +42,8 @@ type CreateServerOutput struct {
 }
 
 func (c *Client) CreateServer(ctx context.Context, input CreateServerInput) (*CreateServerOutput, error) {
-	if err := c.updateToken(ctx); err != nil {
+	token, err := c.getTokenCached(ctx)
+	if err != nil {
 		return nil, err
 	}
 
@@ -52,7 +53,7 @@ func (c *Client) CreateServer(ctx context.Context, input CreateServerInput) (*Cr
 	apiInput.Server.MetaData.InstanceNameTag = input.NameTag
 	apiInput.Server.BlockDevices = []apitypes.BlockDeviceMapping{{UUID: input.RootVolumeID}}
 
-	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Compute, "servers", c.token, apiInput)
+	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Compute, "servers", token, apiInput)
 	if err != nil {
 		return nil, ClientError{Op: OpCreateServer, Err: err}
 	}
@@ -91,11 +92,12 @@ type ListFlavorDetailsOutput struct {
 }
 
 func (c *Client) ListFlavorDetails(ctx context.Context) (*ListFlavorDetailsOutput, error) {
-	if err := c.updateToken(ctx); err != nil {
+	token, err := c.getTokenCached(ctx)
+	if err != nil {
 		return nil, ClientError{Op: OpListFlavorDetails, Err: err}
 	}
 
-	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Compute, "flavors/detail", c.token, nil)
+	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Compute, "flavors/detail", token, nil)
 	if err != nil {
 		return nil, ClientError{Op: OpListFlavorDetails, Err: err}
 	}
@@ -145,11 +147,12 @@ type GetServerDetailOutput struct {
 }
 
 func (c *Client) GetServerDetail(ctx context.Context, input GetServerDetailInput) (*GetServerDetailOutput, error) {
-	if err := c.updateToken(ctx); err != nil {
+	token, err := c.getTokenCached(ctx)
+	if err != nil {
 		return nil, ClientError{Op: OpGetServerDetail, Err: err}
 	}
 
-	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Compute, "servers/"+input.ServerID, c.token, nil)
+	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Compute, "servers/"+input.ServerID, token, nil)
 	if err != nil {
 		return nil, ClientError{Op: OpGetServerDetail, Err: err}
 	}
@@ -177,11 +180,12 @@ type ListServerDetailsOutput struct {
 }
 
 func (c *Client) ListServerDetails(ctx context.Context) (*ListServerDetailsOutput, error) {
-	if err := c.updateToken(ctx); err != nil {
+	token, err := c.getTokenCached(ctx)
+	if err != nil {
 		return nil, ClientError{Op: OpListServerDetails, Err: err}
 	}
 
-	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Compute, "servers/detail", c.token, nil)
+	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Compute, "servers/detail", token, nil)
 	if err != nil {
 		return nil, ClientError{Op: OpListServerDetails, Err: err}
 	}
@@ -209,11 +213,12 @@ type StopServerInput struct {
 }
 
 func (c *Client) StopServer(ctx context.Context, input StopServerInput) error {
-	if err := c.updateToken(ctx); err != nil {
+	token, err := c.getTokenCached(ctx)
+	if err != nil {
 		return ClientError{Op: OpStopServer, Err: err}
 	}
 
-	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Compute, "servers/"+input.ServerID+"/action", c.token, struct {
+	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Compute, "servers/"+input.ServerID+"/action", token, struct {
 		V *interface{} `json:"os-stop"`
 	}{})
 	if err != nil {
@@ -240,11 +245,12 @@ type DeleteServerInput struct {
 }
 
 func (c *Client) DeleteServer(ctx context.Context, input DeleteServerInput) error {
-	if err := c.updateToken(ctx); err != nil {
+	token, err := c.getTokenCached(ctx)
+	if err != nil {
 		return ClientError{Op: OpDeleteServer, Err: err}
 	}
 
-	req, err := newRequest(ctx, http.MethodDelete, c.endpoints.Compute, "servers/"+input.ServerID, c.token, nil)
+	req, err := newRequest(ctx, http.MethodDelete, c.endpoints.Compute, "servers/"+input.ServerID, token, nil)
 	if err != nil {
 		return ClientError{Op: OpDeleteServer, Err: err}
 	}

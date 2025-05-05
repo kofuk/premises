@@ -17,7 +17,7 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/handler"
 	"github.com/kofuk/premises/controlpanel/internal/kvs"
 	"github.com/kofuk/premises/controlpanel/internal/launcher"
-	"github.com/kofuk/premises/controlpanel/internal/launcher/server"
+	"github.com/kofuk/premises/controlpanel/internal/launcher/server/conoha"
 	"github.com/kofuk/premises/controlpanel/internal/longpoll"
 	"github.com/kofuk/premises/controlpanel/internal/mcversions"
 	"github.com/kofuk/premises/controlpanel/internal/proxy"
@@ -97,7 +97,7 @@ func startWeb(ctx context.Context, cfg *config.Config) {
 
 	kvs := createKVS(redis)
 
-	launcherService := launcher.NewLauncherService(cfg, kvs, server.NewConohaServer(cfg), streaming.NewStreamingService(redis))
+	launcherService := launcher.NewLauncherService(cfg, kvs, conoha.NewConohaServer(cfg), streaming.NewStreamingService(redis))
 
 	worldService, err := world.New(ctx, cfg.S3Bucket, cfg.S3ForcePathStyle)
 	if err != nil {
@@ -172,7 +172,7 @@ func startMcp(ctx context.Context, config *config.Config) {
 
 	kvs := kvs.New(kvs.NewRedis(redis))
 
-	launcherService := launcher.NewLauncherService(config, kvs, server.NewConohaServer(config), streaming.NewStreamingService(redis))
+	launcherService := launcher.NewLauncherService(config, kvs, conoha.NewConohaServer(config), streaming.NewStreamingService(redis))
 
 	mcVersionsService := mcversions.New(kvs)
 
