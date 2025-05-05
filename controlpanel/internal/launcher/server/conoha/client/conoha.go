@@ -14,7 +14,7 @@ import (
 
 var (
 	headerAuthToken = "X-Auth-Token"
-	tokenPool       = make(map[string]*token)
+	tokenPool       = map[string]token{}
 	tokenPoolMu     = &sync.Mutex{}
 )
 
@@ -71,7 +71,7 @@ func (c *Client) getTokenCached(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	tokenPool[c.identity.TenantID] = &token{
+	tokenPool[c.identity.TenantID] = token{
 		token:  newToken.Token,
 		expiry: newToken.ExpiresAt,
 	}
