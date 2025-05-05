@@ -2,7 +2,7 @@
 	"name": "Premises",
 	"dockerComposeFile": "compose.yaml",
 	"service": "app",
-	"workspaceFolder": "/workspace/${localWorkspaceFolderBasename}",
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	"features": {
 		"ghcr.io/devcontainers/features/github-cli": {},
 		"ghcr.io/devcontainers/features/docker-in-docker": {}

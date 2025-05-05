@@ -1,6 +1,6 @@
 package core
 
-//go:generate go run go.uber.org/mock/mockgen@v0.5.2 -destination context_mock.go -package core . LauncherContext
+//go:generate go tool mockgen -destination context_mock.go -package core . LauncherContext
 
 import (
 	"context"

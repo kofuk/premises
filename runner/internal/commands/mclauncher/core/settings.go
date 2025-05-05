@@ -1,6 +1,6 @@
 package core
 
-//go:generate go run go.uber.org/mock/mockgen@v0.5.2 -destination settings_mock.go -package core . SettingsRepository
+//go:generate go tool mockgen -destination settings_mock.go -package core . SettingsRepository
 
 type SettingsRepository interface {
 	GetAllowedMemSize() int

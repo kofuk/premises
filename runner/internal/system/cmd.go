@@ -1,6 +1,6 @@
 package system
 
-//go:generate go run go.uber.org/mock/mockgen@v0.5.2 -destination cmd_mock.go -package system . CommandExecutor
+//go:generate go tool mockgen -destination cmd_mock.go -package system . CommandExecutor
 
 import (
 	"context"

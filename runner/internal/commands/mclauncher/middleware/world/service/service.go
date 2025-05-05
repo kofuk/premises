@@ -1,6 +1,6 @@
 package service
 
-//go:generate go run go.uber.org/mock/mockgen@v0.5.2 -destination service_mock.go -package service . WorldServiceInterface
+//go:generate go tool mockgen -destination service_mock.go -package service . WorldServiceInterface
 
 import (
 	"archive/tar"

@@ -39,14 +39,6 @@
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "kubernetes-sigs/cloud-provider-kind"
-    },
-    {
-      "customType": "regex",
-      "fileMatch": "\\.go$",
-      "matchStrings": [
-        "//go:generate\\s+go\\s+run\\s+(?<depName>[^@]+)@(?<currentValue>\\S+)"
-      ],
-      "datasourceTemplate": "go"
     }
   ],
   "packageRules": [
@@ -103,16 +95,6 @@
         "docker"
       ],
       "rangeStrategy": "bump"
-    },
-    {
-      "groupName": "gomock",
-      "matchDatasources": [
-        "go"
-      ],
-      "matchPackageNames": [
-        "go.uber.org/mock",
-        "go.uber.org/mock/mockgen"
-      ]
     }
   ]
 }

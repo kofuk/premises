@@ -1,6 +1,6 @@
 package env
 
-//go:generate go run go.uber.org/mock/mockgen@v0.5.2 -destination env_mock.go -package env . EnvProvider
+//go:generate go tool mockgen -destination env_mock.go -package env . EnvProvider
 
 import (
 	"os"
