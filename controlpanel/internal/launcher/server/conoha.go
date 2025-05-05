@@ -19,8 +19,10 @@ import (
 )
 
 type ConohaServer struct {
-	cfg    *config.Config
-	conoha *conoha.Client
+	conoha   *conoha.Client
+	user     string
+	password string
+	nameTag  string
 }
 
 var _ GameServer = (*ConohaServer)(nil)
@@ -39,13 +41,15 @@ func NewConohaServer(cfg *config.Config) *ConohaServer {
 	}
 	conoha := conoha.NewClient(identity, endpoints, otelhttp.DefaultClient)
 	return &ConohaServer{
-		cfg:    cfg,
-		conoha: conoha,
+		conoha:   conoha,
+		user:     cfg.ConohaUser,
+		password: cfg.ConohaPassword,
+		nameTag:  cfg.ConohaNameTag,
 	}
 }
 
 func (s *ConohaServer) IsAvailable() bool {
-	return s.cfg.ConohaUser != "" && s.cfg.ConohaPassword != ""
+	return s.user != "" && s.password != ""
 }
 
 func findMatchingFlavor(flavors []conoha.Flavor, memSizeMB int) (string, error) {
@@ -105,7 +109,7 @@ func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, mac
 	if err != nil {
 		return "", fmt.Errorf("failed to get volumes: %w", err)
 	}
-	volumeID, err := findVolume(volumes.Volumes, s.cfg.ConohaNameTag)
+	volumeID, err := findVolume(volumes.Volumes, s.nameTag)
 	if err != nil {
 		return "", fmt.Errorf("failed to get volume ID: %w", err)
 	}
@@ -116,7 +120,7 @@ func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, mac
 	server, err := s.conoha.CreateServer(ctx, conoha.CreateServerInput{
 		FlavorID:     flavor,
 		RootVolumeID: volumeID,
-		NameTag:      s.cfg.ConohaNameTag,
+		NameTag:      s.nameTag,
 		UserData:     string(startupScript),
 	})
 	if err != nil {
@@ -162,7 +166,7 @@ func (s *ConohaServer) Find(ctx context.Context) (ServerCookie, error) {
 		return "", err
 	}
 
-	serverID, err := findServer(servers.Servers, s.cfg.ConohaNameTag)
+	serverID, err := findServer(servers.Servers, s.nameTag)
 	if err != nil {
 		return "", err
 	}
