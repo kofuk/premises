@@ -9,7 +9,7 @@ import (
 type ServerCookie string
 
 type GameServer interface {
-	IsAvailable() bool
+	IsAvailable(ctx context.Context) bool
 	Start(ctx context.Context, gameConfig *runner.Config, machineType string) (ServerCookie, error)
 	Find(ctx context.Context) (ServerCookie, error)
 	IsRunning(ctx context.Context, cookie ServerCookie) bool

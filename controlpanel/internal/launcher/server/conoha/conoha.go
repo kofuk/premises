@@ -28,7 +28,7 @@ type ConohaServer struct {
 
 var _ server.GameServer = (*ConohaServer)(nil)
 
-func NewConohaServer(cfg *config.Config) *ConohaServer {
+func NewConohaServer(cfg *config.Config) server.GameServer {
 	identity := client.Identity{
 		User:     cfg.ConohaUser,
 		Password: cfg.ConohaPassword,
@@ -49,7 +49,31 @@ func NewConohaServer(cfg *config.Config) *ConohaServer {
 	}
 }
 
-func (s *ConohaServer) IsAvailable() bool {
+func NewWithProviderSpecificData(ctx context.Context, data map[string]string) (server.GameServer, error) {
+	user := data["user"]
+	password := data["password"]
+
+	identity := client.Identity{
+		User:     user,
+		Password: password,
+		TenantID: data["tenant_id"],
+	}
+	endpoints := client.Endpoints{
+		Identity: data["identity_service"],
+		Compute:  data["compute_service"],
+		Image:    data["image_service"],
+		Volume:   data["volume_service"],
+	}
+	client := client.NewClient(identity, endpoints, otelhttp.DefaultClient)
+	return &ConohaServer{
+		conoha:   client,
+		user:     user,
+		password: password,
+		nameTag:  data["name_tag"],
+	}, nil
+}
+
+func (s *ConohaServer) IsAvailable(ctx context.Context) bool {
 	return s.user != "" && s.password != ""
 }
 
