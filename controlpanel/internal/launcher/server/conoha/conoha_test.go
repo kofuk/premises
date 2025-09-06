@@ -1,15 +1,15 @@
-package server
+package conoha
 
 import (
 	"testing"
 
-	"github.com/kofuk/premises/controlpanel/internal/conoha"
+	"github.com/kofuk/premises/controlpanel/internal/launcher/server/conoha/client"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ConoHa", func() {
-	var flavors = []conoha.Flavor{
+	var flavors = []client.Flavor{
 		{ID: "1", RAM: 8192},
 		{ID: "2", RAM: 4096},
 		{ID: "3", RAM: 1024},

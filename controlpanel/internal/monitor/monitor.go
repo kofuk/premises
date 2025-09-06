@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/kofuk/premises/controlpanel/internal/config"
-	"github.com/kofuk/premises/controlpanel/internal/conoha"
 	"github.com/kofuk/premises/controlpanel/internal/kvs"
+	conohaClient "github.com/kofuk/premises/controlpanel/internal/launcher/server/conoha/client"
 	"github.com/kofuk/premises/controlpanel/internal/streaming"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/runner"
@@ -44,25 +44,25 @@ func AttachRunner(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueSt
 
 	slog.Debug("Updating runner ID")
 
-	identity := conoha.Identity{
+	identity := conohaClient.Identity{
 		User:     cfg.ConohaUser,
 		Password: cfg.ConohaPassword,
 		TenantID: cfg.ConohaTenantID,
 	}
-	endpoints := conoha.Endpoints{
+	endpoints := conohaClient.Endpoints{
 		Identity: cfg.ConohaIdentityService,
 		Compute:  cfg.ConohaComputeService,
 		Image:    cfg.ConohaImageService,
 		Volume:   cfg.ConohaVolumeService,
 	}
-	client := conoha.NewClient(identity, endpoints, otelhttp.DefaultClient)
+	client := conohaClient.NewClient(identity, endpoints, otelhttp.DefaultClient)
 
 	servers, err := client.ListServerDetails(ctx)
 	if err != nil {
 		return err
 	}
 
-	var matchingServer *conoha.ServerDetail
+	var matchingServer *conohaClient.ServerDetail
 out:
 	for _, server := range servers.Servers {
 		for _, addresses := range server.Addresses {
@@ -90,7 +90,7 @@ out:
 		return errors.New("no volume attached to the VM")
 	}
 
-	err = client.RenameVolume(ctx, conoha.RenameVolumeInput{
+	err = client.RenameVolume(ctx, conohaClient.RenameVolumeInput{
 		VolumeID: matchingServer.Volumes[0].ID,
 	})
 	if err != nil {

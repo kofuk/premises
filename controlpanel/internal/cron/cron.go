@@ -8,30 +8,30 @@ import (
 	"time"
 
 	"github.com/kofuk/premises/controlpanel/internal/config"
-	"github.com/kofuk/premises/controlpanel/internal/conoha"
+	conohaClient "github.com/kofuk/premises/controlpanel/internal/launcher/server/conoha/client"
 	"github.com/kofuk/premises/controlpanel/internal/world"
 	"github.com/robfig/cron/v3"
 )
 
 type CronService struct {
-	conoha       *conoha.Client
+	conoha       *conohaClient.Client
 	nameTag      string
 	worldService *world.WorldService
 }
 
 func NewCronService(config *config.Config, worldService *world.WorldService) *CronService {
-	identity := conoha.Identity{
+	identity := conohaClient.Identity{
 		User:     config.ConohaUser,
 		Password: config.ConohaPassword,
 		TenantID: config.ConohaTenantID,
 	}
-	endpoints := conoha.Endpoints{
+	endpoints := conohaClient.Endpoints{
 		Identity: config.ConohaIdentityService,
 		Compute:  config.ConohaComputeService,
 		Image:    config.ConohaImageService,
 		Volume:   config.ConohaVolumeService,
 	}
-	conoha := conoha.NewClient(identity, endpoints, nil)
+	conoha := conohaClient.NewClient(identity, endpoints, nil)
 
 	return &CronService{
 		conoha:       conoha,
@@ -49,7 +49,7 @@ func (cr *CronService) runSaveStorageJob() error {
 	for _, image := range images.Images {
 		if image.Name == cr.nameTag {
 			// If the image already exists, delete it first.
-			err := cr.conoha.DeleteImage(context.Background(), conoha.DeleteImageInput{
+			err := cr.conoha.DeleteImage(context.Background(), conohaClient.DeleteImageInput{
 				ImageID: image.ID,
 			})
 			if err != nil {
@@ -64,7 +64,7 @@ func (cr *CronService) runSaveStorageJob() error {
 		return err
 	}
 
-	var volume *conoha.Volume
+	var volume *conohaClient.Volume
 	for _, v := range volumes.Volumes {
 		if v.Name == cr.nameTag {
 			volume = &v
@@ -76,7 +76,7 @@ func (cr *CronService) runSaveStorageJob() error {
 		return errors.New("volume not found")
 	}
 
-	err = cr.conoha.SaveVolumeImage(context.Background(), conoha.SaveVolumeImageInput{
+	err = cr.conoha.SaveVolumeImage(context.Background(), conohaClient.SaveVolumeImageInput{
 		VolumeID:  volume.ID,
 		ImageName: cr.nameTag,
 	})
@@ -104,7 +104,7 @@ func (cr *CronService) runCreateStorageJob() error {
 		return err
 	}
 
-	var image *conoha.Image
+	var image *conohaClient.Image
 	for _, i := range images.Images {
 		if i.Name == cr.nameTag {
 			image = &i
@@ -118,7 +118,7 @@ func (cr *CronService) runCreateStorageJob() error {
 		return errors.New("image is not active")
 	}
 
-	_, err = cr.conoha.CreateBootVolume(context.Background(), conoha.CreateBootVolumeInput{
+	_, err = cr.conoha.CreateBootVolume(context.Background(), conohaClient.CreateBootVolumeInput{
 		ImageID: image.ID,
 		Name:    cr.nameTag,
 	})

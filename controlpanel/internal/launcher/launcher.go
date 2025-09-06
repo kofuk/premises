@@ -90,7 +90,7 @@ func (s *LauncherService) launchServer(ctx context.Context, config *LaunchConfig
 		streaming.NewStandardMessage(entity.EventCreateRunner, web.PageLoading),
 	)
 
-	if s.server.IsAvailable() {
+	if s.server.IsAvailable(ctx) {
 		serverCookie, err := s.server.Start(ctx, runnerConfig, config.MachineType)
 		if err != nil {
 			slog.Error("Failed to start server", slog.Any("error", err))
@@ -151,7 +151,7 @@ func (h *LauncherService) Clean(ctx context.Context, authKey string) {
 	)
 
 	var serverCookie server.ServerCookie
-	if err := h.kvs.Get(ctx, "runner-id:default", &serverCookie); err != nil || !h.server.IsAvailable() {
+	if err := h.kvs.Get(ctx, "runner-id:default", &serverCookie); err != nil || !h.server.IsAvailable(ctx) {
 		if err == redis.Nil {
 			goto out
 		}

@@ -1,11 +1,11 @@
-package conoha
+package client
 
 import (
 	"context"
 	"encoding/json"
 	"net/http"
 
-	"github.com/kofuk/premises/controlpanel/internal/conoha/apitypes"
+	"github.com/kofuk/premises/controlpanel/internal/launcher/server/conoha/client/apitypes"
 )
 
 const (
@@ -26,7 +26,8 @@ type CreateBootVolumeOutput struct {
 }
 
 func (c *Client) CreateBootVolume(ctx context.Context, input CreateBootVolumeInput) (*CreateBootVolumeOutput, error) {
-	if err := c.updateToken(ctx); err != nil {
+	token, err := c.getTokenCached(ctx)
+	if err != nil {
 		return nil, ClientError{Op: OpCreateBootVolume, Err: err}
 	}
 
@@ -35,7 +36,7 @@ func (c *Client) CreateBootVolume(ctx context.Context, input CreateBootVolumeInp
 	apiInput.Volume.Name = input.Name
 	apiInput.Volume.VolumeType = bootVolumeType
 	apiInput.Volume.ImageID = input.ImageID
-	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Volume, "volumes", c.token, apiInput)
+	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Volume, "volumes", token, apiInput)
 	if err != nil {
 		return nil, ClientError{Op: OpCreateBootVolume, Err: err}
 	}
@@ -68,11 +69,12 @@ type ListVolumesOutput struct {
 }
 
 func (c *Client) ListVolumes(ctx context.Context) (*ListVolumesOutput, error) {
-	if err := c.updateToken(ctx); err != nil {
+	token, err := c.getTokenCached(ctx)
+	if err != nil {
 		return nil, ClientError{Op: OpListVolumes, Err: err}
 	}
 
-	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Volume, "volumes", c.token, nil)
+	req, err := newRequest(ctx, http.MethodGet, c.endpoints.Volume, "volumes", token, nil)
 	if err != nil {
 		return nil, ClientError{Op: OpListVolumes, Err: err}
 	}
@@ -101,14 +103,15 @@ type RenameVolumeInput struct {
 }
 
 func (c *Client) RenameVolume(ctx context.Context, input RenameVolumeInput) error {
-	if err := c.updateToken(ctx); err != nil {
+	token, err := c.getTokenCached(ctx)
+	if err != nil {
 		return ClientError{Op: OpRenameVolume, Err: err}
 	}
 
 	var apiInput apitypes.RenameVolumeInput
 	apiInput.Volume.Name = input.Name
 
-	req, err := newRequest(ctx, http.MethodPut, c.endpoints.Volume, "volumes/"+input.VolumeID, c.token, apiInput)
+	req, err := newRequest(ctx, http.MethodPut, c.endpoints.Volume, "volumes/"+input.VolumeID, token, apiInput)
 	if err != nil {
 		return ClientError{Op: OpRenameVolume, Err: err}
 	}
@@ -134,13 +137,14 @@ type SaveVolumeImageInput struct {
 }
 
 func (c *Client) SaveVolumeImage(ctx context.Context, input SaveVolumeImageInput) error {
-	if err := c.updateToken(ctx); err != nil {
+	token, err := c.getTokenCached(ctx)
+	if err != nil {
 		return ClientError{Op: OpSaveVolumeImage, Err: err}
 	}
 
 	var apiInput apitypes.SaveVolumeImageInput
 	apiInput.V.ImageName = input.ImageName
-	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Volume, "volumes/"+input.VolumeID+"/action", c.token, apiInput)
+	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Volume, "volumes/"+input.VolumeID+"/action", token, apiInput)
 	if err != nil {
 		return ClientError{Op: OpSaveVolumeImage, Err: err}
 	}
