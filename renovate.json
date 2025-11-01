@@ -1,39 +1,31 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
-  ],
+  "extends": ["config:recommended"],
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ".devcontainer/Dockerfile",
-      "matchStrings": [
-        "\\sGO_VERSION=(?<currentValue>\\S+)\\s"
-      ],
+      "managerFilePatterns": ["/.devcontainer/Dockerfile/"],
+      "matchStrings": ["\\sGO_VERSION=(?<currentValue>\\S+)\\s"],
       "datasourceTemplate": "golang-version",
       "depNameTemplate": "go"
     },
     {
       "customType": "regex",
-      "fileMatch": ".devcontainer/Dockerfile",
-      "matchStrings": [
-        "\\sKIND_VERSION=(?<currentValue>\\S+)\\s"
-      ],
+      "managerFilePatterns": ["/.devcontainer/Dockerfile/"],
+      "matchStrings": ["\\sKIND_VERSION=(?<currentValue>\\S+)\\s"],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "kubernetes-sigs/kind"
     },
     {
       "customType": "regex",
-      "fileMatch": ".devcontainer/Dockerfile",
-      "matchStrings": [
-        "\\sKUBECTL_VERSION=(?<currentValue>\\S+)\\s"
-      ],
+      "managerFilePatterns": ["/.devcontainer/Dockerfile/"],
+      "matchStrings": ["\\sKUBECTL_VERSION=(?<currentValue>\\S+)\\s"],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "kubernetes/kubernetes"
     },
     {
       "customType": "regex",
-      "fileMatch": ".devcontainer/Dockerfile",
+      "managerFilePatterns": ["/.devcontainer/Dockerfile/"],
       "matchStrings": [
         "\\sCLOUD_PROVIDER_KIND_VERSION=(?<currentValue>\\S+)\\s"
       ],
@@ -43,19 +35,13 @@
   ],
   "packageRules": [
     {
-      "matchDepNames": [
-        "ghcr.io/kofuk/premises"
-      ],
-      "matchDatasources": [
-        "docker"
-      ],
+      "matchDepNames": ["ghcr.io/kofuk/premises"],
+      "matchDatasources": ["docker"],
       "enabled": false
     },
     {
       "groupName": "Bun",
-      "matchDatasources": [
-        "go"
-      ],
+      "matchDatasources": ["go"],
       "matchPackageNames": [
         "github.com/uptrace/bun",
         "github.com/uptrace/bun/**"
@@ -63,37 +49,23 @@
     },
     {
       "groupName": "OpenTelemetry-Go",
-      "matchDatasources": [
-        "go"
-      ],
-      "matchDepNames": [
-        "go.opentelemetry.io/**"
-      ]
+      "matchDatasources": ["go"],
+      "matchDepNames": ["go.opentelemetry.io/**"]
     },
     {
       "groupName": "Redis client for Go",
-      "matchDatasources": [
-        "go"
-      ],
-      "matchSourceUrls": [
-        "https://github.com/redis/go-redis"
-      ]
+      "matchDatasources": ["go"],
+      "matchSourceUrls": ["https://github.com/redis/go-redis"]
     },
     {
       "groupName": "Go",
-      "matchDatasources": [
-        "golang-version"
-      ],
+      "matchDatasources": ["golang-version"],
       "rangeStrategy": "bump"
     },
     {
       "groupName": "Go",
-      "matchDepNames": [
-        "golang"
-      ],
-      "matchDatasources": [
-        "docker"
-      ],
+      "matchDepNames": ["golang"],
+      "matchDatasources": ["docker"],
       "rangeStrategy": "bump"
     }
   ]
