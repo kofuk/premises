@@ -26,5 +26,5 @@ cd "$(git rev-parse --show-toplevel)"
     cd controlpanel/frontend
 
     sed -i "s/\"version\": \"[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\",\$/\"version\": \"${new_version}\",/" package.json
-    npm install
+    pnpm install
 )
