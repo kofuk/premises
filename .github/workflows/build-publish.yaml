@@ -103,6 +103,7 @@ jobs:
         with:
           node-version-file: .tool-versions
           cache: pnpm
+          cache-dependency-path: controlpanel/frontend/pnpm-lock.yaml
       - name: Install dependencies
         run: |
           pnpm install
