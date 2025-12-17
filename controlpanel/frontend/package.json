@@ -42,7 +42,7 @@
     "react-toastify": "11.0.5",
     "react-transition-group": "4.4.5",
     "recharts": "2.15.1",
-    "swr": "2.3.3"
+    "swr": "2.3.8"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "6.6.3",
