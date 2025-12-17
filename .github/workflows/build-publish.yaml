@@ -96,31 +96,24 @@ jobs:
         working-directory: ./controlpanel/frontend
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: controlpanel/frontend/package.json
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .node-version
-      - uses: actions/cache/restore@v4
-        id: cache
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-controlpanel-${{ hashFiles('controlpanel/frontend/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-controlpanel-
+          node-version-file: .tool-versions
+          cache: pnpm
+          cache-dependency-path: controlpanel/frontend/pnpm-lock.yaml
       - name: Install dependencies
         run: |
-          npm ci
-      - uses: actions/cache/save@v4
-        if: ${{ steps.cache.outputs.cache-hit != 'true' && !startsWith(github.ref_name, 'dependabot/') }}
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-controlpanel-${{ hashFiles('controlpanel/frontend/package-lock.json') }}
+          pnpm install
       - name: Check code formatted
         run: |
-          npm run fmt:check
-          npm run lint:check
+          pnpm run fmt:check
+          pnpm run lint:check
       - name: Run unit tests
         run: |
-          npm test
+          pnpm test
 
   build-controlpanel:
     needs:

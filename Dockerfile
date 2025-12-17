@@ -17,19 +17,19 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM node:22 AS frontend_build
 WORKDIR /build
-RUN --mount=type=cache,target=/root/.npm,sharing=locked \
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
     --mount=type=bind,source=controlpanel/frontend/package.json,target=package.json \
-    --mount=type=bind,source=controlpanel/frontend/package-lock.json,target=package-lock.json \
-    npm ci
-RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=bind,source=controlpanel/frontend/pnpm-lock.yaml,target=pnpm-lock.yaml \
+    corepack enable && pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     --mount=type=bind,source=controlpanel/frontend/package.json,target=package.json \
-    --mount=type=bind,source=controlpanel/frontend/package-lock.json,target=package-lock.json \
+    --mount=type=bind,source=controlpanel/frontend/pnpm-lock.yaml,target=pnpm-lock.yaml \
     --mount=type=bind,source=controlpanel/frontend/public,target=public \
     --mount=type=bind,source=controlpanel/frontend/src,target=src \
     --mount=type=bind,source=controlpanel/frontend/index.html,target=index.html \
     --mount=type=bind,source=controlpanel/frontend/tsconfig.json,target=tsconfig.json \
     --mount=type=bind,source=controlpanel/frontend/vite.config.ts,target=vite.config.ts \
-    npm run build
+    pnpm run build
 
 FROM scratch
 ENV PREMISES_STATIC_DIR=/static
