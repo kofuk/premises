@@ -4,28 +4,28 @@
   "customManagers": [
     {
       "customType": "regex",
-      "managerFilePatterns": ["/.devcontainer/Dockerfile/"],
+      "managerFilePatterns": [".devcontainer/Dockerfile"],
       "matchStrings": ["\\sGO_VERSION=(?<currentValue>\\S+)\\s"],
       "datasourceTemplate": "golang-version",
       "depNameTemplate": "go"
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/.devcontainer/Dockerfile/"],
+      "managerFilePatterns": [".devcontainer/Dockerfile"],
       "matchStrings": ["\\sKIND_VERSION=(?<currentValue>\\S+)\\s"],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "kubernetes-sigs/kind"
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/.devcontainer/Dockerfile/"],
+      "managerFilePatterns": [".devcontainer/Dockerfile"],
       "matchStrings": ["\\sKUBECTL_VERSION=(?<currentValue>\\S+)\\s"],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "kubernetes/kubernetes"
     },
     {
       "customType": "regex",
-      "managerFilePatterns": ["/.devcontainer/Dockerfile/"],
+      "managerFilePatterns": [".devcontainer/Dockerfile"],
       "matchStrings": [
         "\\sCLOUD_PROVIDER_KIND_VERSION=(?<currentValue>\\S+)\\s"
       ],
