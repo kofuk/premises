@@ -22,7 +22,7 @@ require (
 	github.com/kofuk/go-structnbt v0.0.2
 	github.com/labstack/echo-contrib v0.17.3
 	github.com/labstack/echo/v4 v4.13.3
-	github.com/mackerelio/go-osstat v0.2.5
+	github.com/mackerelio/go-osstat v0.2.6
 	github.com/mark3labs/mcp-go v0.25.0
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
