@@ -14,7 +14,7 @@ require (
 	github.com/gorcon/rcon v1.4.0
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
-	github.com/jarcoal/httpmock v1.4.0
+	github.com/jarcoal/httpmock v1.4.1
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/klauspost/compress v1.18.2
