@@ -2,7 +2,7 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu-22.04
 ARG GO_VERSION=1.25.5 \
     KIND_VERSION=0.27.0 \
     KUBECTL_VERSION=1.34.3 \
-    CLOUD_PROVIDER_KIND_VERSION=0.6.0
+    CLOUD_PROVIDER_KIND_VERSION=0.10.0
 
 RUN apt-get update && \
     apt-get install -y bash-completion lighttpd postgresql-client redis-tools tmux uuid-runtime && \
