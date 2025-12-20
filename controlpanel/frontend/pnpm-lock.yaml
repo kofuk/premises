@@ -127,8 +127,8 @@ importers:
         specifier: 5.8.2
         version: 5.8.2
       typescript-language-server:
-        specifier: 4.3.4
-        version: 4.3.4
+        specifier: 4.4.1
+        version: 4.4.1
       vite:
         specifier: 6.4.1
         version: 6.4.1(@types/node@24.10.1)
@@ -2710,8 +2710,8 @@ packages:
     resolution: {integrity: sha512-3KS2b+kL7fsuk/eJZ7EQdnEmQoaho/r6KUef7hxvltNA5DR8NAUM+8wJMbJyZ4G9/7i3v5zPBIMN5aybAh2/Jg==}
     engines: {node: '>= 0.4'}
 
-  typescript-language-server@4.3.4:
-    resolution: {integrity: sha512-0pQ4ffAarsf10VwFhyyyqNJhuDd4r6f4dSsQN38WdbQ3WVxqi08p/bI//v1VnOV5CSVd4AeOUY/jfJYheHTQPQ==}
+  typescript-language-server@4.4.1:
+    resolution: {integrity: sha512-vEvDw+cjY75afMN2rhx0z8sQtFDAUHoBniksBmB6NUZlDt0rEIwQq01VMiqyXFm9uZwcED2475cmDeXxoDHleg==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -5748,7 +5748,7 @@ snapshots:
       possible-typed-array-names: 1.1.0
       reflect.getprototypeof: 1.0.10
 
-  typescript-language-server@4.3.4:
+  typescript-language-server@4.4.1:
     dependencies:
       vscode-jsonrpc: 5.0.1
       vscode-languageserver-protocol: 3.17.5
