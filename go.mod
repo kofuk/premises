@@ -25,7 +25,7 @@ require (
 	github.com/mackerelio/go-osstat v0.2.6
 	github.com/mark3labs/mcp-go v0.25.0
 	github.com/onsi/ginkgo/v2 v2.27.3
-	github.com/onsi/gomega v1.38.2
+	github.com/onsi/gomega v1.38.3
 	github.com/redis/go-redis/extra/redisotel/v9 v9.8.0
 	github.com/redis/go-redis/v9 v9.8.0
 	github.com/robfig/cron/v3 v3.0.1
