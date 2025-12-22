@@ -33,7 +33,7 @@
     "@mui/system": "7.3.6",
     "@mui/x-tree-view": "8.0.0",
     "i18next": "25.0.0",
-    "i18next-browser-languagedetector": "8.0.4",
+    "i18next-browser-languagedetector": "8.2.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "7.69.0",
