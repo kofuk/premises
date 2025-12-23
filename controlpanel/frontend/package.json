@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/kofuk/premises#readme",
   "type": "module",
-  "packageManager": "pnpm@10.26.1",
+  "packageManager": "pnpm@10.26.2",
   "dependencies": {
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
