@@ -106,7 +106,7 @@ services:
         target: /data
 
   postgres:
-    image: postgres:17.7
+    image: postgres:18.1
     environment:
       POSTGRES_USER: premises
       POSTGRES_DB: premises
