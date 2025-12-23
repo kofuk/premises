@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
   redis:
-    image: valkey/valkey:8
+    image: valkey/valkey:9
   postgres:
     image: postgres:17
     environment:
