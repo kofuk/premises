@@ -39,7 +39,7 @@ jobs:
       - name: Create coverage report
         run: go tool cover -html=coverprofile -o coverage.html
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: runner-coverage
           path: ./coverage.html
@@ -59,7 +59,7 @@ jobs:
         run: |
           cd cmd/ostack-fake
           go build -o ostack-fake .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: test-tool
           path: ./cmd/ostack-fake/ostack-fake
@@ -83,7 +83,7 @@ jobs:
         env:
           COMMIT_HASH: ${{ github.sha }}
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: runner
           path: ./runner/cmd/premises-runner/premises-runner
@@ -139,7 +139,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: controlpanel-image
           path: image.tar
@@ -157,7 +157,7 @@ jobs:
         with:
           deno-version: v2.x
       - name: Download controlpanel Docker image
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: controlpanel-image
       - name: Make directory for tools
@@ -165,12 +165,12 @@ jobs:
           mkdir work
           echo "$(pwd)/work" >>"${GITHUB_PATH}"
       - name: Download runner
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: runner
           path: ./work
       - name: Download test tool
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: test-tool
           path: ./work
@@ -234,7 +234,7 @@ jobs:
       VERSION: ${{ needs.version.outputs.version }}
     steps:
       - name: Download runner
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: runner
       - name: Make binaries executable
@@ -273,7 +273,7 @@ jobs:
         env:
           TAG_NAME: ${{ github.event.release.tag_name }}
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: controlpanel-image
       - uses: docker/login-action@v3
