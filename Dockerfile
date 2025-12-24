@@ -15,7 +15,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     cd /build/controlpanel/cmd/premises && \
     CGO_ENABLED=0 go build -o /premises .
 
-FROM node:22 AS frontend_build
+FROM node:24 AS frontend_build
 WORKDIR /build
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
     --mount=type=bind,source=controlpanel/frontend/package.json,target=package.json \
