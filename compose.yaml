@@ -93,7 +93,7 @@ services:
     restart: always
 
   redis:
-    image: valkey/valkey:8.1.5
+    image: valkey/valkey:9.0.1
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 1s
