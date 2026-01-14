@@ -15,14 +15,6 @@ services:
       - /premises
       - migrate
 
-  mcp:
-    replicaCount: 1
-    annotations: {}
-    envFrom:
-      - secretRef:
-          name: premises-config
-    resources: {}
-
   static:
     replicaCount: 1
     annotations: {}

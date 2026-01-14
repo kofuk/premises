@@ -20,5 +20,4 @@ exec tmux new-session -s "${name}" -n 'Redis Console' "redis-cli -h redis" \; \
      new-window -n 'Frontend' "cd ./controlpanel/frontend; pnpm start; bash" \; \
      new-window -n 'Backend' "export PREMISES_MODE=web; cd ./controlpanel/cmd/premises; sleep 3; go run .; bash" \; \
      new-window -n 'Proxy' "export PREMISES_MODE=proxy; cd ./controlpanel/cmd/premises; sleep 3; go run .; bash" \; \
-     new-window -n 'Cron' "export PREMISES_MODE=cron; cd ./controlpanel/cmd/premises; sleep 3; go run .; bash" \; \
-     new-window -n 'MCP' "export PREMISES_MODE=mcp; cd ./controlpanel/cmd/premises; sleep 3; go run .; bash" \;
+     new-window -n 'Cron' "export PREMISES_MODE=cron; cd ./controlpanel/cmd/premises; sleep 3; go run .; bash" \;

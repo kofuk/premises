@@ -38,13 +38,6 @@ spec:
                 name: {{ include "premises.fullname" $ }}-web
                 port:
                   number: 10000
-          - path: /mcp
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ include "premises.fullname" $ }}-mcp
-                port:
-                  number: 10001
   {{- if .Values.ingress.tls.enabled }}
   tls:
     - hosts:
