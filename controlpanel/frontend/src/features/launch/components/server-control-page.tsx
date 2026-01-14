@@ -69,7 +69,7 @@ const ServerControlPane = () => {
                 />
                 <YAxis domain={[0, 100]}></YAxis>
                 <Tooltip
-                  formatter={(value: number, _name, _props) => [`${Math.floor(value * 10) / 10}%`, t('launch.cpu_usage')]}
+                  formatter={(value: number | undefined) => [`${Math.floor((value ?? 0) * 10) / 10}%`, t('launch.cpu_usage')]}
                   isAnimationActive={false}
                   labelFormatter={(time) => (time === 0 ? '' : new Date(time).toLocaleTimeString())}
                   wrapperStyle={{opacity: 0.8}}
