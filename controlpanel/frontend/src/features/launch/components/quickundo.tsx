@@ -53,7 +53,7 @@ const QuickUndo = () => {
           <Select
             label={t('launch.quick_undo.slot')}
             labelId="snapshot-label-id"
-            onChange={(e) => setSelectedSlot(parseInt(e.target.value as string))}
+            onChange={(e) => setSelectedSlot(e.target.value)}
             value={selectedSlot}
           >
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((slot) => (
