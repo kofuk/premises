@@ -9,7 +9,6 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
-	"github.com/kofuk/premises/controlpanel/internal/auth"
 	"github.com/kofuk/premises/controlpanel/internal/config"
 	"github.com/kofuk/premises/controlpanel/internal/cron"
 	"github.com/kofuk/premises/controlpanel/internal/db"
@@ -19,9 +18,7 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/launcher"
 	"github.com/kofuk/premises/controlpanel/internal/launcher/server"
 	"github.com/kofuk/premises/controlpanel/internal/longpoll"
-	"github.com/kofuk/premises/controlpanel/internal/mcversions"
 	"github.com/kofuk/premises/controlpanel/internal/proxy"
-	"github.com/kofuk/premises/controlpanel/internal/services/mcp"
 	"github.com/kofuk/premises/controlpanel/internal/streaming"
 	"github.com/kofuk/premises/controlpanel/internal/world"
 	"github.com/kofuk/premises/internal/otel"
@@ -152,46 +149,6 @@ func startCron(ctx context.Context, config *config.Config) {
 	}
 }
 
-func startMcp(ctx context.Context, config *config.Config) {
-	redis, err := createRedisClient(ctx, config)
-	if err != nil {
-		slog.Error("Failed to create redis client", slog.Any("error", err))
-		os.Exit(1)
-	}
-	db, err := createDatabaseClient(config)
-	if err != nil {
-		slog.Error("Failed to create database client", slog.Any("error", err))
-		os.Exit(1)
-	}
-
-	world, err := world.New(ctx, config.S3Bucket, config.S3ForcePathStyle)
-	if err != nil {
-		slog.Error("Failed to create world service", slog.Any("error", err))
-		os.Exit(1)
-	}
-
-	kvs := kvs.New(kvs.NewRedis(redis))
-
-	launcherService := launcher.NewLauncherService(config, kvs, server.NewConohaServer(config), streaming.NewStreamingService(redis))
-
-	mcVersionsService := mcversions.New(kvs)
-
-	mcp := mcp.NewMCPServer(
-		redis,
-		db,
-		world,
-		auth.New(kvs),
-		launcherService,
-		mcVersionsService,
-		config.Operators,
-		config.Whitelist,
-	)
-	if err := mcp.Start(); err != nil {
-		slog.Error("Error in MCP server", slog.Any("error", err))
-		os.Exit(1)
-	}
-}
-
 func main() {
 	godotenv.Load()
 
@@ -219,8 +176,6 @@ func main() {
 		startProxy(ctx, cfg)
 	case "cron":
 		startCron(ctx, cfg)
-	case "mcp":
-		startMcp(ctx, cfg)
 	default:
 		slog.Error(fmt.Sprintf("Unknown mode: %s", cfg.Mode))
 		os.Exit(1)

@@ -14,11 +14,6 @@ services:
     environment:
       <<: *overrides
 
-  mcp:
-    image: ghcr.io/kofuk/premises:latest
-    environment:
-      <<: *overrides
-
   cron:
     image: ghcr.io/kofuk/premises:latest
     environment:
