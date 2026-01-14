@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/boj/redistore"
+	"github.com/boj/redistore/v2"
 	"github.com/gorilla/sessions"
 	"github.com/kofuk/premises/controlpanel/internal/auth"
 	"github.com/kofuk/premises/controlpanel/internal/db/model"
@@ -226,7 +226,11 @@ func (h *Handler) handleHealth(c echo.Context) error {
 }
 
 func (h *Handler) setupRootRoutes(group *echo.Group) {
-	store, err := redistore.NewRediStore(4, "tcp", h.cfg.RedisAddress, h.cfg.RedisUser, h.cfg.RedisPassword, []byte(h.cfg.Secret))
+	store, err := redistore.NewStore(
+		[][]byte{[]byte(h.cfg.Secret)},
+		redistore.WithAddress("tcp", h.cfg.RedisAddress),
+		redistore.WithAuth(h.cfg.RedisUser, h.cfg.RedisPassword),
+	)
 	if err != nil {
 		slog.Error("Failed to initialize Redis session store", slog.Any("error", err))
 		os.Exit(1)
