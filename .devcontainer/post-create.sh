@@ -5,7 +5,7 @@ set -euxo pipefail
 [ -e controlpanel/cmd/premises/.env ] || cp .devcontainer/env controlpanel/cmd/premises/.env
 
 # Install npm dependencies
-( cd controlpanel/frontend && npm install ) &
+( cd controlpanel/frontend && pnpm install ) &
 p1=$!
 
 ./.devcontainer/fake-runner/build_base_image.sh &
