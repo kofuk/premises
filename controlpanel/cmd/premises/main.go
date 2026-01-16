@@ -30,12 +30,19 @@ import (
 )
 
 func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
-	db := db.NewClient(
-		cfg.PostgresAddress,
-		cfg.PostgresUser,
-		cfg.PostgresPassword,
-		cfg.PostgresDB,
+	db, err := db.NewClient(
+		db.ConnOptions{
+			Addr:       cfg.PostgresAddress,
+			User:       cfg.PostgresUser,
+			Password:   cfg.PostgresPassword,
+			Database:   cfg.PostgresDB,
+			SSLMode:    cfg.PostgresSSLMode,
+			CACertPath: cfg.PostgresCA,
+		},
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	db.AddQueryHook(bunotel.NewQueryHook())
 

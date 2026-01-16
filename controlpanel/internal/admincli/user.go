@@ -108,15 +108,29 @@ func createClient() *bun.DB {
 	user := os.Getenv("PREMISES_POSTGRES_USER")
 	password := os.Getenv("PREMISES_POSTGRES_PASSWORD")
 	database := os.Getenv("PREMISES_POSTGRES_DB")
+	sslMode := os.Getenv("PREMISES_POSTGRES_SSL_MODE")
+	caCertPath := os.Getenv("PREMISES_POSTGRES_CA_CERT_PATH")
 
 	if addr == "" || user == "" || database == "" {
 		fmt.Fprintln(os.Stderr, "Database configuration is missing")
 		os.Exit(1)
 	}
 
-	return db.NewClient(addr, user, password, database)
-}
+	dbClient, err := db.NewClient(db.ConnOptions{
+		Addr:       addr,
+		User:       user,
+		Password:   password,
+		Database:   database,
+		SSLMode:    sslMode,
+		CACertPath: caCertPath,
+	})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Failed to create database client:", err)
+		os.Exit(1)
+	}
 
+	return dbClient
+}
 func readPasswordStdin() (string, error) {
 	r := bufio.NewReader(os.Stdin)
 	l, _, err := r.ReadLine()

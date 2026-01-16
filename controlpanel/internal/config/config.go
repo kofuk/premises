@@ -25,6 +25,8 @@ type Config struct {
 	PostgresUser          string   `envconfig:"PREMISES_POSTGRES_USER"`
 	PostgresPassword      string   `envconfig:"PREMISES_POSTGRES_PASSWORD"`
 	PostgresDB            string   `envconfig:"PREMISES_POSTGRES_DB"`
+	PostgresSSLMode       string   `envconfig:"PREMISES_POSTGRES_SSL_MODE"` // disable, verify-full (default: disable)
+	PostgresCA            string   `envconfig:"PREMISES_POSTGRES_CA_CERT_PATH"`
 	RedisUser             string   `envconfig:"PREMISES_REDIS_USER"`
 	RedisAddress          string   `envconfig:"PREMISES_REDIS_ADDRESS"`
 	RedisPassword         string   `envconfig:"PREMISES_REDIS_PASSWORD"`
