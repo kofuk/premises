@@ -49,6 +49,14 @@ spec:
               value: web
           envFrom:
             {{- toYaml .Values.services.web.envFrom | nindent 12 }}
+          {{- with .Values.services.web.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.services.web.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 ---
 # static
 apiVersion: apps/v1
@@ -99,6 +107,9 @@ spec:
               subPath: default.conf
             - name: static-files
               mountPath: /usr/share/nginx/html
+            {{- with .Values.services.static.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           resources:
             {{- toYaml .Values.services.static.resources | nindent 12 }}
       volumes:
@@ -107,6 +118,9 @@ spec:
             name: {{ include "premises.fullname" . }}-nginx-conf
         - name: static-files
           emptyDir: {}
+        {{- with .Values.services.static.volumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
 ---
 # proxy
 apiVersion: apps/v1
@@ -147,6 +161,14 @@ spec:
               value: proxy
           envFrom:
             {{- toYaml .Values.services.proxy.envFrom | nindent 12 }}
+          {{- with .Values.services.proxy.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.services.proxy.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 ---
 # cron
 apiVersion: apps/v1
@@ -182,3 +204,11 @@ spec:
               value: cron
           envFrom:
             {{- toYaml .Values.services.proxy.envFrom | nindent 12 }}
+          {{- with .Values.services.cron.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.services.cron.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
