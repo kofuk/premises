@@ -34,6 +34,9 @@ spec:
           env:
             - name: PREMISES_MODE
               value: web
+            {{- with .Values.services.web.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           envFrom:
             {{- toYaml .Values.services.web.envFrom | nindent 12 }}
       containers:
@@ -47,8 +50,13 @@ spec:
           env:
             - name: PREMISES_MODE
               value: web
+            {{- with .Values.services.web.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.services.web.envFrom }}
           envFrom:
-            {{- toYaml .Values.services.web.envFrom | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- with .Values.services.web.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
@@ -159,8 +167,13 @@ spec:
           env:
             - name: PREMISES_MODE
               value: proxy
+            {{- with .Values.services.proxy.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.services.proxy.envFrom }}
           envFrom:
-            {{- toYaml .Values.services.proxy.envFrom | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- with .Values.services.proxy.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
@@ -202,8 +215,13 @@ spec:
           env:
             - name: PREMISES_MODE
               value: cron
+            {{- with .Values.services.cron.env }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- with .Values.services.cron.envFrom }}
           envFrom:
-            {{- toYaml .Values.services.proxy.envFrom | nindent 12 }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- with .Values.services.cron.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
