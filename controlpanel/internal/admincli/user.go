@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/kofuk/premises/controlpanel/internal/db"
 	"github.com/kofuk/premises/controlpanel/internal/db/model"
@@ -104,20 +105,28 @@ func NewRenameCommand() *cobra.Command {
 }
 
 func createClient() *bun.DB {
-	addr := os.Getenv("PREMISES_POSTGRES_ADDRESS")
+	host := os.Getenv("PREMISES_POSTGRES_HOST")
+	portStr := os.Getenv("PREMISES_POSTGRES_PORT")
 	user := os.Getenv("PREMISES_POSTGRES_USER")
 	password := os.Getenv("PREMISES_POSTGRES_PASSWORD")
 	database := os.Getenv("PREMISES_POSTGRES_DB")
 	sslMode := os.Getenv("PREMISES_POSTGRES_SSL_MODE")
 	caCertPath := os.Getenv("PREMISES_POSTGRES_CA_CERT_PATH")
 
-	if addr == "" || user == "" || database == "" {
+	if host == "" || portStr == "" || user == "" || database == "" {
 		fmt.Fprintln(os.Stderr, "Database configuration is missing")
 		os.Exit(1)
 	}
 
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Invalid port number:", err)
+		os.Exit(1)
+	}
+
 	dbClient, err := db.NewClient(db.ConnOptions{
-		Addr:       addr,
+		Host:       host,
+		Port:       port,
 		User:       user,
 		Password:   password,
 		Database:   database,

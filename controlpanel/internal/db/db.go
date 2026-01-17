@@ -4,8 +4,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"database/sql"
+	"fmt"
 	"os"
-	"strings"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -13,7 +13,8 @@ import (
 )
 
 type ConnOptions struct {
-	Addr       string
+	Host       string
+	Port       int
 	User       string
 	Password   string
 	Database   string
@@ -35,7 +36,7 @@ func loadCertPool(caCertPath string) (*x509.CertPool, error) {
 
 func NewClient(options ConnOptions) (*bun.DB, error) {
 	opts := []pgdriver.Option{
-		pgdriver.WithAddr(options.Addr),
+		pgdriver.WithAddr(fmt.Sprintf("%s:%d", options.Host, options.Port)),
 		pgdriver.WithUser(options.User),
 		pgdriver.WithPassword(options.Password),
 		pgdriver.WithDatabase(options.Database),
@@ -45,9 +46,8 @@ func NewClient(options ConnOptions) (*bun.DB, error) {
 	}
 
 	if options.SSLMode == "verify-full" {
-		parts := strings.SplitN(options.Addr, ":", 2)
 		tlsConfig := &tls.Config{
-			ServerName: parts[0],
+			ServerName: options.Host,
 		}
 		if options.CACertPath != "" {
 			certPool, err := loadCertPool(options.CACertPath)

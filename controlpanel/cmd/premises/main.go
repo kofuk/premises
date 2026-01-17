@@ -32,7 +32,8 @@ import (
 func createDatabaseClient(cfg *config.Config) (*bun.DB, error) {
 	db, err := db.NewClient(
 		db.ConnOptions{
-			Addr:       cfg.PostgresAddress,
+			Host:       cfg.PostgresHost,
+			Port:       cfg.PostgresPort,
 			User:       cfg.PostgresUser,
 			Password:   cfg.PostgresPassword,
 			Database:   cfg.PostgresDB,
