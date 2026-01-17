@@ -21,7 +21,8 @@ type Config struct {
 	Whitelist             []string `envconfig:"PREMISES_GAME_WHITELIST"`
 	Secret                string   `envconfig:"PREMISES_SECRET"`
 	Origin                string   `envconfig:"PREMISES_ALLOWED_ORIGIN"`
-	PostgresAddress       string   `envconfig:"PREMISES_POSTGRES_ADDRESS"`
+	PostgresHost          string   `envconfig:"PREMISES_POSTGRES_HOST"`
+	PostgresPort          int      `envconfig:"PREMISES_POSTGRES_PORT"`
 	PostgresUser          string   `envconfig:"PREMISES_POSTGRES_USER"`
 	PostgresPassword      string   `envconfig:"PREMISES_POSTGRES_PASSWORD"`
 	PostgresDB            string   `envconfig:"PREMISES_POSTGRES_DB"`
