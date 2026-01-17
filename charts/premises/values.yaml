@@ -7,6 +7,7 @@ services:
   web:
     replicaCount: 1
     annotations: {}
+    env: []
     envFrom:
       - secretRef:
           name: premises-config
@@ -20,15 +21,13 @@ services:
   static:
     replicaCount: 1
     annotations: {}
-    envFrom:
-      - secretRef:
-          name: premises-config
     resources: {}
     volumeMounts: []
     volumes: []
 
   proxy:
     annotations: {}
+    env: []
     envFrom:
       - secretRef:
           name: premises-config
@@ -39,6 +38,7 @@ services:
 
   cron:
     annotations: {}
+    env: []
     envFrom:
       - secretRef:
           name: premises-config
