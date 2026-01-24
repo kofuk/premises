@@ -24,7 +24,7 @@ import (
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/internal/entity/web"
 	potel "github.com/kofuk/premises/internal/otel"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -35,7 +35,7 @@ const (
 	CacheKeySystemInfoPrefix = "system-info"
 )
 
-func (h *Handler) handleStream(c echo.Context) error {
+func (h *Handler) handleStream(c *echo.Context) error {
 	jsonMode := c.Request().Header.Get("Accept") == "application/json"
 
 	userID := c.Get("access_token").(*auth.Token).UserID
@@ -56,7 +56,7 @@ func (h *Handler) handleStream(c echo.Context) error {
 			return nil
 		}
 
-		writer := bufio.NewWriter(c.Response().Writer)
+		writer := bufio.NewWriter(c.Response())
 
 		writer.WriteString("event: " + eventName + "\n")
 		writer.WriteString("data: ")
@@ -64,7 +64,7 @@ func (h *Handler) handleStream(c echo.Context) error {
 		writer.WriteString("\n\n")
 		writer.Flush()
 
-		if flusher, ok := c.Response().Writer.(http.Flusher); ok {
+		if flusher, ok := c.Response().(http.Flusher); ok {
 			flusher.Flush()
 		}
 		return nil
@@ -187,7 +187,7 @@ func (h *Handler) convertToLaunchConfig(ctx context.Context, config web.PendingC
 	return &result.C, nil
 }
 
-func (h *Handler) handleApiLaunch(c echo.Context) error {
+func (h *Handler) handleApiLaunch(c *echo.Context) error {
 	var config web.PendingConfig
 	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
 		slog.Error("Failed to get pending config", slog.Any("error", err))
@@ -220,7 +220,7 @@ func (h *Handler) handleApiLaunch(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiStop(c echo.Context) error {
+func (h *Handler) handleApiStop(c *echo.Context) error {
 	if err := h.runnerActionService.Push(c.Request().Context(), "default", runner.Action{
 		Type: runner.ActionStop,
 		Metadata: runner.RequestMeta{
@@ -239,7 +239,7 @@ func (h *Handler) handleApiStop(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiListWorlds(c echo.Context) error {
+func (h *Handler) handleApiListWorlds(c *echo.Context) error {
 	if val, err := h.redis.Get(c.Request().Context(), CacheKeyWorlds).Result(); err == nil {
 		return c.JSONBlob(http.StatusOK, []byte(val))
 	} else if err != redis.Nil {
@@ -278,7 +278,7 @@ func (h *Handler) handleApiListWorlds(c echo.Context) error {
 	return c.JSON(http.StatusOK, resp)
 }
 
-func (h *Handler) handleApiDeleteWorld(c echo.Context) error {
+func (h *Handler) handleApiDeleteWorld(c *echo.Context) error {
 	var req web.DeleteWorldReq
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
@@ -299,7 +299,7 @@ func (h *Handler) handleApiDeleteWorld(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiMcversions(c echo.Context) error {
+func (h *Handler) handleApiMcversions(c *echo.Context) error {
 	versions, err := h.MCVersionsService.GetVersions(c.Request().Context())
 	if err != nil {
 		slog.Error("Failed to retrieve Minecraft versions", slog.Any("error", err))
@@ -338,7 +338,7 @@ func (h *Handler) handleApiMcversions(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiSystemInfo(c echo.Context) error {
+func (h *Handler) handleApiSystemInfo(c *echo.Context) error {
 	data, err := monitor.GetSystemInfo(c.Request().Context(), h.cfg, &h.KVS)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
@@ -352,7 +352,7 @@ func (h *Handler) handleApiSystemInfo(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiWorldInfo(c echo.Context) error {
+func (h *Handler) handleApiWorldInfo(c *echo.Context) error {
 	data, err := monitor.GetWorldInfo(c.Request().Context(), h.cfg, &h.KVS)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
@@ -413,7 +413,7 @@ func (h *Handler) validateAndNormalizeConfig(config *web.PendingConfig) bool {
 	return true
 }
 
-func (h *Handler) handleApiGetConfig(c echo.Context) error {
+func (h *Handler) handleApiGetConfig(c *echo.Context) error {
 	var config web.PendingConfig
 
 	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
@@ -441,7 +441,7 @@ func (h *Handler) handleApiGetConfig(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
+func (h *Handler) handleApiUpdateConfig(c *echo.Context) error {
 	var newConfig web.PendingConfig
 	if err := c.Bind(&newConfig); err != nil {
 		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
@@ -484,7 +484,7 @@ func (h *Handler) handleApiUpdateConfig(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiCreateWorldDownloadLink(c echo.Context) error {
+func (h *Handler) handleApiCreateWorldDownloadLink(c *echo.Context) error {
 	var req web.CreateWorldLinkReq
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
@@ -509,7 +509,7 @@ func (h *Handler) handleApiCreateWorldDownloadLink(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiCreateWorldUploadLink(c echo.Context) error {
+func (h *Handler) handleApiCreateWorldUploadLink(c *echo.Context) error {
 	var req web.CreateWorldUploadLinkReq
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
@@ -558,7 +558,7 @@ func (h *Handler) handleApiCreateWorldUploadLink(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
+func (h *Handler) handleApiQuickUndoSnapshot(c *echo.Context) error {
 	userID := c.Get("access_token").(*auth.Token).UserID
 
 	var config web.SnapshotConfiguration
@@ -598,7 +598,7 @@ func (h *Handler) handleApiQuickUndoSnapshot(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiQuickUndoUndo(c echo.Context) error {
+func (h *Handler) handleApiQuickUndoUndo(c *echo.Context) error {
 	userID := c.Get("access_token").(*auth.Token).UserID
 
 	var config web.SnapshotConfiguration
@@ -643,7 +643,7 @@ func setupApiQuickUndoRoutes(h *Handler, group *echo.Group) {
 	group.POST("/undo", h.handleApiQuickUndoUndo, scope(auth.ScopeAdmin))
 }
 
-func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
+func (h *Handler) handleApiUsersChangePassword(c *echo.Context) error {
 	userID := c.Get("access_token").(*auth.Token).UserID
 
 	var req web.UpdatePassword
@@ -698,7 +698,7 @@ func (h *Handler) handleApiUsersChangePassword(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleApiUsersAdd(c echo.Context) error {
+func (h *Handler) handleApiUsersAdd(c *echo.Context) error {
 	userID := c.Get("access_token").(*auth.Token).UserID
 
 	var req web.PasswordCredential
@@ -757,7 +757,7 @@ func setupApiUsersRoutes(h *Handler, group *echo.Group) {
 }
 
 func (h *Handler) accessTokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		if c.Request().Header.Get("Authorization") == "" {
 			c.Request().Header.Set("Authorization", c.Request().URL.Query().Get("x-auth"))
 		}
@@ -778,7 +778,7 @@ func (h *Handler) accessTokenMiddleware(next echo.HandlerFunc) echo.HandlerFunc 
 
 func scope(scopes ...auth.Scope) func(echo.HandlerFunc) echo.HandlerFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			token := c.Get("access_token").(*auth.Token)
 
 			for _, scope := range scopes {

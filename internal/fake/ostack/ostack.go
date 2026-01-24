@@ -14,8 +14,8 @@ import (
 	docker "github.com/docker/docker/client"
 	"github.com/kofuk/premises/internal/fake/ostack/dockerstack"
 	"github.com/kofuk/premises/internal/fake/ostack/entity"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 )
 
 //go:embed flavors.json
@@ -55,7 +55,7 @@ func Token(token string) OstackOption {
 	}
 }
 
-func (o *Ostack) ServeGetHealth(c echo.Context) error {
+func (o *Ostack) ServeGetHealth(c *echo.Context) error {
 	ver, err := o.docker.ServerVersion(c.Request().Context())
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func (o *Ostack) ServeGetHealth(c echo.Context) error {
 	return c.JSON(http.StatusOK, ver)
 }
 
-func (o *Ostack) ServeGetToken(c echo.Context) error {
+func (o *Ostack) ServeGetToken(c *echo.Context) error {
 	var req entity.GetTokenReq
 	if err := c.Bind(&req); err != nil {
 		slog.Error(err.Error())
@@ -91,7 +91,7 @@ func (o *Ostack) ServeGetToken(c echo.Context) error {
 	return c.JSON(http.StatusCreated, resp)
 }
 
-func (o *Ostack) ServeListServerDetails(c echo.Context) error {
+func (o *Ostack) ServeListServerDetails(c *echo.Context) error {
 	servers, err := dockerstack.ListServerDetails(c.Request().Context(), o.docker)
 	if err != nil {
 		slog.Error(err.Error())
@@ -101,7 +101,7 @@ func (o *Ostack) ServeListServerDetails(c echo.Context) error {
 	return c.JSON(http.StatusOK, servers)
 }
 
-func (o *Ostack) ServeGetServerDetail(c echo.Context) error {
+func (o *Ostack) ServeGetServerDetail(c *echo.Context) error {
 	servers, err := dockerstack.GetServerDetail(c.Request().Context(), o.docker, c.Param("id"))
 	if err != nil {
 		slog.Error(err.Error())
@@ -111,7 +111,7 @@ func (o *Ostack) ServeGetServerDetail(c echo.Context) error {
 	return c.JSON(http.StatusOK, servers)
 }
 
-func (o *Ostack) ServeCreateServer(c echo.Context) error {
+func (o *Ostack) ServeCreateServer(c *echo.Context) error {
 	o.m.Lock()
 	defer o.m.Unlock()
 
@@ -148,7 +148,7 @@ func (o *Ostack) ServeCreateServer(c echo.Context) error {
 	return c.JSON(http.StatusAccepted, server)
 }
 
-func (o *Ostack) ServeServerAction(c echo.Context) error {
+func (o *Ostack) ServeServerAction(c *echo.Context) error {
 	serverId := c.Param("server")
 
 	if err := dockerstack.StopServer(c.Request().Context(), o.docker, serverId); err != nil {
@@ -184,7 +184,7 @@ func (o *Ostack) ServeServerAction(c echo.Context) error {
 	return c.JSON(http.StatusAccepted, nil)
 }
 
-func (o *Ostack) ServeDeleteServer(c echo.Context) error {
+func (o *Ostack) ServeDeleteServer(c *echo.Context) error {
 	serverId := c.Param("server")
 
 	if err := dockerstack.DeleteServer(c.Request().Context(), o.docker, serverId); err != nil {
@@ -194,13 +194,13 @@ func (o *Ostack) ServeDeleteServer(c echo.Context) error {
 	return c.String(http.StatusNoContent, "")
 }
 
-func (o *Ostack) ServeListFlavors(c echo.Context) error {
+func (o *Ostack) ServeListFlavors(c *echo.Context) error {
 	c.Response().Header().Add("Content-Type", "application/json")
-	c.Response().Writer.Write(flavorData)
+	c.Response().Write(flavorData)
 	return nil
 }
 
-func (o *Ostack) ServeListVolumes(c echo.Context) error {
+func (o *Ostack) ServeListVolumes(c *echo.Context) error {
 	o.m.Lock()
 	defer o.m.Unlock()
 
@@ -221,7 +221,7 @@ func (o *Ostack) ServeListVolumes(c echo.Context) error {
 	return c.JSON(http.StatusOK, volumes)
 }
 
-func (o *Ostack) ServeUpdateVolume(c echo.Context) error {
+func (o *Ostack) ServeUpdateVolume(c *echo.Context) error {
 	o.m.Lock()
 	defer o.m.Unlock()
 
@@ -246,7 +246,7 @@ func (o *Ostack) setupRoutes() {
 	o.r.GET("/health", o.ServeGetHealth)
 
 	needsAuthEndpoint := o.r.Group("", func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			if subtle.ConstantTimeCompare([]byte(c.Request().Header.Get("X-Auth-Token")), []byte(o.token)) != 1 {
 				return c.JSON(http.StatusUnauthorized, nil)
 			}
@@ -275,7 +275,7 @@ func NewOstack(options ...OstackOption) (*Ostack, error) {
 	engine.HideBanner = true
 
 	origErrHandler := engine.HTTPErrorHandler
-	engine.HTTPErrorHandler = func(err error, c echo.Context) {
+	engine.HTTPErrorHandler = func(err error, c *echo.Context) {
 		if err == echo.ErrNotFound {
 			c.JSON(http.StatusNotFound, map[string]interface{}{
 				"code":  http.StatusNotFound,

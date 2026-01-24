@@ -18,8 +18,8 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/world"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/web"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bun"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
@@ -46,7 +46,7 @@ type Handler struct {
 func setupRoutes(h *Handler) {
 	if h.cfg.ServeStatic {
 		h.engine.Static("/", h.cfg.StaticDir)
-		h.engine.HTTPErrorHandler = func(err error, c echo.Context) {
+		h.engine.HTTPErrorHandler = func(err error, c *echo.Context) {
 			if err != echo.ErrNotFound {
 				h.engine.DefaultHTTPErrorHandler(err, c)
 				return
@@ -76,7 +76,7 @@ func setupRoutes(h *Handler) {
 
 func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Client, worldService *world.WorldService, longpoll *longpoll.LongPollService, kvs kvs.KeyValueStore, launcher *launcher.LauncherService) (*Handler, error) {
 	engine := echo.New()
-	engine.Use(otelecho.Middleware("web", otelecho.WithSkipper(func(c echo.Context) bool {
+	engine.Use(otelecho.Middleware("web", otelecho.WithSkipper(func(c *echo.Context) bool {
 		path := c.Path()
 		if path == "/" {
 			return true
@@ -95,7 +95,7 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 		LogURI:    true,
 		LogMethod: true,
 		LogStatus: true,
-		LogValuesFunc: func(c echo.Context, values middleware.RequestLoggerValues) error {
+		LogValuesFunc: func(c *echo.Context, values middleware.RequestLoggerValues) error {
 			var logArgs []any
 
 			span := trace.SpanFromContext(c.Request().Context())

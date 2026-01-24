@@ -21,7 +21,6 @@ require (
 	github.com/kofuk/go-queryalternatives v0.2.1
 	github.com/kofuk/go-structnbt v0.0.2
 	github.com/labstack/echo-contrib v0.17.4
-	github.com/labstack/echo/v4 v4.13.4
 	github.com/labstack/echo/v5 v5.0.0
 	github.com/mackerelio/go-osstat v0.2.6
 	github.com/onsi/ginkgo/v2 v2.27.5
@@ -91,6 +90,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/labstack/echo/v4 v4.13.4 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
