@@ -39,6 +39,10 @@ spec:
             {{- end }}
           envFrom:
             {{- toYaml .Values.services.web.envFrom | nindent 12 }}
+          {{- with .Values.services.web.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
       containers:
         - name: web
           image: {{ .Values.image }}
