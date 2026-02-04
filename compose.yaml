@@ -81,7 +81,7 @@ services:
     read_only: true
 
   redis:
-    image: valkey/valkey:9.0.1
+    image: valkey/valkey:9.0.2
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 1s
