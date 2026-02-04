@@ -24,7 +24,7 @@ require (
 	github.com/labstack/echo/v4 v4.15.0
 	github.com/mackerelio/go-osstat v0.2.6
 	github.com/onsi/ginkgo/v2 v2.28.1
-	github.com/onsi/gomega v1.39.0
+	github.com/onsi/gomega v1.39.1
 	github.com/redis/go-redis/extra/redisotel/v9 v9.17.3
 	github.com/redis/go-redis/v9 v9.17.3
 	github.com/robfig/cron/v3 v3.0.1
