@@ -20,7 +20,7 @@ require (
 	github.com/klauspost/compress v1.18.3
 	github.com/kofuk/go-queryalternatives v0.2.1
 	github.com/kofuk/go-structnbt v0.0.2
-	github.com/labstack/echo-contrib v0.17.4
+	github.com/labstack/echo-contrib v0.50.1
 	github.com/labstack/echo/v4 v4.15.0
 	github.com/mackerelio/go-osstat v0.2.6
 	github.com/onsi/ginkgo/v2 v2.28.1
@@ -122,8 +122,8 @@ require (
 	golang.org/x/tools v0.41.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
-	google.golang.org/grpc v1.77.0 // indirect
-	google.golang.org/protobuf v1.36.10 // indirect
+	google.golang.org/grpc v1.78.0 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
 	mellium.im/sasl v0.3.2 // indirect
 )
