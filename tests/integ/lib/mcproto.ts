@@ -167,6 +167,7 @@ export const getState = async (): Promise<State> => {
 
   // Status
   const status = await receiveStatus(conn);
+  console.log(JSON.stringify(status, null, 2));
 
   // Ping
   await sendPacket(conn, { id: 1, data: uint64Bytes(Date.now()) });
