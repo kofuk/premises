@@ -1,6 +1,7 @@
 package ostack
 
 import (
+	"context"
 	"crypto/subtle"
 	_ "embed"
 	"encoding/json"
@@ -271,20 +272,17 @@ func NewOstack(options ...OstackOption) (*Ostack, error) {
 	}
 
 	engine := echo.New()
-	engine.Use(middleware.Logger())
-	engine.HideBanner = true
+	engine.Use(middleware.RequestLogger())
 
-	origErrHandler := engine.HTTPErrorHandler
-	engine.HTTPErrorHandler = func(err error, c *echo.Context) {
+	origErrHandler := echo.DefaultHTTPErrorHandler(true)
+	engine.HTTPErrorHandler = func(c *echo.Context, err error) {
 		if err == echo.ErrNotFound {
-			c.JSON(http.StatusNotFound, map[string]interface{}{
+			c.JSON(http.StatusNotFound, map[string]any{
 				"code":  http.StatusNotFound,
 				"error": "Specified resource not found or not implemented",
 			})
 		} else {
-			if origErrHandler != nil {
-				origErrHandler(err, c)
-			}
+			origErrHandler(c, err)
 		}
 	}
 
@@ -303,6 +301,10 @@ func NewOstack(options ...OstackOption) (*Ostack, error) {
 	return ostack, nil
 }
 
-func (o *Ostack) Start() error {
-	return o.r.Start("0.0.0.0:8010")
+func (o *Ostack) Start(ctx context.Context) error {
+	sc := echo.StartConfig{
+		Address:    "0.0.0.0:8010",
+		HideBanner: true,
+	}
+	return sc.Start(ctx, o.r)
 }

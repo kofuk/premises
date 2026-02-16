@@ -171,16 +171,14 @@ exit
 func (h *Handler) handleGetStartupScript(c *echo.Context) error {
 	authKey := c.Request().Header.Get("Authorization")
 	if !strings.HasPrefix(authKey, "Setup-Code ") {
-		c.Response().Status = http.StatusBadRequest
-		return nil
+		return c.NoContent(http.StatusBadRequest)
 	}
 	authKey = strings.TrimPrefix(authKey, "Setup-Code ")
 
 	var script string
 	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("startup:%s", authKey), &script); err != nil {
 		slog.Error("Invalid auth code", slog.Any("error", err))
-		c.Response().Status = http.StatusBadRequest
-		return nil
+		return c.NoContent(http.StatusBadRequest)
 	}
 
 	return c.String(http.StatusOK, script)

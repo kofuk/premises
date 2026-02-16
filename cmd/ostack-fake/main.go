@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 
@@ -19,7 +20,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := ostack.Start(); err != nil {
+	if err := ostack.Start(context.Background()); err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
