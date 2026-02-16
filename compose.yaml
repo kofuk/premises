@@ -30,7 +30,7 @@ x-common-settings: &settings
 
 services:
   nginx:
-    image: nginxinc/nginx-unprivileged:1.29.3-alpine-slim
+    image: nginxinc/nginx-unprivileged:1.29.5-alpine-slim
     restart: always
     volumes:
       - type: bind
@@ -44,7 +44,7 @@ services:
         mode: host
 
   web:
-    image: ghcr.io/kofuk/premises:0.10.0
+    image: ghcr.io/kofuk/premises:0.10.1
     environment:
       <<: *settings
       PREMISES_MODE: web
@@ -58,7 +58,7 @@ services:
     restart: always
 
   proxy:
-    image: ghcr.io/kofuk/premises:0.10.0
+    image: ghcr.io/kofuk/premises:0.10.1
     environment:
       <<: *settings
       PREMISES_MODE: proxy
@@ -74,14 +74,14 @@ services:
         mode: host
 
   cron:
-    image: ghcr.io/kofuk/premises:0.10.0
+    image: ghcr.io/kofuk/premises:0.10.1
     environment:
       <<: *settings
       PREMISES_MODE: cron
     read_only: true
 
   redis:
-    image: valkey/valkey:9.0.1
+    image: valkey/valkey:9.0.2
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 1s
