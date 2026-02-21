@@ -29,34 +29,22 @@ func init() {
 	}
 }
 
-type Ostack struct {
+type OstackFakeOptions struct {
+	TenantId string
+	User     string
+	Password string
+	Token    string
+}
+
+type OstackFake struct {
 	r           *echo.Echo
 	m           sync.Mutex
 	docker      *docker.Client
-	tenantId    string
-	user        string
-	password    string
-	token       string
 	volumeNames map[string]string
+	options     OstackFakeOptions
 }
 
-type OstackOption func(ostack *Ostack)
-
-func TenantCredentials(tenantId, user, password string) OstackOption {
-	return func(ostack *Ostack) {
-		ostack.tenantId = tenantId
-		ostack.user = user
-		ostack.password = password
-	}
-}
-
-func Token(token string) OstackOption {
-	return func(ostack *Ostack) {
-		ostack.token = token
-	}
-}
-
-func (o *Ostack) ServeGetHealth(c *echo.Context) error {
+func (o *OstackFake) ServeGetHealth(c *echo.Context) error {
 	ver, err := o.docker.ServerVersion(c.Request().Context())
 	if err != nil {
 		return err
@@ -64,7 +52,7 @@ func (o *Ostack) ServeGetHealth(c *echo.Context) error {
 	return c.JSON(http.StatusOK, ver)
 }
 
-func (o *Ostack) ServeGetToken(c *echo.Context) error {
+func (o *OstackFake) ServeGetToken(c *echo.Context) error {
 	var req entity.GetTokenReq
 	if err := c.Bind(&req); err != nil {
 		slog.Error(err.Error())
@@ -80,19 +68,19 @@ func (o *Ostack) ServeGetToken(c *echo.Context) error {
 	password := req.Auth.Identity.Password.User.Password
 	tenantId := req.Auth.Scope.Project.ID
 
-	if user != o.user || password != o.password || tenantId != o.tenantId {
+	if user != o.options.User || password != o.options.Password || tenantId != o.options.TenantId {
 		return c.JSON(http.StatusUnauthorized, nil)
 	}
 
 	resp := entity.GetTokenResp{}
 	resp.Token.ExpiresAt = time.Now().Add(30 * time.Minute).Format(time.RFC3339)
 
-	c.Response().Header().Add("x-subject-token", o.token)
+	c.Response().Header().Add("x-subject-token", o.options.Token)
 
 	return c.JSON(http.StatusCreated, resp)
 }
 
-func (o *Ostack) ServeListServerDetails(c *echo.Context) error {
+func (o *OstackFake) ServeListServerDetails(c *echo.Context) error {
 	servers, err := dockerstack.ListServerDetails(c.Request().Context(), o.docker)
 	if err != nil {
 		slog.Error(err.Error())
@@ -102,7 +90,7 @@ func (o *Ostack) ServeListServerDetails(c *echo.Context) error {
 	return c.JSON(http.StatusOK, servers)
 }
 
-func (o *Ostack) ServeGetServerDetail(c *echo.Context) error {
+func (o *OstackFake) ServeGetServerDetail(c *echo.Context) error {
 	servers, err := dockerstack.GetServerDetail(c.Request().Context(), o.docker, c.Param("id"))
 	if err != nil {
 		slog.Error(err.Error())
@@ -112,7 +100,7 @@ func (o *Ostack) ServeGetServerDetail(c *echo.Context) error {
 	return c.JSON(http.StatusOK, servers)
 }
 
-func (o *Ostack) ServeCreateServer(c *echo.Context) error {
+func (o *OstackFake) ServeCreateServer(c *echo.Context) error {
 	o.m.Lock()
 	defer o.m.Unlock()
 
@@ -149,7 +137,7 @@ func (o *Ostack) ServeCreateServer(c *echo.Context) error {
 	return c.JSON(http.StatusAccepted, server)
 }
 
-func (o *Ostack) ServeServerAction(c *echo.Context) error {
+func (o *OstackFake) ServeServerAction(c *echo.Context) error {
 	serverId := c.Param("server")
 
 	if err := dockerstack.StopServer(c.Request().Context(), o.docker, serverId); err != nil {
@@ -185,7 +173,7 @@ func (o *Ostack) ServeServerAction(c *echo.Context) error {
 	return c.JSON(http.StatusAccepted, nil)
 }
 
-func (o *Ostack) ServeDeleteServer(c *echo.Context) error {
+func (o *OstackFake) ServeDeleteServer(c *echo.Context) error {
 	serverId := c.Param("server")
 
 	if err := dockerstack.DeleteServer(c.Request().Context(), o.docker, serverId); err != nil {
@@ -195,13 +183,13 @@ func (o *Ostack) ServeDeleteServer(c *echo.Context) error {
 	return c.String(http.StatusNoContent, "")
 }
 
-func (o *Ostack) ServeListFlavors(c *echo.Context) error {
+func (o *OstackFake) ServeListFlavors(c *echo.Context) error {
 	c.Response().Header().Add("Content-Type", "application/json")
 	c.Response().Write(flavorData)
 	return nil
 }
 
-func (o *Ostack) ServeListVolumes(c *echo.Context) error {
+func (o *OstackFake) ServeListVolumes(c *echo.Context) error {
 	o.m.Lock()
 	defer o.m.Unlock()
 
@@ -222,7 +210,7 @@ func (o *Ostack) ServeListVolumes(c *echo.Context) error {
 	return c.JSON(http.StatusOK, volumes)
 }
 
-func (o *Ostack) ServeUpdateVolume(c *echo.Context) error {
+func (o *OstackFake) ServeUpdateVolume(c *echo.Context) error {
 	o.m.Lock()
 	defer o.m.Unlock()
 
@@ -242,13 +230,13 @@ func (o *Ostack) ServeUpdateVolume(c *echo.Context) error {
 	return c.JSON(http.StatusOK, nil)
 }
 
-func (o *Ostack) setupRoutes() {
+func (o *OstackFake) setupRoutes() {
 	o.r.POST("/identity/v3/auth/tokens", o.ServeGetToken)
 	o.r.GET("/health", o.ServeGetHealth)
 
 	needsAuthEndpoint := o.r.Group("", func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c *echo.Context) error {
-			if subtle.ConstantTimeCompare([]byte(c.Request().Header.Get("X-Auth-Token")), []byte(o.token)) != 1 {
+			if subtle.ConstantTimeCompare([]byte(c.Request().Header.Get("X-Auth-Token")), []byte(o.options.Token)) != 1 {
 				return c.JSON(http.StatusUnauthorized, nil)
 			}
 			return next(c)
@@ -265,7 +253,7 @@ func (o *Ostack) setupRoutes() {
 	needsAuthEndpoint.PUT("/volume/v3/volumes/:volume", o.ServeUpdateVolume)
 }
 
-func NewOstack(options ...OstackOption) (*Ostack, error) {
+func NewOstack(options OstackFakeOptions) (*OstackFake, error) {
 	docker, err := docker.NewClientWithOpts(docker.FromEnv)
 	if err != nil {
 		return nil, err
@@ -286,22 +274,19 @@ func NewOstack(options ...OstackOption) (*Ostack, error) {
 		}
 	}
 
-	ostack := &Ostack{
+	ostack := &OstackFake{
 		r:           engine,
 		docker:      docker,
 		volumeNames: make(map[string]string),
+		options:     options,
 	}
 
 	ostack.setupRoutes()
 
-	for _, opt := range options {
-		opt(ostack)
-	}
-
 	return ostack, nil
 }
 
-func (o *Ostack) Start(ctx context.Context) error {
+func (o *OstackFake) Start(ctx context.Context) error {
 	sc := echo.StartConfig{
 		Address:    "0.0.0.0:8010",
 		HideBanner: true,

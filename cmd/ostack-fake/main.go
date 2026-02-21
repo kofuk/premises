@@ -14,7 +14,12 @@ func main() {
 		Level:     slog.LevelDebug,
 	})))
 
-	ostack, err := ostack.NewOstack(ostack.TenantCredentials("tenantId", "user", "password"), ostack.Token("xxxxxxxxxx"))
+	ostack, err := ostack.NewOstack(ostack.OstackFakeOptions{
+		TenantId: "tenantId",
+		User:     "user",
+		Password: "password",
+		Token:    "xxxxxxxxxx",
+	})
 	if err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
