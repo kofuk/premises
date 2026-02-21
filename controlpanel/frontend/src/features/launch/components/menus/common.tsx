@@ -1,6 +1,5 @@
-import {useTranslation} from 'react-i18next';
-
 import {Typography} from '@mui/material';
+import {useTranslation} from 'react-i18next';
 
 const WarningText = ({children}: {children: string}) => (
   <Typography component="span" sx={{color: '#b33930', fontWeight: 'bold'}} variant="body2">

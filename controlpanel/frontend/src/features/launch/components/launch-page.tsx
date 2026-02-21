@@ -1,7 +1,6 @@
-import {useTranslation} from 'react-i18next';
-
 import {PlayArrow as StartIcon} from '@mui/icons-material';
 import {Box, Button, Card} from '@mui/material';
+import {useTranslation} from 'react-i18next';
 
 import {useLaunchConfig} from './launch-config';
 import MenuContainer from './menu-container';

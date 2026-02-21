@@ -1,7 +1,6 @@
+import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField} from '@mui/material';
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
-
-import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField} from '@mui/material';
 
 type Props = {
   add: (key: string, value: string) => void;

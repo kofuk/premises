@@ -1,15 +1,11 @@
-import {Link, useNavigate} from 'react-router-dom';
-
 import styled from '@emotion/styled';
-import {useTranslation} from 'react-i18next';
-
 import {Logout as LogoutIcon, Settings as SettingsIcon} from '@mui/icons-material';
 import {IconButton, Toolbar, Tooltip, Typography} from '@mui/material';
-
-import StatusLabel from './status-label';
-
+import {useTranslation} from 'react-i18next';
+import {Link, useNavigate} from 'react-router-dom';
 import {useAuth} from '@/utils/auth';
 import {useRunnerStatus} from '@/utils/runner-status';
+import StatusLabel from './status-label';
 
 const RoundedAppBar = styled.div`
   position: sticky;

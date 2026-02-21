@@ -1,9 +1,8 @@
+import {MenuItem as MUIMenuItem, Select, type SelectChangeEvent, Stack, Typography} from '@mui/material';
 import {useTranslation} from 'react-i18next';
 
-import {MenuItem as MUIMenuItem, Select, SelectChangeEvent, Stack, Typography} from '@mui/material';
-
 import {useLaunchConfig} from '../launch-config';
-import {MenuItem} from '../menu-container';
+import type {MenuItem} from '../menu-container';
 
 import {valueLabel} from './common';
 
@@ -53,8 +52,8 @@ export const create = (): MenuItem => {
     ui: (
       <Stack sx={{mt: 0.5}}>
         <Select onChange={handleChange} value={machineType}>
-          {machines.map((e, i) => (
-            <MUIMenuItem key={`${i}`} value={e.name}>
+          {machines.map((e) => (
+            <MUIMenuItem key={e.name} value={e.name}>
               <Typography component="div" sx={{fontWeight: 400}} variant="body1">
                 {e.getMemSizeLabel()}
               </Typography>
@@ -66,7 +65,7 @@ export const create = (): MenuItem => {
         </Select>
       </Stack>
     ),
-    detail: valueLabel(config.machineType, (machineType) => machines.find((e) => e.name == machineType)!.getLabel()),
+    detail: valueLabel(config.machineType, (machineType) => machines.find((e) => e.name === machineType)!.getLabel()),
     variant: 'dialog',
     cancellable: true
   };

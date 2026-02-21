@@ -1,14 +1,11 @@
-import {useTranslation} from 'react-i18next';
-
 import {Box} from '@mui/material';
-
+import {useTranslation} from 'react-i18next';
+import {useRunnerStatus} from '@/utils/runner-status';
 import {ConfigProvider} from './components/launch-config';
 import LaunchPage from './components/launch-page';
 import LoadingPage from './components/loading-page';
 import ManualSetupPage from './components/manual-setup-page';
 import ServerControlPage from './components/server-control-page';
-
-import {useRunnerStatus} from '@/utils/runner-status';
 
 const PAGE_LAUNCH = 1;
 const PAGE_LOADING = 2;

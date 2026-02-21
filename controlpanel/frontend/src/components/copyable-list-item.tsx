@@ -1,7 +1,6 @@
-import {useTranslation} from 'react-i18next';
-
 import {ContentCopy as ContentCopyIcon} from '@mui/icons-material';
 import {Divider, IconButton, ListItem, ListItemText, Tooltip} from '@mui/material';
+import {useTranslation} from 'react-i18next';
 
 type Prop = {
   title: string;

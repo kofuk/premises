@@ -1,9 +1,9 @@
-import {ReactNode, createContext, useContext} from 'react';
+import {createContext, type ReactNode, useContext} from 'react';
 
 import useSWR from 'swr';
 
 import {launch as apiLaunch, updateConfig as apiUpdateConfig, getConfig} from '@/api';
-import {PendingConfig} from '@/api/entities';
+import type {PendingConfig} from '@/api/entities';
 import Loading from '@/components/loading';
 import {useAuth} from '@/utils/auth';
 

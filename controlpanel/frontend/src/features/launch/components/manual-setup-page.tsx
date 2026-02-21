@@ -1,6 +1,5 @@
-import {useTranslation} from 'react-i18next';
-
 import {Card, Stack, Typography} from '@mui/material';
+import {useTranslation} from 'react-i18next';
 
 import CodeBlock from '@/components/code-block';
 import {useRunnerStatus} from '@/utils/runner-status';

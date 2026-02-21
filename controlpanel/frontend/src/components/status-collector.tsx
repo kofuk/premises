@@ -43,7 +43,7 @@ const StatusCollector = () => {
     };
   }, []);
 
-  return <></>;
+  return null;
 };
 
 export default StatusCollector;

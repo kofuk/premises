@@ -1,12 +1,10 @@
+import {Box, List} from '@mui/material';
 import {useEffect, useState} from 'react';
-
 import {useTranslation} from 'react-i18next';
 import {toast} from 'react-toastify';
 
-import {Box, List} from '@mui/material';
-
 import {APIError, getWorldInfo} from '@/api';
-import {WorldInfo as WorldInfoEntity} from '@/api/entities';
+import type {WorldInfo as WorldInfoEntity} from '@/api/entities';
 import CopyableListItem from '@/components/copyable-list-item';
 import DelayedSkeleton from '@/components/delayed-skeleton';
 import {useAuth} from '@/utils/auth';

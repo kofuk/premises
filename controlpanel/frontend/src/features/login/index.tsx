@@ -1,13 +1,10 @@
+import {Box} from '@mui/material';
 import {useEffect} from 'react';
-import {useNavigate} from 'react-router-dom';
 
 import {useTranslation} from 'react-i18next';
-
-import {Box} from '@mui/material';
-
-import LoginForm from './components/login-form';
-
+import {useNavigate} from 'react-router-dom';
 import {useAuth} from '@/utils/auth';
+import LoginForm from './components/login-form';
 
 const LoginPage = () => {
   const [t] = useTranslation();
@@ -18,7 +15,7 @@ const LoginPage = () => {
     if (loggedIn) {
       navigate('/launch', {replace: true});
     }
-  }, [loggedIn]);
+  }, [loggedIn, navigate]);
 
   return (
     <>

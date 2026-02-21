@@ -1,9 +1,7 @@
-import {useNavigate} from 'react-router-dom';
-
-import {useTranslation} from 'react-i18next';
-
 import {Lock as LockIcon, PersonAdd as PersonAddIcon} from '@mui/icons-material';
 import {Grid, List, ListItemButton, ListItemIcon, ListItemText, Paper, Typography} from '@mui/material';
+import {useTranslation} from 'react-i18next';
+import {useNavigate} from 'react-router-dom';
 
 const SettingsMenu = () => {
   const [t] = useTranslation();

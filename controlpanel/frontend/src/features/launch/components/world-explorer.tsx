@@ -1,9 +1,3 @@
-import React, {useState} from 'react';
-
-import {useForm} from 'react-hook-form';
-import {useTranslation} from 'react-i18next';
-import {toast} from 'react-toastify';
-
 import {
   Delete as DeleteIcon,
   Download as DownloadIcon,
@@ -13,11 +7,16 @@ import {
   Upload as UploadIcon,
   Public as WorldIcon
 } from '@mui/icons-material';
-import {Button, ButtonGroup, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Stack, TextField, colors} from '@mui/material';
+import {Button, ButtonGroup, colors, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Stack, TextField} from '@mui/material';
 import {SimpleTreeView, TreeItem} from '@mui/x-tree-view';
+import type React from 'react';
+import {useState} from 'react';
+import {useForm} from 'react-hook-form';
+import {useTranslation} from 'react-i18next';
+import {toast} from 'react-toastify';
 
 import {APIError, createWorldDownloadLink, createWorldUploadLink, deleteWorld} from '@/api';
-import {World, WorldGeneration} from '@/api/entities';
+import type {World, WorldGeneration} from '@/api/entities';
 import {useAuth} from '@/utils/auth';
 
 type Selection = {
