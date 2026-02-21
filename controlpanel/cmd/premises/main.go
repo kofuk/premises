@@ -115,7 +115,7 @@ func startWeb(ctx context.Context, cfg *config.Config) {
 		slog.Error("Failed to initialize handler", slog.Any("error", err))
 		os.Exit(1)
 	}
-	if err := handler.Start(); err != nil {
+	if err := handler.Start(ctx); err != nil {
 		slog.Error("Error starting server", slog.Any("error", err))
 		os.Exit(1)
 	}

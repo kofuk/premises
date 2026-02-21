@@ -16,6 +16,7 @@ if ! deno run --check --allow-net --allow-env "${dir}/index.ts"; then
     echo '::group::Runner Log'
     if [ -n "${container_id}" ]; then
         echo "Container ID: ${container_id}"
+        docker exec "${container_id}" cat /tmp/premises-startup.log
         docker exec "${container_id}" cat /exteriord.log
     else
         cat "$(ls /tmp/premises/exteriord-*.log | tail -1)"

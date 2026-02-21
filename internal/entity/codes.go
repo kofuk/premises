@@ -12,6 +12,7 @@ const (
 	ErrDupUserName      ErrorCode = 9
 	ErrRequiresAuth     ErrorCode = 10
 	ErrBackup           ErrorCode = 11
+	ErrAgain            ErrorCode = 12
 )
 
 const (

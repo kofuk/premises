@@ -1,5 +1,6 @@
 export type State = {
   versionName: string;
+  serverDescription: string;
   serverState?: {
     version: string;
     worldVersionPrev: string;
@@ -143,7 +144,7 @@ const receiveStatus = async (conn: Conn): Promise<any> => {
   return JSON.parse(new TextDecoder().decode(buf));
 };
 
-export const getState = async (): Promise<State> => {
+const getStateInner = async (): Promise<State> => {
   const conn = new Conn(
     await Deno.connect({
       port: 25565,
@@ -176,7 +177,25 @@ export const getState = async (): Promise<State> => {
   await readUint64(conn);
 
   return {
-    versionName: status.version.name,
+    versionName: status.version?.name ?? "not set",
+    serverDescription: status.description?.text ?? "not set",
     serverState: status["x-premises"],
   };
+};
+
+export const getState = async (): Promise<State> => {
+  for (let i = 0; i < 10; i++) {
+    try {
+      const state = await getStateInner();
+      if (state.serverState || i === 9) {
+        return state;
+      }
+    } catch {
+      // retry
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    console.error("Failed to get state, retrying...");
+  }
+  throw new Error("Failed to get state after 10 attempts");
 };

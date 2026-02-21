@@ -17,13 +17,13 @@ import (
 	"github.com/kofuk/premises/internal/entity/runner"
 	"github.com/kofuk/premises/internal/entity/web"
 	potel "github.com/kofuk/premises/internal/otel"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
-func (h *Handler) handleRunnerPoll(c echo.Context) error {
+func (h *Handler) handleRunnerPoll(c *echo.Context) error {
 	runnerId, ok := c.Get("runner-id").(string)
 	if !ok || runnerId == "" {
 		slog.Error("Server ID is not set")
@@ -33,10 +33,16 @@ func (h *Handler) handleRunnerPoll(c echo.Context) error {
 		})
 	}
 
-	action, err := h.runnerActionService.Wait(c.Request().Context(), runnerId)
+	ctx, cancel := context.WithTimeout(c.Request().Context(), 30*time.Second)
+	defer cancel()
+
+	action, err := h.runnerActionService.Wait(ctx, runnerId)
 	if err != nil {
 		if err == longpoll.ErrCancelled {
-			return nil
+			return c.JSON(http.StatusNoContent, web.ErrorResponse{
+				Success:   false,
+				ErrorCode: entity.ErrAgain,
+			})
 		}
 		slog.Error("Error waiting action", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -51,7 +57,7 @@ func (h *Handler) handleRunnerPoll(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handlePostStatus(c echo.Context) error {
+func (h *Handler) handlePostStatus(c *echo.Context) error {
 	runnerId, ok := c.Get("runner-id").(string)
 	if !ok || runnerId == "" {
 		slog.Error("Runner ID is not set")
@@ -132,7 +138,7 @@ func (h *Handler) handlePostStatus(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleGetInstallScript(c echo.Context) error {
+func (h *Handler) handleGetInstallScript(c *echo.Context) error {
 	var protocol string
 	if c.QueryParam("s") == "0" {
 		protocol = "http"
@@ -168,25 +174,23 @@ exit
 	return c.String(http.StatusOK, script)
 }
 
-func (h *Handler) handleGetStartupScript(c echo.Context) error {
+func (h *Handler) handleGetStartupScript(c *echo.Context) error {
 	authKey := c.Request().Header.Get("Authorization")
 	if !strings.HasPrefix(authKey, "Setup-Code ") {
-		c.Response().Status = http.StatusBadRequest
-		return nil
+		return c.NoContent(http.StatusBadRequest)
 	}
 	authKey = strings.TrimPrefix(authKey, "Setup-Code ")
 
 	var script string
 	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("startup:%s", authKey), &script); err != nil {
 		slog.Error("Invalid auth code", slog.Any("error", err))
-		c.Response().Status = http.StatusBadRequest
-		return nil
+		return c.NoContent(http.StatusBadRequest)
 	}
 
 	return c.String(http.StatusOK, script)
 }
 
-func (h *Handler) handleGetLatestWorldID(c echo.Context) error {
+func (h *Handler) handleGetLatestWorldID(c *echo.Context) error {
 	worldName := c.Param("worldName")
 	if worldName == "" {
 		slog.Error("World name is not set")
@@ -211,7 +215,7 @@ func (h *Handler) handleGetLatestWorldID(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleCreateWorldDownloadURL(c echo.Context) error {
+func (h *Handler) handleCreateWorldDownloadURL(c *echo.Context) error {
 	var req web.CreateWorldDownloadURLRequest
 	if err := c.Bind(&req); err != nil {
 		slog.Error("Unable to bind request", slog.Any("error", err))
@@ -236,7 +240,7 @@ func (h *Handler) handleCreateWorldDownloadURL(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleCreateWorldUploadURL(c echo.Context) error {
+func (h *Handler) handleCreateWorldUploadURL(c *echo.Context) error {
 	var req web.CreateWorldUploadURLRequest
 	if err := c.Bind(&req); err != nil {
 		slog.Error("Unable to bind request", slog.Any("error", err))
@@ -275,7 +279,7 @@ func (h *Handler) handleCreateWorldUploadURL(c echo.Context) error {
 }
 
 func (h *Handler) authKeyMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
+	return func(c *echo.Context) error {
 		authKey := c.Request().Header.Get("Authorization")
 
 		var runnerId string

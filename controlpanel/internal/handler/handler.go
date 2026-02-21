@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -18,11 +19,11 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/world"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/web"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	echootel "github.com/labstack/echo-opentelemetry"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bun"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -46,9 +47,10 @@ type Handler struct {
 func setupRoutes(h *Handler) {
 	if h.cfg.ServeStatic {
 		h.engine.Static("/", h.cfg.StaticDir)
-		h.engine.HTTPErrorHandler = func(err error, c echo.Context) {
+		defaultHttpErrorHandler := echo.DefaultHTTPErrorHandler(false)
+		h.engine.HTTPErrorHandler = func(c *echo.Context, err error) {
 			if err != echo.ErrNotFound {
-				h.engine.DefaultHTTPErrorHandler(err, c)
+				defaultHttpErrorHandler(c, err)
 				return
 			}
 
@@ -76,26 +78,29 @@ func setupRoutes(h *Handler) {
 
 func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Client, worldService *world.WorldService, longpoll *longpoll.LongPollService, kvs kvs.KeyValueStore, launcher *launcher.LauncherService) (*Handler, error) {
 	engine := echo.New()
-	engine.Use(otelecho.Middleware("web", otelecho.WithSkipper(func(c echo.Context) bool {
-		path := c.Path()
-		if path == "/" {
-			return true
-		}
-		if !strings.HasPrefix(path, "/api") && !strings.HasPrefix(path, "/_") {
-			// Ignore static assets and health endpoint
-			return true
-		}
-		if path == "/_/status" || path == "/_/poll" {
-			// Ignore some endpoints which are frequently called by runner.
-			return true
-		}
-		return false
-	})))
+	engine.Use(echootel.NewMiddlewareWithConfig(echootel.Config{
+		ServerName: "web",
+		Skipper: func(c *echo.Context) bool {
+			path := c.Path()
+			if path == "/" {
+				return true
+			}
+			if !strings.HasPrefix(path, "/api") && !strings.HasPrefix(path, "/_") {
+				// Ignore static assets and health endpoint
+				return true
+			}
+			if path == "/_/status" || path == "/_/poll" {
+				// Ignore some endpoints which are frequently called by runner.
+				return true
+			}
+			return false
+		},
+	}))
 	engine.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogURI:    true,
 		LogMethod: true,
 		LogStatus: true,
-		LogValuesFunc: func(c echo.Context, values middleware.RequestLoggerValues) error {
+		LogValuesFunc: func(c *echo.Context, values middleware.RequestLoggerValues) error {
 			var logArgs []any
 
 			span := trace.SpanFromContext(c.Request().Context())
@@ -108,8 +113,6 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 			return nil
 		},
 	}))
-	engine.HideBanner = true
-	engine.HidePort = true
 
 	h := &Handler{
 		cfg:                 cfg,
@@ -132,6 +135,11 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 	return h, nil
 }
 
-func (h *Handler) Start() error {
-	return h.engine.Start(h.bind)
+func (h *Handler) Start(ctx context.Context) error {
+	sc := echo.StartConfig{
+		Address:    h.bind,
+		HideBanner: true,
+		HidePort:   true,
+	}
+	return sc.Start(ctx, h.engine)
 }

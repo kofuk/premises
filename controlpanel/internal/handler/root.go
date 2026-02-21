@@ -13,11 +13,11 @@ import (
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/web"
 	"github.com/labstack/echo-contrib/session"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (h *Handler) handleLogin(c echo.Context) error {
+func (h *Handler) handleLogin(c *echo.Context) error {
 	var cred web.PasswordCredential
 	if err := c.Bind(&cred); err != nil {
 		slog.Error("Failed to bind data", slog.Any("error", err))
@@ -81,7 +81,7 @@ func (h *Handler) handleLogin(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleLogout(c echo.Context) error {
+func (h *Handler) handleLogout(c *echo.Context) error {
 	session, err := session.Get("session", c)
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -120,7 +120,7 @@ func isAllowedPassword(password string) bool {
 	return true
 }
 
-func (h *Handler) handleLoginResetPassword(c echo.Context) error {
+func (h *Handler) handleLoginResetPassword(c *echo.Context) error {
 	session, err := session.Get("session", c)
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -180,7 +180,7 @@ func (h *Handler) handleLoginResetPassword(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleSessionData(c echo.Context) error {
+func (h *Handler) handleSessionData(c *echo.Context) error {
 	session, err := session.Get("session", c)
 	if err != nil {
 		return c.JSON(http.StatusOK, web.ErrorResponse{
@@ -208,7 +208,7 @@ func (h *Handler) handleSessionData(c echo.Context) error {
 	})
 }
 
-func (h *Handler) handleHealth(c echo.Context) error {
+func (h *Handler) handleHealth(c *echo.Context) error {
 	_, err := h.redis.Ping(c.Request().Context()).Result()
 	if err != nil {
 		slog.Error("Can't connect to Redis", slog.Any("error", err))
@@ -245,7 +245,7 @@ func (h *Handler) setupRootRoutes(group *echo.Group) {
 
 	group.Use(session.Middleware(store))
 	group.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			// Verify that the request is sent from allowed origin (if needed).
 			if c.Request().Method == http.MethodPost {
 				if c.Request().Header.Get("Origin") != h.cfg.Origin {
