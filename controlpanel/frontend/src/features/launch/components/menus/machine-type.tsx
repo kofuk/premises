@@ -29,12 +29,13 @@ class Machine {
 }
 
 const machines: Machine[] = [
-  new Machine('2g', 2, 3, 3.3),
-  new Machine('4g', 4, 4, 6.6),
-  new Machine('8g', 8, 6, 13.2),
-  new Machine('16g', 16, 8, 24.2),
-  new Machine('32g', 32, 12, 48),
-  new Machine('64g', 64, 24, 96.8)
+  new Machine('2g', 2, 3, 3.7),
+  new Machine('4g', 4, 4, 7.3),
+  new Machine('12g', 12, 6, 14.6),
+  new Machine('24g', 24, 8, 26.7),
+  new Machine('48g', 48, 12, 53.3),
+  new Machine('96g', 96, 24, 106.5),
+  new Machine('128g', 128, 40, 142.8)
 ];
 
 export const create = (): MenuItem => {
