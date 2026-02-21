@@ -7,6 +7,7 @@
     "swap": "",
     "vcpus": 12,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -18,6 +19,31 @@
     "swap": "",
     "vcpus": 2,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "71eaeda4-d6cf-4952-aab4-7554517ba402",
+    "name": "g2l-t-c40m128",
+    "ram": 131072,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 40,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "26785a90-2c35-4b83-8121-5cfedc3a1f5c",
+    "name": "g2l-p-c24m96",
+    "ram": 98304,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 24,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -29,6 +55,19 @@
     "swap": "",
     "vcpus": 1,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "d0a53383-092a-4b18-abab-31985f3cc852",
+    "name": "g2l-t-c4m16g1-l4",
+    "ram": 16384,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 4,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -40,6 +79,31 @@
     "swap": "",
     "vcpus": 20,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "ea4844de-abfa-4ad0-be9f-80128122a864",
+    "name": "g2l-t-c8m24",
+    "ram": 24576,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 8,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "0608b712-cbdd-4b39-b8fd-a1a0c1f0667d",
+    "name": "g2l-t-c12m48",
+    "ram": 49152,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 12,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -51,6 +115,7 @@
     "swap": "",
     "vcpus": 6,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -62,6 +127,7 @@
     "swap": "",
     "vcpus": 4,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -73,6 +139,7 @@
     "swap": "",
     "vcpus": 12,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -84,6 +151,19 @@
     "swap": "",
     "vcpus": 6,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "1922c767-0d77-48d5-afeb-24850f671865",
+    "name": "g2l-t-c24m96",
+    "ram": 98304,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 24,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -95,6 +175,7 @@
     "swap": "",
     "vcpus": 24,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -106,6 +187,7 @@
     "swap": "",
     "vcpus": 1,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -117,6 +199,7 @@
     "swap": "",
     "vcpus": 24,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -128,6 +211,7 @@
     "swap": "",
     "vcpus": 1,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -139,6 +223,7 @@
     "swap": "",
     "vcpus": 4,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -150,6 +235,7 @@
     "swap": "",
     "vcpus": 16,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -161,6 +247,7 @@
     "swap": "",
     "vcpus": 2,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -172,6 +259,19 @@
     "swap": "",
     "vcpus": 2,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "f26c0779-3d40-4c75-8e92-0e477549d3b3",
+    "name": "g2l-p-c12m48",
+    "ram": 49152,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 12,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -183,6 +283,7 @@
     "swap": "",
     "vcpus": 4,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -194,6 +295,7 @@
     "swap": "",
     "vcpus": 3,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -205,6 +307,7 @@
     "swap": "",
     "vcpus": 22,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -216,6 +319,7 @@
     "swap": "",
     "vcpus": 4,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -227,6 +331,7 @@
     "swap": "",
     "vcpus": 6,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -238,6 +343,7 @@
     "swap": "",
     "vcpus": 8,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -249,6 +355,7 @@
     "swap": "",
     "vcpus": 24,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -260,6 +367,7 @@
     "swap": "",
     "vcpus": 3,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -271,6 +379,7 @@
     "swap": "",
     "vcpus": 8,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -282,6 +391,19 @@
     "swap": "",
     "vcpus": 1,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "05b621d3-c63e-4b40-82e2-cc221525e436",
+    "name": "g2l-p-c40m128",
+    "ram": 131072,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 40,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -293,6 +415,7 @@
     "swap": "",
     "vcpus": 8,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -304,6 +427,19 @@
     "swap": "",
     "vcpus": 24,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "d05c0256-869d-4505-89da-bdd6f72a2a20",
+    "name": "g2l-p-c88m912g4-h100",
+    "ram": 933888,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 88,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -315,6 +451,19 @@
     "swap": "",
     "vcpus": 22,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "3d6a858c-fc28-4255-b7c1-3f5a7d1f7731",
+    "name": "g2l-p-c4m16g1-l4",
+    "ram": 16384,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 4,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -326,6 +475,7 @@
     "swap": "",
     "vcpus": 4,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -337,6 +487,31 @@
     "swap": "",
     "vcpus": 12,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "29fb6883-518b-4c0e-8476-0e395f4fe850",
+    "name": "g2l-p-c8m24",
+    "ram": 24576,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 8,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "55d90dc5-0efe-441f-b1e8-3f595f2d50e9",
+    "name": "g2l-t-c6m12",
+    "ram": 12288,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 6,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -348,6 +523,7 @@
     "swap": "",
     "vcpus": 3,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -359,6 +535,7 @@
     "swap": "",
     "vcpus": 20,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -370,6 +547,7 @@
     "swap": "",
     "vcpus": 8,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -381,6 +559,7 @@
     "swap": "",
     "vcpus": 12,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -392,6 +571,7 @@
     "swap": "",
     "vcpus": 2,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -403,6 +583,7 @@
     "swap": "",
     "vcpus": 6,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -414,6 +595,7 @@
     "swap": "",
     "vcpus": 3,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -425,6 +607,19 @@
     "swap": "",
     "vcpus": 8,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "c9e04935-883f-4c9b-b8e4-4b48405afda7",
+    "name": "g2l-t-c88m912g4-h100",
+    "ram": 933888,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 88,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -436,6 +631,7 @@
     "swap": "",
     "vcpus": 2,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   },
@@ -447,6 +643,19 @@
     "swap": "",
     "vcpus": 6,
     "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
+    "OS-FLV-DISABLED:disabled": false,
+    "os-flavor-access:is_public": true
+  },
+  {
+    "id": "df81aa5f-6875-4faf-a5be-6e1ba028b210",
+    "name": "g2l-p-c6m12",
+    "ram": 12288,
+    "disk": 0,
+    "swap": "",
+    "vcpus": 6,
+    "rxtx_factor": 1,
+    "OS-FLV-EXT-DATA:ephemeral": 0,
     "OS-FLV-DISABLED:disabled": false,
     "os-flavor-access:is_public": true
   }

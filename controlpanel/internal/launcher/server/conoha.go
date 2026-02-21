@@ -19,6 +19,16 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
+var availableFlavorsByMemory = map[int]string{
+	2:   "g2l-t-c3m2",
+	4:   "g2l-t-c4m4",
+	12:  "g2l-t-c6m12",
+	24:  "g2l-t-c8m24",
+	48:  "g2l-t-c12m48",
+	96:  "g2l-t-c24m96",
+	128: "g2l-t-c40m128",
+}
+
 type ConohaServer struct {
 	cfg    *config.Config
 	conoha *conoha.Client
@@ -51,16 +61,6 @@ func (s *ConohaServer) IsAvailable() bool {
 	return s.cfg.ConohaUser != "" && s.cfg.ConohaPassword != ""
 }
 
-func findMatchingFlavor(flavors []conoha.Flavor, memSizeMB int) (string, error) {
-	for _, f := range flavors {
-		if f.RAM == memSizeMB {
-			return f.ID, nil
-		}
-	}
-
-	return "", errors.New("no matching flavor")
-}
-
 func findVolume(volumes []conoha.Volume, name string) (string, error) {
 	for _, v := range volumes {
 		if v.Name == name {
@@ -71,23 +71,19 @@ func findVolume(volumes []conoha.Volume, name string) (string, error) {
 	return "", errors.New("no matching volume")
 }
 
-func isSupportedMemorySize(memSize int) bool {
-	validMemSize := []int{1, 2, 4, 8, 16, 32, 64}
-	return slices.Contains(validMemSize, memSize)
-}
-
-func getMemorySize(machineType string) (int, error) {
+func getMemorySize(machineType string) (string, error) {
 	memSizeGB, err := strconv.Atoi(strings.Replace(machineType, "g", "", 1))
 	if err != nil {
-		return 0, fmt.Errorf("invalid memory size: %w", err)
-	} else if !isSupportedMemorySize(memSizeGB) {
-		return 0, fmt.Errorf("unsupported memory size: %d", memSizeGB)
+		return "", fmt.Errorf("invalid memory size: %w", err)
+	} else if flavor, ok := availableFlavorsByMemory[memSizeGB]; !ok {
+		return "", fmt.Errorf("unsupported memory size: %d", memSizeGB)
+	} else {
+		return flavor, nil
 	}
-	return memSizeGB, nil
 }
 
 func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, machineType string) (ServerCookie, error) {
-	memorySizeInGB, err := getMemorySize(machineType)
+	flavorName, err := getMemorySize(machineType)
 	if err != nil {
 		return "", fmt.Errorf("invalid machine type: %w", err)
 	}
@@ -97,11 +93,12 @@ func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, mac
 	if err != nil {
 		return "", fmt.Errorf("failed to get flavors: %w", err)
 	}
-	flavor, err := findMatchingFlavor(flavors.Flavors, memorySizeInGB*1024)
-	if err != nil {
+	flavorIndex := slices.IndexFunc(flavors.Flavors, func(e conoha.Flavor) bool { return e.Name == flavorName })
+	if flavorIndex == -1 {
 		return "", fmt.Errorf("matching flavor not found: %w", err)
 	}
-	slog.Info("Retriving flavors...Done", slog.Any("selected_flavor", flavor))
+	flavorId := flavors.Flavors[flavorIndex].ID
+	slog.Info("Retriving flavors...Done", slog.Any("selected_flavor", flavorId))
 
 	slog.Info("Retriving volume ID...")
 	volumes, err := s.conoha.ListVolumes(ctx)
@@ -117,7 +114,7 @@ func (s *ConohaServer) Start(ctx context.Context, gameConfig *runner.Config, mac
 	slog.Info("Creating VM...")
 	startupScript, _ := startup.GenerateStartupScript(gameConfig)
 	server, err := s.conoha.CreateServer(ctx, conoha.CreateServerInput{
-		FlavorID:     flavor,
+		FlavorID:     flavorId,
 		RootVolumeID: volumeID,
 		NameTag:      s.cfg.ConohaNameTag,
 		UserData:     string(startupScript),
