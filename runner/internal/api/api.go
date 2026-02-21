@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"net/http"
 	"net/url"
 
@@ -104,21 +103,15 @@ func (c *Client) PostStatus(ctx context.Context, statuses []byte) error {
 }
 
 func (c *Client) PollAction(ctx context.Context) (*runner.Action, error) {
-	slog.Info("poll endpoint", "endpoint", c.endpoint)
-
 	url, err := buildURL(c.endpoint, "/_/poll")
 	if err != nil {
 		return nil, err
 	}
 
-	slog.Info("poll url", "url", url)
-
 	resp, err := c.transport.Request(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	slog.Info("response", "body", string(resp))
 
 	var action runner.Action
 	if err := json.Unmarshal(resp, &action); err != nil {

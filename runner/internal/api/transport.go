@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"github.com/kofuk/premises/internal/entity/web"
@@ -55,8 +56,15 @@ func (xp *APITransport) Request(ctx context.Context, method string, url string, 
 	}
 	defer resp.Body.Close()
 
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	slog.Info("body", "body", string(respBody))
+
 	var respData web.GenericResponse
-	if err := json.NewDecoder(resp.Body).Decode(&respData); err != nil {
+	if err := json.Unmarshal(respBody, &respData); err != nil {
 		return nil, err
 	}
 
