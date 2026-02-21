@@ -2,10 +2,8 @@ package otel
 
 import (
 	"context"
-	"net/http"
 	"os"
 
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
@@ -36,9 +34,6 @@ func InitializeTracer(ctx context.Context) (*sdktrace.TracerProvider, error) {
 	otel.SetTracerProvider(tp)
 
 	otel.SetTextMapPropagator(propagation.TraceContext{})
-
-	// Initializing this again reflects the global propagator to otelhttp.
-	otelhttp.DefaultClient = &http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
 
 	return tp, nil
 }

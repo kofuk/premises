@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"github.com/kofuk/premises/internal/mc/launchermeta"
 	"github.com/kofuk/premises/runner/internal/commands/mclauncher/core"
@@ -45,10 +46,14 @@ func Run(ctx context.Context, args []string) int {
 	quickUndoService := quickundo.NewQuickUndoService(rpc.ToSnapshotHelper)
 	quickUndoService.Register(launcher)
 
-	worldService := worldService.NewWorldService(config.ControlPanel, config.AuthKey, otelhttp.DefaultClient)
+	httpClient := &http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+	}
+
+	worldService := worldService.NewWorldService(config.ControlPanel, config.AuthKey, httpClient)
 
 	launchermetaOptions := []launchermeta.Option{
-		launchermeta.WithHTTPClient(otelhttp.DefaultClient),
+		launchermeta.WithHTTPClient(httpClient),
 	}
 	if config.GameConfig.Server.ManifestOverride != "" {
 		launchermetaOptions = append(launchermetaOptions, launchermeta.WithManifestURL(config.GameConfig.Server.ManifestOverride))
@@ -68,7 +73,7 @@ func Run(ctx context.Context, args []string) int {
 	launcher.Use(serverproperties.NewServerPropertiesMiddleware())
 	launcher.Use(serverjar.NewServerJarMiddleware(
 		launchermetaClient,
-		otelhttp.DefaultClient,
+		httpClient,
 	))
 	launcher.Use(autoversion.NewAutoVersionMiddleware())
 	launcher.Use(middlewareWorld.NewWorldMiddleware(worldService))
