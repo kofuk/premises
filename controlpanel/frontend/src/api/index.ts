@@ -1,5 +1,5 @@
 import {t} from 'i18next';
-import useSWR, {KeyedMutator} from 'swr';
+import useSWR, {type KeyedMutator} from 'swr';
 import useSWRImmutable from 'swr/immutable';
 
 import type {

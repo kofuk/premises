@@ -1,7 +1,6 @@
-import {FormEvent, useEffect, useState} from 'react';
-
 import {Save as SaveIcon} from '@mui/icons-material';
 import {FormControl, IconButton, InputAdornment, InputLabel, OutlinedInput} from '@mui/material';
+import {type ChangeEvent, useEffect, useState} from 'react';
 
 type Props = {
   label: string;
@@ -24,9 +23,9 @@ const SaveInput = ({label, initValue, fullWidth, type, onSave, unsuitableForPass
     inputProps['data-1p-ignore'] = '';
   }
 
-  const handleSave = (e: FormEvent<HTMLFormElement>) => {
+  const handleSave = (e: ChangeEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSave && onSave(value);
+    onSave?.(value);
   };
 
   return (
@@ -36,8 +35,8 @@ const SaveInput = ({label, initValue, fullWidth, type, onSave, unsuitableForPass
         <OutlinedInput
           endAdornment={
             <InputAdornment position="end">
-              <IconButton disabled={value == initValue} type="submit">
-                <SaveIcon color={value == initValue ? 'disabled' : 'primary'} />
+              <IconButton disabled={value === initValue} type="submit">
+                <SaveIcon color={value === initValue ? 'disabled' : 'primary'} />
               </IconButton>
             </InputAdornment>
           }

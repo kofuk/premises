@@ -7,10 +7,8 @@
     "test:watch": "vitest",
     "build": "vite build",
     "start": "vite",
-    "fmt": "prettier --write 'src/**/*.{ts,tsx,json}' '*.{ts,js}'",
-    "fmt:check": "prettier --check 'src/**/*.{ts,tsx,json}' '*.{ts,js}'",
-    "lint": "eslint --fix src/ vite.config.ts test-setup.ts eslint.config.js",
-    "lint:check": "eslint src/ vite.config.ts test-setup.ts eslint.config.js"
+    "lint": "biome check src/ vite.config.ts test-setup.ts biome.json",
+    "lint:fix": "biome check --write src/ vite.config.ts test-setup.ts biome.json"
   },
   "repository": {
     "type": "git",
@@ -45,6 +43,7 @@
     "swr": "2.4.0"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.4",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
     "@types/jest": "30.0.0",
@@ -53,14 +52,7 @@
     "@types/react-dom": "19.2.3",
     "@types/react-transition-group": "4.4.12",
     "@types/webappsec-credential-management": "0.6.9",
-    "@typescript-eslint/eslint-plugin": "8.56.0",
-    "@typescript-eslint/parser": "8.56.0",
     "@vitejs/plugin-react": "5.1.4",
-    "eslint": "9.39.3",
-    "eslint-import-resolver-typescript": "4.4.4",
-    "eslint-plugin-import": "2.32.0",
-    "eslint-plugin-promise": "7.2.1",
-    "eslint-plugin-react": "7.37.5",
     "jsdom": "28.1.0",
     "nock": "14.0.11",
     "node-fetch": "3.3.2",

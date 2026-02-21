@@ -1,6 +1,5 @@
-import {Route, Routes} from 'react-router-dom';
-
 import {Box} from '@mui/material';
+import {Route, Routes} from 'react-router-dom';
 
 import AddUserPage from '../components/add-user';
 import ChangePasswordPage from '../components/change-passowrd';

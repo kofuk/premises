@@ -1,11 +1,9 @@
+import {Paper, Stack, TextField, Typography} from '@mui/material';
+import {Box} from '@mui/system';
 import {useState} from 'react';
-
 import {useForm} from 'react-hook-form';
 import {useTranslation} from 'react-i18next';
 import {toast} from 'react-toastify';
-
-import {Paper, Stack, TextField, Typography} from '@mui/material';
-import {Box} from '@mui/system';
 
 import {changePassword} from '@/api';
 import LoadingButtonWithResult from '@/components/loading-button-with-result';

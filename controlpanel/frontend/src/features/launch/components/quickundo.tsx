@@ -1,10 +1,8 @@
-import {useRef, useState} from 'react';
-
-import {useTranslation} from 'react-i18next';
-
 import {ArrowDropDown as ArrowDropDownIcon} from '@mui/icons-material';
 import {Button, ButtonGroup, ClickAwayListener, FormControl, Grow, InputLabel, MenuItem, MenuList, Paper, Popper, Select, Stack} from '@mui/material';
 import {Box} from '@mui/system';
+import {useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 
 import {takeQuickSnapshot, undoQuickSnapshot} from '@/api';
 import {useAuth} from '@/utils/auth';
@@ -57,7 +55,7 @@ const QuickUndo = () => {
             value={selectedSlot}
           >
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((slot) => (
-              <MenuItem key={`slot-${slot}`} selected={selectedSlot == slot} value={slot}>
+              <MenuItem key={`slot-${slot}`} selected={selectedSlot === slot} value={slot}>
                 {`${slot}`}
               </MenuItem>
             ))}

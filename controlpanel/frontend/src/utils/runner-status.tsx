@@ -2,7 +2,7 @@ import {createContext, useContext, useState} from 'react';
 
 import {useTranslation} from 'react-i18next';
 
-import {StatusExtraData as ExtraData} from '@/api/entities';
+import type {StatusExtraData as ExtraData} from '@/api/entities';
 
 type RunnerStatusContextType = {
   statusCode: number;

@@ -1,17 +1,13 @@
-import {useTranslation} from 'react-i18next';
-
 import {Box, FormControlLabel, Radio, RadioGroup, Stack} from '@mui/material';
-
-import {useLaunchConfig} from '../launch-config';
-import {MenuItem} from '../menu-container';
-import WorldExplorer from '../world-explorer';
-
-import {valueLabel} from './common';
-
+import {useTranslation} from 'react-i18next';
 import {useWorlds} from '@/api';
 import Loading from '@/components/loading';
 import SaveInput from '@/components/save-input';
 import {useAuth} from '@/utils/auth';
+import {useLaunchConfig} from '../launch-config';
+import type {MenuItem} from '../menu-container';
+import WorldExplorer from '../world-explorer';
+import {valueLabel} from './common';
 
 export enum WorldLocation {
   Backups = 'backups',

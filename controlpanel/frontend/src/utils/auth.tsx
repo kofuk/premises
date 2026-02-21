@@ -1,4 +1,4 @@
-import {ReactNode, createContext, useContext} from 'react';
+import {createContext, type ReactNode, useContext} from 'react';
 
 import {login as apiLogin, useSessionData} from '@/api';
 import Loading from '@/components/loading';
@@ -40,8 +40,8 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
 
   const logout = async () => {
     const resp = await fetch('/api/internal/logout', {method: 'POST'}).then((resp) => resp.json());
-    if (!resp['success']) {
-      throw new Error(resp['reason']);
+    if (!resp.success) {
+      throw new Error(resp.reason);
     }
     mutate();
   };
@@ -59,8 +59,8 @@ export const AuthProvider = ({children}: {children: ReactNode}) => {
       body: params.toString()
     }).then((resp) => resp.json());
 
-    if (!resp['success']) {
-      throw new Error(resp['reason']);
+    if (!resp.success) {
+      throw new Error(resp.reason);
     }
 
     mutate();

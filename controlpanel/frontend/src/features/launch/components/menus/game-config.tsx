@@ -1,18 +1,13 @@
-import {useState} from 'react';
-
-import {useTranslation} from 'react-i18next';
-
 import {InfoOutlined as InfoIcon} from '@mui/icons-material';
 import {Box, FormControl, FormControlLabel, FormGroup, InputLabel, MenuItem as MUIMenuItem, Select, Switch, Tooltip} from '@mui/material';
-
-import {useLaunchConfig} from '../launch-config';
-import {MenuItem} from '../menu-container';
-
-import {valueLabel} from './common';
-
+import {useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {useMCVersions} from '@/api';
 import Loading from '@/components/loading';
 import {useAuth} from '@/utils/auth';
+import {useLaunchConfig} from '../launch-config';
+import type {MenuItem} from '../menu-container';
+import {valueLabel} from './common';
 
 export const create = (): MenuItem => {
   const [t] = useTranslation();
@@ -41,22 +36,20 @@ export const create = (): MenuItem => {
   const [showBeta, setShowBeta] = useState(false);
 
   const {data: mcVersions, isLoading} = useMCVersions(accessToken);
-  const versions =
-    mcVersions &&
-    mcVersions
-      .filter(
-        (e) =>
-          e.name === serverVersion ||
-          ((showStable || e.channel !== 'stable') &&
-            (showSnapshot || e.channel !== 'snapshot') &&
-            (showBeta || e.channel !== 'beta') &&
-            (showAlpha || e.channel !== 'alpha'))
-      )
-      .map((e) => (
-        <MUIMenuItem key={e.name} value={e.name}>
-          {e.name}
-        </MUIMenuItem>
-      ));
+  const versions = mcVersions
+    ?.filter(
+      (e) =>
+        e.name === serverVersion ||
+        ((showStable || e.channel !== 'stable') &&
+          (showSnapshot || e.channel !== 'snapshot') &&
+          (showBeta || e.channel !== 'beta') &&
+          (showAlpha || e.channel !== 'alpha'))
+    )
+    ?.map((e) => (
+      <MUIMenuItem key={e.name} value={e.name}>
+        {e.name}
+      </MUIMenuItem>
+    ));
 
   return {
     title: t('launch.server_version'),

@@ -1,13 +1,9 @@
-import {useTranslation} from 'react-i18next';
-
 import {FormControl, InputLabel, MenuItem as MUIMenuItem, Select, Stack} from '@mui/material';
-
-import {useLaunchConfig} from '../launch-config';
-import {MenuItem} from '../menu-container';
-
-import {WorldLocation} from './world';
-
+import {useTranslation} from 'react-i18next';
 import SaveInput from '@/components/save-input';
+import {useLaunchConfig} from '../launch-config';
+import type {MenuItem} from '../menu-container';
+import {WorldLocation} from './world';
 
 export enum LevelType {
   Default = 'default',

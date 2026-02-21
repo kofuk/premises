@@ -1,8 +1,3 @@
-import {useState} from 'react';
-
-import {useTranslation} from 'react-i18next';
-import {TransitionGroup} from 'react-transition-group';
-
 import {Add as AddIcon, Delete as DeleteIcon, InfoOutlined as InfoIcon} from '@mui/icons-material';
 import {
   Box,
@@ -20,12 +15,13 @@ import {
   Switch,
   Tooltip
 } from '@mui/material';
-
-import {useLaunchConfig} from '../launch-config';
-import {MenuItem} from '../menu-container';
-import ServerPropsDialog from '../server-props-dialog';
-
+import {useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import {TransitionGroup} from 'react-transition-group';
 import SaveInput from '@/components/save-input';
+import {useLaunchConfig} from '../launch-config';
+import type {MenuItem} from '../menu-container';
+import ServerPropsDialog from '../server-props-dialog';
 
 enum OpenedDialog {
   NONE,

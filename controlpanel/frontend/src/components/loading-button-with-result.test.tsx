@@ -4,12 +4,12 @@ import LoadingButtonWithResult from './loading-button-with-result';
 
 describe('LoadingButtonWithResult', () => {
   it('renders state change', async () => {
-    const {rerender} = render(<></>);
+    const {rerender} = render(null);
 
     for (let i = 0; i < 8; i++) {
-      const disabled = ((i >> 0) & 1) == 1;
-      const loading = ((i >> 1) & 1) == 1;
-      const success = ((i >> 2) & 1) == 1;
+      const disabled = ((i >> 0) & 1) === 1;
+      const loading = ((i >> 1) & 1) === 1;
+      const success = ((i >> 2) & 1) === 1;
 
       rerender(
         <LoadingButtonWithResult disabled={disabled} loading={loading} success={success} type="button">
