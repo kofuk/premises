@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"net/http"
 	"os"
 	"time"
 
@@ -25,7 +26,9 @@ func New(kvs kvs.KeyValueStore) *MCVersionsService {
 	if manifestUrl != "" {
 		options = append(options, lm.WithManifestURL(manifestUrl))
 	}
-	options = append(options, lm.WithHTTPClient(otelhttp.DefaultClient))
+	options = append(options, lm.WithHTTPClient(&http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+	}))
 
 	service := &MCVersionsService{
 		lm:           lm.NewLauncherMetaClient(options...),

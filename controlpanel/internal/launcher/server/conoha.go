@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"slices"
 	"strconv"
 	"strings"
@@ -37,7 +38,9 @@ func NewConohaServer(cfg *config.Config) *ConohaServer {
 		Image:    cfg.ConohaImageService,
 		Volume:   cfg.ConohaVolumeService,
 	}
-	conoha := conoha.NewClient(identity, endpoints, otelhttp.DefaultClient)
+	conoha := conoha.NewClient(identity, endpoints, &http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+	})
 	return &ConohaServer{
 		cfg:    cfg,
 		conoha: conoha,

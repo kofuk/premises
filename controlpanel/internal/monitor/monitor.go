@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"time"
 
 	"github.com/kofuk/premises/controlpanel/internal/config"
@@ -55,7 +56,9 @@ func AttachRunner(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueSt
 		Image:    cfg.ConohaImageService,
 		Volume:   cfg.ConohaVolumeService,
 	}
-	client := conoha.NewClient(identity, endpoints, otelhttp.DefaultClient)
+	client := conoha.NewClient(identity, endpoints, &http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+	})
 
 	servers, err := client.ListServerDetails(ctx)
 	if err != nil {
