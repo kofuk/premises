@@ -32,7 +32,7 @@
     "@mui/material": "7.3.8",
     "@mui/system": "7.3.8",
     "@mui/x-tree-view": "8.27.1",
-    "i18next": "25.8.10",
+    "i18next": "25.8.13",
     "i18next-browser-languagedetector": "8.2.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
