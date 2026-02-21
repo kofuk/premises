@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 
+	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/web"
 )
 
@@ -17,14 +19,14 @@ type APITransport struct {
 }
 
 type TransportError struct {
-	Code int
+	Code entity.ErrorCode
 }
 
 func (e *TransportError) Error() string {
 	return fmt.Sprintf("error code: %d", e.Code)
 }
 
-func (xp *APITransport) Request(ctx context.Context, method string, url string, body any) ([]byte, error) {
+func (xp *APITransport) request(ctx context.Context, method string, url string, body any) ([]byte, error) {
 	var reqBody io.Reader
 	contentType := "application/octet-stream"
 
@@ -66,8 +68,22 @@ func (xp *APITransport) Request(ctx context.Context, method string, url string, 
 	}
 
 	if !respData.Success {
-		return nil, &TransportError{Code: int(respData.ErrorCode)}
+		return nil, &TransportError{Code: respData.ErrorCode}
 	}
 
 	return respData.Data, nil
+}
+
+func (xp *APITransport) Request(ctx context.Context, method string, url string, body any) ([]byte, error) {
+	for {
+		resp, err := xp.request(ctx, method, url, body)
+		if err != nil {
+			var transportErr *TransportError
+			if errors.As(err, &transportErr) && transportErr.Code == entity.ErrAgain {
+				continue
+			}
+			return nil, err
+		}
+		return resp, nil
+	}
 }
