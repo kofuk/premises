@@ -36,7 +36,10 @@ func (h *Handler) handleRunnerPoll(c *echo.Context) error {
 	action, err := h.runnerActionService.Wait(c.Request().Context(), runnerId)
 	if err != nil {
 		if err == longpoll.ErrCancelled {
-			return nil
+			return c.JSON(http.StatusNoContent, web.ErrorResponse{
+				Success:   false,
+				ErrorCode: entity.ErrInternal,
+			})
 		}
 		slog.Error("Error waiting action", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{

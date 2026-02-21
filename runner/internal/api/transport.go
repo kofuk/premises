@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 
 	"github.com/kofuk/premises/internal/entity/web"
@@ -61,11 +60,9 @@ func (xp *APITransport) Request(ctx context.Context, method string, url string, 
 		return nil, err
 	}
 
-	slog.Info("body", "body", string(respBody))
-
 	var respData web.GenericResponse
 	if err := json.Unmarshal(respBody, &respData); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal response: %w, body=%s", err, string(respBody))
 	}
 
 	if !respData.Success {
