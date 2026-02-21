@@ -214,7 +214,7 @@ func (c *Client) StopServer(ctx context.Context, input StopServerInput) error {
 	}
 
 	req, err := newRequest(ctx, http.MethodPost, c.endpoints.Compute, "servers/"+input.ServerID+"/action", c.token, struct {
-		V *interface{} `json:"os-stop"`
+		V *any `json:"os-stop"`
 	}{})
 	if err != nil {
 		return ClientError{Op: OpStopServer, Err: err}

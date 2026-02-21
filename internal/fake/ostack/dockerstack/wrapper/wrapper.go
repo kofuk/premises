@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/build"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
@@ -235,7 +236,7 @@ func CreateImage(ctx context.Context, docker *docker.Client, serverId, imageName
 
 	imageId := uuid.New().String()
 
-	buildResp, err := docker.ImageBuild(ctx, buildContext, types.ImageBuildOptions{
+	buildResp, err := docker.ImageBuild(ctx, buildContext, build.ImageBuildOptions{
 		Tags:           []string{fmt.Sprintf("premises.kofuk.org/dev-runner:%s", serverId)},
 		SuppressOutput: true,
 		Remove:         true,
@@ -249,13 +250,14 @@ func CreateImage(ctx context.Context, docker *docker.Client, serverId, imageName
 	if err != nil {
 		return err
 	}
+	defer buildResp.Body.Close()
 	io.ReadAll(buildResp.Body)
 
 	return nil
 }
 
 func removeOrUntagImage(ctx context.Context, docker *docker.Client, imageId string) error {
-	imageInspect, _, err := docker.ImageInspectWithRaw(ctx, imageId)
+	imageInspect, err := docker.ImageInspect(ctx, imageId)
 	if err != nil {
 		return err
 	}

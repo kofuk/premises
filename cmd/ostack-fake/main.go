@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"os/signal"
 
 	"github.com/kofuk/premises/internal/fake/ostack"
 )
@@ -13,6 +14,8 @@ func main() {
 		AddSource: true,
 		Level:     slog.LevelDebug,
 	})))
+
+	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
 
 	ostack, err := ostack.NewOstack(ostack.OstackFakeOptions{
 		TenantId: "tenantId",
@@ -25,7 +28,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := ostack.Start(context.Background()); err != nil {
+	if err := ostack.Start(ctx); err != nil {
 		slog.Error(err.Error())
 		os.Exit(1)
 	}
