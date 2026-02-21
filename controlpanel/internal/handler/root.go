@@ -12,7 +12,7 @@ import (
 	"github.com/kofuk/premises/controlpanel/internal/db/model"
 	"github.com/kofuk/premises/internal/entity"
 	"github.com/kofuk/premises/internal/entity/web"
-	"github.com/labstack/echo-contrib/session"
+	"github.com/labstack/echo-contrib/v5/session"
 	"github.com/labstack/echo/v5"
 	"golang.org/x/crypto/bcrypt"
 )
