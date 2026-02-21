@@ -21,7 +21,7 @@ require (
 	github.com/kofuk/go-queryalternatives v0.2.1
 	github.com/kofuk/go-structnbt v0.0.2
 	github.com/labstack/echo-contrib/v5 v5.0.1
-	github.com/labstack/echo-opentelemetry v0.0.0-20260215193741-50871d5a31e7
+	github.com/labstack/echo-opentelemetry v0.0.1
 	github.com/labstack/echo/v5 v5.0.4
 	github.com/mackerelio/go-osstat v0.2.6
 	github.com/onsi/ginkgo/v2 v2.28.1
