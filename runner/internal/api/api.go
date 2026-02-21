@@ -104,10 +104,14 @@ func (c *Client) PostStatus(ctx context.Context, statuses []byte) error {
 }
 
 func (c *Client) PollAction(ctx context.Context) (*runner.Action, error) {
+	slog.Info("poll endpoint", "endpoint", c.endpoint)
+
 	url, err := buildURL(c.endpoint, "/_/poll")
 	if err != nil {
 		return nil, err
 	}
+
+	slog.Info("poll url", "url", url)
 
 	resp, err := c.transport.Request(ctx, http.MethodGet, url, nil)
 	if err != nil {
