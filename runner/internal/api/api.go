@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/url"
 
@@ -112,6 +113,8 @@ func (c *Client) PollAction(ctx context.Context) (*runner.Action, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	slog.Debug("response", "body", string(resp))
 
 	var action runner.Action
 	if err := json.Unmarshal(resp, &action); err != nil {
