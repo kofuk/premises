@@ -114,7 +114,7 @@ func (c *Client) PollAction(ctx context.Context) (*runner.Action, error) {
 		return nil, err
 	}
 
-	slog.Debug("response", "body", string(resp))
+	slog.Info("response", "body", string(resp))
 
 	var action runner.Action
 	if err := json.Unmarshal(resp, &action); err != nil {
