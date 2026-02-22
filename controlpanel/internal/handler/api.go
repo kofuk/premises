@@ -367,7 +367,7 @@ func (h *Handler) handleApiWorldInfo(c *echo.Context) error {
 }
 
 func (h *Handler) validateAndNormalizeConfig(config *web.PendingConfig) bool {
-	if config.MachineType == nil || !slices.Contains([]string{"2g", "4g", "8g", "16g", "32g", "64g"}, *config.MachineType) {
+	if config.MachineType == nil || !slices.Contains([]string{"2g", "4g", "12g", "24g", "48g", "96g", "128g"}, *config.MachineType) {
 		config.MachineType = nil
 		return false
 	}
