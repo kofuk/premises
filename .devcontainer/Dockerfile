@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-22.04
 ARG GO_VERSION=1.26.0 \
     KIND_VERSION=0.31.0 \
-    KUBECTL_VERSION=1.35.1 \
+    KUBECTL_VERSION=1.35.2 \
     CLOUD_PROVIDER_KIND_VERSION=0.10.0
 
 RUN apt-get update && \
