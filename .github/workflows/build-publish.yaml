@@ -275,7 +275,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: controlpanel-image
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
