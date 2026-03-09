@@ -23,7 +23,7 @@ require (
 	github.com/labstack/echo-contrib/v5 v5.0.1
 	github.com/labstack/echo-opentelemetry v0.0.1
 	github.com/labstack/echo/v5 v5.0.4
-	github.com/mackerelio/go-osstat v0.2.6
+	github.com/mackerelio/go-osstat v0.2.7
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
 	github.com/redis/go-redis/extra/redisotel/v9 v9.18.0
@@ -45,7 +45,7 @@ require (
 	golang.org/x/crypto v0.48.0
 	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa
 	golang.org/x/sync v0.19.0
-	golang.org/x/sys v0.41.0
+	golang.org/x/sys v0.42.0
 )
 
 require (
