@@ -1,34 +1,47 @@
 FROM golang:1.26.1 AS go_build
 WORKDIR /build
 RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
-    --mount=type=bind,source=go.mod,target=go.mod \
-    --mount=type=bind,source=go.sum,target=go.sum \
+    --mount=type=bind,source=./backend/common/go.mod,target=backend/common/go.mod \
+    --mount=type=bind,source=./backend/common/go.sum,target=backend/common/go.sum \
+    --mount=type=bind,source=./backend/runner/go.mod,target=backend/runner/go.mod \
+    --mount=type=bind,source=./backend/runner/go.sum,target=backend/runner/go.sum \
+    --mount=type=bind,source=./backend/services/common/go.mod,target=backend/services/common/go.mod \
+    --mount=type=bind,source=./backend/services/common/go.sum,target=backend/services/common/go.sum \
+    --mount=type=bind,source=./backend/services/monolith/go.mod,target=backend/services/monolith/go.mod \
+    --mount=type=bind,source=./backend/services/monolith/go.sum,target=backend/services/monolith/go.sum \
+    --mount=type=bind,source=./backend/services/pmctl/go.mod,target=backend/services/pmctl/go.mod \
+    --mount=type=bind,source=./backend/services/pmctl/go.sum,target=backend/services/pmctl/go.sum \
+    --mount=type=bind,source=./backend/tools/mcserver-fake/go.mod,target=backend/tools/mcserver-fake/go.mod \
+    --mount=type=bind,source=./backend/tools/mcserver-fake/go.sum,target=backend/tools/mcserver-fake/go.sum \
+    --mount=type=bind,source=./backend/tools/ostack-fake/go.mod,target=backend/tools/ostack-fake/go.mod \
+    --mount=type=bind,source=./backend/tools/ostack-fake/go.sum,target=backend/tools/ostack-fake/go.sum \
+    --mount=type=bind,source=./go.work,target=go.work \
+    --mount=type=bind,source=./go.work.sum,target=go.work.sum \
     go mod download -x
 RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=bind,source=go.mod,target=go.mod \
-    --mount=type=bind,source=go.sum,target=go.sum \
-    --mount=type=bind,source=./internal,target=internal \
-    --mount=type=bind,source=./controlpanel/cmd,target=controlpanel/cmd \
-    --mount=type=bind,source=./controlpanel/internal,target=controlpanel/internal \
-    cd /build/controlpanel/cmd/pmctl && \
+    --mount=type=bind,source=./go.work,target=go.work \
+    --mount=type=bind,source=./go.work.sum,target=go.work.sum \
+    --mount=type=bind,source=./backend,target=backend \
+    cd /build/backend/services/pmctl && \
     CGO_ENABLED=0 go build -o /pmctl . && \
-    cd /build/controlpanel/cmd/premises && \
+    cd /build/backend/services/monolith && \
     CGO_ENABLED=0 go build -o /premises .
 
-FROM node:24 AS frontend_build
+FROM node:24.13.1 AS frontend_build
 WORKDIR /build
+RUN corepack enable
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
-    --mount=type=bind,source=controlpanel/frontend/package.json,target=package.json \
-    --mount=type=bind,source=controlpanel/frontend/pnpm-lock.yaml,target=pnpm-lock.yaml \
-    corepack enable && pnpm install --frozen-lockfile
+    --mount=type=bind,source=frontend/package.json,target=package.json \
+    --mount=type=bind,source=frontend/pnpm-lock.yaml,target=pnpm-lock.yaml \
+    pnpm install --frozen-lockfile
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
-    --mount=type=bind,source=controlpanel/frontend/package.json,target=package.json \
-    --mount=type=bind,source=controlpanel/frontend/pnpm-lock.yaml,target=pnpm-lock.yaml \
-    --mount=type=bind,source=controlpanel/frontend/public,target=public \
-    --mount=type=bind,source=controlpanel/frontend/src,target=src \
-    --mount=type=bind,source=controlpanel/frontend/index.html,target=index.html \
-    --mount=type=bind,source=controlpanel/frontend/tsconfig.json,target=tsconfig.json \
-    --mount=type=bind,source=controlpanel/frontend/vite.config.ts,target=vite.config.ts \
+    --mount=type=bind,source=frontend/package.json,target=package.json \
+    --mount=type=bind,source=frontend/pnpm-lock.yaml,target=pnpm-lock.yaml \
+    --mount=type=bind,source=frontend/public,target=public \
+    --mount=type=bind,source=frontend/src,target=src \
+    --mount=type=bind,source=frontend/index.html,target=index.html \
+    --mount=type=bind,source=frontend/tsconfig.json,target=tsconfig.json \
+    --mount=type=bind,source=frontend/vite.config.ts,target=vite.config.ts \
     pnpm run build
 
 FROM scratch

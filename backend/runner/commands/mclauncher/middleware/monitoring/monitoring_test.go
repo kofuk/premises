@@ -1,0 +1,77 @@
+package monitoring_test
+
+import (
+	"testing"
+	"time"
+
+	"github.com/kofuk/premises/backend/runner/commands/mclauncher/core"
+	"github.com/kofuk/premises/backend/runner/commands/mclauncher/middleware/monitoring"
+	"github.com/kofuk/premises/backend/runner/commands/mclauncher/middleware/monitoring/watchdog"
+	"github.com/kofuk/premises/backend/runner/env"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"go.uber.org/mock/gomock"
+)
+
+type sleepMiddleware struct {
+	duration time.Duration
+}
+
+var _ core.Middleware = (*sleepMiddleware)(nil)
+
+func (m *sleepMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
+	return func(c core.LauncherContext) error {
+		time.Sleep(m.duration)
+		return next(c)
+	}
+}
+
+var _ = Describe("Monitoring Middleware", func() {
+	var (
+		ctrl               *gomock.Controller
+		settingsRepository *core.MockSettingsRepository
+		envProvider        *env.MockEnvProvider
+		stateRepository    *core.MockStateRepository
+		launcher           *core.LauncherCore
+	)
+
+	BeforeEach(func() {
+		ctrl = gomock.NewController(GinkgoT())
+		settingsRepository = core.NewMockSettingsRepository(ctrl)
+		envProvider = env.NewMockEnvProvider(ctrl)
+		stateRepository = core.NewMockStateRepository(ctrl)
+
+		launcher = core.NewLauncherCore(settingsRepository, envProvider, stateRepository)
+		launcher.Use(core.StopMiddleware)
+	})
+
+	It("should trigger watchdogs", func() {
+		wd := watchdog.NewMockWatchdog(ctrl)
+		gomock.InOrder(
+			wd.EXPECT().Check(gomock.Any(), 0, &watchdog.Status{Online: false}).Do(
+				func(c core.LauncherContext, id int, status *watchdog.Status) {
+					status.Online = true
+				},
+			).Return(nil),
+			wd.EXPECT().Check(gomock.Any(), 1, &watchdog.Status{Online: false}).Do(
+				func(c core.LauncherContext, id int, status *watchdog.Status) {
+					status.Online = true
+				},
+			).Return(nil),
+			wd.EXPECT().Check(gomock.Any(), gomock.Any(), &watchdog.Status{Online: false}).AnyTimes().Return(nil),
+		)
+
+		sut := monitoring.NewMonitoringMiddleware(wd)
+
+		launcher.Use(&sleepMiddleware{duration: 3 * time.Second})
+		launcher.Use(sut)
+
+		err := launcher.Start(GinkgoT().Context())
+		Expect(err).NotTo(HaveOccurred())
+	})
+})
+
+func Test(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "MonitoringMiddleware Suite")
+}

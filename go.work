@@ -1,0 +1,11 @@
+go 1.26.1
+
+use (
+	./backend/common
+	./backend/runner
+	./backend/services/common
+	./backend/services/monolith
+	./backend/services/pmctl
+	./backend/tools/mcserver-fake
+	./backend/tools/ostack-fake
+)

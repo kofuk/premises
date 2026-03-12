@@ -6,7 +6,7 @@ new_version="$1"
 cd "$(git rev-parse --show-toplevel)"
 
 (
-    cd internal
+    cd backend/common
 
     sed -i "s@^\\(const Version = \"\\)[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\\(\"\\)\$@\\1${new_version}\\2@" version.go
 )
@@ -23,7 +23,7 @@ cd "$(git rev-parse --show-toplevel)"
 )
 
 (
-    cd controlpanel/frontend
+    cd frontend
 
     sed -i "s/\"version\": \"[0-9]\\+\\.[0-9]\\+\\.[0-9]\\+\",\$/\"version\": \"${new_version}\",/" package.json
     pnpm install
