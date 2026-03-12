@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 
+mise trust
 mise install
 eval "$(mise activate bash)"
+
+echo 'eval "$(mise activate bash)"' >~/.bashrc
 
 # Create .env if not exists
 [ -e backend/services/monolith/.env ] || cp .devcontainer/env backend/services/monolith/.env
