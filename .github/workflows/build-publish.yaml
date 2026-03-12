@@ -195,7 +195,7 @@ jobs:
               -e MINIO_ROOT_USER=premises \
               -e MINIO_ROOT_PASSWORD=password \
               --entrypoint /bin/bash \
-              quay.io/minio/minio \
+              quay.io/minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e \
               '-c' 'mkdir -p /data/premises && minio server /data --console-address :9001'
           for i in {1..20}; do
             curl http://localhost:9001 && break

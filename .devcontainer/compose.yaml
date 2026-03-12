@@ -12,7 +12,7 @@ services:
       POSTGRES_DB: premises
       POSTGRES_HOST_AUTH_METHOD: trust
   minio:
-    image: quay.io/minio/minio
+    image: quay.io/minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
     environment:
       MINIO_ACCESS_KEY: premises
       MINIO_SECRET_KEY: password
