@@ -66,5 +66,8 @@
 			}
 		}
 	},
+	"remoteEnv": {
+		"PATH": "${containerEnv:PATH}:/home/vscode/.local/share/mise/shims"
+	},
 	"init": true
 }
