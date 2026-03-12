@@ -9,7 +9,7 @@ require (
 	github.com/redis/go-redis/extra/redisotel/v9 v9.18.0
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/uptrace/bun v1.2.18
-	github.com/uptrace/bun/extra/bunotel v1.2.17
+	github.com/uptrace/bun/extra/bunotel v1.2.18
 )
 
 require (

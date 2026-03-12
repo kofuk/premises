@@ -133,6 +133,8 @@ github.com/uptrace/bun/driver/pgdriver v1.2.18 h1:Zojuc83ulApocXomBLEcx1DqCZweRE
 github.com/uptrace/bun/driver/pgdriver v1.2.18/go.mod h1:ZRJcARw93nxbQ5WawTrc5EO+F+GygkcYgDLEnT17CcE=
 github.com/uptrace/bun/extra/bunotel v1.2.17 h1:kL80lVBvz19/NNnQUmws9ym0nElly9XpYL4TS2LclMg=
 github.com/uptrace/bun/extra/bunotel v1.2.17/go.mod h1:vdKInyiWpUipVl164Lm28fvpJq2Zx3uy+zQ1AbRPaxs=
+github.com/uptrace/bun/extra/bunotel v1.2.18 h1:idfBT+IJGOLSwqkNv+Yiw4fG0tgasXatYeUZPOUuNzE=
+github.com/uptrace/bun/extra/bunotel v1.2.18/go.mod h1:IdnKewPjPXZQHyap29M9PM2l+f0u5fLONeW90bAat88=
 github.com/uptrace/opentelemetry-go-extra/otelsql v0.3.2 h1:ZjUj9BLYf9PEqBn8W/OapxhPjVRdC6CsXTdULHsyk5c=
 github.com/uptrace/opentelemetry-go-extra/otelsql v0.3.2/go.mod h1:O8bHQfyinKwTXKkiKNGmLQS7vRsqRxIQTFZpYpHK3IQ=
 github.com/vmihailenco/msgpack/v5 v5.4.1 h1:cQriyiUvjTwOHg8QZaPihLWeRAAVoCpE00IUPn0Bjt8=
