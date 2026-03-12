@@ -1,9 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "lockFileMaintenance": {
-    "enabled": true
-  },
+  "pinDigests": true,
+  "minimumReleaseAge": "3 days",
   "packageRules": [
     {
       "matchDepNames": ["ghcr.io/kofuk/premises"],
