@@ -1,0 +1,37 @@
+package exterior
+
+import (
+	"context"
+	"log/slog"
+
+	"github.com/kofuk/premises/backend/common/entity/runner"
+	potel "github.com/kofuk/premises/backend/common/otel"
+	"github.com/kofuk/premises/backend/runner/rpc"
+	"github.com/kofuk/premises/backend/runner/rpc/types"
+)
+
+func sendEvent(ctx context.Context, event runner.Event, dispatch bool) error {
+	slog.Debug("Sending message...", slog.Any("data", event))
+	return rpc.ToExteriord.Notify(ctx, "status/push", types.EventInput{
+		Dispatch: dispatch,
+		Event:    event,
+	})
+}
+
+// Send status message
+func SendEvent(ctx context.Context, event runner.Event) {
+	event.Metadata.Traceparent = potel.TraceContextFromContext(ctx)
+
+	if err := sendEvent(ctx, event, false); err != nil {
+		slog.Error("Unable to send message", slog.Any("error", err))
+	}
+}
+
+// Same as `SendMessage`, but flushes buffer immediately.
+func DispatchEvent(ctx context.Context, event runner.Event) {
+	event.Metadata.Traceparent = potel.TraceContextFromContext(ctx)
+
+	if err := sendEvent(ctx, event, true); err != nil {
+		slog.Error("Unable to send message", slog.Any("error", err))
+	}
+}
