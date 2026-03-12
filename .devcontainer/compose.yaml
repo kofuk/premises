@@ -4,9 +4,9 @@ services:
       context: .
       dockerfile: Dockerfile
   redis:
-    image: valkey/valkey:9
+    image: valkey/valkey:9@sha256:3eeb09785cd61ec8e3be35f8804c8892080f3ca21934d628abc24ee4ed1698f6
   postgres:
-    image: postgres:18
+    image: postgres:18@sha256:69e8582b781cb44fa4557b98ed586fe68361e320d9b12f9707494335634f4f3d
     environment:
       POSTGRES_USER: premises
       POSTGRES_DB: premises
@@ -21,6 +21,6 @@ services:
       - '-c'
       - 'mkdir -p /data/premises && minio server /data --console-address :9001'
   jaeger:
-    image: jaegertracing/all-in-one:latest
+    image: jaegertracing/all-in-one:latest@sha256:ab6f1a1f0fb49ea08bcd19f6b84f6081d0d44b364b6de148e1798eb5816bacac
     environment:
       COLLECTOR_OTLP_ENABLED: 'true'

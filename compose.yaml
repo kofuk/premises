@@ -30,7 +30,7 @@ x-common-settings: &settings
 
 services:
   nginx:
-    image: nginxinc/nginx-unprivileged:1.29.5-alpine-slim
+    image: nginxinc/nginx-unprivileged:1.29.5-alpine-slim@sha256:0e5af054d6a0ed8b1760e52d2fc91968cf85b0a60738d49567d3775a68cfadc2
     restart: always
     volumes:
       - type: bind
@@ -81,7 +81,7 @@ services:
     read_only: true
 
   redis:
-    image: valkey/valkey:9.0.3
+    image: valkey/valkey:9.0.3@sha256:3eeb09785cd61ec8e3be35f8804c8892080f3ca21934d628abc24ee4ed1698f6
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 1s
@@ -94,7 +94,7 @@ services:
         target: /data
 
   postgres:
-    image: postgres:18.3
+    image: postgres:18.3@sha256:69e8582b781cb44fa4557b98ed586fe68361e320d9b12f9707494335634f4f3d
     environment:
       POSTGRES_USER: premises
       POSTGRES_DB: premises
