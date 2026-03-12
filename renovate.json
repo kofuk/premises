@@ -39,5 +39,18 @@
       "matchDatasources": ["docker"],
       "rangeStrategy": "bump"
     }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|\\/)go.work$/"
+      ],
+      "matchStrings": [
+        "^go (?<currentValue>\\d+\\.\\d+(\\.\\d+)?)\\s"
+      ],
+      "depNameTemplate": "golang",
+      "datasourceTemplate": "golang-version"
+    }
   ]
 }
