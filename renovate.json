@@ -41,7 +41,7 @@
     },
     {
       "matchManagers": ["mise"],
-      "matchPackageNames": ["go"],
+      "matchDepNames": ["go"],
       "pinDigests": false
     }
   ],
