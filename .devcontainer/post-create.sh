@@ -5,7 +5,7 @@ mise install
 eval "$(mise activate bash)"
 
 # Create .env if not exists
-[ -e controlpanel/cmd/premises/.env ] || cp .devcontainer/env controlpanel/cmd/premises/.env
+[ -e backend/services/monolith/.env ] || cp .devcontainer/env backend/services/monolith/.env
 
 # Install npm dependencies
 (
