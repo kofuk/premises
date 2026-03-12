@@ -38,6 +38,11 @@
       "matchDepNames": ["golang"],
       "matchDatasources": ["docker"],
       "rangeStrategy": "bump"
+    },
+    {
+      "matchManagers": ["mise"],
+      "matchPackageNames": ["go"],
+      "pinDigests": false
     }
   ],
   "customManagers": [
