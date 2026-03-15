@@ -30,12 +30,15 @@ do_remote_update() {
     [ "${current_version}" = "${remote_version}" ] && exit 0
 
     http_get "https://premises.kofuk.org/artifacts/runner/premises-runner@${PROTOCOL_VERSION}.tar.gz" | tar -xz
+    http_get "https://premises.kofuk.org/artifacts/runner/premises-runner-resources@${PROTOCOL_VERSION}.tar.zst" \
+        >"${PREMISES_BASEDIR}/resources.tar.zst"
     atomic_copy 'premises-runner' "${PREMISES_BASEDIR}/bin/premises-runner"
 }
 
 do_local_update() {
     cd /premises-dev
     [ -e premises-runner ] && atomic_copy premises-runner /opt/premises/bin/premises-runner
+    [ -e resources.tar.zst ] && atomic_copy resources.tar.zst /opt/premises/resources.tar.zst
 }
 
 xaptget() {
