@@ -95,6 +95,16 @@ jobs:
           name: runner
           path: ./backend/runner/premises-runner
           retention-days: 1
+      - name: Build Resources
+        run: |
+          cd backend/runner/resources/cmd
+          go run . -input ../resources.json
+      - name: Upload resources artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: runner-resources
+          path: ./backend/runner/resources/cmd/resources.tar.zst
+          retention-days: 1
 
   test-controlpanel-frontend:
     runs-on: ubuntu-latest
@@ -175,6 +185,11 @@ jobs:
         with:
           name: runner
           path: ./work
+      - name: Download runner resources
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: runner-resources
+          path: ./work
       - name: Download test tool
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
@@ -186,6 +201,7 @@ jobs:
         run: |
           mkdir /tmp/premises
           mv work/premises-runner /tmp/premises
+          mv work/resources.tar.zst /tmp/premises
           chmod +x work/*
       - name: Launch MinIO
         run: |
@@ -243,12 +259,17 @@ jobs:
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: runner
+      - name: Download runner resources
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: runner-resources
       - name: Make binaries executable
         run: |
           chmod +x premises-runner
       - name: Create Archive
         run : |
           tar -czf "premises-runner@${VERSION}.tar.gz" premises-runner
+          mv resources.tar.zst "premises-runner-resources@${VERSION}.tar.gz"
       - name: Generate metadata
         run: |
           echo ${{ github.sha }} >"version@${VERSION}.txt"
@@ -256,6 +277,8 @@ jobs:
         run: |
           aws s3 cp --checksum-algorithm CRC32 \
               "premises-runner@${VERSION}.tar.gz" s3://premises/artifacts/runner/
+          aws s3 cp --checksum-algorithm CRC32 \
+              "premises-runner-resources@${VERSION}.tar.gz" s3://premises/artifacts/runner/
           aws s3 cp --checksum-algorithm CRC32 \
               "version@${VERSION}.txt" s3://premises/artifacts/runner/
         env:
