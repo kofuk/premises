@@ -16,6 +16,10 @@ import (
 )
 
 func fetchAndWrite(baseDir string, item ResourceItem, tarWriter *tar.Writer) error {
+	if item.ApprovedLicense == "" {
+		return fmt.Errorf("approvedLicense is required for %s", item.Destination)
+	}
+
 	fetcher := getFetcher(item.Type)
 	if fetcher == nil {
 		return fmt.Errorf("unsupported resource type: %s", item.Type)
@@ -79,6 +83,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer encoder.Close()
 
 	tarWriter := tar.NewWriter(encoder)
 	defer tarWriter.Close()

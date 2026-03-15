@@ -13,10 +13,11 @@ const (
 )
 
 type ResourceItem struct {
-	Type        ResourceType `json:"type"`
-	Destination string       `json:"destination"`
-	Source      string       `json:"source"`
-	Checksum    string       `json:"checksum"`
+	Type            ResourceType `json:"type"`
+	Destination     string       `json:"destination"`
+	Source          string       `json:"source"`
+	Checksum        string       `json:"checksum"`
+	ApprovedLicense string       `json:"approvedLicense"`
 }
 
 func loadConfig(filename string) ([]ResourceItem, error) {
