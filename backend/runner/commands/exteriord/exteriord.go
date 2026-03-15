@@ -1,12 +1,15 @@
 package exteriord
 
 import (
+	"archive/tar"
 	"context"
+	"io"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/kofuk/premises/backend/common"
 	"github.com/kofuk/premises/backend/runner/commands/exteriord/exterior"
 	"github.com/kofuk/premises/backend/runner/commands/exteriord/outbound"
@@ -16,8 +19,80 @@ import (
 	"github.com/kofuk/premises/backend/runner/rpc"
 )
 
+func extractResources() error {
+	archivePath := env.DataPath("resources.tar.zst")
+	resourcesDir := env.DataPath("resources")
+
+	if _, err := os.Stat(archivePath); os.IsNotExist(err) {
+		slog.Info("No resources archive found, skipping extraction")
+		return nil
+	}
+
+	slog.Info("Extracting resources...")
+
+	if err := os.RemoveAll(resourcesDir); err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(resourcesDir, 0755); err != nil {
+		return err
+	}
+
+	archiveFile, err := os.Open(archivePath)
+	if err != nil {
+		return err
+	}
+
+	decompressor, err := zstd.NewReader(archiveFile)
+	if err != nil {
+		return err
+	}
+	defer decompressor.Close()
+
+	unarchiver := tar.NewReader(decompressor)
+	for {
+		header, err := unarchiver.Next()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return err
+		}
+		destPath := env.DataPath("resources/" + header.Name)
+		switch header.Typeflag {
+		case tar.TypeDir:
+			if err := os.MkdirAll(destPath, 0755); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			outFile, err := os.OpenFile(destPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(header.Mode&0777))
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(outFile, unarchiver); err != nil {
+				outFile.Close()
+				return err
+			}
+			outFile.Close()
+		default:
+			slog.Warn("Unsupported file type in resources archive", slog.String("file", header.Name))
+
+		}
+	}
+
+	// Clean up the archive after extraction
+	os.Remove(archivePath)
+
+	return nil
+}
+
 func Run(ctx context.Context, args []string) int {
 	signal.Ignore(syscall.SIGHUP)
+
+	if err := extractResources(); err != nil {
+		slog.Error("Failed to extract resources", slog.Any("error", err))
+		return 1
+	}
 
 	slog.Info("Starting premises-runner...", slog.String("protocol_version", common.Version))
 
