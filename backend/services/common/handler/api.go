@@ -13,6 +13,10 @@ import (
 	"time"
 
 	"dario.cat/mergo"
+	"github.com/kofuk/premises/backend/common/entity"
+	"github.com/kofuk/premises/backend/common/entity/runner"
+	"github.com/kofuk/premises/backend/common/entity/web"
+	potel "github.com/kofuk/premises/backend/common/otel"
 	"github.com/kofuk/premises/backend/services/common/auth"
 	"github.com/kofuk/premises/backend/services/common/config"
 	"github.com/kofuk/premises/backend/services/common/db/model"
@@ -20,10 +24,6 @@ import (
 	"github.com/kofuk/premises/backend/services/common/launcher"
 	"github.com/kofuk/premises/backend/services/common/monitor"
 	"github.com/kofuk/premises/backend/services/common/streaming"
-	"github.com/kofuk/premises/backend/common/entity"
-	"github.com/kofuk/premises/backend/common/entity/runner"
-	"github.com/kofuk/premises/backend/common/entity/web"
-	potel "github.com/kofuk/premises/backend/common/otel"
 	"github.com/labstack/echo/v5"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/crypto/bcrypt"
@@ -529,7 +529,7 @@ func (h *Handler) handleApiCreateWorldUploadLink(c *echo.Context) error {
 	switch req.MimeType {
 	case "application/zip":
 		ext = ".zip"
-	case "application/x-gzip":
+	case "application/x-gzip", "application/gzip":
 		ext = ".tar.gz"
 	case "application/zstd":
 		ext = ".tar.zst"

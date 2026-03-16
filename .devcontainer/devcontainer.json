@@ -20,11 +20,11 @@
 			"onAutoForward": "silent"
 		},
 		"9000": {
-			"label": "MinIO API",
+			"label": "S3 API",
 			"onAutoForward": "silent"
 		},
 		"9001": {
-			"label": "MinIO",
+			"label": "Rustfs Console",
 			"onAutoForward": "silent"
 		},
 		"16686": {
