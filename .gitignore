@@ -3,3 +3,4 @@
 /coverage.html
 /coverprofile
 __debug_*
+/.pnpm-store
