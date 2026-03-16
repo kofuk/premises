@@ -13,7 +13,7 @@ mise install
 ) &
 p1=$!
 
-./.devcontainer/fake-runner/build_base_image.sh &
+./etc/fake-runner/build_base_image.sh &
 p2=$!
 
 (
