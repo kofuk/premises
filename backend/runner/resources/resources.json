@@ -1,15 +1,15 @@
 [
     {
-        "type": "remote",
-        "destination": "jmx_prometheus_javaagent.jar",
-        "source": "https://github.com/prometheus/jmx_exporter/releases/download/1.5.0/jmx_prometheus_javaagent-1.5.0.jar",
-        "checksum": "sha256:0315f3f657876302c6205a98d4036ec775dca529c5d0419ca60ee669c688239f",
+        "type": "github-releases",
+        "destination": "opentelemetry-javaagent.jar",
+        "source": "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v2.26.0/opentelemetry-javaagent.jar",
+        "checksum": "6e34aa8971a9e5d3918a5ff50e847d54c7d0b48a07318d2fbbbe086a7d9eec06",
         "approvedLicense": "Apache-2.0"
     },
     {
         "type": "local",
-        "source": "jmx_config.yaml",
-        "destination": "jmx_config.yaml",
+        "source": "opentelemetry-javaagent.properties",
+        "destination": "opentelemetry-javaagent.properties",
         "checksum": "",
         "approvedLicense": "AGPL-1.0-or-later"
     }

@@ -13,7 +13,7 @@ type Fetcher interface {
 
 func getFetcher(resourceType ResourceType) Fetcher {
 	switch resourceType {
-	case ResourceTypeRemote:
+	case ResourceTypeGitHubReleases:
 		return &HTTPFetcher{}
 	case ResourceTypeLocal:
 		return &LocalFetcher{}

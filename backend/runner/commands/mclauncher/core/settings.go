@@ -18,4 +18,6 @@ type SettingsRepository interface {
 	GetLevelType() string
 	GetSeed() string
 	ServerPropertiesOverrides() map[string]string
+	GetOtlpEndpoint() string
+	GetMetricExportIntervalMs() int
 }

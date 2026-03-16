@@ -95,6 +95,20 @@ func (mr *MockSettingsRepositoryMockRecorder) GetLevelType() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLevelType", reflect.TypeOf((*MockSettingsRepository)(nil).GetLevelType))
 }
 
+// GetMetricExportIntervalMs mocks base method.
+func (m *MockSettingsRepository) GetMetricExportIntervalMs() int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetMetricExportIntervalMs")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// GetMetricExportIntervalMs indicates an expected call of GetMetricExportIntervalMs.
+func (mr *MockSettingsRepositoryMockRecorder) GetMetricExportIntervalMs() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetricExportIntervalMs", reflect.TypeOf((*MockSettingsRepository)(nil).GetMetricExportIntervalMs))
+}
+
 // GetMinecraftVersion mocks base method.
 func (m *MockSettingsRepository) GetMinecraftVersion() string {
 	m.ctrl.T.Helper()
@@ -121,6 +135,20 @@ func (m *MockSettingsRepository) GetMotd() string {
 func (mr *MockSettingsRepositoryMockRecorder) GetMotd() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMotd", reflect.TypeOf((*MockSettingsRepository)(nil).GetMotd))
+}
+
+// GetOtlpEndpoint mocks base method.
+func (m *MockSettingsRepository) GetOtlpEndpoint() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOtlpEndpoint")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetOtlpEndpoint indicates an expected call of GetOtlpEndpoint.
+func (mr *MockSettingsRepositoryMockRecorder) GetOtlpEndpoint() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOtlpEndpoint", reflect.TypeOf((*MockSettingsRepository)(nil).GetOtlpEndpoint))
 }
 
 // GetSeed mocks base method.

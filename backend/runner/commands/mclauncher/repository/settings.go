@@ -23,6 +23,8 @@ type ConfigJSONSettingsRepository struct {
 	levelType                 string
 	seed                      string
 	serverPropertiesOverrides map[string]string
+	otlpEndpoint              string
+	metricExportIntervalMs    int
 }
 
 var _ core.SettingsRepository = (*ConfigJSONSettingsRepository)(nil)
@@ -45,6 +47,8 @@ func (r *ConfigJSONSettingsRepository) initialize(config *runner.Config) {
 	r.seed = config.GameConfig.World.Seed
 	r.serverPropertiesOverrides = make(map[string]string)
 	maps.Copy(r.serverPropertiesOverrides, config.GameConfig.Server.ServerPropOverride)
+	r.otlpEndpoint = config.Observability.OtlpEndpoint
+	r.metricExportIntervalMs = config.Observability.MetricExportIntervalMs
 }
 
 func getAllowedSizeMiB() int {
@@ -118,4 +122,12 @@ func (r *ConfigJSONSettingsRepository) GetSeed() string {
 
 func (r *ConfigJSONSettingsRepository) ServerPropertiesOverrides() map[string]string {
 	return r.serverPropertiesOverrides
+}
+
+func (r *ConfigJSONSettingsRepository) GetOtlpEndpoint() string {
+	return r.otlpEndpoint
+}
+
+func (r *ConfigJSONSettingsRepository) GetMetricExportIntervalMs() int {
+	return r.metricExportIntervalMs
 }
