@@ -50,10 +50,25 @@ func (l *LauncherCore) startMinecraft(c LauncherContext) error {
 			coreUtil.FindJavaPath(c.Context()),
 			fmt.Sprintf("-Xmx%dM", memSize),
 			fmt.Sprintf("-Xms%dM", memSize),
+		}
+
+		if false {
+			// TODO: if o11y enabled
+			otlpEndpoint := ""
+			commandLine = append(
+				commandLine,
+				fmt.Sprintf("-javaagent:%s", c.Env().GetDataPath("resources/opentelemetry-javaagent.jar")),
+				"-Dotel.service.name=minecraft-server",
+				fmt.Sprintf("-Dotel.exporter.otlp.endpoint=%s", otlpEndpoint),
+			)
+		}
+
+		commandLine = append(
+			commandLine,
 			"-jar",
 			serverPath,
 			"nogui",
-		}
+		)
 	} else {
 		// If it is wrapper script or something, execute it directly.
 		commandLine = []string{
