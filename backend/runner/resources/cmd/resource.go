@@ -8,8 +8,8 @@ import (
 type ResourceType string
 
 const (
-	ResourceTypeRemote ResourceType = "remote"
-	ResourceTypeLocal  ResourceType = "local"
+	ResourceTypeGitHubReleases ResourceType = "github-releases"
+	ResourceTypeLocal          ResourceType = "local"
 )
 
 type ResourceItem struct {

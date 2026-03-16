@@ -56,6 +56,16 @@
       ],
       "depNameTemplate": "golang",
       "datasourceTemplate": "golang-version"
+    },
+    {
+        "customType": "jsonata",
+        "fileFormat": "json",
+        "managerFilePatterns": [
+            "/\\/resources\\.json$/"
+        ],
+        "matchStrings": [
+            "*[type = 'github-releases'].( $m := $match(source, /^https:\\/\\/github\\.com\\/([-a-zA-Z0-9]+\\/[-a-zA-Z0-9]+)\\/releases\\/download\\/([^\\/]+)\\//).groups; { 'datasource': 'github-releases-attachments', 'depName': $m[0], 'currentValue': $m[1], 'currentDigest': checksum } )"
+        ]
     }
   ]
 }
