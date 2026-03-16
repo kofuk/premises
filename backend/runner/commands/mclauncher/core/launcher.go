@@ -52,14 +52,13 @@ func (l *LauncherCore) startMinecraft(c LauncherContext) error {
 			fmt.Sprintf("-Xms%dM", memSize),
 		}
 
-		if false {
-			// TODO: if o11y enabled
-			otlpEndpoint := ""
+		if otlpEndpoint := c.Settings().GetOtlpEndpoint(); otlpEndpoint != "" {
 			commandLine = append(
 				commandLine,
 				fmt.Sprintf("-javaagent:%s", c.Env().GetDataPath("resources/opentelemetry-javaagent.jar")),
 				"-Dotel.service.name=minecraft-server",
 				fmt.Sprintf("-Dotel.exporter.otlp.endpoint=%s", otlpEndpoint),
+				fmt.Sprintf("-Dotel.metric.export.interval=%d", max(c.Settings().GetMetricExportIntervalMs(), 1000)),
 			)
 		}
 

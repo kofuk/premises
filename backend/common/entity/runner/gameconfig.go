@@ -24,8 +24,14 @@ type GameConfig struct {
 	Whitelist []string `json:"whitelist"`
 }
 
+type ObservabilityConfig struct {
+	OtlpEndpoint           string `json:"otlpEndpoint"`
+	MetricExportIntervalMs int    `json:"metricExportIntervalMs"`
+}
+
 type Config struct {
-	AuthKey      string     `json:"authKey"`
-	ControlPanel string     `json:"controlPanel"`
-	GameConfig   GameConfig `json:"gameConfig"`
+	AuthKey       string              `json:"authKey"`
+	ControlPanel  string              `json:"controlPanel"`
+	Observability ObservabilityConfig `json:"observability"`
+	GameConfig    GameConfig          `json:"gameConfig"`
 }
