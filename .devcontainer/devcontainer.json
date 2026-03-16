@@ -15,6 +15,10 @@
 		25565
 	],
 	"portsAttributes": {
+		"3000": {
+			"label": "Grafana",
+			"onAutoForward": "silent"
+		},
 		"8000": {
 			"label": "App",
 			"onAutoForward": "silent"
@@ -25,10 +29,6 @@
 		},
 		"9001": {
 			"label": "Rustfs Console",
-			"onAutoForward": "silent"
-		},
-		"16686": {
-			"label": "Jaeger UI",
 			"onAutoForward": "silent"
 		},
 		"25565": {

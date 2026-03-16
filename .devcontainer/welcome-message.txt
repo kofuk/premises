@@ -1,10 +1,14 @@
-Development Environment for "Premises" is Fully Setup!
+Development Environment for "Premises" is Ready!
 
-To run app, execute
+To start the app, run:
     ./bin/dev
 
-After that, Premises' Control Panel is accessible via https://localhost:8000 on your local browser!
+Once running, the following services will be available in your browser:
 
-Initial user information
-  user: admin
-  password: password
+  Premises Control Panel  http://localhost:8000
+  Grafana                 http://localhost:3000
+
+Default credentials
+  Premises Control Panel
+    Username: admin
+    Password: password
