@@ -34,8 +34,12 @@ func fetchAndWrite(baseDir string, item ResourceItem, tarWriter *tar.Writer) err
 	bodyReader := io.TeeReader(resp, hash)
 
 	header := &tar.Header{
-		Name: item.Destination,
-		Size: int64(size),
+		Name:   item.Destination,
+		Size:   int64(size),
+		Mode:   0644,
+		Uid:    1000,
+		Gid:    1000,
+		Format: tar.FormatGNU,
 	}
 	if err := tarWriter.WriteHeader(header); err != nil {
 		return err

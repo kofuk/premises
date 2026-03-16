@@ -125,7 +125,7 @@ func (r *ConfigJSONSettingsRepository) ServerPropertiesOverrides() map[string]st
 }
 
 func (r *ConfigJSONSettingsRepository) GetOtlpEndpoint() string {
-	return r.otlpEndpoint
+	return "http://localhost:4317"
 }
 
 func (r *ConfigJSONSettingsRepository) GetMetricExportIntervalMs() int {
