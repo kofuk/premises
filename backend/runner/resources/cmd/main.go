@@ -48,7 +48,7 @@ func fetchAndWrite(baseDir string, item ResourceItem, tarWriter *tar.Writer) err
 
 	if item.Checksum != "" {
 		calculatedChecksum := hash.Sum(nil)
-		expectedChecksum, err := hex.DecodeString(strings.Replace(item.Checksum, "sha256:", "", 1))
+		expectedChecksum, err := hex.DecodeString(item.Checksum)
 		if err != nil {
 			return err
 		}
