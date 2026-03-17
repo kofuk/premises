@@ -6,7 +6,7 @@ RUN apt-get update -y && \
     echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.asc] https://mise.jdx.dev/deb stable main" >/etc/apt/sources.list.d/mise.list && \
     apt-get update -y
 
-RUN apt-get install -y bash-completion lighttpd mise postgresql-client redis-tools tmux uuid-runtime && \
+RUN apt-get install -y bash-completion jq mise postgresql-client redis-tools tmux uuid-runtime && \
     mkdir -p /usr/local/share/bash-completion/completions
 
 COPY welcome-message.txt /usr/local/etc/vscode-dev-containers/first-run-notice.txt

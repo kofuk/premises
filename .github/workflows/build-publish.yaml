@@ -167,6 +167,15 @@ jobs:
       - build-runner
       - build-controlpanel
       - build-test-tool
+    services:
+      object-storage:
+        image: rustfs/rustfs:1.0.0-alpha.83@sha256:1cfa82fb394a7c6a4ffc24f5333b52afee608d258503f94b37fcce5cc965c896
+        ports:
+          - 9000:9000
+          - 9001:9001
+        options: >-
+          -e RUSTFS_ACCESS_KEY=premises
+          -e RUSTFS_SECRET_KEY=password
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
       - uses: denoland/setup-deno@v2
@@ -203,20 +212,6 @@ jobs:
           mv work/premises-runner /tmp/premises
           mv work/resources.tar.zst /tmp/premises
           chmod +x work/*
-      - name: Launch MinIO
-        run: |
-          docker run -d \
-              -p 9001:9001 \
-              -p 9000:9000 \
-              -e MINIO_ROOT_USER=premises \
-              -e MINIO_ROOT_PASSWORD=password \
-              --entrypoint /bin/bash \
-              quay.io/minio/minio:latest@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e \
-              '-c' 'mkdir -p /data/premises && minio server /data --console-address :9001'
-          for i in {1..20}; do
-            curl http://localhost:9001 && break
-            sleep 3
-          done
       - name: Launch ostack-fake
         run: |
           export DOCKER_API_VERSION="$(docker version --format '{{ .Server.APIVersion }}' | tee /dev/stderr)"
@@ -226,6 +221,13 @@ jobs:
             curl -f http://localhost:8010/health && break
             sleep 3
           done
+      - name: Create bucket
+        run: |
+          aws s3api create-bucket --bucket premises --endpoint-url http://localhost:9000
+        env:
+          AWS_ACCESS_KEY_ID: premises
+          AWS_SECRET_ACCESS_KEY: password
+          AWS_DEFAULT_REGION: auto
       - name: Launch app
         run: |
           docker compose --env-file tests/integ/test.env -f compose.yaml -f tests/integ/compose-test.yaml run --rm web /premises migrate
@@ -237,7 +239,7 @@ jobs:
           done
       - name: Build base image for ostack-fake
         run: |
-          ./.devcontainer/fake-runner/build_base_image.sh
+          ./etc/fake-runner/build_base_image.sh
       - name: Run test
         run: |
           export TARGET_HOST='http://localhost:8000'

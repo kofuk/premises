@@ -56,6 +56,7 @@ func (l *LauncherCore) startMinecraft(c LauncherContext) error {
 			commandLine = append(
 				commandLine,
 				fmt.Sprintf("-javaagent:%s", c.Env().GetDataPath("resources/opentelemetry-javaagent.jar")),
+				fmt.Sprintf("-Dotel.javaagent.configuration-file=%s", c.Env().GetDataPath("resources/opentelemetry-javaagent.properties")),
 				"-Dotel.service.name=minecraft-server",
 				fmt.Sprintf("-Dotel.exporter.otlp.endpoint=%s", otlpEndpoint),
 				fmt.Sprintf("-Dotel.metric.export.interval=%d", max(c.Settings().GetMetricExportIntervalMs(), 1000)),

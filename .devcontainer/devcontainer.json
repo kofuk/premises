@@ -15,20 +15,20 @@
 		25565
 	],
 	"portsAttributes": {
+		"3000": {
+			"label": "Grafana",
+			"onAutoForward": "silent"
+		},
 		"8000": {
 			"label": "App",
 			"onAutoForward": "silent"
 		},
 		"9000": {
-			"label": "MinIO API",
+			"label": "S3 API",
 			"onAutoForward": "silent"
 		},
 		"9001": {
-			"label": "MinIO",
-			"onAutoForward": "silent"
-		},
-		"16686": {
-			"label": "Jaeger UI",
+			"label": "RustFS Console",
 			"onAutoForward": "silent"
 		},
 		"25565": {
@@ -44,9 +44,11 @@
 		".devcontainer/post-create.sh"
 	],
 	"postStartCommand": [
-		"lighttpd",
-		"-f",
-		".devcontainer/lighttpd.conf"
+		"caddy",
+		"start",
+		"--config",
+		"./.devcontainer/Caddyfile",
+		"--watch"
 	],
 	"customizations": {
 		"vscode": {
