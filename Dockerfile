@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     cd /build/backend/services/monolith && \
     CGO_ENABLED=0 go build -o /premises .
 
-FROM node:24.14.0@sha256:3a09aa6354567619221ef6c45a5051b671f953f0a1924d1f819ffb236e520e6b AS frontend_build
+FROM node:24.14.0@sha256:6c0cc63a66a456c4574e230e5aec3cd0255bf718b93ebd785361bdc4688a07e6 AS frontend_build
 WORKDIR /build
 RUN corepack enable
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
