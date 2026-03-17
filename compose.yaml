@@ -30,7 +30,7 @@ x-common-settings: &settings
 
 services:
   nginx:
-    image: nginxinc/nginx-unprivileged:1.29.5-alpine-slim@sha256:0e5af054d6a0ed8b1760e52d2fc91968cf85b0a60738d49567d3775a68cfadc2
+    image: nginxinc/nginx-unprivileged:1.29.5-alpine-slim@sha256:4011c42f28e9b54c86b52211598dbc6bcaa520311ddd55f211587cdd71f88a9c
     restart: always
     volumes:
       - type: bind
