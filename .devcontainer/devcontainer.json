@@ -28,7 +28,7 @@
 			"onAutoForward": "silent"
 		},
 		"9001": {
-			"label": "Rustfs Console",
+			"label": "RustFS Console",
 			"onAutoForward": "silent"
 		},
 		"25565": {
@@ -44,9 +44,11 @@
 		".devcontainer/post-create.sh"
 	],
 	"postStartCommand": [
-		"lighttpd",
-		"-f",
-		".devcontainer/lighttpd.conf"
+		"caddy",
+		"start",
+		"--config",
+		"./.devcontainer/Caddyfile",
+		"--watch"
 	],
 	"customizations": {
 		"vscode": {

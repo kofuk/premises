@@ -1,0 +1,40 @@
+# Grafana
+:3000 {
+	reverse_proxy grafana-lgtm:3000
+}
+
+# OTLP gRPC
+:4317 {
+	reverse_proxy h2c://grafana-lgtm:4317
+}
+
+# Application
+:8000 {
+	@monolith path /api/* /_/*
+	handle @monolith {
+		reverse_proxy localhost:10000 {
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+		}
+	}
+	handle {
+		reverse_proxy localhost:5173 {
+			transport http {
+				read_timeout 0
+				write_timeout 0
+			}
+		}
+	}
+}
+
+# S3 API
+:9000 {
+	reverse_proxy object-storage:9000
+}
+
+# RustFS Console
+:9001 {
+	reverse_proxy object-storage:9001
+}
