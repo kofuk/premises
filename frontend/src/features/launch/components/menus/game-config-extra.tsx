@@ -73,7 +73,7 @@ export const create = (): MenuItem => {
   };
 
   const setOtlpEndpoint = (otlpEndpoint: string) => {
-    if (otlpEndpoint.match(/^https?:\/\/[-a-zA-Z0-9.]{1,253}:[0-9]{1,5}/)) {
+    if (otlpEndpoint === '' || otlpEndpoint.match(/^https?:\/\/[-a-zA-Z0-9.]{1,253}:[0-9]{1,5}/)) {
       updateConfig({otlpEndpoint: otlpEndpoint});
     }
   };
