@@ -35,7 +35,7 @@ export const RunnerStatusProvider = ({children}: {children: React.ReactNode}) =>
       if (typeof pageCode === 'number') {
         setPageCode(pageCode);
       }
-    },
+    }
   };
 
   return <RunnerStatusContext.Provider value={value}>{children}</RunnerStatusContext.Provider>;
