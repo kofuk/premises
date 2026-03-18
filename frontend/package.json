@@ -1,6 +1,6 @@
 {
   "name": "premises",
-  "version": "0.11.2",
+  "version": "0.12.0",
   "private": "true",
   "description": "\"Premises\" is a software to build on-demand Minecraft cloud server.",
   "scripts": {
