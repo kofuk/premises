@@ -68,6 +68,8 @@ export type PendingConfig = {
   motd?: string;
   serverPropOverride?: Record<string, string>;
   inactiveTimeout?: number;
+  otlpEndpoint?: string;
+  metricExportIntervalSec?: number;
 };
 
 export type ConfigAndValidity = {
