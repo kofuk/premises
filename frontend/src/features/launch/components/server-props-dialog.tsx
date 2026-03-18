@@ -24,7 +24,7 @@ const ServerPropsDialog = ({add, open, onClose}: Props) => {
       <form onSubmit={handleSubmit(handleSave)}>
         <DialogTitle>{t('launch.server_extra.server_properties.add')}</DialogTitle>
         <DialogContent>
-          <Stack spacing={1} sx={{mt: 1, minWidth: 400}}>
+          <Stack spacing={2} sx={{mt: 1, minWidth: 500}}>
             <TextField fullWidth label={t('launch.server_extra.server_properties.key')} variant="outlined" {...register('key', {required: true})} />
             <TextField fullWidth label={t('launch.server_extra.server_properties.value')} variant="outlined" {...register('value')} />
           </Stack>

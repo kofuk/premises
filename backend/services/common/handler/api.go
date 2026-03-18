@@ -186,9 +186,11 @@ func (h *Handler) convertToLaunchConfig(ctx context.Context, config web.PendingC
 
 	if config.OtlpEndpoint != nil {
 		result.C.Observability.OtlpEndpoint = *config.OtlpEndpoint
+		metricExportIntervalSec := 10
 		if config.MetricExportIntervalSec != nil {
-			result.C.Observability.MetricExportIntervalMs = *config.MetricExportIntervalSec * 1000
+			metricExportIntervalSec = *config.MetricExportIntervalSec
 		}
+		result.C.Observability.MetricExportIntervalMs = metricExportIntervalSec * 1000
 	}
 
 	return &result.C, nil
@@ -319,15 +321,16 @@ func (h *Handler) handleApiMcversions(c *echo.Context) error {
 	versionsEntity := make([]web.MCVersion, 0)
 	for _, ver := range versions {
 		channel := ""
-		if ver.Type == "release" {
+		switch ver.Type {
+		case "release":
 			channel = "stable"
-		} else if ver.Type == "snapshot" {
+		case "snapshot":
 			channel = "snapshot"
-		} else if ver.Type == "old_beta" {
+		case "old_beta":
 			channel = "beta"
-		} else if ver.Type == "old_alpha" {
+		case "old_alpha":
 			channel = "alpha"
-		} else {
+		default:
 			channel = "unknown"
 		}
 

@@ -12,6 +12,7 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
+  Stack,
   Switch,
   Tooltip
 } from '@mui/material';
@@ -72,7 +73,7 @@ export const create = (): MenuItem => {
   };
 
   const setOtlpEndpoint = (otlpEndpoint: string) => {
-    if (otlpEndpoint.match(/^https?:\/\/[-a-zA-Z0-9.]:[0-9]+/)) {
+    if (otlpEndpoint.match(/^https?:\/\/[-a-zA-Z0-9.]{1,253}:[0-9]{1,5}/)) {
       updateConfig({otlpEndpoint: otlpEndpoint});
     }
   };
@@ -202,26 +203,26 @@ export const create = (): MenuItem => {
           <DialogTitle>{t('launch.server_extra.o11y')}</DialogTitle>
           <DialogContent sx={{mb: 1}}>
             <Box sx={{mt: 1}}>
-              <SaveInput
-                fullWidth
-                initValue={otlpEndpoint}
-                label={t('launch.server_extra.o11y.otlp_endpoint.input_label')}
-                onSave={(value) => {
-                  setOtlpEndpoint(value);
-                  setOpenedDialog(OpenedDialog.NONE);
-                }}
-                type="string"
-              />
-              <SaveInput
-                fullWidth
-                initValue={metricExportIntervalSec.toString()}
-                label={t('launch.server_extra.o11y.metric_export_interval_sec.input_label')}
-                onSave={(value) => {
-                  setMetricExportIntervalSec(value);
-                  setOpenedDialog(OpenedDialog.NONE);
-                }}
-                type="number"
-              />
+              <Stack spacing={2} sx={{mt: 1, minWidth: 500}}>
+                <SaveInput
+                  fullWidth
+                  initValue={otlpEndpoint}
+                  label={t('launch.server_extra.o11y.otlp_endpoint.input_label')}
+                  onSave={(value) => {
+                    setOtlpEndpoint(value);
+                  }}
+                  type="text"
+                />
+                <SaveInput
+                  fullWidth
+                  initValue={metricExportIntervalSec.toString()}
+                  label={t('launch.server_extra.o11y.metric_export_interval_sec.input_label')}
+                  onSave={(value) => {
+                    setMetricExportIntervalSec(value);
+                  }}
+                  type="number"
+                />
+              </Stack>
             </Box>
           </DialogContent>
         </Dialog>
