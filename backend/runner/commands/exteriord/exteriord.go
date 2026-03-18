@@ -122,13 +122,6 @@ func Run(ctx context.Context, args []string) int {
 			proc.Restart(proc.RestartNever),
 			proc.UserType(proc.UserPrivileged),
 		))
-	e.RegisterTask("System Statistics",
-		proc.NewProc(env.DataPath("bin/premises-runner"),
-			proc.Args("--sysstat"),
-			proc.Restart(proc.RestartOnFailure),
-			proc.RestartRandomDelay(),
-			proc.UserType(proc.UserRestricted),
-		), setupTask) // We can't use restricted user before setup task finished
 	monitoring := e.RegisterTask("Game Monitoring Service",
 		proc.NewProc(env.DataPath("bin/premises-runner"),
 			proc.Args("--launcher"),

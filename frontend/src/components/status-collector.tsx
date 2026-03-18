@@ -11,7 +11,7 @@ const StatusCollector = () => {
 
   const {accessToken} = useAuth();
 
-  const {updateStatus, updateCpuUsage} = useRunnerStatus();
+  const {updateStatus} = useRunnerStatus();
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -32,10 +32,6 @@ const StatusCollector = () => {
       } else {
         toast.info(t(`info.code_${event.infoCode}`));
       }
-    });
-    eventSource.addEventListener('sysstat', (ev: MessageEvent) => {
-      const event = JSON.parse(ev.data);
-      updateCpuUsage(event);
     });
 
     return () => {

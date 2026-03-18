@@ -17,7 +17,6 @@ import (
 	"github.com/kofuk/premises/backend/runner/commands/mclauncher"
 	"github.com/kofuk/premises/backend/runner/commands/serversetup"
 	"github.com/kofuk/premises/backend/runner/commands/snapshot"
-	"github.com/kofuk/premises/backend/runner/commands/systemstat"
 	"github.com/kofuk/premises/backend/runner/commands/sysupdate"
 	"github.com/kofuk/premises/backend/runner/env"
 	"github.com/kofuk/premises/backend/runner/metadata"
@@ -166,11 +165,6 @@ func main() {
 				Description:  "Snapshot helper",
 				Run:          snapshot.Run,
 				RequiresRoot: true,
-			},
-			"sysstat": {
-				Description:  "Monitor system load",
-				Run:          systemstat.Run,
-				RequiresRoot: false,
 			},
 			"update-packages": {
 				Description:  "Update system packages",

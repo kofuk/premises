@@ -9,7 +9,6 @@ type EventType string
 const (
 	EventHello   EventType = "hello"
 	EventStatus  EventType = "status"
-	EventSysstat EventType = "sysstat"
 	EventInfo    EventType = "info"
 	EventStarted EventType = "started"
 )
@@ -21,11 +20,6 @@ func (ev EventType) String() string {
 type StatusExtra struct {
 	EventCode entity.EventCode `json:"eventCode"`
 	Progress  int              `json:"progress"`
-}
-
-type SysstatExtra struct {
-	CPUUsage float64 `json:"cpuUsage"`
-	Time     int64   `json:"time"`
 }
 
 type InfoExtra struct {
@@ -60,7 +54,6 @@ type Event struct {
 	Metadata RequestMeta   `json:"metadata"`
 	Hello    *HelloExtra   `json:"hello,omitempty"`
 	Status   *StatusExtra  `json:"status,omitempty"`
-	Sysstat  *SysstatExtra `json:"sysstat,omitempty"`
 	Info     *InfoExtra    `json:"info,omitempty"`
 	Started  *StartedExtra `json:"started,omitempty"`
 }

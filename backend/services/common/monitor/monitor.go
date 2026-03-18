@@ -129,16 +129,6 @@ func HandleEvent(ctx context.Context, runnerId string, strmService *streaming.St
 			streaming.NewStandardMessageWithProgress(event.Status.EventCode, event.Status.Progress, GetPageCodeByEventCode(event.Status.EventCode)),
 		)
 
-	case runner.EventSysstat:
-		if event.Sysstat == nil {
-			return errors.New("invalid event message: has no Sysstat")
-		}
-
-		strmService.PublishEvent(
-			ctx,
-			streaming.NewSysstatMessage(event.Sysstat.CPUUsage, event.Sysstat.Time),
-		)
-
 	case runner.EventInfo:
 		if event.Info == nil {
 			return errors.New("invalid event message: has no Info")
