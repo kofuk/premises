@@ -8,13 +8,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/kofuk/premises/backend/common/entity"
+	"github.com/kofuk/premises/backend/common/entity/runner"
+	"github.com/kofuk/premises/backend/common/entity/web"
 	"github.com/kofuk/premises/backend/services/common/config"
 	"github.com/kofuk/premises/backend/services/common/conoha"
 	"github.com/kofuk/premises/backend/services/common/kvs"
 	"github.com/kofuk/premises/backend/services/common/streaming"
-	"github.com/kofuk/premises/backend/common/entity"
-	"github.com/kofuk/premises/backend/common/entity/runner"
-	"github.com/kofuk/premises/backend/common/entity/web"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 

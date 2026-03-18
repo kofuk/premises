@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/gorilla/securecookie"
+	"github.com/kofuk/premises/backend/common/entity"
+	"github.com/kofuk/premises/backend/common/entity/web"
 	"github.com/kofuk/premises/backend/services/common/config"
 	"github.com/kofuk/premises/backend/services/common/kvs"
 	"github.com/kofuk/premises/backend/services/common/launcher/server"
 	"github.com/kofuk/premises/backend/services/common/startup"
 	"github.com/kofuk/premises/backend/services/common/streaming"
-	"github.com/kofuk/premises/backend/common/entity"
-	"github.com/kofuk/premises/backend/common/entity/web"
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel/trace"
 )

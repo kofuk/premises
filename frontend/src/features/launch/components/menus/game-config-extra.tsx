@@ -12,6 +12,7 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
+  Stack,
   Switch,
   Tooltip
 } from '@mui/material';
@@ -27,6 +28,7 @@ enum OpenedDialog {
   NONE,
   MOTD,
   INACTIVE_TIMEOUT,
+  O11Y,
   SERVER_PROPS
 }
 
@@ -39,6 +41,8 @@ export const create = (): MenuItem => {
     : [];
   const motd = config.motd || '';
   const inactiveTimeout = config.inactiveTimeout || -1;
+  const otlpEndpoint = config.otlpEndpoint || '';
+  const metricExportIntervalSec = config.metricExportIntervalSec || 10;
 
   const [openedDialog, setOpenedDialog] = useState(OpenedDialog.NONE);
 
@@ -66,6 +70,16 @@ export const create = (): MenuItem => {
 
   const setTimeoutMinutes = (minutes: string) => {
     updateConfig({inactiveTimeout: parseInt(minutes, 10)});
+  };
+
+  const setOtlpEndpoint = (otlpEndpoint: string) => {
+    if (otlpEndpoint === '' || otlpEndpoint.match(/^https?:\/\/[-a-zA-Z0-9.]{1,253}:[0-9]{1,5}/)) {
+      updateConfig({otlpEndpoint: otlpEndpoint});
+    }
+  };
+
+  const setMetricExportIntervalSec = (intervalSec: string) => {
+    updateConfig({metricExportIntervalSec: parseInt(intervalSec, 10)});
   };
 
   return {
@@ -104,6 +118,12 @@ export const create = (): MenuItem => {
                     : t('launch.server_extra.inactive_timeout.minutes', {minutes: inactiveTimeout})
                 }
               />
+            </ListItemButton>
+          </ListItem>
+
+          <ListItem>
+            <ListItemButton disableGutters onClick={() => setOpenedDialog(OpenedDialog.O11Y)}>
+              <ListItemText primary={t('launch.server_extra.o11y')} secondary={otlpEndpoint || <em>{t('launch.server_extra.o11y.not_set')}</em>} />
             </ListItemButton>
           </ListItem>
 
@@ -175,6 +195,34 @@ export const create = (): MenuItem => {
                 }}
                 type="number"
               />
+            </Box>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog onClose={() => setOpenedDialog(OpenedDialog.NONE)} open={openedDialog === OpenedDialog.O11Y}>
+          <DialogTitle>{t('launch.server_extra.o11y')}</DialogTitle>
+          <DialogContent sx={{mb: 1}}>
+            <Box sx={{mt: 1}}>
+              <Stack spacing={2} sx={{mt: 1, minWidth: 500}}>
+                <SaveInput
+                  fullWidth
+                  initValue={otlpEndpoint}
+                  label={t('launch.server_extra.o11y.otlp_endpoint.input_label')}
+                  onSave={(value) => {
+                    setOtlpEndpoint(value);
+                  }}
+                  type="text"
+                />
+                <SaveInput
+                  fullWidth
+                  initValue={metricExportIntervalSec.toString()}
+                  label={t('launch.server_extra.o11y.metric_export_interval_sec.input_label')}
+                  onSave={(value) => {
+                    setMetricExportIntervalSec(value);
+                  }}
+                  type="number"
+                />
+              </Stack>
             </Box>
           </DialogContent>
         </Dialog>

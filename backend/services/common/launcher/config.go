@@ -4,8 +4,8 @@ import (
 	"encoding/base32"
 
 	"github.com/gorilla/securecookie"
-	"github.com/kofuk/premises/backend/services/common/config"
 	"github.com/kofuk/premises/backend/common/entity/runner"
+	"github.com/kofuk/premises/backend/services/common/config"
 )
 
 type LaunchServerConfig struct {
@@ -32,10 +32,16 @@ type LaunchWorldConfig struct {
 	Difficulty     string
 }
 
+type ObservabilityConfig struct {
+	OtlpEndpoint           string
+	MetricExportIntervalMs int
+}
+
 type LaunchConfig struct {
-	MachineType string
-	Server      LaunchServerConfig
-	World       LaunchWorldConfig
+	MachineType   string
+	Server        LaunchServerConfig
+	World         LaunchWorldConfig
+	Observability ObservabilityConfig
 }
 
 func generateAuthKey() string {
@@ -73,6 +79,10 @@ func (c *LaunchConfig) ToRunnerConfig(cfg *config.Config) (*runner.Config, error
 	// misc config
 	result.GameConfig.Operators = c.Server.Operators
 	result.GameConfig.Whitelist = c.Server.Whitelist
+
+	// observability config
+	result.Observability.OtlpEndpoint = c.Observability.OtlpEndpoint
+	result.Observability.MetricExportIntervalMs = c.Observability.MetricExportIntervalMs
 
 	result.AuthKey = generateAuthKey()
 	result.ControlPanel = cfg.Origin

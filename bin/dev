@@ -12,7 +12,7 @@ fi
 export DOCKER_API_VERSION="$(docker version --format '{{ .Server.APIVersion }}')"
 export PREMISES_PROXY_BIND='127.0.0.1:25565'
 
-make -C ./runner deploy-dev
+make -C ./backend/runner deploy-dev
 
 exec tmux new-session -s "${name}" -n 'Redis Console' "redis-cli -h redis" \; \
      new-window -n 'PostgreSQL Console' "psql -h postgres -U premises premises" \; \

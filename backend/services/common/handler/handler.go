@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/kofuk/premises/backend/common/entity"
+	"github.com/kofuk/premises/backend/common/entity/web"
 	"github.com/kofuk/premises/backend/services/common/auth"
 	"github.com/kofuk/premises/backend/services/common/config"
 	"github.com/kofuk/premises/backend/services/common/kvs"
@@ -17,8 +19,6 @@ import (
 	"github.com/kofuk/premises/backend/services/common/mcversions"
 	"github.com/kofuk/premises/backend/services/common/streaming"
 	"github.com/kofuk/premises/backend/services/common/world"
-	"github.com/kofuk/premises/backend/common/entity"
-	"github.com/kofuk/premises/backend/common/entity/web"
 	echootel "github.com/labstack/echo-opentelemetry"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"

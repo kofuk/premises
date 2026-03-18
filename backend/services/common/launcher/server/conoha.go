@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kofuk/premises/backend/common/entity/runner"
+	"github.com/kofuk/premises/backend/common/retry"
 	"github.com/kofuk/premises/backend/services/common/config"
 	"github.com/kofuk/premises/backend/services/common/conoha"
 	"github.com/kofuk/premises/backend/services/common/startup"
-	"github.com/kofuk/premises/backend/common/entity/runner"
-	"github.com/kofuk/premises/backend/common/retry"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 

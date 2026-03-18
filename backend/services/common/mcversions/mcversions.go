@@ -8,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/kofuk/premises/backend/services/common/kvs"
 	lm "github.com/kofuk/premises/backend/common/mc/launchermeta"
+	"github.com/kofuk/premises/backend/services/common/kvs"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
