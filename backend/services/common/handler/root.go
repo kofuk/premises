@@ -8,10 +8,10 @@ import (
 
 	"github.com/boj/redistore/v2"
 	"github.com/gorilla/sessions"
-	"github.com/kofuk/premises/backend/services/common/auth"
-	"github.com/kofuk/premises/backend/services/common/db/model"
 	"github.com/kofuk/premises/backend/common/entity"
 	"github.com/kofuk/premises/backend/common/entity/web"
+	"github.com/kofuk/premises/backend/services/common/auth"
+	"github.com/kofuk/premises/backend/services/common/db/model"
 	"github.com/labstack/echo-contrib/v5/session"
 	"github.com/labstack/echo/v5"
 	"golang.org/x/crypto/bcrypt"

@@ -15,11 +15,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/kofuk/premises/backend/common/entity/runner"
+	"github.com/kofuk/premises/backend/common/mc/protocol"
 	"github.com/kofuk/premises/backend/services/common/config"
 	"github.com/kofuk/premises/backend/services/common/kvs"
 	"github.com/kofuk/premises/backend/services/common/longpoll"
-	"github.com/kofuk/premises/backend/common/entity/runner"
-	"github.com/kofuk/premises/backend/common/mc/protocol"
 	"golang.org/x/sync/errgroup"
 )
 

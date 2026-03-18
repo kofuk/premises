@@ -184,6 +184,13 @@ func (h *Handler) convertToLaunchConfig(ctx context.Context, config web.PendingC
 	result.SetOperators(cfg.Operators)
 	result.SetWhitelist(cfg.Whitelist)
 
+	if config.OtlpEndpoint != nil {
+		result.C.Observability.OtlpEndpoint = *config.OtlpEndpoint
+		if config.MetricExportIntervalSec != nil {
+			result.C.Observability.MetricExportIntervalMs = *config.MetricExportIntervalSec * 1000
+		}
+	}
+
 	return &result.C, nil
 }
 

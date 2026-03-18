@@ -84,17 +84,19 @@ func IntP(i int) *int {
 }
 
 type PendingConfig struct {
-	MachineType        *string            `json:"machineType,omitempty"`
-	ServerVersion      *string            `json:"serverVersion,omitempty"`
-	GuessVersion       *bool              `json:"guessServerVersion,omitempty"`
-	WorldSource        *string            `json:"worldSource,omitempty"`
-	WorldName          *string            `json:"worldName,omitempty"`
-	BackupGen          *string            `json:"backupGen,omitempty"`
-	LevelType          *string            `json:"levelType,omitempty"`
-	Seed               *string            `json:"seed,omitempty"`
-	Motd               *string            `json:"motd,omitempty"`
-	ServerPropOverride *map[string]string `json:"serverPropOverride,omitempty"`
-	InactiveTimeout    *int               `json:"inactiveTimeout,omitempty"`
+	MachineType             *string            `json:"machineType,omitempty"`
+	ServerVersion           *string            `json:"serverVersion,omitempty"`
+	GuessVersion            *bool              `json:"guessServerVersion,omitempty"`
+	WorldSource             *string            `json:"worldSource,omitempty"`
+	WorldName               *string            `json:"worldName,omitempty"`
+	BackupGen               *string            `json:"backupGen,omitempty"`
+	LevelType               *string            `json:"levelType,omitempty"`
+	Seed                    *string            `json:"seed,omitempty"`
+	Motd                    *string            `json:"motd,omitempty"`
+	ServerPropOverride      *map[string]string `json:"serverPropOverride,omitempty"`
+	InactiveTimeout         *int               `json:"inactiveTimeout,omitempty"`
+	OtlpEndpoint            *string            `json:"otlpEndpoint,omitempty"`
+	MetricExportIntervalSec *int               `json:"metricExportIntervalSec,omitempty"`
 }
 
 type ConfigAndValidity struct {

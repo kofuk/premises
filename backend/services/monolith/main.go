@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/joho/godotenv"
+	"github.com/kofuk/premises/backend/common/otel"
 	"github.com/kofuk/premises/backend/services/common/config"
 	"github.com/kofuk/premises/backend/services/common/cron"
 	"github.com/kofuk/premises/backend/services/common/db"
@@ -21,7 +22,6 @@ import (
 	"github.com/kofuk/premises/backend/services/common/proxy"
 	"github.com/kofuk/premises/backend/services/common/streaming"
 	"github.com/kofuk/premises/backend/services/common/world"
-	"github.com/kofuk/premises/backend/common/otel"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bun"
