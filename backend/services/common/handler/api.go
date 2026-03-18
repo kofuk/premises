@@ -93,13 +93,6 @@ func (h *Handler) handleStream(c *echo.Context) error {
 		return nil
 	}
 
-	for _, entry := range subscription.SysstatHistory {
-		if err := writeEvent(streaming.SysstatMessage.String(), entry); err != nil {
-			slog.Error("Failed to write data", slog.Any("error", err))
-			return err
-		}
-	}
-
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 

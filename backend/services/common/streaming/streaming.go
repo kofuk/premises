@@ -24,7 +24,6 @@ type MessageType int
 
 const (
 	EventMessage MessageType = iota
-	SysstatMessage
 	NotifyMessage
 )
 
@@ -32,8 +31,6 @@ func (m MessageType) String() string {
 	switch m {
 	case EventMessage:
 		return "event"
-	case SysstatMessage:
-		return "sysstat"
 	case NotifyMessage:
 		return "notify"
 	default:
@@ -90,16 +87,6 @@ func NewInfoMessage(infoCode entity.InfoCode, isError bool) Message {
 	}
 }
 
-func NewSysstatMessage(cpuUsage float64, time int64) Message {
-	return Message{
-		Type: SysstatMessage,
-		Body: web.SysstatMessage{
-			CPUUsage: cpuUsage,
-			Time:     time,
-		},
-	}
-}
-
 func (s *StreamingService) publishEvent(ctx context.Context, message Message) error {
 	switch message.Type {
 	case EventMessage:
@@ -108,20 +95,6 @@ func (s *StreamingService) publishEvent(ctx context.Context, message Message) er
 			return err
 		}
 		if _, err := s.redis.Set(ctx, "current-state", body, 0).Result(); err != nil {
-			return err
-		}
-
-	case SysstatMessage:
-		if _, err := s.redis.Pipelined(ctx, func(p redis.Pipeliner) error {
-			data, err := json.Marshal(message.Body)
-			if err != nil {
-				return err
-			}
-
-			p.LPush(ctx, "sysstat-history", data)
-			p.LTrim(ctx, "sysstat-history", 0, 99)
-			return nil
-		}); err != nil {
 			return err
 		}
 	}
@@ -144,9 +117,8 @@ func (s *StreamingService) PublishEvent(ctx context.Context, message Message) {
 }
 
 type Subscription struct {
-	subscription   *redis.PubSub
-	CurrentState   []byte
-	SysstatHistory [][]byte
+	subscription *redis.PubSub
+	CurrentState []byte
 }
 
 func (s *Subscription) Close() error {
@@ -187,21 +159,11 @@ func (s *StreamingService) SubscribeEvent(ctx context.Context) (*Subscription, e
 		currentState = string(defState)
 	}
 
-	sysstatHistory, err := s.redis.LRange(ctx, "sysstat-history", 0, -1).Result()
-	if err != nil && err != redis.Nil {
-		return nil, err
-	}
-	historyData := make([][]byte, len(sysstatHistory))
-	for i, entry := range sysstatHistory {
-		historyData[len(historyData)-1-i] = []byte(entry)
-	}
-
 	subscription := s.redis.Subscribe(ctx, "events")
 
 	return &Subscription{
-		subscription:   subscription,
-		CurrentState:   []byte(currentState),
-		SysstatHistory: historyData,
+		subscription: subscription,
+		CurrentState: []byte(currentState),
 	}, nil
 }
 

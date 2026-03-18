@@ -18,9 +18,7 @@ import (
 	"github.com/kofuk/premises/backend/services/common/longpoll"
 	"github.com/kofuk/premises/backend/services/common/monitor"
 	"github.com/labstack/echo/v5"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
 )
 
 func (h *Handler) handleRunnerPoll(c *echo.Context) error {
@@ -94,15 +92,6 @@ func (h *Handler) handlePostStatus(c *echo.Context) error {
 
 		span := potel.NoopSpan
 		ctx := context.Background()
-		if event.Type != runner.EventSysstat {
-			tracer := trace.SpanFromContext(ctx).TracerProvider().Tracer(ScopeName)
-			ctx, span = tracer.Start(
-				potel.ContextFromTraceContext(ctx, event.Metadata.Traceparent),
-				fmt.Sprintf("Event (%s)", event.Type),
-				trace.WithSpanKind(trace.SpanKindServer),
-				trace.WithAttributes(attribute.String("premises.event_type", event.Type.String())),
-			)
-		}
 
 		if event.Type == runner.EventStatus && event.Status.EventCode == entity.EventShutdown {
 			go h.launcherService.Clean(ctx, c.Request().Header.Get("Authorization"))

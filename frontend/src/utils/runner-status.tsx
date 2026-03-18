@@ -10,8 +10,6 @@ type RunnerStatusContextType = {
   extra: ExtraData;
   pageCode: number;
   updateStatus: (statusCode: number, extra?: ExtraData, pageCode?: number) => void;
-  updateCpuUsage: (usage: {cpuUsage: number; time: number}) => void;
-  cpuUsage: {cpuUsage: number; time: number}[];
 };
 
 const RunnerStatusContext = createContext<RunnerStatusContextType>(null!);
@@ -25,11 +23,6 @@ export const RunnerStatusProvider = ({children}: {children: React.ReactNode}) =>
     textData: ''
   });
   const [pageCode, setPageCode] = useState(1);
-  const [cpuUsage, setCpuUsage] = useState(
-    [...Array(100)].map((_) => {
-      return {cpuUsage: 0, time: 0};
-    })
-  );
 
   const value = {
     statusCode,
@@ -42,11 +35,7 @@ export const RunnerStatusProvider = ({children}: {children: React.ReactNode}) =>
       if (typeof pageCode === 'number') {
         setPageCode(pageCode);
       }
-    },
-    updateCpuUsage: (event: {cpuUsage: number; time: number}) => {
-      setCpuUsage((current) => [...current.slice(1, 100), event]);
-    },
-    cpuUsage
+    }
   };
 
   return <RunnerStatusContext.Provider value={value}>{children}</RunnerStatusContext.Provider>;

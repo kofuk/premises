@@ -1,7 +1,6 @@
 import react from '@vitejs/plugin-react';
 import type {UserConfig} from 'vite';
 import {checker} from 'vite-plugin-checker';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import type {ViteUserConfig as VitestUserConfig} from 'vitest/config';
 
 export default {
@@ -22,5 +21,8 @@ export default {
     globals: true,
     setupFiles: ['./test-setup.ts']
   },
-  plugins: [react(), tsconfigPaths(), checker({typescript: true})]
+  plugins: [react(), checker({typescript: true})],
+  resolve: {
+    tsconfigPaths: true
+  }
 } satisfies UserConfig | Pick<VitestUserConfig, 'test'>;

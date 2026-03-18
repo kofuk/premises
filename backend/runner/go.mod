@@ -10,7 +10,6 @@ require (
 	github.com/kofuk/go-queryalternatives v0.2.1
 	github.com/kofuk/go-structnbt v0.0.2
 	github.com/kofuk/premises/backend/common v0.0.0-00010101000000-000000000000
-	github.com/mackerelio/go-osstat v0.2.7
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
 	github.com/spf13/cobra v1.10.2
