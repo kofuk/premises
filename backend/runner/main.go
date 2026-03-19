@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 	"syscall"
+	"time"
 
-	potel "github.com/kofuk/premises/backend/common/otel"
 	"github.com/kofuk/premises/backend/runner/commands/cleanup"
 	"github.com/kofuk/premises/backend/runner/commands/cli"
 	"github.com/kofuk/premises/backend/runner/commands/connector"
@@ -18,11 +18,11 @@ import (
 	"github.com/kofuk/premises/backend/runner/commands/serversetup"
 	"github.com/kofuk/premises/backend/runner/commands/snapshot"
 	"github.com/kofuk/premises/backend/runner/commands/sysupdate"
+	"github.com/kofuk/premises/backend/runner/config"
 	"github.com/kofuk/premises/backend/runner/env"
 	"github.com/kofuk/premises/backend/runner/metadata"
 	"github.com/kofuk/premises/backend/runner/rpc"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -49,12 +49,6 @@ func (app App) printUsage() {
 	}
 }
 
-func createContext(ctx context.Context) context.Context {
-	traceContext := os.Getenv("TRACEPARENT")
-	os.Unsetenv("TRACEPARENT")
-	return potel.ContextFromTraceContext(ctx, traceContext)
-}
-
 func (app App) Run(ctx context.Context, args []string) int {
 	if len(args) < 2 {
 		app.printUsage()
@@ -65,31 +59,28 @@ func (app App) Run(ctx context.Context, args []string) int {
 
 	cmd, ok := app.Commands[cmdName]
 	if !ok {
-		slog.Error("Subcommand not found.", slog.String("cmd", cmdName))
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", cmdName)
 		app.printUsage()
 		os.Exit(1)
 	}
 
-	var tracerProvider *sdktrace.TracerProvider
-	if cmdName != "sysstat" {
-		var err error
-		tracerProvider, err = potel.InitializeTracer(ctx)
-		if err != nil {
-			slog.Error("Failed to initialize tracer", slog.Any("error", err))
-		}
-	}
-	if tracerProvider != nil {
-		defer tracerProvider.Shutdown(ctx)
-
-		tracer := tracerProvider.Tracer("github.com/kofuk/premises/runner/cmd/premises-runner")
-
-		var span trace.Span
-		ctx, span = tracer.Start(createContext(ctx), "Runner main")
-		defer span.End()
-	}
-
 	slog.SetDefault(slog.Default().With(slog.String("runner_command", cmdName)))
 	os.Setenv("PREMISES_RUNNER_COMMAND", cmdName)
+
+	config, err := config.Load()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to load config: %v\n", err)
+		os.Exit(1)
+	}
+
+	instr := initInstrumentation(ctx, cmdName, config.Observability.OtlpEndpoint, config.Observability.MetricExportIntervalMs)
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		instr.shutdown(ctx)
+	}()
+
+	slog.SetDefault(slog.New(otelslog.NewHandler("premises-runner")))
 
 	rpc.InitializeDefaultServer(env.DataPath("rpc@" + cmdName))
 
@@ -117,15 +108,6 @@ func (app App) Run(ctx context.Context, args []string) int {
 }
 
 func main() {
-	logLevel := slog.LevelInfo
-	if os.Getenv("PREMISES_VERBOSE") != "" {
-		logLevel = slog.LevelDebug
-	}
-	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource: true,
-		Level:     logLevel,
-	})))
-
 	app := App{
 		Commands: map[string]Command{
 			"clean": {
