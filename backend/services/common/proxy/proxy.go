@@ -40,6 +40,7 @@ type ProxyHandler struct {
 	cert       *Certificate
 	pool       map[string]chan *Connection
 	m          sync.Mutex
+	wg         sync.WaitGroup
 }
 
 func NewProxyHandler(cfg *config.Config, kvs kvs.KeyValueStore, action *longpoll.LongPollService) (*ProxyHandler, error) {
@@ -79,15 +80,18 @@ func (p *ProxyHandler) startConnectorChannel(ctx context.Context) error {
 		Certificates: []tls.Certificate{keyPair},
 	})
 
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
+	go func() {
+		<-ctx.Done()
+		slog.InfoContext(ctx, "Shutting down connector channel...")
+		listener.Close()
+	}()
 
+	for {
 		conn, err := listener.Accept()
 		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				return nil
+			}
 			slog.ErrorContext(ctx, "Error accepting connection", slog.Any("error", err))
 			continue
 		}
@@ -175,6 +179,12 @@ func (p *ProxyHandler) handleDummyServer(ctx context.Context, h *protocol.Handle
 }
 
 func (p *ProxyHandler) handleConn(ctx context.Context, conn io.ReadWriteCloser) error {
+	defer func() {
+		if err := recover(); err != nil {
+			slog.ErrorContext(ctx, "Error in handler (panic recovered)", slog.Any("error", err))
+		}
+	}()
+
 	defer conn.Close()
 
 	if conn, ok := conn.(net.Conn); ok {
@@ -191,7 +201,7 @@ func (p *ProxyHandler) handleConn(ctx context.Context, conn io.ReadWriteCloser) 
 	}
 
 	var running bool
-	if err := p.kvs.Get(context.TODO(), "running", &running); err != nil {
+	if err := p.kvs.Get(ctx, "running", &running); err != nil {
 		running = false
 	}
 
@@ -217,7 +227,7 @@ func (p *ProxyHandler) handleConn(ctx context.Context, conn io.ReadWriteCloser) 
 	}
 	defer deleteFromPool()
 
-	p.action.Push(context.TODO(), "default", runner.Action{
+	p.action.Push(ctx, "default", runner.Action{
 		Type: runner.ActionConnReq,
 		ConnReq: &runner.ConnReqInfo{
 			ConnectionID: connID.String(),
@@ -277,26 +287,28 @@ func (p *ProxyHandler) startProxy(ctx context.Context, addr string) error {
 	}
 	defer l.Close()
 
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
+	go func() {
+		<-ctx.Done()
+		slog.InfoContext(ctx, "Shutting down proxy server...")
+		l.Close()
+	}()
 
+	var wg sync.WaitGroup
+
+	for {
 		conn, err := l.Accept()
 		if err != nil {
+			if errors.Is(err, net.ErrClosed) {
+				break
+			}
 			slog.ErrorContext(ctx, "Error accepting connection", slog.Any("error", err))
 			continue
 		}
+		wg.Add(1)
 
 		// Handle connection asynchronously
 		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					slog.ErrorContext(ctx, "Error in handler (error recovered)", slog.Any("error", err))
-				}
-			}()
+			defer wg.Done()
 
 			if err := p.handleConn(ctx, conn); err != nil {
 				if !errors.Is(err, io.EOF) {
@@ -306,6 +318,10 @@ func (p *ProxyHandler) startProxy(ctx context.Context, addr string) error {
 			slog.DebugContext(ctx, "Connection closed")
 		}()
 	}
+
+	wg.Wait()
+
+	return nil
 }
 
 func (p *ProxyHandler) Start(ctx context.Context) error {

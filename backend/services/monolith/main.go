@@ -144,9 +144,6 @@ func startProxy(ctx context.Context, cfg *config.Config) {
 }
 
 func startCron(ctx context.Context, config *config.Config) {
-	ctx, cancelFn := signal.NotifyContext(ctx, syscall.SIGTERM, syscall.SIGINT)
-	defer cancelFn()
-
 	worldService, err := world.New(ctx, config.S3Bucket, config.S3ForcePathStyle)
 	if err != nil {
 		slog.ErrorContext(ctx, "Failed to create world service", slog.Any("error", err))
