@@ -72,7 +72,7 @@ func (h *Handler) handleStream(c *echo.Context) error {
 
 	subscription, err := h.StreamingService.SubscribeEvent(c.Request().Context())
 	if err != nil {
-		slog.Error("Failed to connect to stream", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Failed to connect to stream", slog.Any("error", err))
 		return c.String(http.StatusInternalServerError, "")
 	}
 	defer subscription.Close()
@@ -84,7 +84,7 @@ func (h *Handler) handleStream(c *echo.Context) error {
 	c.Response().Header().Set("Cache-Control", "no-store")
 
 	if err := writeEvent(streaming.EventMessage.String(), subscription.CurrentState); err != nil {
-		slog.Error("Failed to write data", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Failed to write data", slog.Any("error", err))
 		return err
 	}
 
@@ -104,7 +104,7 @@ out:
 		case status := <-eventChannel:
 			body, _ := json.Marshal(status.Body)
 			if err := writeEvent(status.Type.String(), body); err != nil {
-				slog.Error("Failed to write server-sent event", slog.Any("error", err))
+				slog.ErrorContext(c.Request().Context(), "Failed to write server-sent event", slog.Any("error", err))
 				break out
 			}
 
@@ -192,7 +192,7 @@ func (h *Handler) convertToLaunchConfig(ctx context.Context, config web.PendingC
 func (h *Handler) handleApiLaunch(c *echo.Context) error {
 	var config web.PendingConfig
 	if err := h.KVS.Get(c.Request().Context(), "pending-config", &config); err != nil {
-		slog.Error("Failed to get pending config", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Failed to get pending config", slog.Any("error", err))
 		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
@@ -201,7 +201,7 @@ func (h *Handler) handleApiLaunch(c *echo.Context) error {
 
 	launchConfig, err := h.convertToLaunchConfig(c.Request().Context(), config, h.cfg)
 	if err != nil {
-		slog.Error("Failed to convert to launch config", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Failed to convert to launch config", slog.Any("error", err))
 		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
@@ -209,7 +209,7 @@ func (h *Handler) handleApiLaunch(c *echo.Context) error {
 	}
 
 	if err := h.launcherService.Launch(c.Request().Context(), launchConfig); err != nil {
-		slog.Error("Failed to launch server", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Failed to launch server", slog.Any("error", err))
 		// TODO: Check error types and return appropriate error codes.
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
@@ -229,7 +229,7 @@ func (h *Handler) handleApiStop(c *echo.Context) error {
 			Traceparent: potel.TraceContextFromContext(c.Request().Context()),
 		},
 	}); err != nil {
-		slog.Error("Unable to write action", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Unable to write action", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
@@ -245,14 +245,14 @@ func (h *Handler) handleApiListWorlds(c *echo.Context) error {
 	if val, err := h.redis.Get(c.Request().Context(), CacheKeyWorlds).Result(); err == nil {
 		return c.JSONBlob(http.StatusOK, []byte(val))
 	} else if err != redis.Nil {
-		slog.Error("Error retrieving backups from cache", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Error retrieving backups from cache", slog.Any("error", err))
 	}
 
-	slog.Info("cache miss", slog.String("cache_key", CacheKeyWorlds))
+	slog.InfoContext(c.Request().Context(), "cache miss", slog.String("cache_key", CacheKeyWorlds))
 
 	worlds, err := h.worldService.GetWorlds(c.Request().Context())
 	if err != nil {
-		slog.Error("Failed to retrieve backup list", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Failed to retrieve backup list", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBackup,
@@ -266,7 +266,7 @@ func (h *Handler) handleApiListWorlds(c *echo.Context) error {
 
 	jsonResp, err := json.Marshal(resp)
 	if err != nil {
-		slog.Error("Failed to marshal backpu list", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Failed to marshal backup list", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -274,7 +274,7 @@ func (h *Handler) handleApiListWorlds(c *echo.Context) error {
 	}
 
 	if _, err := h.redis.Set(c.Request().Context(), CacheKeyWorlds, jsonResp, 5*time.Second).Result(); err != nil {
-		slog.Error("Failed to store backup list", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Failed to store backup list", slog.Any("error", err))
 	}
 
 	return c.JSON(http.StatusOK, resp)
@@ -304,7 +304,7 @@ func (h *Handler) handleApiDeleteWorld(c *echo.Context) error {
 func (h *Handler) handleApiMcversions(c *echo.Context) error {
 	versions, err := h.MCVersionsService.GetVersions(c.Request().Context())
 	if err != nil {
-		slog.Error("Failed to retrieve Minecraft versions", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Failed to retrieve Minecraft versions", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -462,7 +462,7 @@ func (h *Handler) handleApiUpdateConfig(c *echo.Context) error {
 	}
 
 	if err := mergo.Merge(&config, &newConfig, mergo.WithOverride, mergo.WithoutDereference); err != nil {
-		slog.Error("Error merging config", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Error merging config", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -589,7 +589,7 @@ func (h *Handler) handleApiQuickUndoSnapshot(c *echo.Context) error {
 			Slot: config.Slot,
 		},
 	}); err != nil {
-		slog.Error("Unable to write action", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Unable to write action", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
@@ -629,7 +629,7 @@ func (h *Handler) handleApiQuickUndoUndo(c *echo.Context) error {
 			Slot: config.Slot,
 		},
 	}); err != nil {
-		slog.Error("Unable to write action", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Unable to write action", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrRemote,
@@ -666,7 +666,7 @@ func (h *Handler) handleApiUsersChangePassword(c *echo.Context) error {
 
 	var password string
 	if err := h.db.NewSelect().Model((*model.User)(nil)).Column("password").Where("id = ? AND deleted_at IS NULL", userID).Scan(c.Request().Context(), &password); err != nil {
-		slog.Error("User not found", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "User not found", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -681,7 +681,7 @@ func (h *Handler) handleApiUsersChangePassword(c *echo.Context) error {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
 	if err != nil {
-		slog.Error("error hashing password", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "error hashing password", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -689,7 +689,7 @@ func (h *Handler) handleApiUsersChangePassword(c *echo.Context) error {
 	}
 
 	if _, err := h.db.NewUpdate().Model((*model.User)(nil)).Set("password = ?", string(hashedPassword)).Set("initialized = ?", true).Where("id = ? AND deleted_at IS NULL", userID).Exec(c.Request().Context()); err != nil {
-		slog.Error("error updating password", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "error updating password", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -727,7 +727,7 @@ func (h *Handler) handleApiUsersAdd(c *echo.Context) error {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		slog.Error("error hashing password", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "error hashing password", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -742,7 +742,7 @@ func (h *Handler) handleApiUsersAdd(c *echo.Context) error {
 	}
 
 	if _, err := h.db.NewInsert().Model(user).Exec(c.Request().Context()); err != nil {
-		slog.Error("error registering user", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "error registering user", slog.Any("error", err))
 		return c.JSON(http.StatusBadRequest, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrDupUserName,

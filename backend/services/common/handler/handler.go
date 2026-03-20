@@ -108,7 +108,7 @@ func NewHandler(cfg *config.Config, bindAddr string, db *bun.DB, redis *redis.Cl
 				logArgs = append(logArgs, slog.String("trace_id", span.SpanContext().TraceID().String()))
 			}
 
-			slog.Info(fmt.Sprintf("%s %s", values.Method, values.URI), logArgs...)
+			slog.InfoContext(c.Request().Context(), fmt.Sprintf("%s %s", values.Method, values.URI), logArgs...)
 
 			return nil
 		},

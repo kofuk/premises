@@ -18,18 +18,18 @@ import (
 	"github.com/kofuk/premises/backend/runner/system"
 )
 
-func removeFilesIgnoreError(paths ...string) {
+func removeFilesIgnoreError(ctx context.Context, paths ...string) {
 	for _, path := range paths {
 		if err := os.RemoveAll(path); err != nil {
-			slog.Info("Failed to clean up file", slog.Any("error", err), slog.String("path", path))
+			slog.InfoContext(ctx, "Failed to clean up file", slog.Any("error", err), slog.String("path", path))
 		}
 	}
 }
 
-func removeTempFiles() {
+func removeTempFiles(ctx context.Context) {
 	dirent, err := os.ReadDir(env.DataPath("tmp"))
 	if err != nil {
-		slog.Error("Error reading temp dir", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Error reading temp dir", slog.Any("error", err))
 		return
 	}
 
@@ -38,13 +38,13 @@ func removeTempFiles() {
 		paths = append(paths, filepath.Join(env.DataPath("tmp"), e.Name()))
 	}
 
-	removeFilesIgnoreError(paths...)
+	removeFilesIgnoreError(ctx, paths...)
 }
 
 func removeSnapshots(ctx context.Context) {
 	dirent, err := os.ReadDir(env.DataPath("gamedata"))
 	if err != nil {
-		slog.Error("Error reading data dir", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Error reading data dir", slog.Any("error", err))
 		return
 	}
 
@@ -59,14 +59,14 @@ func removeSnapshots(ctx context.Context) {
 
 	if needsClean {
 		if err := system.DefaultExecutor.Run(ctx, "btrfs", args); err != nil {
-			slog.Error("Failed to remove snapshots", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Failed to remove snapshots", slog.Any("error", err))
 		}
 	}
 }
 
-func unmountData() {
+func unmountData(ctx context.Context) {
 	if err := syscall.Unmount(env.DataPath("gamedata"), 0); err != nil {
-		slog.Error("Error unmounting data dir", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Error unmounting data dir", slog.Any("error", err))
 	}
 }
 
@@ -79,56 +79,57 @@ func notifyStatus(ctx context.Context, eventCode entity.EventCode) {
 	})
 }
 
-func copyLogData() {
+func copyLogData(ctx context.Context) {
 	if _, err := os.Stat("/premises-dev"); err != nil {
 		return
 	}
 
 	logFile, err := os.Open("/exteriord.log")
 	if err != nil {
-		slog.Error("Error creating log file", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Error creating log file", slog.Any("error", err))
 		return
 	}
 	defer logFile.Close()
 
 	out, err := os.Create(fmt.Sprintf("/premises-dev/exteriord-%s.log", time.Now().Format("2006-01-02T15-04-05")))
 	if err != nil {
-		slog.Error("Error creating copy file", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Error creating copy file", slog.Any("error", err))
 		return
 	}
 	defer out.Close()
 
 	if _, err := io.Copy(out, logFile); err != nil {
-		slog.Error("Error copying log file", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Error copying log file", slog.Any("error", err))
 		return
 	}
 
 	if err := os.Remove("/exteriord.log"); err != nil {
-		slog.Error("Error removing unneeded log file", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Error removing unneeded log file", slog.Any("error", err))
 	}
 }
 
 func Run(ctx context.Context, args []string) int {
 	notifyStatus(ctx, entity.EventClean)
 
-	slog.Info("Removing snaphots...")
+	slog.InfoContext(ctx, "Removing snaphots...")
 	removeSnapshots(ctx)
 
-	slog.Info("Unmounting data dir...")
-	unmountData()
+	slog.InfoContext(ctx, "Unmounting data dir...")
+	unmountData(ctx)
 
-	slog.Info("Removing temp files...")
-	removeTempFiles()
+	slog.InfoContext(ctx, "Removing temp files...")
+	removeTempFiles(ctx)
 
-	slog.Info("Removing config files...")
+	slog.InfoContext(ctx, "Removing config files...")
 	removeFilesIgnoreError(
+		ctx,
 		env.DataPath("config.json"),
 		"/userdata",
 		"/userdata_decoded.sh",
 	)
 
-	slog.Info("Copying log file if it is dev runner")
-	copyLogData()
+	slog.InfoContext(ctx, "Copying log file if it is dev runner")
+	copyLogData(ctx)
 
 	notifyStatus(ctx, entity.EventShutdown)
 

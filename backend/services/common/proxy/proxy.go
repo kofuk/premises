@@ -88,7 +88,7 @@ func (p *ProxyHandler) startConnectorChannel(ctx context.Context) error {
 
 		conn, err := listener.Accept()
 		if err != nil {
-			slog.Error("Error accepting connection", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Error accepting connection", slog.Any("error", err))
 			continue
 		}
 
@@ -96,11 +96,11 @@ func (p *ProxyHandler) startConnectorChannel(ctx context.Context) error {
 			buf := make([]byte, 36)
 			n, err := conn.Read(buf)
 			if err != nil {
-				slog.Error("Error reading header", slog.Any("error", err))
+				slog.ErrorContext(ctx, "Error reading header", slog.Any("error", err))
 				conn.Close()
 				return
 			} else if n != 36 || uuid.Validate(string(buf)) != nil {
-				slog.Error("Invalid header")
+				slog.ErrorContext(ctx, "Invalid header")
 				conn.Close()
 				return
 			}
@@ -119,7 +119,7 @@ func (p *ProxyHandler) startConnectorChannel(ctx context.Context) error {
 			// If the connection is not handled within 30 seconds, close the it to avoid connection leak.
 			time.Sleep(30 * time.Second)
 			if !c.acquired {
-				slog.Warn("Closing connection because no downstream connection found")
+				slog.WarnContext(ctx, "Closing connection because no downstream connection found")
 				conn.Close()
 			}
 		}()
@@ -141,7 +141,7 @@ func retrieveFavicon(url string) (string, error) {
 	return "data:image/png;base64," + base64.RawStdEncoding.EncodeToString(data), nil
 }
 
-func (p *ProxyHandler) handleDummyServer(h *protocol.Handler, hs *protocol.Handshake) error {
+func (p *ProxyHandler) handleDummyServer(ctx context.Context, h *protocol.Handler, hs *protocol.Handshake) error {
 	colors := []byte{'1', '2', '3', '4', '5', '6', '9', 'a', 'b', 'c', 'd', 'e', 'g'}
 	color := colors[rand.Intn(len(colors))]
 
@@ -155,7 +155,7 @@ func (p *ProxyHandler) handleDummyServer(h *protocol.Handler, hs *protocol.Hands
 
 	if hs.ServerAddr == p.gameDomain && p.iconURL != "" {
 		if favicon, err := retrieveFavicon(p.iconURL); err != nil {
-			slog.Error("Error retrieving favicon", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Error retrieving favicon", slog.Any("error", err))
 		} else {
 			status.Favicon = &favicon
 		}
@@ -174,12 +174,12 @@ func (p *ProxyHandler) handleDummyServer(h *protocol.Handler, hs *protocol.Hands
 	return nil
 }
 
-func (p *ProxyHandler) handleConn(conn io.ReadWriteCloser) error {
+func (p *ProxyHandler) handleConn(ctx context.Context, conn io.ReadWriteCloser) error {
 	defer conn.Close()
 
 	if conn, ok := conn.(net.Conn); ok {
 		if err := conn.SetDeadline(time.Now().Add(time.Minute)); err != nil {
-			slog.Error("Error setting socket deadline", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Error setting socket deadline", slog.Any("error", err))
 		}
 	}
 
@@ -200,7 +200,7 @@ func (p *ProxyHandler) handleConn(conn io.ReadWriteCloser) error {
 			return fmt.Errorf("unknown server: %s", hs.ServerAddr)
 		}
 
-		return p.handleDummyServer(h, hs)
+		return p.handleDummyServer(ctx, h, hs)
 	}
 
 	connID := uuid.New()
@@ -239,14 +239,14 @@ func (p *ProxyHandler) handleConn(conn io.ReadWriteCloser) error {
 			return fmt.Errorf("connector not responded within 5 seconds: %s", hs.ServerAddr)
 		}
 
-		return p.handleDummyServer(h, hs)
+		return p.handleDummyServer(ctx, h, hs)
 	}
 	deleteFromPool()
 
 	if conn, ok := conn.(net.Conn); ok {
 		// Unset deadline, because the connection is handled by the upstream server.
 		if err := conn.SetDeadline(time.Time{}); err != nil {
-			slog.Error("Error setting socket deadline", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Error setting socket deadline", slog.Any("error", err))
 		}
 	}
 
@@ -286,7 +286,7 @@ func (p *ProxyHandler) startProxy(ctx context.Context, addr string) error {
 
 		conn, err := l.Accept()
 		if err != nil {
-			slog.Error("Error accepting connection", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Error accepting connection", slog.Any("error", err))
 			continue
 		}
 
@@ -294,14 +294,16 @@ func (p *ProxyHandler) startProxy(ctx context.Context, addr string) error {
 		go func() {
 			defer func() {
 				if err := recover(); err != nil {
-					slog.Error("Error in handler (error recovered)", slog.Any("error", err))
+					slog.ErrorContext(ctx, "Error in handler (error recovered)", slog.Any("error", err))
 				}
 			}()
 
-			if err := p.handleConn(conn); err != nil {
-				slog.Error("Error handling connection", slog.Any("error", err))
+			if err := p.handleConn(ctx, conn); err != nil {
+				if !errors.Is(err, io.EOF) {
+					slog.ErrorContext(ctx, "Error handling connection", slog.Any("error", err))
+				}
 			}
-			slog.Debug("Connection closed")
+			slog.DebugContext(ctx, "Connection closed")
 		}()
 	}
 }

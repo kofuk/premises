@@ -13,13 +13,15 @@ type RPCHandler struct {
 	s        *rpc.Server
 	config   *runner.Config
 	cancelFn func()
+	metrics  *Metrics
 }
 
-func NewRPCHandler(s *rpc.Server, config *runner.Config, cancelFn func()) *RPCHandler {
+func NewRPCHandler(s *rpc.Server, config *runner.Config, cancelFn func(), metrics *Metrics) *RPCHandler {
 	return &RPCHandler{
 		s:        s,
 		config:   config,
 		cancelFn: cancelFn,
+		metrics:  metrics,
 	}
 }
 
@@ -29,19 +31,23 @@ func (h *RPCHandler) HandleProxyOpen(ctx context.Context, req *rpc.AbstractReque
 		return err
 	}
 
-	slog.Info("Handling connection", slog.String("id", connReq.ConnectionID))
-
-	slog.Info(fmt.Sprintf("Endpoint is %s", connReq.Endpoint))
+	slog.InfoContext(ctx, "Handling connection", slog.String("id", connReq.ConnectionID))
+	slog.InfoContext(ctx, fmt.Sprintf("Endpoint is %s", connReq.Endpoint))
 
 	proxy := &Proxy{
 		ID:       connReq.ConnectionID,
 		Endpoint: connReq.Endpoint,
 		Cert:     connReq.ServerCert,
+		Metrics:  h.metrics,
 	}
 	go func() {
-		if err := proxy.Run(); err != nil {
-			slog.Error("Error handling proxy request", slog.Any("error", err))
+		h.metrics.openCount.Add(ctx, 1)
+
+		if err := proxy.Run(ctx); err != nil {
+			slog.ErrorContext(ctx, "Error handling proxy request", slog.Any("error", err))
 		}
+
+		h.metrics.closeCount.Add(ctx, 1)
 	}()
 	return nil
 }

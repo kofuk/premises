@@ -64,7 +64,7 @@ func (s *LauncherService) releaseInstance(ctx context.Context) error {
 func (s *LauncherService) launchServer(ctx context.Context, config *LaunchConfig) {
 	runnerConfig, err := config.ToRunnerConfig(s.config)
 	if err != nil {
-		slog.Error("Failed to convert config to runner config", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to convert config to runner config", slog.Any("error", err))
 		s.streaming.PublishEvent(
 			ctx,
 			streaming.NewInfoMessage(entity.InfoErrRunnerPrepare, true),
@@ -74,7 +74,7 @@ func (s *LauncherService) launchServer(ctx context.Context, config *LaunchConfig
 	}
 
 	if err := s.kvs.Set(ctx, fmt.Sprintf("runner:%s", runnerConfig.AuthKey), "default", -1); err != nil {
-		slog.Error("Failed to save runner id", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to save runner id", slog.Any("error", err))
 
 		s.streaming.PublishEvent(
 			ctx,
@@ -93,12 +93,12 @@ func (s *LauncherService) launchServer(ctx context.Context, config *LaunchConfig
 	if s.server.IsAvailable() {
 		serverCookie, err := s.server.Start(ctx, runnerConfig, config.MachineType)
 		if err != nil {
-			slog.Error("Failed to start server", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Failed to start server", slog.Any("error", err))
 			goto failure
 		}
 
 		if err := s.kvs.Set(ctx, "runner-id:default", serverCookie, -1); err != nil {
-			slog.Error("Failed to set runner ID", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Failed to set runner ID", slog.Any("error", err))
 			return
 		}
 
@@ -123,7 +123,7 @@ failure:
 
 	startupScript, _ := startup.GenerateStartupScript(runnerConfig)
 	if err := s.kvs.Set(ctx, fmt.Sprintf("startup:%s", authCode), string(startupScript), time.Hour); err != nil {
-		slog.Error("Failed to set startup script", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to set startup script", slog.Any("error", err))
 		return
 	}
 }
@@ -191,7 +191,7 @@ func (h *LauncherService) Clean(ctx context.Context, authKey string) {
 
 out:
 	if err := h.kvs.Del(ctx, "runner-id:default", "runner-info:default", "world-info:default", fmt.Sprintf("runner:%s", authKey)); err != nil {
-		slog.Error("Failed to unset runner information", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to unset runner information", slog.Any("error", err))
 		return
 	}
 
@@ -201,6 +201,6 @@ out:
 	)
 
 	if err := h.streaming.ClearSysstat(ctx); err != nil {
-		slog.Error("Unable to clear sysstat history", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Unable to clear sysstat history", slog.Any("error", err))
 	}
 }

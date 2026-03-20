@@ -43,7 +43,7 @@ func (mcv *MCVersionsService) GetVersions(ctx context.Context) ([]lm.VersionInfo
 	{
 		var result lm.VersionManifest
 		if err := mcv.kvs.Get(ctx, "mcversions:versions", &result); err != nil {
-			slog.Error("Failed to get launchermeta from cache", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Failed to get launchermeta from cache", slog.Any("error", err))
 		} else {
 			return result.Versions, nil
 		}
@@ -55,7 +55,7 @@ func (mcv *MCVersionsService) GetVersions(ctx context.Context) ([]lm.VersionInfo
 	}
 
 	if err := mcv.kvs.Set(ctx, "mcversions:versions", versions, 24*time.Hour); err != nil {
-		slog.Error("Failed to write version list cache", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to write version list cache", slog.Any("error", err))
 	}
 
 	return versions.Versions, nil
@@ -65,7 +65,7 @@ func (mcv *MCVersionsService) GetLatestRelease(ctx context.Context) (string, err
 	{
 		var result lm.VersionManifest
 		if err := mcv.kvs.Get(ctx, "mcversions:versions", &result); err != nil {
-			slog.Error("Failed to get launchermeta from cache", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Failed to get launchermeta from cache", slog.Any("error", err))
 		} else {
 			return result.Latest.Release, nil
 		}
@@ -77,7 +77,7 @@ func (mcv *MCVersionsService) GetLatestRelease(ctx context.Context) (string, err
 	}
 
 	if err := mcv.kvs.Set(ctx, "mcversions:versions", versions, 24*time.Hour); err != nil {
-		slog.Error("Failed to write version list cache", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to write version list cache", slog.Any("error", err))
 	}
 
 	return versions.Latest.Release, nil

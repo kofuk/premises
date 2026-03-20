@@ -24,12 +24,12 @@ func main() {
 		Token:    "xxxxxxxxxx",
 	})
 	if err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(ctx, "Failed to create ostack", slog.Any("error", err))
 		os.Exit(1)
 	}
 
 	if err := ostack.Start(ctx); err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(ctx, "Failed to start ostack", slog.Any("error", err))
 		os.Exit(1)
 	}
 }

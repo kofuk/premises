@@ -20,7 +20,7 @@ import (
 func (h *Handler) handleLogin(c *echo.Context) error {
 	var cred web.PasswordCredential
 	if err := c.Bind(&cred); err != nil {
-		slog.Error("Failed to bind data", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Failed to bind data", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
@@ -156,7 +156,7 @@ func (h *Handler) handleLoginResetPassword(c *echo.Context) error {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		slog.Error("error registering user", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "error registering user", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -164,7 +164,7 @@ func (h *Handler) handleLoginResetPassword(c *echo.Context) error {
 	}
 
 	if _, err := h.db.NewUpdate().Model((*model.User)(nil)).Set("password = ?", string(hashedPassword)).Set("initialized = ?", true).Where("id = ? AND deleted_at IS NULL", userId).Exec(c.Request().Context()); err != nil {
-		slog.Error("error updating password", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "error updating password", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -211,13 +211,13 @@ func (h *Handler) handleSessionData(c *echo.Context) error {
 func (h *Handler) handleHealth(c *echo.Context) error {
 	_, err := h.redis.Ping(c.Request().Context()).Result()
 	if err != nil {
-		slog.Error("Can't connect to Redis", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Can't connect to Redis", slog.Any("error", err))
 		return c.String(http.StatusInternalServerError, "error")
 	}
 
 	row, err := h.db.QueryContext(c.Request().Context(), "SELECT 1")
 	if err != nil {
-		slog.Error("Can't connect to PostgreSQL", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Can't connect to PostgreSQL", slog.Any("error", err))
 		return c.String(http.StatusInternalServerError, "error")
 	}
 	row.Close()
@@ -249,7 +249,7 @@ func (h *Handler) setupRootRoutes(group *echo.Group) {
 			// Verify that the request is sent from allowed origin (if needed).
 			if c.Request().Method == http.MethodPost {
 				if c.Request().Header.Get("Origin") != h.cfg.Origin {
-					slog.Error("origin not allowed", slog.String("origin", c.Request().Header.Get("Origin")))
+					slog.ErrorContext(c.Request().Context(), "origin not allowed", slog.String("origin", c.Request().Header.Get("Origin")))
 					return c.JSON(http.StatusOK, web.ErrorResponse{
 						Success:   false,
 						ErrorCode: entity.ErrBadRequest,

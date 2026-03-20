@@ -26,7 +26,7 @@ func takeFsSnapshot(ctx context.Context, snapshotId string) (*SnapshotInfo, erro
 
 	if _, err := os.Stat(snapshotInfo.Path); err == nil {
 		if err := deleteFsSnapshot(ctx, snapshotId); err != nil {
-			slog.Error("Failed to remove old snapshot (doesn't the snapshot exist?)", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Failed to remove old snapshot (doesn't the snapshot exist?)", slog.Any("error", err))
 		}
 	}
 

@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"context"
 	"log/slog"
 	"math/rand"
 	"time"
@@ -38,15 +39,18 @@ func (r *r) finished() bool {
 	return r.failAfter < r.elapsedTime
 }
 
-func (r *r) wait() {
-	time.Sleep(r.nextInterval())
+func (r *r) wait(ctx context.Context) {
+	select {
+	case <-time.After(r.nextInterval()):
+	case <-ctx.Done():
+	}
 }
 
 type Void struct{}
 
 var V = struct{}{}
 
-func Retry[T any](fn func() (T, error), failAfter time.Duration) (T, error) {
+func Retry[T any](ctx context.Context, fn func(ctx context.Context) (T, error), failAfter time.Duration) (T, error) {
 	rr := r{
 		curInterval: 1 * time.Second,
 		maxInterval: 1 * time.Minute,
@@ -54,7 +58,7 @@ func Retry[T any](fn func() (T, error), failAfter time.Duration) (T, error) {
 	}
 
 	for {
-		result, err := fn()
+		result, err := fn(ctx)
 		if err == nil {
 			return result, nil
 		}
@@ -63,8 +67,8 @@ func Retry[T any](fn func() (T, error), failAfter time.Duration) (T, error) {
 			return *new(T), err
 		}
 
-		slog.Debug("Retrying...", slog.String("error", err.Error()))
+		slog.DebugContext(ctx, "Retrying...", slog.String("error", err.Error()))
 
-		rr.wait()
+		rr.wait(ctx)
 	}
 }

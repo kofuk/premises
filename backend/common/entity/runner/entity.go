@@ -60,6 +60,10 @@ type Event struct {
 
 type ActionType string
 
+func (a ActionType) String() string {
+	return string(a)
+}
+
 const (
 	ActionStop        ActionType = "stop"
 	ActionSnapshot    ActionType = "snapshot"

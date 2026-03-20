@@ -3,7 +3,6 @@ package mclauncher
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -30,11 +29,11 @@ import (
 const ScopeName = "github.com/kofuk/premises/backend/runner/commands/mclauncher"
 
 func Run(ctx context.Context, args []string) int {
-	slog.Info("Starting Premises Runner", slog.String("revision", metadata.Revision))
+	slog.InfoContext(ctx, "Starting Premises Runner", slog.String("revision", metadata.Revision))
 
 	config, err := config.Load()
 	if err != nil {
-		slog.Error("Failed to load config", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to load config", slog.Any("error", err))
 		return 1
 	}
 
@@ -83,11 +82,11 @@ func Run(ctx context.Context, args []string) int {
 
 	err = launcher.Start(ctx)
 	if errors.Is(err, core.ErrRestart) {
-		slog.Info("Restart...")
+		slog.InfoContext(ctx, "Restart...")
 
 		return 100
 	} else if err != nil {
-		slog.Error(fmt.Sprintf("Failed to start launcher: %v", err))
+		slog.ErrorContext(ctx, "Failed to start launcher", slog.Any("error", err))
 		return 1
 	}
 

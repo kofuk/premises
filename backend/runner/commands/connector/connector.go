@@ -12,13 +12,15 @@ import (
 func Run(ctx context.Context, args []string) int {
 	config, err := config.Load()
 	if err != nil {
-		slog.Error("Error loading config", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Error loading config", slog.Any("error", err))
 		return 1
 	}
 
 	ctx, cancelFn := context.WithCancel(ctx)
 
-	rpcHandler := NewRPCHandler(rpc.DefaultServer, config, cancelFn)
+	metrics := NewMetrics()
+
+	rpcHandler := NewRPCHandler(rpc.DefaultServer, config, cancelFn, metrics)
 	rpcHandler.Bind()
 
 	rpc.ToExteriord.Notify(ctx, "proc/registerStopHook", os.Getenv("PREMISES_RUNNER_COMMAND"))

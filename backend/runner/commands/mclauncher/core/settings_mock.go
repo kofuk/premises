@@ -10,6 +10,7 @@
 package core
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -54,17 +55,17 @@ func (mr *MockSettingsRepositoryMockRecorder) AutoVersionEnabled() *gomock.Call 
 }
 
 // GetAllowedMemSize mocks base method.
-func (m *MockSettingsRepository) GetAllowedMemSize() int {
+func (m *MockSettingsRepository) GetAllowedMemSize(ctx context.Context) int {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAllowedMemSize")
+	ret := m.ctrl.Call(m, "GetAllowedMemSize", ctx)
 	ret0, _ := ret[0].(int)
 	return ret0
 }
 
 // GetAllowedMemSize indicates an expected call of GetAllowedMemSize.
-func (mr *MockSettingsRepositoryMockRecorder) GetAllowedMemSize() *gomock.Call {
+func (mr *MockSettingsRepositoryMockRecorder) GetAllowedMemSize(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllowedMemSize", reflect.TypeOf((*MockSettingsRepository)(nil).GetAllowedMemSize))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllowedMemSize", reflect.TypeOf((*MockSettingsRepository)(nil).GetAllowedMemSize), ctx)
 }
 
 // GetDifficulty mocks base method.

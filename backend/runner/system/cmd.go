@@ -31,7 +31,7 @@ type SimpleExecutor struct{}
 
 var DefaultExecutor CommandExecutor = new(SimpleExecutor)
 
-func createLog() (io.Writer, string, error) {
+func createLog(ctx context.Context) (io.Writer, string, error) {
 	for {
 		logPath := filepath.Join(env.GetTempDir(), fmt.Sprintf("command-%d.log", atomic.AddUint64(&logNum, 1)-1))
 		log, err := os.OpenFile(logPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
@@ -39,7 +39,7 @@ func createLog() (io.Writer, string, error) {
 			if os.IsExist(err) {
 				continue
 			}
-			slog.Error("Unable to create log file", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Unable to create log file", slog.Any("error", err))
 			return io.Discard, "<error>", err
 		}
 		return log, logPath, nil
@@ -71,7 +71,7 @@ func (e *SimpleExecutor) Run(ctx context.Context, path string, args []string, op
 	ctx, span := tracer.Start(ctx, fmt.Sprintf("EXEC %s", path))
 	defer span.End()
 
-	log, logPath, err := createLog()
+	log, logPath, err := createLog(ctx)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func (e *SimpleExecutor) Run(ctx context.Context, path string, args []string, op
 		defer closer.Close()
 	}
 
-	slog.Info("Execute system command", slog.String("command", path), slog.Any("args", args), slog.String("command_output", logPath))
+	slog.InfoContext(ctx, "Execute system command", slog.String("command", path), slog.Any("args", args), slog.String("command_output", logPath))
 
 	cmd := exec.CommandContext(ctx, path, args...)
 	cmd.Stdout = log
@@ -97,7 +97,7 @@ func (e *SimpleExecutor) Run(ctx context.Context, path string, args []string, op
 
 	if err := cmd.Run(); err != nil {
 		span.SetStatus(codes.Error, err.Error())
-		slog.Error("Command failed", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Command failed", slog.Any("error", err))
 		return err
 	}
 	return nil

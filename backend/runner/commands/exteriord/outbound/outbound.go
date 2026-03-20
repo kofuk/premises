@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"time"
@@ -99,7 +98,7 @@ func (s *Server) HandleMonitor(ctx context.Context) {
 		defer buf.Reset()
 
 		if err := s.client.PostStatus(ctx, buf.Bytes()); err != nil {
-			slog.Error("Error writing status", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Error writing status", slog.Any("error", err))
 			return
 		}
 	}
@@ -120,13 +119,13 @@ out:
 
 		case msg, ok := <-s.msgChan:
 			if !ok {
-				slog.Error("BUG: client channel has been closed")
+				slog.ErrorContext(ctx, "BUG: client channel has been closed")
 				return
 			}
 
 			json, err := json.Marshal(msg.Event)
 			if err != nil {
-				slog.Error("Unabel to marshal event data", slog.Any("error", err))
+				slog.ErrorContext(ctx, "Unable to marshal event data", slog.Any("error", err))
 				continue
 			}
 
@@ -153,7 +152,7 @@ func (s *Server) PollAction(ctx context.Context) {
 
 		action, err := s.client.PollAction(ctx)
 		if err != nil {
-			slog.Error("Error polling action", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Error polling action", slog.Any("error", err))
 
 			time.Sleep(5 * time.Second)
 			continue
@@ -161,7 +160,7 @@ func (s *Server) PollAction(ctx context.Context) {
 
 		mapper, ok := s.actionMappers[action.Type]
 		if !ok {
-			slog.Error(fmt.Sprintf("Unknown action: %s", action.Type), slog.Any("error", err))
+			slog.ErrorContext(ctx, "Unknown action", slog.String("action", action.Type.String()), slog.Any("error", err))
 			continue
 		}
 
@@ -170,7 +169,7 @@ func (s *Server) PollAction(ctx context.Context) {
 
 			// Handle action asynchronously
 			if err := mapper(ctx, action); err != nil {
-				slog.Error(fmt.Sprintf("Error occurred in action mapper: %s", action.Type), slog.Any("error", err))
+				slog.ErrorContext(ctx, "Error occurred in action mapper", slog.String("action", action.Type.String()), slog.Any("error", err))
 			}
 			return nil
 		})

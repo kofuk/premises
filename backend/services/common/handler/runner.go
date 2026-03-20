@@ -24,7 +24,7 @@ import (
 func (h *Handler) handleRunnerPoll(c *echo.Context) error {
 	runnerId, ok := c.Get("runner-id").(string)
 	if !ok || runnerId == "" {
-		slog.Error("Server ID is not set")
+		slog.ErrorContext(c.Request().Context(), "Server ID is not set")
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -42,7 +42,7 @@ func (h *Handler) handleRunnerPoll(c *echo.Context) error {
 				ErrorCode: entity.ErrAgain,
 			})
 		}
-		slog.Error("Error waiting action", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Error waiting action", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -58,7 +58,7 @@ func (h *Handler) handleRunnerPoll(c *echo.Context) error {
 func (h *Handler) handlePostStatus(c *echo.Context) error {
 	runnerId, ok := c.Get("runner-id").(string)
 	if !ok || runnerId == "" {
-		slog.Error("Runner ID is not set")
+		slog.ErrorContext(c.Request().Context(), "Runner ID is not set")
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -67,7 +67,7 @@ func (h *Handler) handlePostStatus(c *echo.Context) error {
 
 	body, err := io.ReadAll(c.Request().Body)
 	if err != nil {
-		slog.Error("Error reading status", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Error reading status", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -83,7 +83,7 @@ func (h *Handler) handlePostStatus(c *echo.Context) error {
 
 		var event runner.Event
 		if err := json.Unmarshal(eventData, &event); err != nil {
-			slog.Error("Unable to unmarshal status data", slog.Any("error", err))
+			slog.ErrorContext(c.Request().Context(), "Unable to unmarshal status data", slog.Any("error", err))
 			return c.JSON(http.StatusOK, web.SuccessfulResponse[interface{}]{
 				Success: true,
 				Data:    nil,
@@ -104,10 +104,10 @@ func (h *Handler) handlePostStatus(c *echo.Context) error {
 			})
 		}
 
-		slog.Debug("Event from runner", slog.Any("payload", event))
+		slog.DebugContext(c.Request().Context(), "Event from runner", slog.Any("payload", event))
 
 		if err := monitor.HandleEvent(ctx, runnerId, h.StreamingService, h.cfg, &h.KVS, &event); err != nil {
-			slog.Error("Unable to handle event", slog.Any("error", err))
+			slog.ErrorContext(c.Request().Context(), "Unable to handle event", slog.Any("error", err))
 
 			span.SetStatus(codes.Error, err.Error())
 			span.End()
@@ -172,7 +172,7 @@ func (h *Handler) handleGetStartupScript(c *echo.Context) error {
 
 	var script string
 	if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("startup:%s", authKey), &script); err != nil {
-		slog.Error("Invalid auth code", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Invalid auth code", slog.Any("error", err))
 		return c.NoContent(http.StatusBadRequest)
 	}
 
@@ -182,7 +182,7 @@ func (h *Handler) handleGetStartupScript(c *echo.Context) error {
 func (h *Handler) handleGetLatestWorldID(c *echo.Context) error {
 	worldName := c.Param("worldName")
 	if worldName == "" {
-		slog.Error("World name is not set")
+		slog.ErrorContext(c.Request().Context(), "World name is not set")
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
@@ -191,7 +191,7 @@ func (h *Handler) handleGetLatestWorldID(c *echo.Context) error {
 
 	key, err := h.worldService.GetLatestWorldKey(c.Request().Context(), worldName)
 	if err != nil {
-		slog.Error("Unable to get latest world key", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Unable to get latest world key", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -207,7 +207,7 @@ func (h *Handler) handleGetLatestWorldID(c *echo.Context) error {
 func (h *Handler) handleCreateWorldDownloadURL(c *echo.Context) error {
 	var req web.CreateWorldDownloadURLRequest
 	if err := c.Bind(&req); err != nil {
-		slog.Error("Unable to bind request", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Unable to bind request", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
@@ -216,7 +216,7 @@ func (h *Handler) handleCreateWorldDownloadURL(c *echo.Context) error {
 
 	url, err := h.worldService.GetPresignedGetURL(c.Request().Context(), req.WorldID)
 	if err != nil {
-		slog.Error("Unable to get presigned URL", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Unable to get presigned URL", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -232,7 +232,7 @@ func (h *Handler) handleCreateWorldDownloadURL(c *echo.Context) error {
 func (h *Handler) handleCreateWorldUploadURL(c *echo.Context) error {
 	var req web.CreateWorldUploadURLRequest
 	if err := c.Bind(&req); err != nil {
-		slog.Error("Unable to bind request", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Unable to bind request", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
@@ -240,7 +240,7 @@ func (h *Handler) handleCreateWorldUploadURL(c *echo.Context) error {
 	}
 
 	if strings.ContainsRune(req.WorldName, '/') {
-		slog.Error("Invalid world name", slog.Any("worldName", req.WorldName))
+		slog.ErrorContext(c.Request().Context(), "Invalid world name", slog.Any("worldName", req.WorldName))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrBadRequest,
@@ -251,7 +251,7 @@ func (h *Handler) handleCreateWorldUploadURL(c *echo.Context) error {
 
 	url, err := h.worldService.GetPresignedPutURL(c.Request().Context(), key)
 	if err != nil {
-		slog.Error("Unable to get presigned URL", slog.Any("error", err))
+		slog.ErrorContext(c.Request().Context(), "Unable to get presigned URL", slog.Any("error", err))
 		return c.JSON(http.StatusOK, web.ErrorResponse{
 			Success:   false,
 			ErrorCode: entity.ErrInternal,
@@ -273,7 +273,7 @@ func (h *Handler) authKeyMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 		var runnerId string
 		if err := h.KVS.Get(c.Request().Context(), fmt.Sprintf("runner:%s", authKey), &runnerId); err != nil {
-			slog.Error("Invalid auth key", slog.Any("error", err))
+			slog.ErrorContext(c.Request().Context(), "Invalid auth key", slog.Any("error", err))
 			return c.JSON(http.StatusOK, web.ErrorResponse{
 				Success:   false,
 				ErrorCode: entity.ErrBadRequest,

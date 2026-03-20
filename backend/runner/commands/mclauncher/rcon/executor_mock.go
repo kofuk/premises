@@ -10,6 +10,7 @@
 package rcon
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -40,16 +41,16 @@ func (m *MockRconExecutorInterface) EXPECT() *MockRconExecutorInterfaceMockRecor
 }
 
 // Exec mocks base method.
-func (m *MockRconExecutorInterface) Exec(cmd string) (string, error) {
+func (m *MockRconExecutorInterface) Exec(ctx context.Context, cmd string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Exec", cmd)
+	ret := m.ctrl.Call(m, "Exec", ctx, cmd)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Exec indicates an expected call of Exec.
-func (mr *MockRconExecutorInterfaceMockRecorder) Exec(cmd any) *gomock.Call {
+func (mr *MockRconExecutorInterfaceMockRecorder) Exec(ctx, cmd any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockRconExecutorInterface)(nil).Exec), cmd)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*MockRconExecutorInterface)(nil).Exec), ctx, cmd)
 }

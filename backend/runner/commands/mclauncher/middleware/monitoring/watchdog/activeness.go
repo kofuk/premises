@@ -1,7 +1,6 @@
 package watchdog
 
 import (
-	"fmt"
 	"log/slog"
 
 	"github.com/kofuk/premises/backend/runner/commands/mclauncher/core"
@@ -49,7 +48,7 @@ func (w *ActivenessWatchdog) Check(c core.LauncherContext, watchID int, status *
 		return nil
 	}
 
-	output, err := w.rcon.List()
+	output, err := w.rcon.List(c.Context())
 	if err != nil {
 		return err
 	}
@@ -61,9 +60,9 @@ func (w *ActivenessWatchdog) Check(c core.LauncherContext, watchID int, status *
 	} else {
 		minutesSinceLastActive := (watchID - w.lastActive) / 60
 		if minutesSinceLastActive > w.timeoutMinutes {
-			slog.Debug(fmt.Sprintf("Server is inactive for %d minutes, stopping the server", minutesSinceLastActive))
+			slog.DebugContext(c.Context(), "Server is inactive, stopping the server", slog.Int("minutes", minutesSinceLastActive))
 
-			return w.rcon.Stop()
+			return w.rcon.Stop(c.Context())
 		}
 	}
 

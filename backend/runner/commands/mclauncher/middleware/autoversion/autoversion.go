@@ -1,7 +1,6 @@
 package autoversion
 
 import (
-	"fmt"
 	"log/slog"
 
 	"github.com/kofuk/premises/backend/runner/commands/mclauncher/core"
@@ -20,12 +19,12 @@ func NewAutoVersionMiddleware() *AutoVersionMiddleware {
 func (m *AutoVersionMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 	return func(c core.LauncherContext) error {
 		if c.Settings().AutoVersionEnabled() {
-			slog.Info("Detecting server version from existing level.dat")
+			slog.InfoContext(c.Context(), "Detecting server version from existing level.dat")
 			if version, err := leveldat.GetCanonicalServerVersion(c.Env().GetDataPath("gamedata/world/level.dat")); err != nil {
 				// Don't exit here, just log the error
-				slog.Error(fmt.Sprintf("failed to detect server version: %v", err))
+				slog.ErrorContext(c.Context(), "failed to detect server version", slog.Any("error", err))
 			} else {
-				slog.Info("Detected server version", "version", version)
+				slog.InfoContext(c.Context(), "Detected server version", slog.String("version", version))
 				c.Settings().SetMinecraftVersion(version)
 			}
 		}
