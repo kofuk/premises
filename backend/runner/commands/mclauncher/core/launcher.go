@@ -18,7 +18,7 @@ func (l *LauncherCore) executeWithBackOff(c LauncherContext, cmdline []string, w
 	for {
 		for _, listener := range l.beforeLaunchListeners {
 			if err := listener(c); err != nil {
-				slog.Error(fmt.Sprintf("failed to execute before launch listener: %s", err))
+				slog.ErrorContext(c.Context(), "failed to execute before launch listener", slog.Any("error", err))
 			}
 		}
 
@@ -43,9 +43,9 @@ func (l *LauncherCore) startMinecraft(c LauncherContext) error {
 	workDir := c.Env().GetDataPath("gamedata")
 
 	var commandLine []string
-	if util.IsJar(serverPath) {
+	if util.IsJar(c.Context(), serverPath) {
 		// If this is JAR file, execute it with Java.
-		memSize := c.Settings().GetAllowedMemSize()
+		memSize := c.Settings().GetAllowedMemSize(c.Context())
 		commandLine = []string{
 			coreUtil.FindJavaPath(c.Context()),
 			fmt.Sprintf("-Xmx%dM", memSize),

@@ -2,7 +2,6 @@ package monitoring
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -54,7 +53,7 @@ func (m *MonitoringMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 				status := &watchdog.Status{}
 				for _, w := range m.watchdogs {
 					if err := w.Check(c, watchID, status); err != nil {
-						slog.Error(fmt.Sprintf("Watchdog %s raised an error: %v", w.Name(), err))
+						slog.ErrorContext(ctx, "Watchdog raised an error", slog.String("watchdog", w.Name()), slog.Any("error", err))
 					}
 				}
 

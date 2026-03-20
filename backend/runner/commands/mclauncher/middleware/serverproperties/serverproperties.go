@@ -17,7 +17,7 @@ func NewServerPropertiesMiddleware() *ServerPropertiesMiddleware {
 }
 
 func (m *ServerPropertiesMiddleware) createServerPropertiesFile(c core.LauncherContext) error {
-	slog.Info("Creating server.properties")
+	slog.InfoContext(c.Context(), "Creating server.properties")
 
 	serverProperties := NewServerPropertiesGenerator()
 	serverProperties.SetMotd(c.Settings().GetMotd())
@@ -27,7 +27,7 @@ func (m *ServerPropertiesMiddleware) createServerPropertiesFile(c core.LauncherC
 	for key, value := range c.Settings().ServerPropertiesOverrides() {
 		if err := serverProperties.Set(key, value); err != nil {
 			// We don't want to stop the server, so we log the error and continue.
-			slog.Error(fmt.Sprintf("Failed to set server property: %v", err), "key", key, "value", value)
+			slog.ErrorContext(c.Context(), "Failed to set server property", slog.Any("error", err), slog.String("key", key), slog.String("value", value))
 		}
 	}
 

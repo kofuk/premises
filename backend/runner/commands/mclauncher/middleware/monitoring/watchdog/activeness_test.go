@@ -27,10 +27,10 @@ var _ = Describe("ActivenessWatchdog", func() {
 
 	It("should stop the server after timeout", func() {
 		gomock.InOrder(
-			executor.EXPECT().Exec("list").Return("There are 1 of a max of 20 players online: kofun8", nil), // 0
-			executor.EXPECT().Exec("list").Return("There are 0 of a max of 20 players online: ", nil),       // 60
-			executor.EXPECT().Exec("list").Return("There are 0 of a max of 20 players online: ", nil),       // 120
-			executor.EXPECT().Exec("stop").Return("", nil),                                                  // 120
+			executor.EXPECT().Exec(gomock.Any(), "list").Return("There are 1 of a max of 20 players online: kofun8", nil), // 0
+			executor.EXPECT().Exec(gomock.Any(), "list").Return("There are 0 of a max of 20 players online: ", nil),       // 60
+			executor.EXPECT().Exec(gomock.Any(), "list").Return("There are 0 of a max of 20 players online: ", nil),       // 120
+			executor.EXPECT().Exec(gomock.Any(), "stop").Return("", nil),                                                  // 120
 		)
 
 		wd := watchdog.NewActivenessWatchdog(rc, 1)
@@ -46,12 +46,12 @@ var _ = Describe("ActivenessWatchdog", func() {
 
 	It("should calculate correct timeout even if users login/logout the server", func() {
 		gomock.InOrder(
-			executor.EXPECT().Exec("list").Return("There are 1 of a max of 20 players online: kofun8", nil), // 0
-			executor.EXPECT().Exec("list").Return("There are 0 of a max of 20 players online: ", nil),       // 60
-			executor.EXPECT().Exec("list").Return("There are 1 of a max of 20 players online: kofun8", nil), // 120
-			executor.EXPECT().Exec("list").Return("There are 0 of a max of 20 players online: ", nil),       // 180
-			executor.EXPECT().Exec("list").Return("There are 0 of a max of 20 players online: ", nil),       // 240
-			executor.EXPECT().Exec("stop").Return("", nil),                                                  // 240
+			executor.EXPECT().Exec(gomock.Any(), "list").Return("There are 1 of a max of 20 players online: kofun8", nil), // 0
+			executor.EXPECT().Exec(gomock.Any(), "list").Return("There are 0 of a max of 20 players online: ", nil),       // 60
+			executor.EXPECT().Exec(gomock.Any(), "list").Return("There are 1 of a max of 20 players online: kofun8", nil), // 120
+			executor.EXPECT().Exec(gomock.Any(), "list").Return("There are 0 of a max of 20 players online: ", nil),       // 180
+			executor.EXPECT().Exec(gomock.Any(), "list").Return("There are 0 of a max of 20 players online: ", nil),       // 240
+			executor.EXPECT().Exec(gomock.Any(), "stop").Return("", nil),                                                  // 240
 		)
 
 		wd := watchdog.NewActivenessWatchdog(rc, 1)
@@ -67,11 +67,11 @@ var _ = Describe("ActivenessWatchdog", func() {
 
 	It("should start counting when server goes online", func() {
 		gomock.InOrder(
-			executor.EXPECT().Exec("list").Return("There are 0 of a max of 20 players online: ", nil),       // 180
-			executor.EXPECT().Exec("list").Return("There are 1 of a max of 20 players online: kofun8", nil), // 240
-			executor.EXPECT().Exec("list").Return("There are 0 of a max of 20 players online: ", nil),       // 300
-			executor.EXPECT().Exec("list").Return("There are 0 of a max of 20 players online: ", nil),       // 360
-			executor.EXPECT().Exec("stop").Return("", nil),                                                  // 360
+			executor.EXPECT().Exec(gomock.Any(), "list").Return("There are 0 of a max of 20 players online: ", nil),       // 180
+			executor.EXPECT().Exec(gomock.Any(), "list").Return("There are 1 of a max of 20 players online: kofun8", nil), // 240
+			executor.EXPECT().Exec(gomock.Any(), "list").Return("There are 0 of a max of 20 players online: ", nil),       // 300
+			executor.EXPECT().Exec(gomock.Any(), "list").Return("There are 0 of a max of 20 players online: ", nil),       // 360
+			executor.EXPECT().Exec(gomock.Any(), "stop").Return("", nil),                                                  // 360
 		)
 
 		wd := watchdog.NewActivenessWatchdog(rc, 1)

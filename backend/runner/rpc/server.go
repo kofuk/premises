@@ -130,13 +130,13 @@ func (s *Server) handleRequest(req *AbstractRequest) *Response[any] {
 		if !ok {
 			span.SetStatus(codes.Error, "Method not found")
 
-			slog.Error("Method for notify request not found", slog.String("method", req.Method))
+			slog.ErrorContext(ctx, "Method for notify request not found", slog.String("method", req.Method))
 			return nil
 		}
 		if err := method(ctx, req); err != nil {
 			span.SetStatus(codes.Error, err.Error())
 
-			slog.Error("Error handling notification", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Error handling notification", slog.Any("error", err))
 			return nil
 		}
 		return nil
@@ -221,13 +221,13 @@ func (s *Server) Start(ctx context.Context) error {
 				return nil
 			}
 
-			slog.Error(err.Error())
+			slog.ErrorContext(ctx, "Error accepting connection", slog.Any("error", err))
 			continue
 		}
 
 		go func() {
 			if err := s.handleConnection(ctx, conn); err != nil {
-				slog.Error(err.Error())
+				slog.ErrorContext(ctx, "Error handling connection", slog.Any("error", err))
 			}
 		}()
 	}

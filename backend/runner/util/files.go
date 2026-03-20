@@ -2,23 +2,23 @@ package util
 
 import (
 	"bytes"
-	"fmt"
+	"context"
 	"io"
 	"log/slog"
 	"os"
 )
 
-func IsJar(path string) bool {
+func IsJar(ctx context.Context, path string) bool {
 	f, err := os.Open(path)
 	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to open input file: %s", err.Error()))
+		slog.ErrorContext(ctx, "Failed to open input file", slog.Any("error", err))
 		return false
 	}
 	defer f.Close()
 
 	buf := make([]byte, 4)
 	if _, err := io.ReadFull(f, buf); err != nil {
-		slog.Error(fmt.Sprintf("Failed to read file signature: %s", err.Error()))
+		slog.ErrorContext(ctx, "Failed to read file signature", slog.Any("error", err))
 		return false
 	}
 

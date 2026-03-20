@@ -2,6 +2,7 @@ package system
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"io"
 	"log/slog"
@@ -56,10 +57,10 @@ func GetHostOS() (string, error) {
 	return readDistroFromLsbRelease(file)
 }
 
-func GetSystemVersion() *SystemInfo {
+func GetSystemVersion(ctx context.Context) *SystemInfo {
 	hostOS, err := GetHostOS()
 	if err != nil {
-		slog.Error("Error retrieving host OS", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Error retrieving host OS", slog.Any("error", err))
 		hostOS = "unknown"
 	}
 

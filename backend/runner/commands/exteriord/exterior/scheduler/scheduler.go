@@ -1,6 +1,7 @@
 package scheduler
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/google/uuid"
@@ -11,7 +12,7 @@ type TaskID string
 type Task struct {
 	taskID      TaskID
 	description string
-	fn          func()
+	fn          func(ctx context.Context)
 	deps        []TaskID
 	started     bool
 }
@@ -25,7 +26,7 @@ func (t *Task) ID() TaskID {
 	return t.taskID
 }
 
-func NewTask(fn func(), description string, deps ...TaskID) *Task {
+func NewTask(fn func(ctx context.Context), description string, deps ...TaskID) *Task {
 	taskID := TaskID(uuid.New().String())
 	task := Task{
 		taskID:      taskID,
@@ -45,8 +46,8 @@ func NewScheduler() *Scheduler {
 	}
 }
 
-func (t *Task) runTask(notifyComplete chan TaskID) {
-	t.fn()
+func (t *Task) runTask(ctx context.Context, notifyComplete chan TaskID) {
+	t.fn(ctx)
 	notifyComplete <- t.taskID
 }
 
@@ -56,7 +57,7 @@ func (s *Scheduler) RegisterTasks(tasks ...*Task) {
 	}
 }
 
-func (s *Scheduler) Run() {
+func (s *Scheduler) Run(ctx context.Context) {
 	notifyComplete := make(chan TaskID)
 
 	completedTasks := 0
@@ -71,8 +72,8 @@ func (s *Scheduler) Run() {
 			}
 
 			if !task.started && uncompletedDepsCount == 0 {
-				slog.Info("Starting task", slog.String("description", task.description), slog.String("id", string(task.taskID)))
-				go task.runTask(notifyComplete)
+				slog.InfoContext(ctx, "Starting task", slog.String("description", task.description), slog.String("id", string(task.taskID)))
+				go task.runTask(ctx, notifyComplete)
 				task.started = true
 			}
 		}

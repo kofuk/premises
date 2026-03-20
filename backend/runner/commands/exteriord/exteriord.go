@@ -19,16 +19,16 @@ import (
 	"github.com/kofuk/premises/backend/runner/rpc"
 )
 
-func extractResources() error {
+func extractResources(ctx context.Context) error {
 	archivePath := env.DataPath("resources.tar.zst")
 	resourcesDir := env.DataPath("resources")
 
 	if _, err := os.Stat(archivePath); os.IsNotExist(err) {
-		slog.Info("No resources archive found, skipping extraction")
+		slog.InfoContext(ctx, "No resources archive found, skipping extraction")
 		return nil
 	}
 
-	slog.Info("Extracting resources...")
+	slog.InfoContext(ctx, "Extracting resources...")
 
 	if err := os.RemoveAll(resourcesDir); err != nil {
 		return err
@@ -75,7 +75,7 @@ func extractResources() error {
 			}
 			outFile.Close()
 		default:
-			slog.Warn("Unsupported file type in resources archive", slog.String("file", header.Name))
+			slog.WarnContext(ctx, "Unsupported file type in resources archive", slog.String("file", header.Name))
 
 		}
 	}
@@ -89,16 +89,16 @@ func extractResources() error {
 func Run(ctx context.Context, args []string) int {
 	signal.Ignore(syscall.SIGHUP)
 
-	if err := extractResources(); err != nil {
-		slog.Error("Failed to extract resources", slog.Any("error", err))
+	if err := extractResources(ctx); err != nil {
+		slog.ErrorContext(ctx, "Failed to extract resources", slog.Any("error", err))
 		return 1
 	}
 
-	slog.Info("Starting premises-runner...", slog.String("protocol_version", common.Version))
+	slog.InfoContext(ctx, "Starting premises-runner...", slog.String("protocol_version", common.Version))
 
 	config, err := config.Load()
 	if err != nil {
-		slog.Error("Unable to load config", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Unable to load config", slog.Any("error", err))
 		os.Exit(1)
 	}
 

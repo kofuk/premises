@@ -3,6 +3,7 @@ package rcon
 //go:generate go tool mockgen -destination executor_mock.go -package rcon . RconExecutorInterface
 
 import (
+	"context"
 	"log/slog"
 	"sync"
 	"time"
@@ -12,7 +13,7 @@ import (
 )
 
 type RconExecutorInterface interface {
-	Exec(cmd string) (string, error)
+	Exec(ctx context.Context, cmd string) (string, error)
 }
 
 type RconExecutor struct {
@@ -38,8 +39,8 @@ func (r *RconExecutor) connect() (*rcon.Conn, error) {
 	return conn, nil
 }
 
-func (r *RconExecutor) waitConnect() (*rcon.Conn, error) {
-	conn, err := retry.Retry(func() (*rcon.Conn, error) {
+func (r *RconExecutor) waitConnect(ctx context.Context) (*rcon.Conn, error) {
+	conn, err := retry.Retry(ctx, func(ctx context.Context) (*rcon.Conn, error) {
 		return r.connect()
 	}, 20*time.Minute)
 	if err != nil {
@@ -49,22 +50,22 @@ func (r *RconExecutor) waitConnect() (*rcon.Conn, error) {
 	return conn, nil
 }
 
-func (r *RconExecutor) Exec(cmd string) (string, error) {
+func (r *RconExecutor) Exec(ctx context.Context, cmd string) (string, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	conn, err := r.waitConnect()
+	conn, err := r.waitConnect(ctx)
 	if err != nil {
 		return "", err
 	}
 	defer conn.Close()
 
-	slog.Debug("Executing rcon", slog.String("command", cmd))
+	slog.DebugContext(ctx, "Executing rcon", slog.String("command", cmd))
 	resp, err := conn.Execute(cmd)
 	if err != nil {
 		return "", err
 	}
-	slog.Debug("Rcon response received", slog.String("command", cmd), slog.String("response", resp))
+	slog.DebugContext(ctx, "Rcon response received", slog.String("command", cmd), slog.String("response", resp))
 
 	return resp, nil
 }

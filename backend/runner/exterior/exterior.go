@@ -11,7 +11,7 @@ import (
 )
 
 func sendEvent(ctx context.Context, event runner.Event, dispatch bool) error {
-	slog.Debug("Sending message...", slog.Any("data", event))
+	slog.DebugContext(ctx, "Sending message...", slog.Any("data", event))
 	return rpc.ToExteriord.Notify(ctx, "status/push", types.EventInput{
 		Dispatch: dispatch,
 		Event:    event,
@@ -23,7 +23,7 @@ func SendEvent(ctx context.Context, event runner.Event) {
 	event.Metadata.Traceparent = potel.TraceContextFromContext(ctx)
 
 	if err := sendEvent(ctx, event, false); err != nil {
-		slog.Error("Unable to send message", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Unable to send message", slog.Any("error", err))
 	}
 }
 
@@ -32,6 +32,6 @@ func DispatchEvent(ctx context.Context, event runner.Event) {
 	event.Metadata.Traceparent = potel.TraceContextFromContext(ctx)
 
 	if err := sendEvent(ctx, event, true); err != nil {
-		slog.Error("Unable to send message", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Unable to send message", slog.Any("error", err))
 	}
 }

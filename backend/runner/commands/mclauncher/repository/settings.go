@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"fmt"
 	"maps"
 
@@ -51,21 +52,21 @@ func (r *ConfigJSONSettingsRepository) initialize(config *runner.Config) {
 	r.metricExportIntervalMs = config.Observability.MetricExportIntervalMs
 }
 
-func getAllowedSizeMiB() int {
+func getAllowedSizeMiB(ctx context.Context) int {
 	if env.IsDevEnv() {
 		return 1024
 	}
 
 	totalMem, err := system.GetTotalMemory()
 	if err != nil {
-		slog.Error(fmt.Sprintf("Unable to get total memory: %v", err))
+		slog.ErrorContext(ctx, fmt.Sprintf("Unable to get total memory: %v", err))
 		return 1024
 	}
 	return totalMem/1024/1024 - 1024
 }
 
-func (r *ConfigJSONSettingsRepository) GetAllowedMemSize() int {
-	return getAllowedSizeMiB()
+func (r *ConfigJSONSettingsRepository) GetAllowedMemSize(ctx context.Context) int {
+	return getAllowedSizeMiB(ctx)
 }
 
 func (r *ConfigJSONSettingsRepository) GetServerPath() string {

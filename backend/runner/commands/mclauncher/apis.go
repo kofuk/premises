@@ -2,7 +2,6 @@ package mclauncher
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 
 	"github.com/kofuk/premises/backend/common/entity"
@@ -32,7 +31,7 @@ func NewRPCHandler(s *rpc.Server, quickUndoService *quickundo.QuickUndoService, 
 }
 
 func (h *RPCHandler) HandleGameStop(ctx context.Context, req *rpc.AbstractRequest) error {
-	if err := h.rconClient.Stop(); err != nil {
+	if err := h.rconClient.Stop(ctx); err != nil {
 		return err
 	}
 
@@ -53,13 +52,13 @@ func (h *RPCHandler) HandleSnapshotCreate(ctx context.Context, req *rpc.Abstract
 	}
 
 	go func() {
-		if err := h.rconClient.SaveAll(); err != nil {
-			slog.Error(fmt.Sprintf("Failed to run save-all: %s", err))
+		if err := h.rconClient.SaveAll(ctx); err != nil {
+			slog.ErrorContext(ctx, "Failed to run save-all", slog.Any("error", err))
 			return
 		}
 
 		if err := h.quickUndoService.CreateSnapshot(ctx, input.Slot); err != nil {
-			slog.Error("Failed to create snapshot", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Failed to create snapshot", slog.Any("error", err))
 
 			exterior.DispatchEvent(ctx, runner.Event{
 				Type: runner.EventInfo,
@@ -101,7 +100,7 @@ func (h *RPCHandler) HandleSnapshotUndo(ctx context.Context, req *rpc.AbstractRe
 		if err := h.quickUndoService.RestartWithSnapshot(ctx, input.Slot); err != nil {
 			span.SetStatus(codes.Error, err.Error())
 
-			slog.Error("Unable to quick-undo", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Unable to quick-undo", slog.Any("error", err))
 		}
 	}()
 

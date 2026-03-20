@@ -32,11 +32,11 @@ var requiredProgs = []string{
 
 type ServerSetup struct{}
 
-func isServerInitialized() bool {
+func isServerInitialized(ctx context.Context) bool {
 	for _, prog := range requiredProgs {
 		_, err := exec.LookPath(prog)
 		if err != nil {
-			slog.Info("Required executable not found", slog.String("name", prog))
+			slog.InfoContext(ctx, "Required executable not found", slog.String("name", prog))
 			return false
 		}
 	}
@@ -48,7 +48,7 @@ func isServerInitialized() bool {
 	return true
 }
 
-func getIPAddr() (v4Addrs []string, v6Addrs []string, err error) {
+func getIPAddr(ctx context.Context) (v4Addrs []string, v6Addrs []string, err error) {
 	if env.IsDevEnv() {
 		return []string{"127.0.0.2"}, nil, nil
 	}
@@ -61,7 +61,7 @@ func getIPAddr() (v4Addrs []string, v6Addrs []string, err error) {
 	for _, addr := range addrs {
 		if ipnet, ok := addr.(*net.IPNet); ok {
 			if ipnet.IP.IsLoopback() {
-				slog.Info("Address is loopback", slog.String("addr", ipnet.IP.String()))
+				slog.DebugContext(ctx, "Address is loopback; skipping", slog.String("addr", ipnet.IP.String()))
 				continue
 			}
 
@@ -76,7 +76,7 @@ func getIPAddr() (v4Addrs []string, v6Addrs []string, err error) {
 }
 
 func (setup *ServerSetup) sendServerHello(ctx context.Context) {
-	systemVersion := system.GetSystemVersion()
+	systemVersion := system.GetSystemVersion(ctx)
 
 	eventData := runner.Event{
 		Type: runner.EventHello,
@@ -87,9 +87,9 @@ func (setup *ServerSetup) sendServerHello(ctx context.Context) {
 	}
 
 	var err error
-	eventData.Hello.Addr.IPv4, eventData.Hello.Addr.IPv6, err = getIPAddr()
+	eventData.Hello.Addr.IPv4, eventData.Hello.Addr.IPv6, err = getIPAddr(ctx)
 	if err != nil {
-		slog.Error("Failed to get IP addresses for network interface", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to get IP addresses for network interface", slog.Any("error", err))
 	}
 
 	exterior.DispatchEvent(ctx, eventData)
@@ -108,7 +108,7 @@ func (setup *ServerSetup) initializeServer(ctx context.Context) {
 	var eg errgroup.Group
 
 	eg.Go(func() error {
-		slog.Info("Installing packages")
+		slog.InfoContext(ctx, "Installing packages")
 		system.AptGet(ctx, "install", "-y", "btrfs-progs", latestAvailableJre)
 		return nil
 	})
@@ -117,20 +117,20 @@ func (setup *ServerSetup) initializeServer(ctx context.Context) {
 			return nil
 		}
 
-		slog.Info("Creating image file to save game data")
+		slog.InfoContext(ctx, "Creating image file to save game data")
 		size := 8 * 1024 * 1024 * 1024 // 8 GiB
 		if env.IsDevEnv() {
 			size = 1 * 1024 * 1024 * 1024 // 1 GiB
 		}
-		if err := fs.Fallocate(env.DataPath("gamedata.img"), int64(size)); err != nil {
-			slog.Error("Unable to create gamedata.img", slog.Any("error", err))
+		if err := fs.Fallocate(ctx, env.DataPath("gamedata.img"), int64(size)); err != nil {
+			slog.ErrorContext(ctx, "Unable to create gamedata.img", slog.Any("error", err))
 			return err
 		}
 		return nil
 	})
 	eg.Go(func() error {
 		if _, err := user.Lookup("premises"); err != nil {
-			slog.Info("Adding user")
+			slog.InfoContext(ctx, "Adding user")
 			// Create a system user named "premises"
 			return system.DefaultExecutor.Run(ctx, "useradd", []string{
 				"--user-group",
@@ -147,14 +147,14 @@ func (setup *ServerSetup) initializeServer(ctx context.Context) {
 	eg.Wait()
 
 	// This command should be executed after `apt-get install` finished
-	slog.Info("Creating filesystem for gamedata.img")
+	slog.InfoContext(ctx, "Creating filesystem for gamedata.img")
 	system.DefaultExecutor.Run(ctx, "mkfs.btrfs", []string{env.DataPath("gamedata.img")})
 }
 
 func (setup *ServerSetup) installRequiredJavaVersion(ctx context.Context) {
 	config, err := config.Load()
 	if err != nil {
-		slog.Error("Unable to load config", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Unable to load config", slog.Any("error", err))
 		return
 	}
 
@@ -170,31 +170,31 @@ func (setup ServerSetup) Run(ctx context.Context) {
 	setup.sendServerHello(ctx)
 	setup.notifyStatus(ctx)
 
-	slog.Info("Creating required directories (if not exists)")
+	slog.InfoContext(ctx, "Creating required directories (if not exists)")
 	for _, dir := range []string{"servers.d", "gamedata", "tmp"} {
 		os.MkdirAll(env.DataPath(dir), 0755)
 	}
 
-	slog.Info("Updating package indices")
+	slog.InfoContext(ctx, "Updating package indices")
 	system.AptGet(ctx, "update", "-y")
 
-	if !isServerInitialized() {
-		slog.Info("Server seems not to be initialized. Will run full initialization")
+	if !isServerInitialized(ctx) {
+		slog.InfoContext(ctx, "Server seems not to be initialized. Will run full initialization")
 		setup.initializeServer(ctx)
 	}
 
-	slog.Info("Installing required Java version")
+	slog.InfoContext(ctx, "Installing required Java version")
 	setup.installRequiredJavaVersion(ctx)
 
-	slog.Info("Mounting gamedata.img")
+	slog.InfoContext(ctx, "Mounting gamedata.img")
 	system.DefaultExecutor.Run(ctx, "mount", []string{env.DataPath("gamedata.img"), env.DataPath("gamedata")})
 
-	slog.Info("Ensure data directory owned by execution user")
+	slog.InfoContext(ctx, "Ensure data directory owned by execution user")
 	if uid, gid, err := system.GetAppUserID(); err != nil {
-		slog.Error("Error retrieving user ID for premises", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Error retrieving user ID for premises", slog.Any("error", err))
 	} else {
-		if err := fs.ChownRecursive(env.DataPath(), uid, gid); err != nil {
-			slog.Error("Error changing ownership", slog.Any("error", err))
+		if err := fs.ChownRecursive(ctx, env.DataPath(), uid, gid); err != nil {
+			slog.ErrorContext(ctx, "Error changing ownership", slog.Any("error", err))
 		}
 	}
 }

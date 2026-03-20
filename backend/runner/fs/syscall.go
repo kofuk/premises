@@ -1,8 +1,8 @@
 package fs
 
 import (
+	"context"
 	"errors"
-	"fmt"
 	"io/fs"
 	"log/slog"
 	"os"
@@ -10,7 +10,7 @@ import (
 	"syscall"
 )
 
-func Fallocate(path string, size int64) error {
+func Fallocate(ctx context.Context, path string, size int64) error {
 	fd, err := syscall.Creat(path, 0644)
 	if err != nil {
 		return err
@@ -23,7 +23,7 @@ func Fallocate(path string, size int64) error {
 		return err
 	}
 
-	slog.Debug("The filesystem seems not to support fallocate(2); Will fallback to write(2) to create a file with specified length")
+	slog.DebugContext(ctx, "The filesystem seems not to support fallocate(2); Will fallback to write(2) to create a file with specified length")
 
 	file := os.NewFile(uintptr(fd), path)
 	if file == nil {
@@ -49,7 +49,7 @@ func Fallocate(path string, size int64) error {
 	return nil
 }
 
-func ChownRecursive(path string, uid, gid int) error {
+func ChownRecursive(ctx context.Context, path string, uid, gid int) error {
 	var errs []error
 
 	err := filepath.WalkDir(path, func(path string, d fs.DirEntry, err error) error {
@@ -58,7 +58,7 @@ func ChownRecursive(path string, uid, gid int) error {
 			return nil
 		}
 
-		slog.Debug(fmt.Sprintf("Changing ownership of file: %s", path))
+		slog.DebugContext(ctx, "Changing ownership of file", slog.String("path", path))
 
 		if err := syscall.Chown(path, uid, gid); err != nil {
 			errs = append(errs, err)

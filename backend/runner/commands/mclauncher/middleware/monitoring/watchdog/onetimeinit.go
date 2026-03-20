@@ -39,16 +39,16 @@ func (l *OneTimeInitWatchdog) Check(c core.LauncherContext, watchID int, status 
 
 	l.prevOnline = true
 
-	slog.Debug("Server became online, invoking one-time initialization")
+	slog.DebugContext(c.Context(), "Server became online, invoking one-time initialization")
 
 	for _, user := range l.ops {
-		if err := l.rcon.AddToOp(user); err != nil {
+		if err := l.rcon.AddToOp(c.Context(), user); err != nil {
 
 			return err
 		}
 	}
 	for _, user := range l.whitelist {
-		if err := l.rcon.AddToWhiteList(user); err != nil {
+		if err := l.rcon.AddToWhiteList(c.Context(), user); err != nil {
 			return err
 		}
 	}
@@ -56,9 +56,9 @@ func (l *OneTimeInitWatchdog) Check(c core.LauncherContext, watchID int, status 
 	data := &runner.StartedExtra{}
 	data.ServerVersion = c.Settings().GetMinecraftVersion()
 	data.World.Name = c.Settings().GetWorldName()
-	seed, err := l.rcon.Seed()
+	seed, err := l.rcon.Seed(c.Context())
 	if err != nil {
-		slog.Error("Failed to retrieve seed", slog.Any("error", err))
+		slog.ErrorContext(c.Context(), "Failed to retrieve seed", slog.Any("error", err))
 		// We don't want to fail the startup if we can't get the seed
 	}
 	data.World.Seed = string(seed)

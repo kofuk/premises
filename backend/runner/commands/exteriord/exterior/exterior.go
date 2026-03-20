@@ -18,14 +18,14 @@ func New() *Exterior {
 }
 
 func (e *Exterior) RegisterTask(description string, proc proc.Proc, deps ...scheduler.TaskID) scheduler.TaskID {
-	task := scheduler.NewTask(func() {
-		proc.Start()
+	task := scheduler.NewTask(func(ctx context.Context) {
+		proc.Start(ctx)
 	}, description, deps...)
 	e.scheduler.RegisterTasks(task)
 	return task.ID()
 }
 
 func (e *Exterior) Run(ctx context.Context) {
-	e.scheduler.Run()
+	e.scheduler.Run(ctx)
 	<-ctx.Done()
 }

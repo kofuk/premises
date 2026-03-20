@@ -1,6 +1,7 @@
 package rcon
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"regexp"
@@ -40,10 +41,10 @@ func ParseListOutput(output string) (*ListOutput, error) {
 	return &ListOutput{MaxPlayers: max, Players: players}, nil
 }
 
-func (r *Rcon) List() (*ListOutput, error) {
-	resp, err := r.executor.Exec("list")
+func (r *Rcon) List(ctx context.Context) (*ListOutput, error) {
+	resp, err := r.executor.Exec(ctx, "list")
 	if err != nil {
-		slog.Error("Failed to send list command to server", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to send list command to server", slog.Any("error", err))
 	}
 
 	return ParseListOutput(resp)

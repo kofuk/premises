@@ -95,7 +95,7 @@ func (p Proc) waitRestartDelay() {
 	}
 }
 
-func runCommand(cmd *exec.Cmd) error {
+func runCommand(ctx context.Context, cmd *exec.Cmd) error {
 	args := cmd.Args
 	if len(args) > 1 {
 		args = args[1:]
@@ -120,7 +120,7 @@ func runCommand(cmd *exec.Cmd) error {
 
 	cmd.Env = append(cmd.Environ(), fmt.Sprintf("TRACEPARENT=%s", potel.TraceContextFromContext(ctx)))
 
-	slog.Info("Executing process",
+	slog.InfoContext(ctx, "Executing process",
 		slog.String("command", path),
 		slog.Any("args", args),
 		slog.String("trace_id", span.SpanContext().TraceID().String()),
@@ -134,7 +134,7 @@ func runCommand(cmd *exec.Cmd) error {
 	return nil
 }
 
-func (p Proc) Start() {
+func (p Proc) Start(ctx context.Context) {
 L:
 	for {
 		cmd := exec.Command(p.execPath, p.args...)
@@ -142,12 +142,13 @@ L:
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 
-		if p.userType == UserPrivileged {
-			// Do nothing
-		} else if p.userType == UserRestricted {
+		switch p.userType {
+		case UserPrivileged:
+			// do nothing
+		case UserRestricted:
 			uid, gid, err := system.GetAppUserID()
 			if err != nil {
-				slog.Error("Error retrieving uid and gid for premises user. Process will be executed with root user")
+				slog.ErrorContext(ctx, "Error retrieving uid and gid for premises user. Process will be executed with root user")
 			}
 
 			cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -159,8 +160,8 @@ L:
 		}
 
 		failure := false
-		if err := runCommand(cmd); err != nil {
-			slog.Error("Command failed", slog.Any("error", err), slog.String("executable", p.execPath))
+		if err := runCommand(ctx, cmd); err != nil {
+			slog.ErrorContext(ctx, "Command failed", slog.Any("error", err), slog.String("executable", p.execPath))
 			failure = true
 		}
 

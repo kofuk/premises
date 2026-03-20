@@ -29,9 +29,9 @@ func (h *RPCHandler) HandleProxyOpen(ctx context.Context, req *rpc.AbstractReque
 		return err
 	}
 
-	slog.Info("Handling connection", slog.String("id", connReq.ConnectionID))
+	slog.InfoContext(ctx, "Handling connection", slog.String("id", connReq.ConnectionID))
 
-	slog.Info(fmt.Sprintf("Endpoint is %s", connReq.Endpoint))
+	slog.InfoContext(ctx, fmt.Sprintf("Endpoint is %s", connReq.Endpoint))
 
 	proxy := &Proxy{
 		ID:       connReq.ConnectionID,
@@ -40,7 +40,7 @@ func (h *RPCHandler) HandleProxyOpen(ctx context.Context, req *rpc.AbstractReque
 	}
 	go func() {
 		if err := proxy.Run(); err != nil {
-			slog.Error("Error handling proxy request", slog.Any("error", err))
+			slog.ErrorContext(ctx, "Error handling proxy request", slog.Any("error", err))
 		}
 	}()
 	return nil

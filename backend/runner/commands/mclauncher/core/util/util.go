@@ -28,7 +28,7 @@ func findNewestJavaCommand(ctx context.Context) (string, error) {
 func FindJavaPath(ctx context.Context) string {
 	path, err := findNewestJavaCommand(ctx)
 	if err != nil {
-		slog.Warn("Error finding java installation. Using the system default", slog.Any("error", err))
+		slog.WarnContext(ctx, "Error finding java installation. Using the system default", slog.Any("error", err))
 		return "java"
 	}
 

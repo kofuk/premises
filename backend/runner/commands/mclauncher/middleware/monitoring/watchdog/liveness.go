@@ -1,7 +1,6 @@
 package watchdog
 
 import (
-	"fmt"
 	"log/slog"
 	"net"
 	"time"
@@ -52,10 +51,10 @@ func (l *LivenessWatchdog) Check(c core.LauncherContext, watchID int, status *St
 
 	conn, err := l.dialer.DialContext(c.Context(), "tcp", l.addr)
 	if err != nil {
-		slog.Debug(fmt.Sprintf("Server is not healthy: %v", err))
+		slog.DebugContext(c.Context(), "Server is not healthy", slog.Any("error", err))
 	} else {
 		conn.Close()
-		slog.Debug("Server is healthy")
+		slog.DebugContext(c.Context(), "Server is healthy")
 	}
 
 	online := err == nil

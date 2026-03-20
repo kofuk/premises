@@ -1,6 +1,9 @@
 package rcon
 
-import "errors"
+import (
+	"context"
+	"errors"
+)
 
 type SeedOutput string
 
@@ -12,8 +15,8 @@ func ParseSeedOutput(seedOutput string) (SeedOutput, error) {
 	return SeedOutput(seedOutput[7 : len(seedOutput)-1]), nil
 }
 
-func (r *Rcon) Seed() (SeedOutput, error) {
-	seed, err := r.executor.Exec("seed")
+func (r *Rcon) Seed(ctx context.Context) (SeedOutput, error) {
+	seed, err := r.executor.Exec(ctx, "seed")
 	if err != nil {
 		return "", err
 	}

@@ -43,7 +43,7 @@ func AttachRunner(ctx context.Context, cfg *config.Config, cache *kvs.KeyValueSt
 		return nil
 	}
 
-	slog.Debug("Updating runner ID")
+	slog.DebugContext(ctx, "Updating runner ID")
 
 	identity := conoha.Identity{
 		User:     cfg.ConohaUser,
@@ -115,7 +115,7 @@ func HandleEvent(ctx context.Context, runnerId string, strmService *streaming.St
 
 		if len(event.Hello.Addr.IPv4) != 0 {
 			if err := AttachRunner(ctx, cfg, kvs, event.Hello.Addr.IPv4[0]); err != nil {
-				slog.Error("Error updating runner ID", slog.Any("error", err))
+				slog.ErrorContext(ctx, "Error updating runner ID", slog.Any("error", err))
 			}
 		}
 

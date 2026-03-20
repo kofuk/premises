@@ -112,7 +112,7 @@ func (s *StreamingService) publishEvent(ctx context.Context, message Message) er
 
 func (s *StreamingService) PublishEvent(ctx context.Context, message Message) {
 	if err := s.publishEvent(ctx, message); err != nil {
-		slog.Error("Failed to publish event: %v", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Failed to publish event", slog.Any("error", err))
 	}
 }
 

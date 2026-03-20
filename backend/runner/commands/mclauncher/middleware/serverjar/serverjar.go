@@ -1,6 +1,7 @@
 package serverjar
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -35,10 +36,10 @@ func NewServerJarMiddleware(launcherMetaClient *launchermeta.LauncherMetaClient,
 }
 
 func (m *ServerJarMiddleware) downloadMatchingVersion(c core.LauncherContext, desiredVersion string, destination string) error {
-	slog.Info(fmt.Sprintf("Looking for the server.jar with version %s", desiredVersion))
+	slog.InfoContext(c.Context(), "Looking for the server.jar with version", slog.String("desired_version", desiredVersion))
 
-	versions, err := retry.Retry(func() (*launchermeta.VersionManifest, error) {
-		return m.launcherMetaClient.GetVersionInfo(c.Context())
+	versions, err := retry.Retry(c.Context(), func(ctx context.Context) (*launchermeta.VersionManifest, error) {
+		return m.launcherMetaClient.GetVersionInfo(ctx)
 	}, time.Minute)
 	if err != nil {
 		return err
@@ -56,8 +57,8 @@ func (m *ServerJarMiddleware) downloadMatchingVersion(c core.LauncherContext, de
 		return errors.New("version not found")
 	}
 
-	versionMetadata, err := retry.Retry(func() (*launchermeta.VersionMetaData, error) {
-		return m.launcherMetaClient.GetVersionMetaData(c.Context(), *matchedVersion)
+	versionMetadata, err := retry.Retry(c.Context(), func(ctx context.Context) (*launchermeta.VersionMetaData, error) {
+		return m.launcherMetaClient.GetVersionMetaData(ctx, *matchedVersion)
 	}, time.Minute)
 	if err != nil {
 		return err
@@ -69,9 +70,9 @@ func (m *ServerJarMiddleware) downloadMatchingVersion(c core.LauncherContext, de
 	}
 	defer outFile.Close()
 
-	slog.Info("Downloading server.jar...", "source", versionMetadata.Downloads.Server.URL)
+	slog.InfoContext(c.Context(), "Downloading server.jar...", slog.String("source", versionMetadata.Downloads.Server.URL))
 
-	_, err = retry.Retry(func() (_ retry.Void, err error) {
+	_, err = retry.Retry(c.Context(), func(ctx context.Context) (_ retry.Void, err error) {
 		defer func() {
 			if err != nil {
 				outFile.Truncate(0)
@@ -80,7 +81,7 @@ func (m *ServerJarMiddleware) downloadMatchingVersion(c core.LauncherContext, de
 		}()
 
 		var req *http.Request
-		req, err = http.NewRequestWithContext(c.Context(), http.MethodGet, versionMetadata.Downloads.Server.URL, nil)
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, versionMetadata.Downloads.Server.URL, nil)
 		if err != nil {
 			return retry.V, err
 		}
@@ -97,7 +98,7 @@ func (m *ServerJarMiddleware) downloadMatchingVersion(c core.LauncherContext, de
 			return
 		}
 
-		_, err = io.Copy(outFile, util.NewProgressReader(c.Context(), resp.Body, entity.EventGameDownload, int(resp.ContentLength)))
+		_, err = io.Copy(outFile, util.NewProgressReader(ctx, resp.Body, entity.EventGameDownload, int(resp.ContentLength)))
 		if err != nil {
 			return
 		}
@@ -134,7 +135,7 @@ func (m *ServerJarMiddleware) downloadIfNotExists(c core.LauncherContext) error 
 		return err
 	}
 
-	if !util.IsJar(serverPath) {
+	if !util.IsJar(c.Context(), serverPath) {
 		// This is a single executable, or wrapper script, so we need to make it executable.
 		os.Chmod(serverPath, 0755)
 	}

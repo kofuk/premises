@@ -27,7 +27,7 @@ func createEulaFile(dataDir string) error {
 
 func (m *EulaMiddleware) Wrap(next core.HandlerFunc) core.HandlerFunc {
 	return func(c core.LauncherContext) error {
-		slog.Info("Assume EULA is accepted")
+		slog.InfoContext(c.Context(), "Assume EULA is accepted")
 		if err := createEulaFile(c.Env().GetDataPath("gamedata")); err != nil {
 			return err
 		}

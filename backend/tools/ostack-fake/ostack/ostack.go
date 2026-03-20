@@ -68,7 +68,7 @@ type OstackFake struct {
 func (o *OstackFake) ServeGetHealth(c *echo.Context) error {
 	ver, err := o.docker.ServerVersion(c.Request().Context())
 	if err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(c.Request().Context(), "Failed to communicate with Docker server", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, map[string]any{
 			"healthy": false,
 			"error":   err.Error(),
@@ -87,12 +87,12 @@ func (o *OstackFake) ServeGetHealth(c *echo.Context) error {
 func (o *OstackFake) ServeGetToken(c *echo.Context) error {
 	var req entity.GetTokenReq
 	if err := c.Bind(&req); err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(c.Request().Context(), "Failed to bind request", slog.Any("error", err))
 		return c.JSON(http.StatusBadRequest, nil)
 	}
 
 	if len(req.Auth.Identity.Methods) != 1 || req.Auth.Identity.Methods[0] != "password" {
-		slog.Error("Unsupported identity method", slog.Any("specified_methods", req.Auth.Identity.Methods))
+		slog.ErrorContext(c.Request().Context(), "Unsupported identity method", slog.Any("specified_methods", req.Auth.Identity.Methods))
 		return c.JSON(http.StatusBadRequest, nil)
 	}
 
@@ -101,7 +101,7 @@ func (o *OstackFake) ServeGetToken(c *echo.Context) error {
 	tenantId := req.Auth.Scope.Project.ID
 
 	if user != o.options.User || password != o.options.Password || tenantId != o.options.TenantId {
-		slog.Error("Invalid credentials")
+		slog.ErrorContext(c.Request().Context(), "Invalid credentials")
 		return c.JSON(http.StatusUnauthorized, nil)
 	}
 
@@ -116,7 +116,7 @@ func (o *OstackFake) ServeGetToken(c *echo.Context) error {
 func (o *OstackFake) ServeListServerDetails(c *echo.Context) error {
 	servers, err := dockerstack.ListServerDetails(c.Request().Context(), o.docker)
 	if err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(c.Request().Context(), "Failed to list server details", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
 
@@ -138,7 +138,7 @@ func (o *OstackFake) ServeGetServerDetail(c *echo.Context) error {
 
 	servers, err := dockerstack.GetServerDetail(c.Request().Context(), o.docker, serverId)
 	if err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(c.Request().Context(), "Failed to get server detail", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
 
@@ -157,7 +157,7 @@ func (o *OstackFake) ServeCreateServer(c *echo.Context) error {
 
 	var req entity.LaunchServerReq
 	if err := c.Bind(&req); err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(c.Request().Context(), "Failed to bind request", slog.Any("error", err))
 		return c.JSON(http.StatusBadRequest, nil)
 	}
 
@@ -176,13 +176,13 @@ func (o *OstackFake) ServeCreateServer(c *echo.Context) error {
 	}
 	if !flavorFound {
 		// Unknown flavor
-		slog.Error("Unknown flavor specified")
+		slog.ErrorContext(c.Request().Context(), "Unknown flavor specified")
 		return c.JSON(http.StatusBadRequest, nil)
 	}
 
 	server, err := dockerstack.LaunchServer(c.Request().Context(), o.docker, req)
 	if err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(c.Request().Context(), "Failed to launch server", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
 
@@ -201,7 +201,7 @@ func (o *OstackFake) ServeServerAction(c *echo.Context) error {
 		defer cancel()
 
 		if err := dockerstack.StopServer(ctx, o.docker, serverId); err != nil {
-			slog.Error(err.Error())
+			slog.ErrorContext(ctx, "Failed to stop server", slog.Any("error", err))
 			return
 		}
 
@@ -209,7 +209,7 @@ func (o *OstackFake) ServeServerAction(c *echo.Context) error {
 		if !ok {
 			servers, err := dockerstack.ListServerDetails(ctx, o.docker)
 			if err != nil {
-				slog.Error(err.Error())
+				slog.ErrorContext(ctx, "Failed to list server details", slog.Any("error", err))
 				return
 			}
 
@@ -220,17 +220,17 @@ func (o *OstackFake) ServeServerAction(c *echo.Context) error {
 			}
 		}
 
-		slog.Debug("Creating image",
+		slog.DebugContext(ctx, "Creating image",
 			slog.String("image_name", imageName),
 			slog.String("volume_id", serverId),
 		)
 
 		if err := dockerstack.CreateImage(ctx, o.docker, serverId, imageName); err != nil {
-			slog.Error("Error creating image", slog.String("image_name", imageName), slog.String("volume_id", serverId), slog.String("error", err.Error()))
+			slog.ErrorContext(ctx, "Error creating image", slog.String("image_name", imageName), slog.String("volume_id", serverId), slog.String("error", err.Error()))
 			return
 		}
 
-		slog.Debug("Image creation completed", slog.String("image_name", imageName), slog.String("volume_id", serverId))
+		slog.DebugContext(ctx, "Image creation completed", slog.String("image_name", imageName), slog.String("volume_id", serverId))
 
 		imageBuilds := o.imageBuilds.Take()
 		defer o.imageBuilds.Drop()
@@ -244,7 +244,7 @@ func (o *OstackFake) ServeDeleteServer(c *echo.Context) error {
 	serverId := c.Param("server")
 
 	if err := dockerstack.DeleteServer(c.Request().Context(), o.docker, serverId); err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(c.Request().Context(), "Failed to delete server", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
 	return c.String(http.StatusNoContent, "")
@@ -260,7 +260,7 @@ func (o *OstackFake) ServeListVolumes(c *echo.Context) error {
 
 	volumes, err := dockerstack.ListVolumes(c.Request().Context(), o.docker)
 	if err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(c.Request().Context(), "Failed to list volumes", slog.Any("error", err))
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
 
@@ -270,7 +270,7 @@ func (o *OstackFake) ServeListVolumes(c *echo.Context) error {
 		}
 	}
 
-	slog.Debug("list volumes", slog.Any("volumes", volumes.Volumes))
+	slog.DebugContext(c.Request().Context(), "list volumes", slog.Any("volumes", volumes.Volumes))
 
 	return c.JSON(http.StatusOK, volumes)
 }
@@ -281,14 +281,14 @@ func (o *OstackFake) ServeUpdateVolume(c *echo.Context) error {
 
 	var req entity.UpdateVolumeReq
 	if err := c.Bind(&req); err != nil {
-		slog.Error(err.Error())
+		slog.ErrorContext(c.Request().Context(), "Failed to bind request", slog.Any("error", err))
 		return c.JSON(http.StatusBadRequest, nil)
 	}
 
 	volumeId := c.Param("volume")
 	volumeId = strings.TrimPrefix(volumeId, "volume_")
 
-	slog.Debug("Saving image names", slog.String("volume_id", volumeId), slog.String("name", req.Volume.Name))
+	slog.DebugContext(c.Request().Context(), "Saving image names", slog.String("volume_id", volumeId), slog.String("name", req.Volume.Name))
 
 	o.volumeNames[volumeId] = req.Volume.Name
 

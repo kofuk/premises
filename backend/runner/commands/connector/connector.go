@@ -12,7 +12,7 @@ import (
 func Run(ctx context.Context, args []string) int {
 	config, err := config.Load()
 	if err != nil {
-		slog.Error("Error loading config", slog.Any("error", err))
+		slog.ErrorContext(ctx, "Error loading config", slog.Any("error", err))
 		return 1
 	}
 

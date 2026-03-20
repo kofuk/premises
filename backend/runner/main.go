@@ -93,7 +93,7 @@ func (app App) Run(ctx context.Context, args []string) int {
 
 	if cmd.RequiresRoot {
 		if syscall.Getuid() != 0 {
-			slog.Error("This command requires root")
+			slog.ErrorContext(ctx, "This command requires root")
 			os.Exit(1)
 		}
 	}

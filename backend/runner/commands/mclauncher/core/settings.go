@@ -1,9 +1,11 @@
 package core
 
+import "context"
+
 //go:generate go tool mockgen -destination settings_mock.go -package core . SettingsRepository
 
 type SettingsRepository interface {
-	GetAllowedMemSize() int
+	GetAllowedMemSize(ctx context.Context) int
 	GetServerPath() string
 	SetServerPath(path string)
 	GetMinecraftVersion() string
