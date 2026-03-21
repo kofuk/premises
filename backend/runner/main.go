@@ -10,11 +10,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/kofuk/premises/backend/common/entity/runner"
 	"github.com/kofuk/premises/backend/runner/commands/cleanup"
 	"github.com/kofuk/premises/backend/runner/commands/cli"
 	"github.com/kofuk/premises/backend/runner/commands/connector"
 	"github.com/kofuk/premises/backend/runner/commands/exteriord"
 	"github.com/kofuk/premises/backend/runner/commands/mclauncher"
+	"github.com/kofuk/premises/backend/runner/commands/meter"
 	"github.com/kofuk/premises/backend/runner/commands/serversetup"
 	"github.com/kofuk/premises/backend/runner/commands/snapshot"
 	"github.com/kofuk/premises/backend/runner/commands/sysupdate"
@@ -28,7 +30,7 @@ import (
 
 type Command struct {
 	Description  string
-	Run          func(ctx context.Context, args []string) int
+	Run          func(ctx context.Context, config *runner.Config, args []string) int
 	RequiresRoot bool
 }
 
@@ -98,7 +100,7 @@ func (app App) Run(ctx context.Context, args []string) int {
 		}
 	}
 
-	status := cmd.Run(ctx, args[2:])
+	status := cmd.Run(ctx, config, args[2:])
 
 	// Stop background jobs and wait for them to finish
 	cancel()
@@ -115,6 +117,10 @@ func main() {
 				Run:          cleanup.Run,
 				RequiresRoot: true,
 			},
+			"cli": {
+				Description: "CLI tools",
+				Run:         cli.Run,
+			},
 			"connector": {
 				Description:  "Connector",
 				Run:          connector.Run,
@@ -130,15 +136,16 @@ func main() {
 				Run:          mclauncher.Run,
 				RequiresRoot: false,
 			},
-			"cli": {
-				Description: "CLI tools",
-				Run:         cli.Run,
+			"meter": {
+				Description:  "Start resource usage meter",
+				Run:          meter.Run,
+				RequiresRoot: false,
 			},
 			"setup": {
 				Description: "Setup server",
-				Run: func(ctx context.Context, args []string) int {
+				Run: func(ctx context.Context, config *runner.Config, args []string) int {
 					serverSetup := serversetup.ServerSetup{}
-					serverSetup.Run(ctx)
+					serverSetup.Run(ctx, config)
 					return 0
 				},
 				RequiresRoot: true,
@@ -155,7 +162,7 @@ func main() {
 			},
 			"version": {
 				Description: "Print version (in machine-readable way) and exit",
-				Run: func(ctx context.Context, args []string) int {
+				Run: func(ctx context.Context, config *runner.Config, args []string) int {
 					fmt.Println(metadata.Revision)
 					return 0
 				},

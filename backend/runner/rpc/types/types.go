@@ -33,3 +33,11 @@ type EventInput struct {
 	Dispatch bool         `json:"dispatch"`
 	Event    runner.Event `json:"event"`
 }
+
+type RegisterMeterTargetInput struct {
+	Pid int `json:"pid"`
+}
+
+type UnregisterMeterTargetInput struct {
+	Pid int `json:"pid"`
+}

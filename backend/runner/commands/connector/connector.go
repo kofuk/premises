@@ -2,20 +2,13 @@ package connector
 
 import (
 	"context"
-	"log/slog"
 	"os"
 
-	"github.com/kofuk/premises/backend/runner/config"
+	"github.com/kofuk/premises/backend/common/entity/runner"
 	"github.com/kofuk/premises/backend/runner/rpc"
 )
 
-func Run(ctx context.Context, args []string) int {
-	config, err := config.Load()
-	if err != nil {
-		slog.ErrorContext(ctx, "Error loading config", slog.Any("error", err))
-		return 1
-	}
-
+func Run(ctx context.Context, config *runner.Config, args []string) int {
 	ctx, cancelFn := context.WithCancel(ctx)
 
 	metrics := NewMetrics()

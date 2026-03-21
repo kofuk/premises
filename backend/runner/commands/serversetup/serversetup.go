@@ -11,7 +11,6 @@ import (
 
 	"github.com/kofuk/premises/backend/common/entity"
 	"github.com/kofuk/premises/backend/common/entity/runner"
-	"github.com/kofuk/premises/backend/runner/config"
 	"github.com/kofuk/premises/backend/runner/env"
 	"github.com/kofuk/premises/backend/runner/exterior"
 	"github.com/kofuk/premises/backend/runner/fs"
@@ -151,13 +150,7 @@ func (setup *ServerSetup) initializeServer(ctx context.Context) {
 	system.DefaultExecutor.Run(ctx, "mkfs.btrfs", []string{env.DataPath("gamedata.img")})
 }
 
-func (setup *ServerSetup) installRequiredJavaVersion(ctx context.Context) {
-	config, err := config.Load()
-	if err != nil {
-		slog.ErrorContext(ctx, "Unable to load config", slog.Any("error", err))
-		return
-	}
-
+func (setup *ServerSetup) installRequiredJavaVersion(ctx context.Context, config *runner.Config) {
 	installArgs := []string{"install", "-y", latestAvailableJre}
 	if config.GameConfig.Server.JavaVersion != 0 {
 		installArgs = append(installArgs, fmt.Sprintf("openjdk-%d-jre-headless", config.GameConfig.Server.JavaVersion))
@@ -166,7 +159,7 @@ func (setup *ServerSetup) installRequiredJavaVersion(ctx context.Context) {
 	system.AptGet(ctx, installArgs...)
 }
 
-func (setup ServerSetup) Run(ctx context.Context) {
+func (setup ServerSetup) Run(ctx context.Context, config *runner.Config) {
 	setup.sendServerHello(ctx)
 	setup.notifyStatus(ctx)
 
@@ -184,7 +177,7 @@ func (setup ServerSetup) Run(ctx context.Context) {
 	}
 
 	slog.InfoContext(ctx, "Installing required Java version")
-	setup.installRequiredJavaVersion(ctx)
+	setup.installRequiredJavaVersion(ctx, config)
 
 	slog.InfoContext(ctx, "Mounting gamedata.img")
 	system.DefaultExecutor.Run(ctx, "mount", []string{env.DataPath("gamedata.img"), env.DataPath("gamedata")})

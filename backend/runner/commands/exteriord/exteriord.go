@@ -11,10 +11,10 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/kofuk/premises/backend/common"
+	"github.com/kofuk/premises/backend/common/entity/runner"
 	"github.com/kofuk/premises/backend/runner/commands/exteriord/exterior"
 	"github.com/kofuk/premises/backend/runner/commands/exteriord/outbound"
 	"github.com/kofuk/premises/backend/runner/commands/exteriord/proc"
-	"github.com/kofuk/premises/backend/runner/config"
 	"github.com/kofuk/premises/backend/runner/env"
 	"github.com/kofuk/premises/backend/runner/rpc"
 )
@@ -86,7 +86,7 @@ func extractResources(ctx context.Context) error {
 	return nil
 }
 
-func Run(ctx context.Context, args []string) int {
+func Run(ctx context.Context, config *runner.Config, args []string) int {
 	signal.Ignore(syscall.SIGHUP)
 
 	if err := extractResources(ctx); err != nil {
@@ -95,12 +95,6 @@ func Run(ctx context.Context, args []string) int {
 	}
 
 	slog.InfoContext(ctx, "Starting premises-runner...", slog.String("protocol_version", common.Version))
-
-	config, err := config.Load()
-	if err != nil {
-		slog.ErrorContext(ctx, "Unable to load config", slog.Any("error", err))
-		os.Exit(1)
-	}
 
 	ctx, cancelFn := context.WithCancel(ctx)
 
@@ -128,6 +122,12 @@ func Run(ctx context.Context, args []string) int {
 			proc.Restart(proc.RestartOnFailure),
 			proc.RestartRandomDelay(),
 			proc.UserType(proc.UserRestricted),
+		), setupTask)
+	e.RegisterTask("Meter",
+		proc.NewProc(env.DataPath("bin/premises-runner"),
+			proc.Args("--meter"),
+			proc.Restart(proc.RestartOnFailure),
+			proc.UserType(proc.UserPrivileged),
 		), setupTask)
 	systemUpdate := e.RegisterTask("Keep System Up-to-date",
 		proc.NewProc(env.DataPath("bin/premises-runner"),

@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kofuk/premises/backend/common/entity/runner"
 	"github.com/spf13/cobra"
 )
 
-func Run(ctx context.Context, args []string) int {
+func Run(ctx context.Context, config *runner.Config, args []string) int {
 	cmd := &cobra.Command{
 		Use: "premises-runner-cli",
 	}

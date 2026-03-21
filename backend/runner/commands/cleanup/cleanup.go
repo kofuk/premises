@@ -108,7 +108,7 @@ func copyLogData(ctx context.Context) {
 	}
 }
 
-func Run(ctx context.Context, args []string) int {
+func Run(ctx context.Context, config *runner.Config, args []string) int {
 	notifyStatus(ctx, entity.EventClean)
 
 	slog.InfoContext(ctx, "Removing snaphots...")
