@@ -163,6 +163,78 @@ func (s *MeterService) Initialize() error {
 		}),
 	))
 
+	util.Must(meter.Int64ObservableCounter("premises.runner.minecraft.disk.read",
+		metric.WithDescription("Total bytes read from disk by Minecraft processes since process start"),
+		metric.WithUnit("By"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			targets := s.getAllTargets()
+
+			var errs []error
+			for _, pid := range targets {
+				data, err := scraper.ScrapeProcPidIO(pid)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+
+				o.Observe(
+					int64(data.ReadBytes),
+					metric.WithAttributes(attribute.Int("process.pid", pid)),
+				)
+			}
+
+			return errors.Join(errs...)
+		}),
+	))
+
+	util.Must(meter.Int64ObservableCounter("premises.runner.minecraft.disk.write",
+		metric.WithDescription("Total bytes written to disk by Minecraft processes since process start"),
+		metric.WithUnit("By"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			targets := s.getAllTargets()
+
+			var errs []error
+			for _, pid := range targets {
+				data, err := scraper.ScrapeProcPidIO(pid)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+
+				o.Observe(
+					int64(data.WriteBytes),
+					metric.WithAttributes(attribute.Int("process.pid", pid)),
+				)
+			}
+
+			return errors.Join(errs...)
+		}),
+	))
+
+	util.Must(meter.Int64ObservableCounter("premises.runner.minecraft.disk.write_cancelled",
+		metric.WithDescription("Total bytes cancelled from being written to disk by Minecraft processes since process start"),
+		metric.WithUnit("By"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			targets := s.getAllTargets()
+
+			var errs []error
+			for _, pid := range targets {
+				data, err := scraper.ScrapeProcPidIO(pid)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+
+				o.Observe(
+					int64(data.CancelledWriteBytes),
+					metric.WithAttributes(attribute.Int("process.pid", pid)),
+				)
+			}
+
+			return errors.Join(errs...)
+		}),
+	))
+
 	return nil
 }
 
