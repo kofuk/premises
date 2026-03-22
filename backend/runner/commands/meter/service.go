@@ -72,7 +72,7 @@ func (s *MeterService) Initialize() error {
 				if startTimeSec > 0 {
 					o.Observe(
 						(currentTimeSec-startTimeSec)*float64(cpuQuota)/float64(cpuPeriod),
-						metric.WithAttributes(attribute.Int("pid", pid)),
+						metric.WithAttributes(attribute.Int("process.pid", pid)),
 					)
 				}
 			}
@@ -100,9 +100,63 @@ func (s *MeterService) Initialize() error {
 					cpuTimeSec := (float64(data.Utime) + float64(data.Stime)) / ClkTck
 					o.Observe(
 						cpuTimeSec,
-						metric.WithAttributes(attribute.Int("pid", pid)),
+						metric.WithAttributes(attribute.Int("process.pid", pid)),
 					)
 				}
+			}
+
+			return errors.Join(errs...)
+		}),
+	))
+
+	util.Must(meter.Int64ObservableGauge("premises.runner.cpu.frequency",
+		metric.WithDescription("Current CPU frequency in hertz"),
+		metric.WithUnit("Hz"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			cpus, err := scraper.ScrapeOnlineCPUs()
+			if err != nil {
+				return err
+			}
+
+			var errs []error
+			for _, cpu := range cpus {
+				freq, err := scraper.ScrapeCPUScalingCurFreq(cpu)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+
+				o.Observe(
+					int64(freq)*1000, // Convert kHz to Hz
+					metric.WithAttributes(attribute.Int("cpu.logical_number", cpu)),
+				)
+			}
+
+			return errors.Join(errs...)
+		}),
+	))
+
+	util.Must(meter.Int64ObservableGauge("premises.runner.cpu.frequency.max",
+		metric.WithDescription("Maximum CPU frequency in hertz"),
+		metric.WithUnit("Hz"),
+		metric.WithInt64Callback(func(ctx context.Context, o metric.Int64Observer) error {
+			cpus, err := scraper.ScrapeOnlineCPUs()
+			if err != nil {
+				return err
+			}
+
+			var errs []error
+			for _, cpu := range cpus {
+				freq, err := scraper.ScrapeCPUScalingMaxFreq(cpu)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+
+				o.Observe(
+					int64(freq)*1000, // Convert kHz to Hz
+					metric.WithAttributes(attribute.Int("cpu.logical_number", cpu)),
+				)
 			}
 
 			return errors.Join(errs...)
