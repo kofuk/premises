@@ -2,6 +2,7 @@ package meter
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/kofuk/premises/backend/common/util"
@@ -47,7 +48,10 @@ func (s *MeterService) Initialize() error {
 		metric.WithFloat64Callback(func(ctx context.Context, o metric.Float64Observer) error {
 			targets := s.getAllTargets()
 
-			var currentTimeSec float64
+			var (
+				currentTimeSec float64
+				errs           []error
+			)
 
 			for i, pid := range targets {
 				if i%10 == 0 {
@@ -60,7 +64,8 @@ func (s *MeterService) Initialize() error {
 
 				data, err := scraper.ScrapeProcPidStat(pid)
 				if err != nil {
-					return err
+					errs = append(errs, err)
+					continue
 				}
 
 				startTimeSec := float64(data.Starttime) / ClkTck
@@ -72,7 +77,7 @@ func (s *MeterService) Initialize() error {
 				}
 			}
 
-			return nil
+			return errors.Join(errs...)
 		}),
 	))
 
@@ -82,10 +87,12 @@ func (s *MeterService) Initialize() error {
 		metric.WithFloat64Callback(func(ctx context.Context, o metric.Float64Observer) error {
 			targets := s.getAllTargets()
 
+			var errs []error
 			for _, pid := range targets {
 				data, err := scraper.ScrapeProcPidStat(pid)
 				if err != nil {
-					return err
+					errs = append(errs, err)
+					continue
 				}
 
 				startTimeSec := float64(data.Starttime) / ClkTck
@@ -98,7 +105,7 @@ func (s *MeterService) Initialize() error {
 				}
 			}
 
-			return nil
+			return errors.Join(errs...)
 		}),
 	))
 
