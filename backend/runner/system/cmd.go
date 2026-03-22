@@ -27,6 +27,10 @@ type CommandHandle struct {
 }
 
 func (h *CommandHandle) Wait() error {
+	if h.Pid == 0 {
+		return nil
+	}
+
 	proc, err := os.FindProcess(h.Pid)
 	if err != nil {
 		return err

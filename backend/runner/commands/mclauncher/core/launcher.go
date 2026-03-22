@@ -1,13 +1,11 @@
 package core
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
 	"math/rand/v2"
 	"time"
 
-	"github.com/kofuk/premises/backend/common/retry"
 	coreUtil "github.com/kofuk/premises/backend/runner/commands/mclauncher/core/util"
 	"github.com/kofuk/premises/backend/runner/rpc"
 	"github.com/kofuk/premises/backend/runner/rpc/types"
@@ -30,19 +28,15 @@ func (l *LauncherCore) executeWithBackOff(c LauncherContext, cmdline []string, w
 		if err != nil {
 			slog.ErrorContext(c.Context(), "Failed to start Minecraft server", slog.Any("error", err))
 		} else {
-			retry.Retry(c.Context(), func(ctx context.Context) (retry.Void, error) {
-				return retry.V, rpc.ToMeter.Call(c.Context(), "target/register", types.RegisterMeterTargetInput{
-					Pid: handle.Pid,
-				}, nil)
-			}, 30*time.Second)
+			rpc.ToMeter.Call(c.Context(), "target/register", types.RegisterMeterTargetInput{
+				Pid: handle.Pid,
+			}, nil)
 
 			err := handle.Wait()
 
-			retry.Retry(c.Context(), func(ctx context.Context) (retry.Void, error) {
-				return retry.V, rpc.ToMeter.Call(c.Context(), "target/unregister", types.RegisterMeterTargetInput{
-					Pid: handle.Pid,
-				}, nil)
-			}, 30*time.Second)
+			rpc.ToMeter.Call(c.Context(), "target/unregister", types.RegisterMeterTargetInput{
+				Pid: handle.Pid,
+			}, nil)
 
 			if err != nil {
 				slog.ErrorContext(c.Context(), "Minecraft server exited with error", slog.Any("error", err))
