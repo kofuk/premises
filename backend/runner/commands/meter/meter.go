@@ -18,6 +18,8 @@ func Run(ctx context.Context, config *runner.Config, args []string) int {
 	rpcHandler := NewRPCHandler(rpc.DefaultServer, meterService)
 	rpcHandler.Bind()
 
+	slog.InfoContext(ctx, "Meter is ready to accept connections")
+
 	<-ctx.Done()
 
 	return 0

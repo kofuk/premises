@@ -14,7 +14,6 @@ import (
 	"sync/atomic"
 
 	"github.com/kofuk/premises/backend/runner/env"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -23,8 +22,22 @@ const ScopeName = "github.com/kofuk/premises/backend/runner/system"
 
 var logNum uint64
 
+type CommandHandle struct {
+	Pid int
+}
+
+func (h *CommandHandle) Wait() error {
+	proc, err := os.FindProcess(h.Pid)
+	if err != nil {
+		return err
+	}
+	_, err = proc.Wait()
+	return err
+}
+
 type CommandExecutor interface {
 	Run(ctx context.Context, path string, args []string, options ...CmdOption) error
+	Start(ctx context.Context, path string, args []string, options ...CmdOption) (*CommandHandle, error)
 }
 
 type SimpleExecutor struct{}
@@ -71,9 +84,26 @@ func (e *SimpleExecutor) Run(ctx context.Context, path string, args []string, op
 	ctx, span := tracer.Start(ctx, fmt.Sprintf("EXEC %s", path))
 	defer span.End()
 
+	handle, err := e.Start(ctx, path, args, options...)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		slog.ErrorContext(ctx, "Command failed to start", slog.Any("error", err))
+		return err
+	}
+
+	if err := handle.Wait(); err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		slog.ErrorContext(ctx, "Command failed", slog.Any("error", err))
+		return err
+	}
+
+	return nil
+}
+
+func (e *SimpleExecutor) Start(ctx context.Context, path string, args []string, options ...CmdOption) (*CommandHandle, error) {
 	log, logPath, err := createLog(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if closer, ok := log.(io.Closer); ok {
 		defer closer.Close()
@@ -89,18 +119,12 @@ func (e *SimpleExecutor) Run(ctx context.Context, path string, args []string, op
 		opt(cmd)
 	}
 
-	span.SetAttributes(
-		attribute.String("command.name", path),
-		attribute.StringSlice("command.args", cmd.Args),
-		attribute.StringSlice("command.env", cmd.Environ()),
-	)
-
-	if err := cmd.Run(); err != nil {
-		span.SetStatus(codes.Error, err.Error())
+	if err := cmd.Start(); err != nil {
 		slog.ErrorContext(ctx, "Command failed", slog.Any("error", err))
-		return err
+		return nil, err
 	}
-	return nil
+
+	return &CommandHandle{Pid: cmd.Process.Pid}, nil
 }
 
 func RunWithOutput(ctx context.Context, executor CommandExecutor, path string, args []string, options ...CmdOption) (string, error) {
