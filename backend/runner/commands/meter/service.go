@@ -76,6 +76,32 @@ func (s *MeterService) Initialize() error {
 		}),
 	))
 
+	util.Must(meter.Float64ObservableCounter("premises.runner.minecraft.cpu",
+		metric.WithDescription("Total CPU time used by Minecraft processes in seconds since process start"),
+		metric.WithUnit("s"),
+		metric.WithFloat64Callback(func(ctx context.Context, o metric.Float64Observer) error {
+			targets := s.getAllTargets()
+
+			for _, pid := range targets {
+				data, err := scraper.ScrapeProcPidStat(pid)
+				if err != nil {
+					return err
+				}
+
+				startTimeSec := float64(data.Starttime) / ClkTck
+				if startTimeSec > 0 {
+					cpuTimeSec := (float64(data.Utime) + float64(data.Stime)) / ClkTck
+					o.Observe(
+						cpuTimeSec,
+						metric.WithAttributes(attribute.Int("pid", pid)),
+					)
+				}
+			}
+
+			return nil
+		}),
+	))
+
 	return nil
 }
 
