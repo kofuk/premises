@@ -22,6 +22,7 @@ var (
 	ToSnapshotHelper = NewClient(env.DataPath("rpc@snapshot-helper"))
 	ToLauncher       = NewClient(env.DataPath("rpc@launcher"))
 	ToConnector      = NewClient(env.DataPath("rpc@connector"))
+	ToMeter          = NewClient(env.DataPath("rpc@meter"))
 )
 
 func NewClient(path string) *Client {

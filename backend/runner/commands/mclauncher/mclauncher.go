@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/kofuk/premises/backend/common/entity/runner"
 	"github.com/kofuk/premises/backend/common/mc/launchermeta"
 	"github.com/kofuk/premises/backend/runner/commands/mclauncher/core"
 	"github.com/kofuk/premises/backend/runner/commands/mclauncher/middleware/autoversion"
@@ -19,7 +20,6 @@ import (
 	"github.com/kofuk/premises/backend/runner/commands/mclauncher/quickundo"
 	"github.com/kofuk/premises/backend/runner/commands/mclauncher/rcon"
 	"github.com/kofuk/premises/backend/runner/commands/mclauncher/repository"
-	"github.com/kofuk/premises/backend/runner/config"
 	"github.com/kofuk/premises/backend/runner/env"
 	"github.com/kofuk/premises/backend/runner/metadata"
 	"github.com/kofuk/premises/backend/runner/rpc"
@@ -28,14 +28,8 @@ import (
 
 const ScopeName = "github.com/kofuk/premises/backend/runner/commands/mclauncher"
 
-func Run(ctx context.Context, args []string) int {
+func Run(ctx context.Context, config *runner.Config, args []string) int {
 	slog.InfoContext(ctx, "Starting Premises Runner", slog.String("revision", metadata.Revision))
-
-	config, err := config.Load()
-	if err != nil {
-		slog.ErrorContext(ctx, "Failed to load config", slog.Any("error", err))
-		return 1
-	}
 
 	settingsRepository := repository.NewConfigJSONSettingsRepository(config)
 	stateRepository := repository.NewExteriorStateRepository(rpc.ToExteriord)
@@ -80,8 +74,7 @@ func Run(ctx context.Context, args []string) int {
 	rpcHandler := NewRPCHandler(rpc.DefaultServer, quickUndoService, rconClient)
 	rpcHandler.Bind()
 
-	err = launcher.Start(ctx)
-	if errors.Is(err, core.ErrRestart) {
+	if err := launcher.Start(ctx); errors.Is(err, core.ErrRestart) {
 		slog.InfoContext(ctx, "Restart...")
 
 		return 100

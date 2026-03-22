@@ -36,7 +36,7 @@ var _ = Describe("LauncherCore", func() {
 
 	It("should launch successfully", func() {
 		settingsRepository.EXPECT().GetServerPath().Return("/usr/bin/true")
-		executor.EXPECT().Run(gomock.Any(), "/usr/bin/true", []string{}, gomock.Any()).Times(1).Return(nil)
+		executor.EXPECT().Start(gomock.Any(), "/usr/bin/true", []string{}, gomock.Any()).Times(1).Return(&system.CommandHandle{}, nil)
 		envProvider.EXPECT().GetDataPath(gomock.Any()).AnyTimes().Return("/tmp")
 
 		err := sut.Start(GinkgoT().Context())
@@ -46,8 +46,8 @@ var _ = Describe("LauncherCore", func() {
 	It("should retry in case of failure", func() {
 		settingsRepository.EXPECT().GetServerPath().Return("/usr/bin/false")
 		gomock.InOrder(
-			executor.EXPECT().Run(gomock.Any(), "/usr/bin/false", []string{}, gomock.Any()).Times(2).Return(errors.New("error")),
-			executor.EXPECT().Run(gomock.Any(), "/usr/bin/false", []string{}, gomock.Any()).Return(nil),
+			executor.EXPECT().Start(gomock.Any(), "/usr/bin/false", []string{}, gomock.Any()).Times(2).Return(nil, errors.New("error")),
+			executor.EXPECT().Start(gomock.Any(), "/usr/bin/false", []string{}, gomock.Any()).Return(&system.CommandHandle{}, nil),
 		)
 		envProvider.EXPECT().GetDataPath(gomock.Any()).AnyTimes().Return("/tmp")
 

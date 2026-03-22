@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/kofuk/premises/backend/common/entity/runner"
 	"github.com/kofuk/premises/backend/runner/env"
 	"github.com/kofuk/premises/backend/runner/rpc"
 	"github.com/kofuk/premises/backend/runner/rpc/types"
@@ -55,7 +56,7 @@ func deleteFsSnapshot(ctx context.Context, id string) error {
 	return nil
 }
 
-func Run(ctx context.Context, args []string) int {
+func Run(ctx context.Context, config *runner.Config, args []string) int {
 	rpc.ToExteriord.Notify(ctx, "proc/registerStopHook", os.Getenv("PREMISES_RUNNER_COMMAND"))
 
 	ctx, cancelFn := context.WithCancel(context.Background())

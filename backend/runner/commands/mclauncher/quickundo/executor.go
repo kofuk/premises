@@ -42,6 +42,23 @@ func (e *KillableCommandExecutor) Run(ctx context.Context, command string, args 
 	return err
 }
 
+func (e *KillableCommandExecutor) Start(ctx context.Context, command string, args []string, opts ...system.CmdOption) (*system.CommandHandle, error) {
+	if e.pid != 0 {
+		return nil, errors.New("process already running")
+	}
+
+	cmd := exec.Command(command, args...)
+	for _, opt := range opts {
+		opt(cmd)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return nil, err
+	}
+
+	return &system.CommandHandle{Pid: cmd.Process.Pid}, nil
+}
+
 func (e *KillableCommandExecutor) Kill() error {
 	if e.pid == 0 {
 		return nil

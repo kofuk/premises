@@ -58,3 +58,23 @@ func (mr *MockCommandExecutorMockRecorder) Run(ctx, path, args any, options ...a
 	varargs := append([]any{ctx, path, args}, options...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockCommandExecutor)(nil).Run), varargs...)
 }
+
+// Start mocks base method.
+func (m *MockCommandExecutor) Start(ctx context.Context, path string, args []string, options ...CmdOption) (*CommandHandle, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, path, args}
+	for _, a := range options {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Start", varargs...)
+	ret0, _ := ret[0].(*CommandHandle)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Start indicates an expected call of Start.
+func (mr *MockCommandExecutorMockRecorder) Start(ctx, path, args any, options ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, path, args}, options...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockCommandExecutor)(nil).Start), varargs...)
+}

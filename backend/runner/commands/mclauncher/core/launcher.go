@@ -7,6 +7,8 @@ import (
 	"time"
 
 	coreUtil "github.com/kofuk/premises/backend/runner/commands/mclauncher/core/util"
+	"github.com/kofuk/premises/backend/runner/rpc"
+	"github.com/kofuk/premises/backend/runner/rpc/types"
 	"github.com/kofuk/premises/backend/runner/system"
 	"github.com/kofuk/premises/backend/runner/util"
 )
@@ -14,7 +16,6 @@ import (
 func (l *LauncherCore) executeWithBackOff(c LauncherContext, cmdline []string, workDir string) error {
 	backOffWaitTime := 2
 
-	var err error
 	for {
 		for _, listener := range l.beforeLaunchListeners {
 			if err := listener(c); err != nil {
@@ -22,9 +23,27 @@ func (l *LauncherCore) executeWithBackOff(c LauncherContext, cmdline []string, w
 			}
 		}
 
-		err = l.CommandExecutor.Run(c.Context(), cmdline[0], cmdline[1:], system.WithWorkingDir(workDir))
-		if err == nil {
-			return nil
+		slog.DebugContext(c.Context(), "Starting minecraft server...")
+		handle, err := l.CommandExecutor.Start(c.Context(), cmdline[0], cmdline[1:], system.WithWorkingDir(workDir))
+		if err != nil {
+			slog.ErrorContext(c.Context(), "Failed to start Minecraft server", slog.Any("error", err))
+		} else {
+			rpc.ToMeter.Call(c.Context(), "target/register", types.RegisterMeterTargetInput{
+				Pid: handle.Pid,
+			}, nil)
+
+			err := handle.Wait()
+
+			rpc.ToMeter.Call(c.Context(), "target/unregister", types.RegisterMeterTargetInput{
+				Pid: handle.Pid,
+			}, nil)
+
+			if err != nil {
+				slog.ErrorContext(c.Context(), "Minecraft server exited with error", slog.Any("error", err))
+			} else {
+				slog.InfoContext(c.Context(), "Minecraft server exited")
+				return nil
+			}
 		}
 
 		timer := time.NewTimer(time.Duration(backOffWaitTime)*time.Second + time.Duration(rand.Float64()*500.0)*time.Millisecond)
