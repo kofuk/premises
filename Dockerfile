@@ -28,7 +28,8 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=bind,source=buf.gen.runner.yaml,target=buf.gen.runner.yaml \
     --mount=type=bind,source=buf.lock,target=buf.lock \
     --mount=type=bind,source=buf.yaml,target=buf.yaml \
-    --mount=type=bind,source=./backend,target=backend \
+    --mount=type=bind,source=backend,target=backend \
+    --mount=type=tmpfs,target=backend/runner/gen \
     buf generate --template=buf.gen.runner.yaml && \
     cd /build/backend/services/pmctl && \
     CGO_ENABLED=0 go build -o /pmctl . && \
