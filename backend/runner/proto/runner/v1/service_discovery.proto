@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package org.kofuk.premises.runner.v1;
+
+option go_package = "github.com/github.com/kofuk/premises/backend/runner/gen/runner/v1;runnerv1";
+
+enum ServiceKind {
+  KIND_UNKNOWN = 0;
+}
+
+message ExposedService {
+  string scheme = 1;
+  optional string host = 2;
+  optional uint32 port = 3;
+  optional string path = 4;
+  optional uint64 pid = 5;
+}
+
+message ResetServiceDiscoveryRequest {}
+
+message ResetServiceDiscoveryResponse {}
+
+message ExposeServiceRequest {
+  ServiceKind kind = 1;
+}
+
+message ExposeServiceResponse {
+  ExposedService service = 1;
+}
+
+message ResolveServiceRequest {
+  ServiceKind kind = 1;
+}
+
+message ResolveServiceResponse {
+  ExposedService service = 1;
+}
+
+service ServiceDiscoveryService {
+  rpc InternalReset(ResetServiceDiscoveryRequest) returns (ResetServiceDiscoveryResponse);
+  rpc Expose(ExposeServiceRequest) returns (ExposeServiceResponse);
+  rpc Resolve(ResolveServiceRequest) returns (ResolveServiceResponse);
+}
