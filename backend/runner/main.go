@@ -18,6 +18,7 @@ import (
 	"github.com/kofuk/premises/backend/runner/commands/mclauncher"
 	"github.com/kofuk/premises/backend/runner/commands/meter"
 	"github.com/kofuk/premises/backend/runner/commands/serversetup"
+	"github.com/kofuk/premises/backend/runner/commands/servicediscovery"
 	"github.com/kofuk/premises/backend/runner/commands/snapshot"
 	"github.com/kofuk/premises/backend/runner/commands/sysupdate"
 	"github.com/kofuk/premises/backend/runner/config"
@@ -139,6 +140,11 @@ func main() {
 			"meter": {
 				Description:  "Start resource usage meter",
 				Run:          meter.Run,
+				RequiresRoot: false,
+			},
+			"service-discovery": {
+				Description:  "Service discovery",
+				Run:          servicediscovery.Run,
 				RequiresRoot: false,
 			},
 			"setup": {
