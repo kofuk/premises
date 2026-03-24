@@ -22,11 +22,10 @@ message ResetServiceDiscoveryResponse {}
 
 message ExposeServiceRequest {
   ServiceKind kind = 1;
+  ExposedService service = 2;
 }
 
-message ExposeServiceResponse {
-  ExposedService service = 1;
-}
+message ExposeServiceResponse {}
 
 message ResolveServiceRequest {
   ServiceKind kind = 1;
