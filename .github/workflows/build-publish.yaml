@@ -30,7 +30,7 @@ jobs:
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
         with:
           install: false
-      - uses: Buf generate
+      - name: Buf generate
         run: |
           mise x -- buf generate --template buf.gen.runner.yaml
       - name: Check format
@@ -90,7 +90,7 @@ jobs:
       - uses: jdx/mise-action@1648a7812b9aeae629881980618f079932869151 # v4
         with:
           install: false
-      - uses: Buf generate
+      - name: Buf generate
         run: |
           mise x -- buf generate --template buf.gen.runner.yaml
       - name: Go generate
