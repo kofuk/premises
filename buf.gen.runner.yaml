@@ -2,9 +2,9 @@ version: v2
 inputs:
   - directory: backend/runner/proto
 plugins:
-  - local: ./bin/buf/protoc-gen-go
+  - local: [go, tool, protoc-gen-go]
     out: backend/runner/gen
     opt: paths=source_relative
-  - local: ./bin/buf/protoc-gen-go-grpc
+  - local: [go, tool, protoc-gen-go-grpc]
     out: backend/runner/gen
     opt: paths=source_relative

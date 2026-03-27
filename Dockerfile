@@ -24,7 +24,6 @@ RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=bind,source=go.work,target=go.work \
     --mount=type=bind,source=go.work.sum,target=go.work.sum \
-    --mount=type=bind,source=bin/buf,target=bin/buf \
     --mount=type=bind,source=buf.gen.runner.yaml,target=buf.gen.runner.yaml \
     --mount=type=bind,source=buf.lock,target=buf.lock \
     --mount=type=bind,source=buf.yaml,target=buf.yaml \
