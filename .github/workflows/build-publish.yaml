@@ -85,7 +85,7 @@ jobs:
       - name: Build
         run: |
           cd backend/runner
-          ldflags="-X github.com/kofuk/premises/runner/internal/metadata.Revision=${COMMIT_HASH}"
+          ldflags="-X github.com/kofuk/premises/backend/runner/metadata.Revision=${COMMIT_HASH}"
           CGO_ENABLED=0 go build -o premises-runner -ldflags "${ldflags}" .
         env:
           COMMIT_HASH: ${{ github.sha }}
@@ -271,7 +271,7 @@ jobs:
       - name: Create Archive
         run : |
           tar -czf "premises-runner@${VERSION}.tar.gz" premises-runner
-          mv resources.tar.zst "premises-runner-resources@${VERSION}.tar.gz"
+          mv resources.tar.zst "premises-runner-resources@${VERSION}.tar.zst"
       - name: Generate metadata
         run: |
           echo ${{ github.sha }} >"version@${VERSION}.txt"
@@ -280,7 +280,7 @@ jobs:
           aws s3 cp --checksum-algorithm CRC32 \
               "premises-runner@${VERSION}.tar.gz" s3://premises/artifacts/runner/
           aws s3 cp --checksum-algorithm CRC32 \
-              "premises-runner-resources@${VERSION}.tar.gz" s3://premises/artifacts/runner/
+              "premises-runner-resources@${VERSION}.tar.zst" s3://premises/artifacts/runner/
           aws s3 cp --checksum-algorithm CRC32 \
               "version@${VERSION}.txt" s3://premises/artifacts/runner/
         env:
