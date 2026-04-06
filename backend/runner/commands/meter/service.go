@@ -2,7 +2,7 @@ package meter
 
 import (
 	"context"
-	"errors"
+	"log/slog"
 	"sync"
 
 	"github.com/kofuk/premises/backend/common/util"
@@ -77,7 +77,11 @@ func (s *MeterService) Initialize() error {
 				}
 			}
 
-			return errors.Join(errs...)
+			if len(errs) > 0 {
+				slog.Error("Error collecting metrics", slog.Any("errors", errs))
+			}
+
+			return nil
 		}),
 	))
 
@@ -105,7 +109,11 @@ func (s *MeterService) Initialize() error {
 				}
 			}
 
-			return errors.Join(errs...)
+			if len(errs) > 0 {
+				slog.Error("Error collecting metrics", slog.Any("errors", errs))
+			}
+
+			return nil
 		}),
 	))
 
@@ -132,7 +140,11 @@ func (s *MeterService) Initialize() error {
 				)
 			}
 
-			return errors.Join(errs...)
+			if len(errs) > 0 {
+				slog.Error("Error collecting metrics", slog.Any("errors", errs))
+			}
+
+			return nil
 		}),
 	))
 
@@ -159,7 +171,11 @@ func (s *MeterService) Initialize() error {
 				)
 			}
 
-			return errors.Join(errs...)
+			if len(errs) > 0 {
+				slog.Error("Error collecting metrics", slog.Any("errors", errs))
+			}
+
+			return nil
 		}),
 	))
 
@@ -183,7 +199,11 @@ func (s *MeterService) Initialize() error {
 				)
 			}
 
-			return errors.Join(errs...)
+			if len(errs) > 0 {
+				slog.Error("Error collecting metrics", slog.Any("errors", errs))
+			}
+
+			return nil
 		}),
 	))
 
@@ -207,7 +227,11 @@ func (s *MeterService) Initialize() error {
 				)
 			}
 
-			return errors.Join(errs...)
+			if len(errs) > 0 {
+				slog.Error("Error collecting metrics", slog.Any("errors", errs))
+			}
+
+			return nil
 		}),
 	))
 
@@ -231,7 +255,11 @@ func (s *MeterService) Initialize() error {
 				)
 			}
 
-			return errors.Join(errs...)
+			if len(errs) > 0 {
+				slog.Error("Error collecting metrics", slog.Any("errors", errs))
+			}
+
+			return nil
 		}),
 	))
 
