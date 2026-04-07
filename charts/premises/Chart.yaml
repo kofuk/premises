@@ -2,5 +2,5 @@ apiVersion: v2
 name: premises
 description: A Helm chart for Premises
 type: application
-version: v0.13.2
-appVersion: "v0.13.2"
+version: 0.13.3
+appVersion: "0.13.3"

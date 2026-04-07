@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eu
 
-new_version="$1"
+new_version="${1#v}"
 
 cd "$(git rev-parse --show-toplevel)"
 
