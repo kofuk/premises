@@ -110,6 +110,12 @@ func Run(ctx context.Context, config *runner.Config, args []string) int {
 
 	e := exterior.New()
 
+	e.RegisterTask("Service Discovery",
+		proc.NewProc(env.DataPath("bin/premises-runner"),
+			proc.Args("--service-discovery"),
+			proc.Restart(proc.RestartOnFailure),
+			proc.UserType(proc.UserRestricted),
+		))
 	setupTask := e.RegisterTask("Initialize Server",
 		proc.NewProc(env.DataPath("bin/premises-runner"),
 			proc.Args("--setup"),

@@ -5,3 +5,10 @@ go = "1.26.1"
 deno = "2.4.2"
 helm = "3.20.0"
 caddy = "2.11.2"
+buf = "1.66.1"
+
+[tasks.buf]
+depends = ["buf:*"]
+
+[tasks."buf:runner"]
+run = "buf generate --template buf.gen.runner.yaml"
