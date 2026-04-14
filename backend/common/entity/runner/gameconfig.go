@@ -31,7 +31,7 @@ type ObservabilityConfig struct {
 
 type Config struct {
 	AuthKey       string              `json:"authKey"`
-	ControlPanel  string              `json:"controlPanel"`
+	ControlPlane  string              `json:"controlPlane"`
 	Observability ObservabilityConfig `json:"observability"`
 	GameConfig    GameConfig          `json:"gameConfig"`
 }

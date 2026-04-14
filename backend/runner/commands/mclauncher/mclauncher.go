@@ -43,7 +43,7 @@ func Run(ctx context.Context, config *runner.Config, args []string) int {
 		Transport: otelhttp.NewTransport(http.DefaultTransport),
 	}
 
-	worldService := worldService.NewWorldService(config.ControlPanel, config.AuthKey, httpClient)
+	worldService := worldService.NewWorldService(config.ControlPlane, config.AuthKey, httpClient)
 
 	launchermetaOptions := []launchermeta.Option{
 		launchermeta.WithHTTPClient(httpClient),

@@ -5,10 +5,10 @@ To start the app, run:
 
 Once running, the following services will be available in your browser:
 
-  Premises Control Panel  http://localhost:8000
-  Grafana                 http://localhost:3000
+  Premises Console  http://localhost:8000
+  Grafana           http://localhost:3000
 
 Default credentials
-  Premises Control Panel
+  Premises Console
     Username: admin
     Password: password
