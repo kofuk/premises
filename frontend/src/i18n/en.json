@@ -1,5 +1,5 @@
 {
-  "app_name": "ControlPanel",
+  "app_name": "Premises Console",
   "error.code_1": "The request can't be processed",
   "error.code_2": "Internal server error",
   "error.code_3": "User name or password is incorrect",

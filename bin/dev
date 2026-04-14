@@ -18,6 +18,6 @@ exec tmux new-session -s "${name}" -n 'Redis Console' "redis-cli -h redis" \; \
      new-window -n 'PostgreSQL Console' "psql -h postgres -U premises premises" \; \
      new-window -n 'ConoHa Emulator' "cd ./backend/tools/ostack-fake; go run .; bash" \; \
      new-window -n 'Frontend' "cd ./frontend; pnpm start; bash" \; \
-     new-window -n 'Backend' "export PREMISES_MODE=web; cd ./backend/services/monolith; sleep 3; go run .; bash" \; \
-     new-window -n 'Proxy' "export PREMISES_MODE=proxy; cd ./backend/services/monolith; sleep 3; go run .; bash" \; \
-     new-window -n 'Cron' "export PREMISES_MODE=cron; cd ./backend/services/monolith; sleep 3; go run .; bash" \;
+     new-window -n 'Backend' "export PREMISES_MODE=web; cd ./backend/ctrlplane/monolith; sleep 3; go run .; bash" \; \
+     new-window -n 'Proxy' "export PREMISES_MODE=proxy; cd ./backend/ctrlplane/monolith; sleep 3; go run .; bash" \; \
+     new-window -n 'Cron' "export PREMISES_MODE=cron; cd ./backend/ctrlplane/monolith; sleep 3; go run .; bash" \;

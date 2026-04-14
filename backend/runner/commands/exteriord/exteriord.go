@@ -100,7 +100,7 @@ func Run(ctx context.Context, config *runner.Config, args []string) int {
 
 	msgChan := make(chan outbound.OutboundMessage, 8)
 
-	ob := outbound.NewServer(config.ControlPanel, config.AuthKey, msgChan)
+	ob := outbound.NewServer(config.ControlPlane, config.AuthKey, msgChan)
 	go ob.Start(ctx)
 
 	stateStore := NewStateStore(NewLocalStorageStateBackend(env.DataPath("states.json")))

@@ -4,7 +4,7 @@
 
 Premises consists of the following 2 parts:
 
-1. Frontend that determine configuration of the server, and creates VM. (Control Panel)
+1. Frontend that determine configuration of the server, and creates VM. (Control Plane)
 2. Software to actually configure game and monitor that the server alive. (Runner)
 
 ## Features

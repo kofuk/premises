@@ -5,12 +5,12 @@ RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
     --mount=type=bind,source=./backend/common/go.sum,target=backend/common/go.sum \
     --mount=type=bind,source=./backend/runner/go.mod,target=backend/runner/go.mod \
     --mount=type=bind,source=./backend/runner/go.sum,target=backend/runner/go.sum \
-    --mount=type=bind,source=./backend/services/common/go.mod,target=backend/services/common/go.mod \
-    --mount=type=bind,source=./backend/services/common/go.sum,target=backend/services/common/go.sum \
-    --mount=type=bind,source=./backend/services/monolith/go.mod,target=backend/services/monolith/go.mod \
-    --mount=type=bind,source=./backend/services/monolith/go.sum,target=backend/services/monolith/go.sum \
-    --mount=type=bind,source=./backend/services/pmctl/go.mod,target=backend/services/pmctl/go.mod \
-    --mount=type=bind,source=./backend/services/pmctl/go.sum,target=backend/services/pmctl/go.sum \
+    --mount=type=bind,source=./backend/ctrlplane/common/go.mod,target=backend/ctrlplane/common/go.mod \
+    --mount=type=bind,source=./backend/ctrlplane/common/go.sum,target=backend/ctrlplane/common/go.sum \
+    --mount=type=bind,source=./backend/ctrlplane/monolith/go.mod,target=backend/ctrlplane/monolith/go.mod \
+    --mount=type=bind,source=./backend/ctrlplane/monolith/go.sum,target=backend/ctrlplane/monolith/go.sum \
+    --mount=type=bind,source=./backend/ctrlplane/pmctl/go.mod,target=backend/ctrlplane/pmctl/go.mod \
+    --mount=type=bind,source=./backend/ctrlplane/pmctl/go.sum,target=backend/ctrlplane/pmctl/go.sum \
     --mount=type=bind,source=./backend/tools/mcserver-fake/go.mod,target=backend/tools/mcserver-fake/go.mod \
     --mount=type=bind,source=./backend/tools/mcserver-fake/go.sum,target=backend/tools/mcserver-fake/go.sum \
     --mount=type=bind,source=./backend/tools/ostack-fake/go.mod,target=backend/tools/ostack-fake/go.mod \
@@ -22,9 +22,9 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=bind,source=./go.work,target=go.work \
     --mount=type=bind,source=./go.work.sum,target=go.work.sum \
     --mount=type=bind,source=./backend,target=backend \
-    cd /build/backend/services/pmctl && \
+    cd /build/backend/ctrlplane/pmctl && \
     CGO_ENABLED=0 go build -o /pmctl . && \
-    cd /build/backend/services/monolith && \
+    cd /build/backend/ctrlplane/monolith && \
     CGO_ENABLED=0 go build -o /premises .
 
 FROM node:24.14.0@sha256:5a593d74b632d1c6f816457477b6819760e13624455d587eef0fa418c8d0777b AS frontend_build

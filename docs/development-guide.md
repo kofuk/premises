@@ -13,7 +13,7 @@ $ ./launch_all.sh
 
 Initial user's name and password is `admin/password`.
 
-## Run ControlPanel locally, runner on cloud
+## Run control plane locally, runner on cloud
 
 There are many solution to expose our local ports on the web.
 We will demonstrate it with Cloudflare Tunnel.
@@ -23,7 +23,7 @@ https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/ge
 
 we need to have at least 2 domains:
 
-- Control Panel (we use `premises` subdomain)
+- Control Plane (we use `premises` subdomain)
 - MinIO's S3 API (we use `s3api` subdomain)
 - (Optional) MinIO console (we use `s3` subdomain)
 
@@ -42,7 +42,7 @@ ingress:
   - service: http_status:404
 ```
 
-After that, you can expose your control panel globally.
+After that, you can expose your control plane globally.
 
 ```shell
 cloudflared tunnel run ${tunnel_name}
