@@ -19,6 +19,18 @@ type Proxy struct {
 	Metrics  *Metrics
 }
 
+type peer string
+
+const (
+	peerServer peer = "server"
+	peerClient peer = "client"
+)
+
+type connection struct {
+	io.ReadWriteCloser
+	peerKind peer
+}
+
 func createTLSConfig(cert string) (*tls.Config, error) {
 	rootCAs := x509.NewCertPool()
 	if ok := rootCAs.AppendCertsFromPEM([]byte(cert)); !ok {
@@ -30,7 +42,7 @@ func createTLSConfig(cert string) (*tls.Config, error) {
 	}, nil
 }
 
-func copyWithMeter(ctx context.Context, dst io.Writer, src io.Reader, counter metric.Int64Counter, peer string) {
+func (p *Proxy) copyWithMeter(ctx context.Context, dst connection, src connection) {
 	buf := make([]byte, 32*1024)
 	for {
 		n, err := src.Read(buf)
@@ -38,8 +50,9 @@ func copyWithMeter(ctx context.Context, dst io.Writer, src io.Reader, counter me
 			if _, err := dst.Write(buf[:n]); err != nil {
 				return
 			}
-			counter.Add(ctx, int64(n), metric.WithAttributes(
-				attribute.String("peer", peer),
+			p.Metrics.io.Add(ctx, int64(n), metric.WithAttributes(
+				attribute.String("from", string(src.peerKind)),
+				attribute.String("to", string(dst.peerKind)),
 			))
 		}
 		if err != nil {
@@ -73,13 +86,22 @@ func (p *Proxy) Run(ctx context.Context) error {
 	}
 	defer upstrm.Close()
 
+	upstreamConn := connection{
+		ReadWriteCloser: upstrm,
+		peerKind:        peerServer,
+	}
+	proxyConn := connection{
+		ReadWriteCloser: conn,
+		peerKind:        peerClient,
+	}
+
 	go func() {
-		copyWithMeter(ctx, upstrm, conn, p.Metrics.io, "server")
-		upstrm.Close()
-		conn.Close()
+		p.copyWithMeter(ctx, upstreamConn, proxyConn)
+		upstreamConn.Close()
+		proxyConn.Close()
 	}()
 
-	copyWithMeter(ctx, conn, upstrm, p.Metrics.io, "client")
+	p.copyWithMeter(ctx, proxyConn, upstreamConn)
 
 	return nil
 }
