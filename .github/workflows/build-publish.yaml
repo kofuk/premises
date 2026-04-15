@@ -64,7 +64,7 @@ jobs:
         run: |
           cd backend/tools/ostack-fake
           go build -o ostack-fake .
-      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: test-tool
           path: ./backend/tools/ostack-fake/ostack-fake
@@ -90,7 +90,7 @@ jobs:
         env:
           COMMIT_HASH: ${{ github.sha }}
       - name: Upload artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: runner
           path: ./backend/runner/premises-runner
@@ -100,7 +100,7 @@ jobs:
           cd backend/runner/resources/cmd
           go run . -input ../resources.json
       - name: Upload resources artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: runner-resources
           path: ./backend/runner/resources/cmd/resources.tar.zst
@@ -155,7 +155,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Upload artifact
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: control-plane-image
           path: image.tar
