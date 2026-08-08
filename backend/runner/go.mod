@@ -5,7 +5,7 @@ go 1.26.1
 require (
 	github.com/google/uuid v1.6.0
 	github.com/gorcon/rcon v1.4.0
-	github.com/jarcoal/httpmock v1.4.1
+	github.com/jarcoal/httpmock v1.4.2
 	github.com/klauspost/compress v1.18.5
 	github.com/kofuk/go-queryalternatives v0.2.1
 	github.com/kofuk/go-structnbt v0.0.2
