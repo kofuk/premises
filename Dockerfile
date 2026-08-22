@@ -1,4 +1,4 @@
-FROM golang:1.26.1@sha256:595c7847cff97c9a9e76f015083c481d26078f961c9c8dca3923132f51fe12f1 AS go_build
+FROM golang:1.26.6@sha256:0d1d3a794be25f809dd2cb3160d8c73276c4056a9f8242a138e908ddeee7b6b6 AS go_build
 WORKDIR /build
 RUN --mount=type=cache,target=/go/pkg/mod,sharing=locked \
     --mount=type=bind,source=./backend/common/go.mod,target=backend/common/go.mod \

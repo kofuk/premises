@@ -1,6 +1,6 @@
 module github.com/kofuk/premises/backend/ctrlplane/common
 
-go 1.26.1
+go 1.27.0
 
 require (
 	dario.cat/mergo v1.0.2
