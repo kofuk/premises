@@ -1,6 +1,6 @@
 module github.com/kofuk/premises/backend/ctrlplane/monolith
 
-go 1.26.1
+go 1.27.0
 
 require (
 	github.com/joho/godotenv v1.5.1
