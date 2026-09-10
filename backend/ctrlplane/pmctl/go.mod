@@ -1,6 +1,6 @@
 module github.com/kofuk/premises/backend/ctrlplane/pmctl
 
-go 1.26.1
+go 1.27.1
 
 require (
 	github.com/kofuk/premises/backend/ctrlplane/common v0.0.0-00010101000000-000000000000
