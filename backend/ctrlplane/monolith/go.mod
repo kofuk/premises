@@ -1,6 +1,6 @@
 module github.com/kofuk/premises/backend/ctrlplane/monolith
 
-go 1.26.1
+go 1.27.3
 
 require (
 	github.com/joho/godotenv v1.5.1
@@ -37,7 +37,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.19 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.10 // indirect
 	github.com/aws/smithy-go v1.24.2 // indirect
-	github.com/boj/redistore/v2 v2.0.1 // indirect
+	github.com/boj/redistore/v2 v2.0.2 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect

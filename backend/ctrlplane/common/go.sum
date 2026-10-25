@@ -50,8 +50,8 @@ github.com/aws/aws-sdk-go-v2/service/sts v1.41.10 h1:p8ogvvLugcR/zLBXTXrTkj0RYBU
 github.com/aws/aws-sdk-go-v2/service/sts v1.41.10/go.mod h1:60dv0eZJfeVXfbT1tFJinbHrDfSJ2GZl4Q//OSSNAVw=
 github.com/aws/smithy-go v1.24.2 h1:FzA3bu/nt/vDvmnkg+R8Xl46gmzEDam6mZ1hzmwXFng=
 github.com/aws/smithy-go v1.24.2/go.mod h1:YE2RhdIuDbA5E5bTdciG9KrW3+TiEONeUWCqxX9i1Fc=
-github.com/boj/redistore/v2 v2.0.1 h1:1WJdk8p7A1W7B4d+ES19fB+QRVcqUcE8NxDQ8nR6Z/Y=
-github.com/boj/redistore/v2 v2.0.1/go.mod h1:OTJuHPBSjagveT8XIRY0ft2woeYHkU0mTK3iQNUG9kw=
+github.com/boj/redistore/v2 v2.0.2 h1:VkZ+SgVoepEMnPh1mNaRhIo3CNO2lzzYC2b00aO0Tgs=
+github.com/boj/redistore/v2 v2.0.2/go.mod h1:TXYcnW6xu48FA6RBGAJFR2nt9JeuAFFq+YNvEQsKQPs=
 github.com/bsm/ginkgo/v2 v2.12.0 h1:Ny8MWAHyOepLGlLKYmXG4IEkioBysk6GpaRTLC8zwWs=
 github.com/bsm/ginkgo/v2 v2.12.0/go.mod h1:SwYbGRRDovPVboqFv0tPTcG1sN61LM1Z4ARdbAV9g4c=
 github.com/bsm/gomega v1.27.10 h1:yeMWxP2pV2fG3FgAODIY8EiRE3dy0aeFYt4l7wh6yKA=
