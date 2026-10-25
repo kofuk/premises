@@ -8,8 +8,8 @@ require (
 	github.com/kofuk/premises/backend/ctrlplane/common v0.0.0-00010101000000-000000000000
 	github.com/redis/go-redis/extra/redisotel/v9 v9.18.0
 	github.com/redis/go-redis/v9 v9.18.0
-	github.com/uptrace/bun v1.2.18
-	github.com/uptrace/bun/extra/bunotel v1.2.18
+	github.com/uptrace/bun v1.3.0
+	github.com/uptrace/bun/extra/bunotel v1.3.0
 )
 
 require (
@@ -58,8 +58,8 @@ require (
 	github.com/redis/go-redis/extra/rediscmd/v9 v9.18.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
-	github.com/uptrace/bun/dialect/pgdialect v1.2.18 // indirect
-	github.com/uptrace/bun/driver/pgdriver v1.2.18 // indirect
+	github.com/uptrace/bun/dialect/pgdialect v1.3.0 // indirect
+	github.com/uptrace/bun/driver/pgdriver v1.3.0 // indirect
 	github.com/uptrace/opentelemetry-go-extra/otelsql v0.3.2 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect

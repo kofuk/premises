@@ -5,7 +5,7 @@ go 1.27.3
 require (
 	github.com/kofuk/premises/backend/ctrlplane/common v0.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.10.2
-	github.com/uptrace/bun v1.2.18
+	github.com/uptrace/bun v1.3.0
 	golang.org/x/crypto v0.49.0
 )
 
@@ -16,8 +16,8 @@ require (
 	github.com/puzpuzpuz/xsync/v3 v3.5.1 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/tmthrgd/go-hex v0.0.0-20190904060850-447a3041c3bc // indirect
-	github.com/uptrace/bun/dialect/pgdialect v1.2.18 // indirect
-	github.com/uptrace/bun/driver/pgdriver v1.2.18 // indirect
+	github.com/uptrace/bun/dialect/pgdialect v1.3.0 // indirect
+	github.com/uptrace/bun/driver/pgdriver v1.3.0 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opentelemetry.io/otel v1.46.0 // indirect
