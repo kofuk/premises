@@ -19,7 +19,7 @@ import (
 	"github.com/kofuk/premises/backend/ctrlplane/common/mcversions"
 	"github.com/kofuk/premises/backend/ctrlplane/common/streaming"
 	"github.com/kofuk/premises/backend/ctrlplane/common/world"
-	echootel "github.com/labstack/echo-opentelemetry"
+	echootel "github.com/labstack/echo-otel/v5"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 	"github.com/redis/go-redis/v9"
