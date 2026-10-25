@@ -4,7 +4,7 @@ go 1.27.3
 
 require (
 	dario.cat/mergo v1.0.2
-	github.com/boj/redistore/v2 v2.0.1
+	github.com/boj/redistore/v2 v2.0.2
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/securecookie v1.1.2
 	github.com/gorilla/sessions v1.4.0
