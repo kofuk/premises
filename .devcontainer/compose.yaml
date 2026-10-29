@@ -28,4 +28,4 @@ services:
       - 'mkdir -p /data/premises && exec rustfs'
 
   grafana-lgtm:
-    image: grafana/otel-lgtm:0.22.0@sha256:6903a4545a4005a5cada9d44055e96d612d465f7e6d942c272ecb20e6902dec0
+    image: grafana/otel-lgtm:0.38.1@sha256:0df9bc14142000b161344bd24caf6ddd319b7319055aedaf9b0692b125730af7
